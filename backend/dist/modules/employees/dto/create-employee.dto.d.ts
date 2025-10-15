@@ -1,0 +1,25 @@
+import { EmploymentType, Department } from '../entities/employee.entity';
+export declare class CreateEmployeeDto {
+    employeeCode: string;
+    fullName: string;
+    email?: string;
+    phoneNumber: string;
+    alternatePhone?: string;
+    dateOfBirth: string;
+    gender: string;
+    currentAddress: string;
+    department: Department;
+    designation: string;
+    employmentType: EmploymentType;
+    joiningDate: string;
+    basicSalary: number;
+    houseRentAllowance?: number;
+    transportAllowance?: number;
+    medicalAllowance?: number;
+    bankName?: string;
+    bankAccountNumber?: string;
+    ifscCode?: string;
+    aadharNumber?: string;
+    panNumber?: string;
+    notes?: string;
+}

@@ -1,0 +1,31 @@
+import { Property } from '../../properties/entities/property.entity';
+export declare class Tower {
+    id: string;
+    name: string;
+    towerNumber: string;
+    description: string;
+    totalFloors: number;
+    totalUnits: number;
+    basementLevels: number;
+    unitsPerFloor: string;
+    amenities: string[];
+    constructionStatus: 'PLANNED' | 'UNDER_CONSTRUCTION' | 'COMPLETED' | 'READY_TO_MOVE';
+    constructionStartDate: Date;
+    completionDate: Date;
+    reraNumber: string;
+    builtUpArea: number;
+    carpetArea: number;
+    ceilingHeight: number;
+    numberOfLifts: number;
+    vastuCompliant: boolean;
+    facing: string;
+    specialFeatures: string;
+    isActive: boolean;
+    displayOrder: number;
+    images: string[];
+    floorPlans: Record<string, string>;
+    property: Property;
+    propertyId: string;
+    createdAt: Date;
+    updatedAt: Date;
+}

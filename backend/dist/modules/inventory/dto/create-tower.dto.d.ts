@@ -1,0 +1,31 @@
+export declare class CreateTowerDto {
+    propertyId: string;
+    towerCode: string;
+    name: string;
+    description?: string;
+    totalFloors: number;
+    flatsPerFloor?: number;
+    totalFlats?: number;
+    towerSize?: number;
+    facing?: string;
+    position?: string;
+    hasLift?: boolean;
+    numberOfLifts?: number;
+    liftCapacity?: number;
+    hasStairs?: boolean;
+    numberOfStairs?: number;
+    parkingType?: string;
+    parkingCapacity?: number;
+    hasGym?: boolean;
+    hasGarden?: boolean;
+    hasSecurityAlarm?: boolean;
+    hasFireAlarm?: boolean;
+    isVastuCompliant?: boolean;
+    hasCentralAc?: boolean;
+    hasIntercom?: boolean;
+    layoutImages?: string[];
+    arialViewImages?: string[];
+    amenities?: string[];
+    surroundingDescription?: string;
+    status?: string;
+}

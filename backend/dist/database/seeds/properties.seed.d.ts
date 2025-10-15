@@ -1,0 +1,54 @@
+export declare const propertiesSeedData: ({
+    propertyCode: string;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    totalArea: number;
+    areaUnit: string;
+    launchDate: string;
+    expectedCompletionDate: string;
+    reraNumber: string;
+    projectType: string;
+    status: string;
+    images: string[];
+    documents: {
+        name: string;
+        url: string;
+        type: string;
+    }[];
+    amenities: string[];
+    isActive: boolean;
+    actualCompletionDate?: undefined;
+} | {
+    propertyCode: string;
+    name: string;
+    description: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+    totalArea: number;
+    areaUnit: string;
+    launchDate: string;
+    expectedCompletionDate: string;
+    actualCompletionDate: string;
+    reraNumber: string;
+    projectType: string;
+    status: string;
+    images: string[];
+    documents: {
+        name: string;
+        url: string;
+        type: string;
+    }[];
+    amenities: string[];
+    isActive: boolean;
+})[];
+export declare const generateSeedSQL: () => string;

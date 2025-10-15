@@ -1,0 +1,37 @@
+import { PaymentType, PaymentMode, PaymentStatus } from '../entities/payment.entity';
+export declare class CreatePaymentDto {
+    paymentNumber: string;
+    receiptNumber?: string;
+    bookingId: string;
+    customerId: string;
+    paymentType?: PaymentType;
+    amount: number;
+    paymentDate: string;
+    paymentMode: PaymentMode;
+    status?: PaymentStatus;
+    bankName?: string;
+    branchName?: string;
+    chequeNumber?: string;
+    chequeDate?: string;
+    transactionId?: string;
+    clearanceDate?: string;
+    upiId?: string;
+    onlinePaymentId?: string;
+    installmentNumber?: number;
+    dueDate?: string;
+    lateFee?: number;
+    tdsAmount?: number;
+    tdsPercentage?: number;
+    gstAmount?: number;
+    gstPercentage?: number;
+    netAmount: number;
+    receiptUrl?: string;
+    receiptGenerated?: boolean;
+    receiptDate?: string;
+    isVerified?: boolean;
+    documents?: string[];
+    notes?: string;
+    internalNotes?: string;
+    tags?: string[];
+    isActive?: boolean;
+}

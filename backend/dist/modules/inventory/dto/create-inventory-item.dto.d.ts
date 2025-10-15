@@ -1,0 +1,36 @@
+import { ItemCategory, Unit, StockStatus } from '../entities/inventory-item.entity';
+export declare class CreateInventoryItemDto {
+    itemCode: string;
+    itemName: string;
+    description?: string;
+    category: ItemCategory;
+    brand?: string;
+    model?: string;
+    quantity: number;
+    unit: Unit;
+    minimumStock?: number;
+    maximumStock?: number;
+    reorderPoint?: number;
+    stockStatus?: StockStatus;
+    unitPrice: number;
+    totalValue: number;
+    supplierName?: string;
+    supplierEmail?: string;
+    supplierPhone?: string;
+    supplierAddress?: string;
+    propertyId?: string;
+    warehouseLocation?: string;
+    rackNumber?: string;
+    binNumber?: string;
+    specification?: string;
+    grade?: string;
+    manufacturingDate?: string;
+    expiryDate?: string;
+    batchNumber?: string;
+    serialNumber?: string;
+    images?: string[];
+    documents?: string[];
+    notes?: string;
+    tags?: string[];
+    isActive?: boolean;
+}

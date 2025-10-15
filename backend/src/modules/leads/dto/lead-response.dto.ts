@@ -1,0 +1,85 @@
+import { Lead } from '../entities/lead.entity';
+
+export class LeadResponseDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  alternatePhone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  status: string;
+  source: string;
+  priority: string;
+  leadScore: number;
+  notes: string;
+  propertyId: string;
+  interestedPropertyTypes: string[];
+  budgetMin: number;
+  budgetMax: number;
+  preferredLocation: string;
+  requirements: string[];
+  expectedPurchaseDate: Date;
+  lastContactedAt: Date;
+  nextFollowUpDate: Date;
+  followUpNotes: string;
+  assignedTo: string;
+  assignedAt: Date;
+  isQualified: boolean;
+  isFirstTimeBuyer: boolean;
+  hasExistingProperty: boolean;
+  needsHomeLoan: boolean;
+  hasApprovedLoan: boolean;
+  currentOccupation: string;
+  annualIncome: number;
+  campaignName: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  tags: string[];
+  referredBy: string;
+  referralName: string;
+  referralPhone: string;
+  hasSiteVisit: boolean;
+  siteVisitDate: Date;
+  siteVisitFeedback: string;
+  totalSiteVisits: number;
+  totalCalls: number;
+  totalEmails: number;
+  totalMeetings: number;
+  lastCallDate: Date;
+  lastEmailDate: Date;
+  lastMeetingDate: Date;
+  convertedToCustomerId: string;
+  convertedAt: Date;
+  lostReason: string;
+  lostAt: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  property?: any;
+  assignedUser?: any;
+
+  static fromEntity(lead: Lead): LeadResponseDto {
+    const dto = new LeadResponseDto();
+    Object.assign(dto, lead);
+    return dto;
+  }
+
+  static fromEntities(leads: Lead[]): LeadResponseDto[] {
+    return leads.map((lead) => this.fromEntity(lead));
+  }
+}
+
+export interface PaginatedLeadsResponse {
+  data: LeadResponseDto[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}

@@ -1,0 +1,163 @@
+import api from './api';
+
+export interface Lead {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  alternatePhone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'NEGOTIATION' | 'WON' | 'LOST' | 'ON_HOLD';
+  source: 'WEBSITE' | 'WALK_IN' | 'REFERRAL' | 'SOCIAL_MEDIA' | 'EMAIL' | 'PHONE' | 'ADVERTISEMENT' | 'BROKER' | 'EXHIBITION' | 'OTHER';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  leadScore: number;
+  notes?: string;
+  propertyId?: string;
+  interestedPropertyTypes?: string[];
+  budgetMin?: number;
+  budgetMax?: number;
+  preferredLocation?: string;
+  requirements?: string[];
+  expectedPurchaseDate?: string;
+  lastContactedAt?: string;
+  nextFollowUpDate?: string;
+  followUpNotes?: string;
+  assignedTo?: string;
+  assignedAt?: string;
+  isQualified: boolean;
+  isFirstTimeBuyer: boolean;
+  hasExistingProperty: boolean;
+  needsHomeLoan: boolean;
+  hasApprovedLoan: boolean;
+  currentOccupation?: string;
+  annualIncome?: number;
+  campaignName?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
+  tags?: string[];
+  referredBy?: string;
+  referralName?: string;
+  referralPhone?: string;
+  hasSiteVisit: boolean;
+  siteVisitDate?: string;
+  siteVisitFeedback?: string;
+  totalSiteVisits: number;
+  totalCalls: number;
+  totalEmails: number;
+  totalMeetings: number;
+  lastCallDate?: string;
+  lastEmailDate?: string;
+  lastMeetingDate?: string;
+  convertedToCustomerId?: string;
+  convertedAt?: string;
+  lostReason?: string;
+  lostAt?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  property?: any;
+  assignedUser?: any;
+}
+
+export interface LeadFilters {
+  search?: string;
+  status?: string;
+  source?: string;
+  priority?: string;
+  propertyId?: string;
+  assignedTo?: string;
+  isQualified?: boolean;
+  needsHomeLoan?: boolean;
+  hasSiteVisit?: boolean;
+  minBudget?: number;
+  maxBudget?: number;
+  createdFrom?: string;
+  createdTo?: string;
+  followUpDue?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+export interface PaginatedLeadsResponse {
+  data: Lead[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+class LeadsService {
+  private readonly baseUrl = '/leads';
+
+  async getLeads(filters?: LeadFilters): Promise<PaginatedLeadsResponse> {
+    const params = new URLSearchParams();
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value));
+        }
+      });
+    }
+
+    const response = await api.get(`${this.baseUrl}?${params.toString()}`);
+    return response.data;
+  }
+
+  async getLead(id: string): Promise<Lead> {
+    const response = await api.get(`${this.baseUrl}/${id}`);
+    return response.data;
+  }
+
+  async getStatistics(): Promise<any> {
+    const response = await api.get(`${this.baseUrl}/statistics`);
+    return response.data;
+  }
+
+  async getMyLeads(userId: string): Promise<Lead[]> {
+    const response = await api.get(`${this.baseUrl}/my-leads/${userId}`);
+    return response.data;
+  }
+
+  async getDueFollowUps(userId?: string): Promise<Lead[]> {
+    const params = userId ? `?userId=${userId}` : '';
+    const response = await api.get(`${this.baseUrl}/due-followups${params}`);
+    return response.data;
+  }
+
+  async createLead(data: Partial<Lead>): Promise<Lead> {
+    const response = await api.post(this.baseUrl, data);
+    return response.data;
+  }
+
+  async updateLead(id: string, data: Partial<Lead>): Promise<Lead> {
+    const response = await api.put(`${this.baseUrl}/${id}`, data);
+    return response.data;
+  }
+
+  async assignLead(id: string, userId: string): Promise<Lead> {
+    const response = await api.patch(`${this.baseUrl}/${id}/assign`, { userId });
+    return response.data;
+  }
+
+  async updateStatus(id: string, status: string, notes?: string): Promise<Lead> {
+    const response = await api.patch(`${this.baseUrl}/${id}/status`, { status, notes });
+    return response.data;
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    await api.delete(`${this.baseUrl}/${id}`);
+  }
+}
+
+export const leadsService = new LeadsService();

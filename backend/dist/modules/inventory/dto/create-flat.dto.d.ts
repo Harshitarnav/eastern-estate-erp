@@ -1,0 +1,36 @@
+export declare class CreateFlatDto {
+    propertyId: string;
+    towerId: string;
+    floorId: string;
+    flatCode: string;
+    flatNumber: string;
+    flatName?: string;
+    flatType: string;
+    description?: string;
+    carpetArea: number;
+    builtUpArea?: number;
+    superBuiltUpArea?: number;
+    areaUnit?: string;
+    baseRatePerSqft: number;
+    basePrice: number;
+    gstAmount?: number;
+    registrationCharges?: number;
+    otherCharges?: number;
+    totalPrice: number;
+    bedrooms: number;
+    bathrooms: number;
+    balconies?: number;
+    hasStudyRoom?: boolean;
+    hasServantRoom?: boolean;
+    hasPoojaRoom?: boolean;
+    roomDetails?: any;
+    facing?: string;
+    furnishingStatus?: string;
+    flooringType?: string;
+    kitchenType?: string;
+    floorPlanImage?: string;
+    images?: string[];
+    paymentPlanDocument?: string;
+    surroundingDescription?: string;
+    status?: string;
+}
