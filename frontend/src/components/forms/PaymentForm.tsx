@@ -194,4 +194,3 @@ export function PaymentForm({ onSubmit, initialData, onCancel }: PaymentFormProp
     />
   );
 }
-export default PaymentForm;

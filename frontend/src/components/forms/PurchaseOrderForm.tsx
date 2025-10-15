@@ -289,4 +289,3 @@ export function PurchaseOrderForm({ onSubmit, initialData, onCancel }: PurchaseO
     </div>
   );
 }
-export default PurchaseOrderForm;

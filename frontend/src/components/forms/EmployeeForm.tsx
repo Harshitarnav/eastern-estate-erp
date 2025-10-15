@@ -264,4 +264,3 @@ export function EmployeeForm({ onSubmit, initialData, onCancel }: EmployeeFormPr
     />
   );
 }
-export default EmployeeForm;

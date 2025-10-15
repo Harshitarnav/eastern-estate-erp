@@ -160,4 +160,3 @@ export function InventoryForm({ onSubmit, initialData, onCancel }: InventoryForm
     />
   );
 }
-export default InventoryForm;

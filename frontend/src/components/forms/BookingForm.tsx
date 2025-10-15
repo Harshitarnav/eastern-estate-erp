@@ -173,4 +173,3 @@ export function BookingForm({ onSubmit, initialData, onCancel }: BookingFormProp
   );
 }
 
-export default BookingForm;

@@ -212,4 +212,3 @@ export default function CustomerForm({
     />
   );
 }
-export default CustomerForm;
