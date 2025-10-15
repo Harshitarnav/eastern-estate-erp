@@ -323,3 +323,4 @@ export default function ConstructionForm({ initialData, onSubmit, onCancel }: Co
         </form>
     );
 }
+export default ConstructionForm;

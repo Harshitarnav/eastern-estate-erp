@@ -187,7 +187,7 @@ export default function BookingsPage() {
         <div className="flex gap-4">
           <div className="flex-1"></div>
           <button
-            onClick={() => alert('Add Booking form - Coming soon')}
+            onClick={() => router.push('/bookings/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -226,7 +226,7 @@ export default function BookingsPage() {
               : 'Start by creating your first property booking.'}
           </p>
           <button
-            onClick={() => alert('Add Booking form - Coming soon')}
+            onClick={() => router.push('/bookings/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >

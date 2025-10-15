@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Megaphone, Plus, Search, TrendingUp, DollarSign, Users as UsersIcon, Target } from 'lucide-react';
 import { marketingService, Campaign, CampaignFilters } from '@/services/marketing.service';
 
 export default function MarketingPage() {
+  const router = useRouter();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -140,7 +142,7 @@ export default function MarketingPage() {
           </select>
 
           <button
-            onClick={() => alert('Create Campaign - Coming soon')}
+            onClick={() => router.push('/marketing/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -179,7 +181,7 @@ export default function MarketingPage() {
               : 'Start by creating your first marketing campaign.'}
           </p>
           <button
-            onClick={() => alert('Create Campaign - Coming soon')}
+            onClick={() => router.push('/marketing/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >

@@ -193,3 +193,4 @@ export default function LeadForm({
     />
   );
 }
+export default LeadForm;

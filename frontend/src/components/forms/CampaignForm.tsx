@@ -338,3 +338,4 @@ export default function CampaignForm({ initialData, onSubmit, onCancel }: Campai
         </form>
     );
 }
+export default CampaignForm;

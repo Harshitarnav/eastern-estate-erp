@@ -402,4 +402,4 @@ export default function NewPropertyPage() {
     </div>
   );
 }
-*/
+*/export default PropertyForm;

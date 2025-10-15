@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Building2, Plus, Search, TrendingUp, AlertTriangle, CheckCircle, Clock, Users } from 'lucide-react';
 import { constructionService, ConstructionProject, ConstructionFilters } from '@/services/construction.service';
 
 export default function ConstructionPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<ConstructionProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -186,7 +188,7 @@ export default function ConstructionPage() {
         <div className="flex gap-4">
           <div className="flex-1"></div>
           <button
-            onClick={() => alert('Add Project form - Coming soon')}
+            onClick={() => router.push('/construction/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -225,7 +227,7 @@ export default function ConstructionPage() {
               : 'Start by creating your first construction project.'}
           </p>
           <button
-            onClick={() => alert('Add Project form - Coming soon')}
+            onClick={() => router.push('/construction/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >
