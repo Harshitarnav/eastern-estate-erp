@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { IndianRupee, Plus, Search, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { paymentsService, Payment, PaymentFilters } from '@/services/payments.service';
 
 export default function PaymentsPage() {
+  const router = useRouter();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -182,7 +184,7 @@ export default function PaymentsPage() {
         <div className="flex gap-4">
           <div className="flex-1"></div>
           <button
-            onClick={() => alert('Add Payment form - Coming soon')}
+            onClick={() => router.push('/payments/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -221,7 +223,7 @@ export default function PaymentsPage() {
               : 'Start by recording your first payment transaction.'}
           </p>
           <button
-            onClick={() => alert('Add Payment form - Coming soon')}
+            onClick={() => router.push('/payments/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >

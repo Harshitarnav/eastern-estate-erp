@@ -19,6 +19,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
+import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 
@@ -38,12 +39,15 @@ import { UploadModule } from './common/upload/upload.module';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
+        // synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
+        synchronize: false, // ✅ Move inside and set to false
         logging: configService.get('DB_LOGGING') === 'true',
         ssl: configService.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
         namingStrategy: new SnakeNamingStrategy(), // Add this line
+        // migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
+        // migrationsRun: true,
       }),
-      inject: [ConfigService],
+      inject: [ConfigService],      
     }),
     AuthModule,
     UsersModule,
@@ -63,6 +67,7 @@ import { UploadModule } from './common/upload/upload.module';
     ReportsModule,
     NotificationsModule,
     AccountingModule,
+    PurchaseOrdersModule,
     UploadModule,
   ],
 })

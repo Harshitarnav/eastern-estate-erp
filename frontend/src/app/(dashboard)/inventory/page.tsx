@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Package, Plus, Search, TrendingUp, TrendingDown, AlertCircle, CheckCircle } from 'lucide-react';
 import { inventoryService, InventoryItem, InventoryFilters } from '@/services/inventory.service';
 
 export default function InventoryPage() {
+  const router = useRouter();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -213,7 +215,7 @@ export default function InventoryPage() {
         <div className="flex gap-4">
           <div className="flex-1"></div>
           <button
-            onClick={() => alert('Add Item form - Coming soon')}
+            onClick={() => router.push('/inventory/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -252,7 +254,7 @@ export default function InventoryPage() {
               : 'Start by adding your first inventory item.'}
           </p>
           <button
-            onClick={() => alert('Add Item form - Coming soon')}
+            onClick={() => router.push('/inventory/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >

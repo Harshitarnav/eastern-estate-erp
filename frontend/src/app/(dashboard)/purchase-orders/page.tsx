@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ShoppingCart, Plus, Search, CheckCircle, XCircle, Clock, Package } from 'lucide-react';
 import { purchaseOrdersService, PurchaseOrder, PurchaseOrderFilters } from '@/services/purchase-orders.service';
 
 export default function PurchaseOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -191,7 +193,7 @@ export default function PurchaseOrdersPage() {
         <div className="flex gap-4">
           <div className="flex-1"></div>
           <button
-            onClick={() => alert('Create Purchase Order form - Coming soon')}
+            onClick={() => router.push('/purchase-orders/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -230,7 +232,7 @@ export default function PurchaseOrdersPage() {
               : 'Start by creating your first purchase order.'}
           </p>
           <button
-            onClick={() => alert('Create Purchase Order form - Coming soon')}
+            onClick={() => router.push('/purchase-orders/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >

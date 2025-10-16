@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, FormField } from './Form';
 
 interface PurchaseOrderFormProps {
@@ -9,72 +9,72 @@ interface PurchaseOrderFormProps {
   onCancel?: () => void;
 }
 
-export function PurchaseOrderForm({ onSubmit, initialData, onCancel }: PurchaseOrderFormProps) {
-  const [items, setItems] = useState(initialData?.items || [
-    { itemId: '', itemCode: '', itemName: '', category: '', quantity: 0, unit: '', unitPrice: 0, discount: 0, taxPercent: 18 }
-  ]);
+export default function PurchaseOrderForm({ onSubmit, initialData, onCancel }: PurchaseOrderFormProps) {
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('basic');
 
-  const addItem = () => {
-    setItems([...items, { itemId: '', itemCode: '', itemName: '', category: '', quantity: 0, unit: '', unitPrice: 0, discount: 0, taxPercent: 18 }]);
-  };
-
-  const removeItem = (index: number) => {
-    if (items.length > 1) {
-      setItems(items.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateItem = (index: number, field: string, value: any) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-  };
-
-  const handleFormSubmit = (formData: any) => {
-    onSubmit({ ...formData, items });
-  };
-
-  const fields: FormField[] = [
+  // Tab 1: Basic Information
+  const basicFields: FormField[] = [
     {
       name: 'orderNumber',
-      label: 'Order Number',
+      label: 'PO Number *',
       type: 'text',
       required: true,
       placeholder: 'e.g., PO-2025-001',
     },
     {
       name: 'orderDate',
-      label: 'Order Date',
+      label: 'Order Date *',
       type: 'date',
       required: true,
     },
     {
-      name: 'supplierId',
-      label: 'Supplier ID',
-      type: 'text',
+      name: 'orderStatus',
+      label: 'Order Status *',
+      type: 'select',
       required: true,
-      placeholder: 'Supplier UUID',
+      options: [
+        { value: 'DRAFT', label: 'Draft' },
+        { value: 'PENDING_APPROVAL', label: 'Pending Approval' },
+        { value: 'APPROVED', label: 'Approved' },
+        { value: 'REJECTED', label: 'Rejected' },
+        { value: 'ORDERED', label: 'Ordered' },
+        { value: 'PARTIALLY_RECEIVED', label: 'Partially Received' },
+        { value: 'RECEIVED', label: 'Received' },
+        { value: 'CANCELLED', label: 'Cancelled' },
+      ],
     },
     {
+      name: 'projectReference',
+      label: 'Project/Site Reference',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., Project-001',
+    },
+  ];
+
+  // Tab 2: Supplier Information
+  const supplierFields: FormField[] = [
+    {
       name: 'supplierName',
-      label: 'Supplier Name',
+      label: 'Supplier Name *',
       type: 'text',
       required: true,
-      placeholder: 'e.g., ABC Suppliers Ltd.',
+      placeholder: 'e.g., ABC Construction Suppliers',
     },
     {
       name: 'supplierEmail',
       label: 'Supplier Email',
       type: 'email',
       required: false,
-      placeholder: 'supplier@example.com',
+      placeholder: 'e.g., contact@abcsuppliers.com',
     },
     {
       name: 'supplierPhone',
       label: 'Supplier Phone',
-      type: 'text',
+      type: 'tel',
       required: false,
-      placeholder: '+91 9876543210',
+      placeholder: 'e.g., 9876543210',
     },
     {
       name: 'supplierAddress',
@@ -88,18 +88,87 @@ export function PurchaseOrderForm({ onSubmit, initialData, onCancel }: PurchaseO
       label: 'Supplier GSTIN',
       type: 'text',
       required: false,
-      placeholder: 'e.g., 27AABCU9603R1ZM',
+      placeholder: 'e.g., 22AAAAA0000A1Z5',
+    },
+  ];
+
+  // Tab 3: Pricing & Totals
+  const pricingFields: FormField[] = [
+    {
+      name: 'subtotal',
+      label: 'Subtotal (₹) *',
+      type: 'number',
+      required: true,
+      placeholder: 'e.g., 100000',
     },
     {
-      name: 'paymentTerms',
-      label: 'Payment Terms',
+      name: 'discountPercent',
+      label: 'Discount (%)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 5',
+    },
+    {
+      name: 'discountAmount',
+      label: 'Discount Amount (₹)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 5000',
+    },
+    {
+      name: 'taxAmount',
+      label: 'Tax Amount (₹)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 18000',
+    },
+    {
+      name: 'shippingCost',
+      label: 'Shipping Cost (₹)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 2000',
+    },
+    {
+      name: 'otherCharges',
+      label: 'Other Charges (₹)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 1000',
+    },
+    {
+      name: 'totalAmount',
+      label: 'Total Amount (₹) *',
+      type: 'number',
+      required: true,
+      placeholder: 'e.g., 116000',
+    },
+  ];
+
+  // Tab 4: Payment Information
+  const paymentFields: FormField[] = [
+    {
+      name: 'paymentStatus',
+      label: 'Payment Status *',
       type: 'select',
       required: true,
       options: [
-        { value: 'NET_30', label: 'Net 30 Days' },
-        { value: 'NET_15', label: 'Net 15 Days' },
-        { value: 'NET_7', label: 'Net 7 Days' },
+        { value: 'UNPAID', label: 'Unpaid' },
+        { value: 'PARTIALLY_PAID', label: 'Partially Paid' },
+        { value: 'PAID', label: 'Paid' },
+        { value: 'OVERDUE', label: 'Overdue' },
+      ],
+    },
+    {
+      name: 'paymentTerms',
+      label: 'Payment Terms *',
+      type: 'select',
+      required: true,
+      options: [
         { value: 'IMMEDIATE', label: 'Immediate' },
+        { value: 'NET_7', label: 'Net 7 Days' },
+        { value: 'NET_15', label: 'Net 15 Days' },
+        { value: 'NET_30', label: 'Net 30 Days' },
         { value: 'NET_60', label: 'Net 60 Days' },
         { value: 'NET_90', label: 'Net 90 Days' },
         { value: 'ADVANCE_50', label: '50% Advance' },
@@ -107,15 +176,38 @@ export function PurchaseOrderForm({ onSubmit, initialData, onCancel }: PurchaseO
       ],
     },
     {
-      name: 'shippingCost',
-      label: 'Shipping Cost (₹)',
+      name: 'paymentDueDate',
+      label: 'Payment Due Date',
+      type: 'date',
+      required: false,
+    },
+    {
+      name: 'paidAmount',
+      label: 'Paid Amount (₹)',
       type: 'number',
       required: false,
-      placeholder: 'e.g., 5000',
+      placeholder: 'e.g., 50000',
     },
+    {
+      name: 'balanceAmount',
+      label: 'Balance Amount (₹)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 66000',
+    },
+  ];
+
+  // Tab 5: Delivery Information
+  const deliveryFields: FormField[] = [
     {
       name: 'expectedDeliveryDate',
       label: 'Expected Delivery Date',
+      type: 'date',
+      required: false,
+    },
+    {
+      name: 'actualDeliveryDate',
+      label: 'Actual Delivery Date',
       type: 'date',
       required: false,
     },
@@ -127,164 +219,171 @@ export function PurchaseOrderForm({ onSubmit, initialData, onCancel }: PurchaseO
       placeholder: 'Complete delivery address...',
     },
     {
-      name: 'notes',
-      label: 'Notes',
-      type: 'textarea',
+      name: 'deliveryContact',
+      label: 'Delivery Contact Person',
+      type: 'text',
       required: false,
-      placeholder: 'Any additional notes...',
+      placeholder: 'e.g., John Doe',
+    },
+    {
+      name: 'deliveryPhone',
+      label: 'Delivery Contact Phone',
+      type: 'tel',
+      required: false,
+      placeholder: 'e.g., 9876543210',
+    },
+    {
+      name: 'trackingNumber',
+      label: 'Tracking Number',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., TRK123456789',
+    },
+    {
+      name: 'courierService',
+      label: 'Courier Service',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., Blue Dart, DHL',
     },
   ];
 
+  // Tab 6: Invoice & Documents
+  const invoiceFields: FormField[] = [
+    {
+      name: 'invoiceNumber',
+      label: 'Invoice Number',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., INV-2025-001',
+    },
+    {
+      name: 'invoiceDate',
+      label: 'Invoice Date',
+      type: 'date',
+      required: false,
+    },
+  ];
+
+  // Tab 7: Approval Workflow
+  const approvalFields: FormField[] = [
+    {
+      name: 'requestedByName',
+      label: 'Requested By',
+      type: 'text',
+      required: false,
+      placeholder: 'Name of person requesting',
+    },
+    {
+      name: 'approvedByName',
+      label: 'Approved By',
+      type: 'text',
+      required: false,
+      placeholder: 'Name of approver',
+    },
+    {
+      name: 'rejectedByName',
+      label: 'Rejected By',
+      type: 'text',
+      required: false,
+      placeholder: 'Name of person who rejected',
+    },
+    {
+      name: 'rejectionReason',
+      label: 'Rejection Reason',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Reason for rejection...',
+    },
+  ];
+
+  // Tab 8: Receiving Status
+  const receivingFields: FormField[] = [
+    {
+      name: 'totalItemsOrdered',
+      label: 'Total Items Ordered',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 100',
+    },
+    {
+      name: 'totalItemsReceived',
+      label: 'Total Items Received',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 95',
+    },
+  ];
+
+  // Tab 9: Notes & Terms
+  const notesFields: FormField[] = [
+    {
+      name: 'notes',
+      label: 'Internal Notes',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Internal notes about this purchase order...',
+    },
+    {
+      name: 'termsAndConditions',
+      label: 'Terms & Conditions',
+      type: 'textarea',
+      required: false,
+      placeholder: 'Terms and conditions for this order...',
+    },
+  ];
+
+  const tabs = [
+    { id: 'basic', label: 'Basic Info', fields: basicFields },
+    { id: 'supplier', label: 'Supplier', fields: supplierFields },
+    { id: 'pricing', label: 'Pricing', fields: pricingFields },
+    { id: 'payment', label: 'Payment', fields: paymentFields },
+    { id: 'delivery', label: 'Delivery', fields: deliveryFields },
+    { id: 'invoice', label: 'Invoice', fields: invoiceFields },
+    { id: 'approval', label: 'Approval', fields: approvalFields },
+    { id: 'receiving', label: 'Receiving', fields: receivingFields },
+    { id: 'notes', label: 'Notes', fields: notesFields },
+  ];
+
+  const currentFields = tabs.find(t => t.id === activeTab)?.fields || [];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#A8211B' }}></div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-4 overflow-x-auto" aria-label="Tabs">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`
+                whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors
+                ${activeTab === tab.id
+                  ? 'border-[#A8211B] text-[#A8211B]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }
+              `}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Form */}
       <Form
-        fields={fields}
-        onSubmit={handleFormSubmit}
-        initialData={initialData}
-        submitLabel={initialData ? 'Update Purchase Order' : 'Create Purchase Order'}
+        fields={currentFields}
+        onSubmit={onSubmit}
+        submitLabel={initialData ? 'Update Order' : 'Create Order'}
         onCancel={onCancel}
-        customContent={
-          <div className="col-span-2">
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">Order Items *</label>
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="px-3 py-1 text-sm rounded-lg transition-colors"
-                  style={{ backgroundColor: '#3DA35D', color: 'white' }}
-                >
-                  + Add Item
-                </button>
-              </div>
-              
-              <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
-                {items.map((item, index) => (
-                  <div key={index} className="bg-white p-4 rounded-lg shadow-sm border">
-                    <div className="flex justify-between items-start mb-3">
-                      <h4 className="font-medium text-gray-700">Item {index + 1}</h4>
-                      {items.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeItem(index)}
-                          className="text-red-600 hover:text-red-800 text-sm"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <input
-                        type="text"
-                        placeholder="Item Code *"
-                        value={item.itemCode}
-                        onChange={(e) => updateItem(index, 'itemCode', e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        required
-                      />
-                      <input
-                        type="text"
-                        placeholder="Item Name *"
-                        value={item.itemName}
-                        onChange={(e) => updateItem(index, 'itemName', e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        required
-                      />
-                      <select
-                        value={item.category}
-                        onChange={(e) => updateItem(index, 'category', e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        required
-                      >
-                        <option value="">Select Category *</option>
-                        <option value="RAW_MATERIAL">Raw Material</option>
-                        <option value="FINISHED_GOODS">Finished Goods</option>
-                        <option value="TOOLS">Tools & Equipment</option>
-                        <option value="CONSUMABLES">Consumables</option>
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Quantity *"
-                        value={item.quantity || ''}
-                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        required
-                        min="0"
-                      />
-                      <select
-                        value={item.unit}
-                        onChange={(e) => updateItem(index, 'unit', e.target.value)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        required
-                      >
-                        <option value="">Select Unit *</option>
-                        <option value="PCS">Pieces (PCS)</option>
-                        <option value="KG">Kilograms (KG)</option>
-                        <option value="LITER">Liters (L)</option>
-                        <option value="BOX">Box</option>
-                        <option value="BAG">Bag</option>
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Unit Price (₹) *"
-                        value={item.unitPrice || ''}
-                        onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        required
-                        min="0"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Discount (₹)"
-                        value={item.discount || ''}
-                        onChange={(e) => updateItem(index, 'discount', parseFloat(e.target.value) || 0)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        min="0"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Tax % (GST)"
-                        value={item.taxPercent || ''}
-                        onChange={(e) => updateItem(index, 'taxPercent', parseFloat(e.target.value) || 0)}
-                        className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                        min="0"
-                        max="100"
-                      />
-                    </div>
-                    
-                    <div className="mt-2 text-sm text-gray-600">
-                      <strong>Subtotal:</strong> ₹{((item.quantity * item.unitPrice) - (item.discount || 0)).toLocaleString()}
-                      {' | '}
-                      <strong>Tax:</strong> ₹{(((item.quantity * item.unitPrice) - (item.discount || 0)) * ((item.taxPercent || 0) / 100)).toLocaleString()}
-                      {' | '}
-                      <strong>Total:</strong> ₹{(((item.quantity * item.unitPrice) - (item.discount || 0)) * (1 + ((item.taxPercent || 0) / 100))).toLocaleString()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="font-medium">Total Items:</div>
-                  <div className="text-right">{items.length}</div>
-                  <div className="font-medium">Total Quantity:</div>
-                  <div className="text-right">{items.reduce((sum, item) => sum + (item.quantity || 0), 0)}</div>
-                  <div className="font-medium">Gross Amount:</div>
-                  <div className="text-right">₹{items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toLocaleString()}</div>
-                  <div className="font-medium text-lg pt-2 border-t">Grand Total:</div>
-                  <div className="text-right text-lg font-bold pt-2 border-t" style={{ color: '#3DA35D' }}>
-                    ₹{items.reduce((sum, item) => {
-                      const subtotal = (item.quantity * item.unitPrice) - (item.discount || 0);
-                      const tax = subtotal * ((item.taxPercent || 0) / 100);
-                      return sum + subtotal + tax;
-                    }, 0).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        }
       />
     </div>
   );

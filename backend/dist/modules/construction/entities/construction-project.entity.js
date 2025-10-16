@@ -91,7 +91,6 @@ __decorate([
         enum: ProjectPhase,
         default: ProjectPhase.PLANNING,
     }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], ConstructionProject.prototype, "projectPhase", void 0);
 __decorate([
@@ -100,7 +99,6 @@ __decorate([
         enum: ProjectStatus,
         default: ProjectStatus.NOT_STARTED,
     }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], ConstructionProject.prototype, "projectStatus", void 0);
 __decorate([

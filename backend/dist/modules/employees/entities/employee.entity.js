@@ -49,7 +49,6 @@ __decorate([
 ], Employee.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 50, unique: true }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Employee.prototype, "employeeCode", void 0);
 __decorate([
@@ -109,7 +108,6 @@ __decorate([
         type: 'enum',
         enum: Department,
     }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Employee.prototype, "department", void 0);
 __decorate([
@@ -129,7 +127,6 @@ __decorate([
         enum: EmploymentStatus,
         default: EmploymentStatus.ACTIVE,
     }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Employee.prototype, "employmentStatus", void 0);
 __decorate([
@@ -310,7 +307,6 @@ __decorate([
 ], Employee.prototype, "tags", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: true }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", Boolean)
 ], Employee.prototype, "isActive", void 0);
 __decorate([
@@ -333,6 +329,7 @@ exports.Employee = Employee = __decorate([
     (0, typeorm_1.Entity)('employees'),
     (0, typeorm_1.Index)(['employeeCode']),
     (0, typeorm_1.Index)(['department']),
-    (0, typeorm_1.Index)(['employmentStatus'])
+    (0, typeorm_1.Index)(['employmentStatus']),
+    (0, typeorm_1.Index)(['isActive'])
 ], Employee);
 //# sourceMappingURL=employee.entity.js.map

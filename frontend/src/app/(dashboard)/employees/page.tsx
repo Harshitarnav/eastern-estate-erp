@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Users, Plus, Search, Mail, Phone, Briefcase } from 'lucide-react';
 import { employeesService, Employee, EmployeeFilters } from '@/services/employees.service';
 
 export default function EmployeesPage() {
+  const router = useRouter();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,11 +30,12 @@ export default function EmployeesPage() {
     try {
       setLoading(true);
       const response = await employeesService.getEmployees(filters);
-      setEmployees(response.data);
-      setMeta(response.meta);
+      setEmployees(response.data || []);
+      setMeta(response.meta || { total: 0, page: 1, limit: 12, totalPages: 0 });
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch employees');
+      setEmployees([]);
       console.error('Error fetching employees:', err);
     } finally {
       setLoading(false);
@@ -148,7 +151,7 @@ export default function EmployeesPage() {
         <div className="flex gap-4">
           <div className="flex-1"></div>
           <button
-            onClick={() => alert('Create Employee form - Coming soon')}
+            onClick={() => router.push('/employees/new')}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7B1E12'}
@@ -187,7 +190,7 @@ export default function EmployeesPage() {
               : 'Start by adding your first employee.'}
           </p>
           <button
-            onClick={() => alert('Create Employee form - Coming soon')}
+            onClick={() => router.push('/employees/new')}
             className="px-6 py-3 rounded-lg font-medium transition-colors inline-flex items-center gap-2"
             style={{ backgroundColor: '#A8211B', color: 'white' }}
           >

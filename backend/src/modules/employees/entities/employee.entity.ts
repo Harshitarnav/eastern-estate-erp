@@ -45,13 +45,13 @@ export enum Department {
 @Index(['employeeCode'])
 @Index(['department'])
 @Index(['employmentStatus'])
+@Index(['isActive'])
 export class Employee {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   // Basic Information
   @Column({ length: 50, unique: true })
-  @Index()
   employeeCode: string;
 
   @Column({ length: 200 })
@@ -99,7 +99,6 @@ export class Employee {
     type: 'enum',
     enum: Department,
   })
-  @Index()
   department: Department;
 
   @Column({ length: 200 })
@@ -116,7 +115,6 @@ export class Employee {
     enum: EmploymentStatus,
     default: EmploymentStatus.ACTIVE,
   })
-  @Index()
   employmentStatus: EmploymentStatus;
 
   @Column({ type: 'date' })
@@ -261,7 +259,6 @@ export class Employee {
   tags: string[];
 
   @Column({ type: 'boolean', default: true })
-  @Index()
   isActive: boolean;
 
   // System Fields

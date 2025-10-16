@@ -42,9 +42,7 @@ export enum PaymentTerms {
  * Tracks inventory purchases from suppliers with approval workflow.
  */
 @Entity('purchase_orders')
-@Index(['orderStatus'])
-@Index(['paymentStatus'])
-@Index(['supplierId'])
+@Index(['supplierId']) // Keep this one - it's not duplicated
 export class PurchaseOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -62,12 +60,11 @@ export class PurchaseOrder {
     enum: OrderStatus,
     default: OrderStatus.DRAFT,
   })
-  @Index()
+  @Index() // Kept column-level index
   orderStatus: OrderStatus;
 
   // Supplier Information
   @Column({ type: 'uuid' })
-  @Index()
   supplierId: string;
 
   @Column({ length: 200 })
@@ -129,7 +126,7 @@ export class PurchaseOrder {
     enum: PaymentStatus,
     default: PaymentStatus.UNPAID,
   })
-  @Index()
+  @Index() // Kept column-level index
   paymentStatus: PaymentStatus;
 
   @Column({

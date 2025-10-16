@@ -28,6 +28,7 @@ const marketing_module_1 = require("./modules/marketing/marketing.module");
 const reports_module_1 = require("./modules/reports/reports.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
 const accounting_module_1 = require("./modules/accounting/accounting.module");
+const purchase_orders_module_1 = require("./modules/purchase-orders/purchase-orders.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
 let AppModule = class AppModule {
@@ -50,7 +51,7 @@ exports.AppModule = AppModule = __decorate([
                     password: configService.get('DB_PASSWORD'),
                     database: configService.get('DB_DATABASE'),
                     entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                    synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
+                    synchronize: false,
                     logging: configService.get('DB_LOGGING') === 'true',
                     ssl: configService.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
                     namingStrategy: new typeorm_naming_strategies_1.SnakeNamingStrategy(),
@@ -75,6 +76,7 @@ exports.AppModule = AppModule = __decorate([
             reports_module_1.ReportsModule,
             notifications_module_1.NotificationsModule,
             accounting_module_1.AccountingModule,
+            purchase_orders_module_1.PurchaseOrdersModule,
             upload_module_1.UploadModule,
         ],
     })

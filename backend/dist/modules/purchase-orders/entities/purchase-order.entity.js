@@ -67,7 +67,6 @@ __decorate([
 ], PurchaseOrder.prototype, "orderStatus", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'uuid' }),
-    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "supplierId", void 0);
 __decorate([
@@ -278,8 +277,6 @@ __decorate([
 ], PurchaseOrder.prototype, "updatedBy", void 0);
 exports.PurchaseOrder = PurchaseOrder = __decorate([
     (0, typeorm_1.Entity)('purchase_orders'),
-    (0, typeorm_1.Index)(['orderStatus']),
-    (0, typeorm_1.Index)(['paymentStatus']),
     (0, typeorm_1.Index)(['supplierId'])
 ], PurchaseOrder);
 //# sourceMappingURL=purchase-order.entity.js.map

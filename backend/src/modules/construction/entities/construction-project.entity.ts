@@ -89,7 +89,6 @@ export class ConstructionProject {
     enum: ProjectPhase,
     default: ProjectPhase.PLANNING,
   })
-  @Index()
   projectPhase: ProjectPhase;
 
   @Column({
@@ -97,7 +96,6 @@ export class ConstructionProject {
     enum: ProjectStatus,
     default: ProjectStatus.NOT_STARTED,
   })
-  @Index()
   projectStatus: ProjectStatus;
 
   // Progress Tracking

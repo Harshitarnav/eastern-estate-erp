@@ -412,7 +412,7 @@ DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=your_password
 DB_DATABASE=eastern_estate_erp
-DB_SYNCHRONIZE=true  # Set to false in production
+DB_SYNCHRONIZE=false  # Set to false in production
 DB_LOGGING=true
 
 # JWT
