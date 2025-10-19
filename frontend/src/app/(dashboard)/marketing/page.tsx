@@ -308,11 +308,11 @@ export default function MarketingPage() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => alert(`View campaign: ${campaign.id}`)}
+                      onClick={() => router.push(`/marketing/${campaign.id}`)}
                       className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium transition-colors"
                       style={{ borderColor: '#A8211B', color: '#A8211B' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FEF3E2')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       View Details
                     </button>

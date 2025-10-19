@@ -12,7 +12,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersController = void 0;
+exports.PermissionsController = exports.RolesController = exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
 const create_user_dto_1 = require("./dto/create-user.dto");
@@ -98,4 +98,57 @@ exports.UsersController = UsersController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [users_service_1.UsersService])
 ], UsersController);
+let RolesController = class RolesController {
+    constructor(usersService) {
+        this.usersService = usersService;
+    }
+    findAllRoles() {
+        return this.usersService.findAllRoles();
+    }
+    findOneRole(id) {
+        return this.usersService.findOneRole(id);
+    }
+};
+exports.RolesController = RolesController;
+__decorate([
+    (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], RolesController.prototype, "findAllRoles", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], RolesController.prototype, "findOneRole", null);
+exports.RolesController = RolesController = __decorate([
+    (0, common_1.Controller)('roles'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    __metadata("design:paramtypes", [users_service_1.UsersService])
+], RolesController);
+let PermissionsController = class PermissionsController {
+    constructor(usersService) {
+        this.usersService = usersService;
+    }
+    findAllPermissions() {
+        return this.usersService.findAllPermissions();
+    }
+};
+exports.PermissionsController = PermissionsController;
+__decorate([
+    (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], PermissionsController.prototype, "findAllPermissions", null);
+exports.PermissionsController = PermissionsController = __decorate([
+    (0, common_1.Controller)('permissions'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    __metadata("design:paramtypes", [users_service_1.UsersService])
+], PermissionsController);
 //# sourceMappingURL=users.controller.js.map

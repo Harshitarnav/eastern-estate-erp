@@ -21,3 +21,14 @@ export declare class UsersController {
     }>;
     toggleActive(id: string): Promise<import("./entities/user.entity").User>;
 }
+export declare class RolesController {
+    private readonly usersService;
+    constructor(usersService: UsersService);
+    findAllRoles(): Promise<import("./entities/role.entity").Role[]>;
+    findOneRole(id: string): Promise<import("./entities/role.entity").Role>;
+}
+export declare class PermissionsController {
+    private readonly usersService;
+    constructor(usersService: UsersService);
+    findAllPermissions(): Promise<import("./entities/permission.entity").Permission[]>;
+}

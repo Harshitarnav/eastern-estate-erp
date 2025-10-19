@@ -18,11 +18,13 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("./entities/user.entity");
 const role_entity_1 = require("./entities/role.entity");
+const permission_entity_1 = require("./entities/permission.entity");
 const bcrypt = require("bcrypt");
 let UsersService = class UsersService {
-    constructor(usersRepository, rolesRepository) {
+    constructor(usersRepository, rolesRepository, permissionsRepository) {
         this.usersRepository = usersRepository;
         this.rolesRepository = rolesRepository;
+        this.permissionsRepository = permissionsRepository;
     }
     async create(createUserDto, createdById) {
         const existingUser = await this.usersRepository.findOne({
@@ -136,13 +138,36 @@ let UsersService = class UsersService {
         user.isActive = !user.isActive;
         return await this.usersRepository.save(user);
     }
+    async findAllRoles() {
+        return await this.rolesRepository.find({
+            relations: ['permissions'],
+            order: { name: 'ASC' },
+        });
+    }
+    async findOneRole(id) {
+        const role = await this.rolesRepository.findOne({
+            where: { id },
+            relations: ['permissions'],
+        });
+        if (!role) {
+            throw new common_1.NotFoundException(`Role with ID ${id} not found`);
+        }
+        return role;
+    }
+    async findAllPermissions() {
+        return await this.permissionsRepository.find({
+            order: { name: 'ASC' },
+        });
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(1, (0, typeorm_1.InjectRepository)(role_entity_1.Role)),
+    __param(2, (0, typeorm_1.InjectRepository)(permission_entity_1.Permission)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], UsersService);
 //# sourceMappingURL=users.service.js.map

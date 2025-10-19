@@ -17,10 +17,103 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const flat_entity_1 = require("./entities/flat.entity");
+const tower_entity_1 = require("../towers/entities/tower.entity");
 const dto_1 = require("./dto");
+const property_inventory_summary_dto_1 = require("../properties/dto/property-inventory-summary.dto");
+const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 let FlatsService = class FlatsService {
-    constructor(flatsRepository) {
+    constructor(flatsRepository, towersRepository) {
         this.flatsRepository = flatsRepository;
+        this.towersRepository = towersRepository;
+    }
+    normalizeSimpleArray(values) {
+        if (!values) {
+            return undefined;
+        }
+        const normalized = values
+            .map((value) => (typeof value === 'string' ? value.trim() : value))
+            .filter((value) => Boolean(value));
+        return normalized.length > 0 ? normalized : undefined;
+    }
+    toNumber(value) {
+        if (value === null || value === undefined) {
+            return 0;
+        }
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : 0;
+    }
+    buildChecklist(flatLike) {
+        const superBuiltUpArea = this.toNumber(flatLike.superBuiltUpArea);
+        const builtUpArea = this.toNumber(flatLike.builtUpArea);
+        const carpetArea = this.toNumber(flatLike.carpetArea);
+        const hasArea = superBuiltUpArea > 0 && builtUpArea > 0 && carpetArea > 0;
+        const hasPricing = this.toNumber(flatLike.basePrice) > 0 &&
+            this.toNumber(flatLike.totalPrice) > 0 &&
+            this.toNumber(flatLike.finalPrice) > 0;
+        const hasFacing = Boolean(flatLike.facing);
+        const hasAmenities = Array.isArray(flatLike.amenities) && flatLike.amenities.length > 0;
+        const hasParkingMap = this.toNumber(flatLike.parkingSlots) > 0 || Boolean(flatLike.coveredParking);
+        return {
+            has_area: hasArea,
+            has_pricing: hasPricing,
+            has_facing: hasFacing,
+            has_amenities: hasAmenities,
+            has_parking_map: hasParkingMap,
+        };
+    }
+    evaluateFlatMetadata(flatLike) {
+        const checklist = this.buildChecklist(flatLike);
+        const total = Object.keys(checklist).length || 1;
+        const completed = Object.values(checklist).filter(Boolean).length;
+        const pctRaw = (completed / total) * 100;
+        const dataCompletionPct = Math.round(pctRaw * 100) / 100;
+        const issues = [];
+        if (!checklist.has_area) {
+            issues.push('Area details incomplete');
+        }
+        if (!checklist.has_pricing) {
+            issues.push('Pricing information incomplete');
+        }
+        if (!checklist.has_facing) {
+            issues.push('Facing direction missing');
+        }
+        if (!checklist.has_amenities) {
+            issues.push('Amenities not provided');
+        }
+        if (!checklist.has_parking_map) {
+            issues.push('Parking allocation not defined');
+        }
+        const superBuiltUpArea = this.toNumber(flatLike.superBuiltUpArea);
+        const builtUpArea = this.toNumber(flatLike.builtUpArea);
+        const carpetArea = this.toNumber(flatLike.carpetArea);
+        if (builtUpArea > superBuiltUpArea && superBuiltUpArea > 0) {
+            issues.push('Built-up area exceeds super built-up area');
+        }
+        if (carpetArea > builtUpArea && builtUpArea > 0) {
+            issues.push('Carpet area exceeds built-up area');
+        }
+        if (this.toNumber(flatLike.basePrice) > 0 && this.toNumber(flatLike.carpetArea) === 0) {
+            issues.push('Pricing present but carpet area missing');
+        }
+        let completenessStatus;
+        if (dataCompletionPct === 0) {
+            completenessStatus = data_completeness_status_enum_1.DataCompletenessStatus.NOT_STARTED;
+        }
+        else if (dataCompletionPct === 100 && issues.length === 0) {
+            completenessStatus = data_completeness_status_enum_1.DataCompletenessStatus.COMPLETE;
+        }
+        else if (issues.length > 0) {
+            completenessStatus = data_completeness_status_enum_1.DataCompletenessStatus.NEEDS_REVIEW;
+        }
+        else {
+            completenessStatus = data_completeness_status_enum_1.DataCompletenessStatus.IN_PROGRESS;
+        }
+        return {
+            checklist,
+            dataCompletionPct,
+            completenessStatus,
+            issues,
+        };
     }
     async create(createFlatDto) {
         const existingFlat = await this.flatsRepository.findOne({
@@ -41,7 +134,20 @@ let FlatsService = class FlatsService {
         if (createFlatDto.builtUpArea > createFlatDto.superBuiltUpArea) {
             throw new common_1.BadRequestException('Built-up area cannot be greater than super built-up area');
         }
-        const flat = this.flatsRepository.create(createFlatDto);
+        const normalizedCreateDto = {
+            ...createFlatDto,
+            amenities: this.normalizeSimpleArray(createFlatDto.amenities),
+            images: this.normalizeSimpleArray(createFlatDto.images),
+        };
+        const metadata = this.evaluateFlatMetadata(normalizedCreateDto);
+        const flat = this.flatsRepository.create({
+            ...normalizedCreateDto,
+            flatChecklist: metadata.checklist,
+            dataCompletionPct: metadata.dataCompletionPct,
+            completenessStatus: metadata.completenessStatus,
+            issues: metadata.issues,
+            issuesCount: metadata.issues.length,
+        });
         const savedFlat = await this.flatsRepository.save(flat);
         return dto_1.FlatResponseDto.fromEntity(savedFlat);
     }
@@ -136,6 +242,99 @@ let FlatsService = class FlatsService {
         });
         return dto_1.FlatResponseDto.fromEntities(flats);
     }
+    async getTowerInventorySummary(towerId) {
+        const tower = await this.towersRepository.findOne({
+            where: { id: towerId },
+            relations: ['property'],
+        });
+        if (!tower) {
+            throw new common_1.NotFoundException(`Tower with ID ${towerId} not found`);
+        }
+        const flats = await this.flatsRepository.find({
+            where: { towerId, isActive: true },
+            order: { floor: 'ASC', flatNumber: 'ASC' },
+        });
+        const salesBreakdown = (0, property_inventory_summary_dto_1.emptySalesBreakdown)();
+        const completeness = (0, dto_1.emptyFlatCompleteness)();
+        let completionAccumulator = 0;
+        let issuesAccumulator = 0;
+        const units = flats.map((flat) => {
+            const statusKey = (0, property_inventory_summary_dto_1.flatStatusToBreakdownKey)(flat.status);
+            salesBreakdown[statusKey] += 1;
+            salesBreakdown.total += 1;
+            let checklist = flat.flatChecklist ?? null;
+            let dataCompletionPct = this.toNumber(flat.dataCompletionPct);
+            let completenessStatus = flat.completenessStatus ?? data_completeness_status_enum_1.DataCompletenessStatus.NOT_STARTED;
+            let issues = Array.isArray(flat.issues) ? flat.issues : [];
+            let issuesCount = flat.issuesCount ?? issues.length;
+            if (!checklist || (dataCompletionPct === 0 && !flat.dataCompletionPct)) {
+                const metadata = this.evaluateFlatMetadata(flat);
+                checklist = metadata.checklist;
+                dataCompletionPct = metadata.dataCompletionPct;
+                completenessStatus = metadata.completenessStatus;
+                issues = metadata.issues;
+                issuesCount = metadata.issues.length;
+            }
+            switch (completenessStatus) {
+                case data_completeness_status_enum_1.DataCompletenessStatus.NOT_STARTED:
+                    completeness.notStarted += 1;
+                    break;
+                case data_completeness_status_enum_1.DataCompletenessStatus.NEEDS_REVIEW:
+                    completeness.needsReview += 1;
+                    break;
+                case data_completeness_status_enum_1.DataCompletenessStatus.COMPLETE:
+                    completeness.complete += 1;
+                    break;
+                case data_completeness_status_enum_1.DataCompletenessStatus.IN_PROGRESS:
+                default:
+                    completeness.inProgress += 1;
+                    break;
+            }
+            completionAccumulator += dataCompletionPct;
+            issuesAccumulator += issuesCount;
+            return {
+                id: flat.id,
+                flatNumber: flat.flatNumber,
+                floor: flat.floor ?? 0,
+                type: flat.type,
+                carpetArea: this.toNumber(flat.carpetArea),
+                superBuiltUpArea: this.toNumber(flat.superBuiltUpArea),
+                builtUpArea: this.toNumber(flat.builtUpArea),
+                facing: flat.facing,
+                basePrice: this.toNumber(flat.basePrice),
+                pricePerSqft: flat.pricePerSqft ? this.toNumber(flat.pricePerSqft) : undefined,
+                status: flat.status,
+                dataCompletionPct,
+                completenessStatus,
+                checklist,
+                issues,
+                issuesCount,
+            };
+        });
+        const unitsDefined = flats.length;
+        const unitsPlanned = tower.unitsPlanned ?? tower.totalUnits ?? unitsDefined;
+        const missingUnits = Math.max(unitsPlanned - unitsDefined, 0);
+        const averageCompletionPct = unitsDefined
+            ? Math.round((completionAccumulator / unitsDefined) * 100) / 100
+            : 0;
+        return {
+            towerId: tower.id,
+            towerName: tower.name,
+            towerNumber: tower.towerNumber,
+            propertyId: tower.propertyId,
+            propertyName: tower.property?.name,
+            propertyCode: tower.property?.propertyCode,
+            unitsPlanned,
+            unitsDefined,
+            missingUnits,
+            averageCompletionPct,
+            completeness,
+            issuesCount: issuesAccumulator,
+            salesBreakdown,
+            units,
+            generatedAt: new Date().toISOString(),
+        };
+    }
     async update(id, updateFlatDto) {
         const flat = await this.flatsRepository.findOne({ where: { id } });
         if (!flat) {
@@ -167,7 +366,18 @@ let FlatsService = class FlatsService {
         if (builtUpArea > superBuiltUpArea) {
             throw new common_1.BadRequestException('Built-up area cannot be greater than super built-up area');
         }
-        Object.assign(flat, updateFlatDto);
+        const normalizedUpdateDto = {
+            ...updateFlatDto,
+            amenities: this.normalizeSimpleArray(updateFlatDto.amenities),
+            images: this.normalizeSimpleArray(updateFlatDto.images),
+        };
+        Object.assign(flat, normalizedUpdateDto);
+        const metadata = this.evaluateFlatMetadata(flat);
+        flat.flatChecklist = metadata.checklist;
+        flat.dataCompletionPct = metadata.dataCompletionPct;
+        flat.completenessStatus = metadata.completenessStatus;
+        flat.issues = metadata.issues;
+        flat.issuesCount = metadata.issues.length;
         const updatedFlat = await this.flatsRepository.save(flat);
         return dto_1.FlatResponseDto.fromEntity(updatedFlat);
     }
@@ -191,6 +401,7 @@ let FlatsService = class FlatsService {
         const booked = flats.filter((f) => f.status === 'BOOKED').length;
         const sold = flats.filter((f) => f.status === 'SOLD').length;
         const blocked = flats.filter((f) => f.status === 'BLOCKED').length;
+        const onHold = flats.filter((f) => f.status === 'ON_HOLD').length;
         const totalRevenue = flats.reduce((sum, f) => sum + Number(f.finalPrice), 0);
         const soldRevenue = flats
             .filter((f) => f.status === 'SOLD')
@@ -201,6 +412,7 @@ let FlatsService = class FlatsService {
             booked,
             sold,
             blocked,
+            onHold,
             totalRevenue,
             soldRevenue,
             averagePrice: total > 0 ? totalRevenue / total : 0,
@@ -214,14 +426,45 @@ let FlatsService = class FlatsService {
         const available = flats.filter((f) => f.status === 'AVAILABLE').length;
         const booked = flats.filter((f) => f.status === 'BOOKED').length;
         const sold = flats.filter((f) => f.status === 'SOLD').length;
+        const onHold = flats.filter((f) => f.status === 'ON_HOLD').length;
         const totalRevenue = flats.reduce((sum, f) => sum + Number(f.finalPrice), 0);
         return {
             total,
             available,
             booked,
             sold,
+            onHold,
             totalRevenue,
             occupancyRate: total > 0 ? ((booked + sold) / total) * 100 : 0,
+        };
+    }
+    async getGlobalStats() {
+        const record = await this.flatsRepository
+            .createQueryBuilder('flat')
+            .select('COUNT(*)', 'total')
+            .addSelect("SUM(CASE WHEN flat.status = :available THEN 1 ELSE 0 END)", 'available')
+            .addSelect("SUM(CASE WHEN flat.status = :sold THEN 1 ELSE 0 END)", 'sold')
+            .addSelect("SUM(CASE WHEN flat.status = :booked THEN 1 ELSE 0 END)", 'booked')
+            .addSelect("SUM(CASE WHEN flat.status = :blocked THEN 1 ELSE 0 END)", 'blocked')
+            .addSelect("SUM(CASE WHEN flat.status = :onHold THEN 1 ELSE 0 END)", 'onHold')
+            .addSelect("SUM(CASE WHEN flat.status = :underConstruction THEN 1 ELSE 0 END)", 'underConstruction')
+            .setParameters({
+            available: flat_entity_1.FlatStatus.AVAILABLE,
+            sold: flat_entity_1.FlatStatus.SOLD,
+            booked: flat_entity_1.FlatStatus.BOOKED,
+            blocked: flat_entity_1.FlatStatus.BLOCKED,
+            onHold: flat_entity_1.FlatStatus.ON_HOLD,
+            underConstruction: flat_entity_1.FlatStatus.UNDER_CONSTRUCTION,
+        })
+            .getRawOne();
+        return {
+            total: Number(record?.total ?? 0),
+            available: Number(record?.available ?? 0),
+            sold: Number(record?.sold ?? 0),
+            booked: Number(record?.booked ?? 0),
+            blocked: Number(record?.blocked ?? 0),
+            onHold: Number(record?.onHold ?? 0),
+            underConstruction: Number(record?.underConstruction ?? 0),
         };
     }
 };
@@ -229,6 +472,8 @@ exports.FlatsService = FlatsService;
 exports.FlatsService = FlatsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(tower_entity_1.Tower)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], FlatsService);
 //# sourceMappingURL=flats.service.js.map

@@ -1,7 +1,9 @@
+import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
 export declare class TowerResponseDto {
     id: string;
     name: string;
     towerNumber: string;
+    towerCode: string;
     description?: string;
     totalFloors: number;
     totalUnits: number;
@@ -33,9 +35,15 @@ export declare class TowerResponseDto {
     };
     createdAt: Date;
     updatedAt: Date;
+    flatsCount?: number;
     availableUnits?: number;
     soldUnits?: number;
     occupancyRate?: number;
+    unitsPlanned?: number;
+    unitsDefined?: number;
+    dataCompletionPct?: number;
+    dataCompletenessStatus?: DataCompletenessStatus;
+    issuesCount?: number;
 }
 export declare class PaginatedTowerResponseDto {
     data: TowerResponseDto[];

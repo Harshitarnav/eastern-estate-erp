@@ -18,6 +18,7 @@ const swagger_1 = require("@nestjs/swagger");
 const towers_service_1 = require("./towers.service");
 const dto_1 = require("./dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const platform_express_1 = require("@nestjs/platform-express");
 let TowersController = class TowersController {
     constructor(towersService) {
         this.towersService = towersService;
@@ -31,6 +32,18 @@ let TowersController = class TowersController {
     async findOne(id) {
         return this.towersService.findOne(id);
     }
+    async bulkImport(propertyId, file) {
+        if (!propertyId) {
+            throw new common_1.BadRequestException('propertyId is required');
+        }
+        if (!file) {
+            throw new common_1.BadRequestException('CSV or XLSX file is required');
+        }
+        return this.towersService.bulkImport(propertyId, file.buffer);
+    }
+    async getInventoryOverview(id) {
+        return this.towersService.getInventoryOverview(id);
+    }
     async update(id, updateTowerDto) {
         return this.towersService.update(id, updateTowerDto);
     }
@@ -39,9 +52,6 @@ let TowersController = class TowersController {
     }
     async findByProperty(propertyId) {
         return this.towersService.findByProperty(propertyId);
-    }
-    async getStatistics(id) {
-        return this.towersService.getStatistics(id);
     }
 };
 exports.TowersController = TowersController;
@@ -117,6 +127,43 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TowersController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Post)('bulk-import'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Bulk import towers',
+        description: 'Upload a CSV/XLSX file to create multiple towers in a single operation.',
+    }),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
+    (0, swagger_1.ApiResponse)({
+        status: common_1.HttpStatus.CREATED,
+        description: 'Bulk tower import processed',
+        type: dto_1.BulkImportTowersSummaryDto,
+    }),
+    __param(0, (0, common_1.Body)('propertyId')),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], TowersController.prototype, "bulkImport", null);
+__decorate([
+    (0, common_1.Get)(':id/inventory/overview'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Get tower inventory overview',
+        description: 'Summarizes unit completeness, issues, and sales status for a single tower',
+    }),
+    (0, swagger_1.ApiParam)({
+        name: 'id',
+        description: 'Tower UUID',
+        type: String,
+    }),
+    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], TowersController.prototype, "getInventoryOverview", null);
 __decorate([
     (0, common_1.Put)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
@@ -199,31 +246,6 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], TowersController.prototype, "findByProperty", null);
-__decorate([
-    (0, common_1.Get)(':id/statistics'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiOperation)({
-        summary: 'Get tower statistics',
-        description: 'Retrieves aggregated statistics for a tower including unit counts and occupancy',
-    }),
-    (0, swagger_1.ApiParam)({
-        name: 'id',
-        description: 'Tower UUID',
-        type: String,
-    }),
-    (0, swagger_1.ApiResponse)({
-        status: common_1.HttpStatus.OK,
-        description: 'Statistics retrieved successfully',
-    }),
-    (0, swagger_1.ApiResponse)({
-        status: common_1.HttpStatus.NOT_FOUND,
-        description: 'Tower not found',
-    }),
-    __param(0, (0, common_1.Param)('id', common_1.ParseUUIDPipe)),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], TowersController.prototype, "getStatistics", null);
 exports.TowersController = TowersController = __decorate([
     (0, swagger_1.ApiTags)('Towers'),
     (0, common_1.Controller)('towers'),

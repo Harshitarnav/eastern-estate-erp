@@ -72,27 +72,27 @@ class PaymentsService {
     }
 
     const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    return response;
   }
 
   async getPayment(id: string): Promise<Payment> {
     const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    return response;
   }
 
   async getStatistics(): Promise<any> {
     const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    return response;
   }
 
   async createPayment(data: Partial<Payment>): Promise<Payment> {
     const response = await api.post(this.baseUrl, data);
-    return response.data;
+    return response;
   }
 
   async updatePayment(id: string, data: Partial<Payment>): Promise<Payment> {
     const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    return response;
   }
 
   async deletePayment(id: string): Promise<void> {
@@ -101,7 +101,7 @@ class PaymentsService {
 
   async verifyPayment(id: string, verifiedBy: string): Promise<Payment> {
     const response = await api.post(`${this.baseUrl}/${id}/verify`, { verifiedBy });
-    return response.data;
+    return response;
   }
 }
 

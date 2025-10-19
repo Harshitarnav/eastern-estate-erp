@@ -10,9 +10,17 @@ import {
 } from 'typeorm';
 import { Tower } from '../../towers/entities/tower.entity';
 import { Property } from '../../properties/entities/property.entity';
+import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 
 export enum FlatStatus {
   AVAILABLE = 'AVAILABLE',
+  ON_HOLD = 'ON_HOLD',
   BLOCKED = 'BLOCKED',
   BOOKED = 'BOOKED',
   SOLD = 'SOLD',
@@ -64,20 +72,20 @@ export class Flat {
   id: string;
 
   // Relationships
-  @Column('uuid')
+  @Column('uuid', { name: 'property_id' })
   @Index()
   propertyId: string;
 
   @ManyToOne(() => Property, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'propertyId' })
+  @JoinColumn({ name: 'property_id' })
   property: Property;
 
-  @Column('uuid')
+  @Column('uuid', { name: 'tower_id' })
   @Index()
   towerId: string;
 
   @ManyToOne(() => Tower, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'towerId' })
+  @JoinColumn({ name: 'tower_id' })
   tower: Tower;
 
   // Basic Information
@@ -178,6 +186,34 @@ export class Flat {
 
   @Column({ type: 'date', nullable: true })
   expectedPossession: Date;
+
+  @Column({ name: 'flat_checklist', type: 'jsonb', nullable: true })
+  flatChecklist: Record<string, boolean> | null;
+
+  @Column({
+    name: 'data_completion_pct',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
+    transformer: decimalTransformer,
+  })
+  dataCompletionPct: number;
+
+  @Column({
+    name: 'completeness_status',
+    type: 'enum',
+    enum: DataCompletenessStatus,
+    enumName: 'data_completeness_status_enum',
+    default: DataCompletenessStatus.NOT_STARTED,
+  })
+  completenessStatus: DataCompletenessStatus;
+
+  @Column({ name: 'issues', type: 'jsonb', nullable: true })
+  issues: string[] | null;
+
+  @Column({ name: 'issues_count', type: 'int', default: 0 })
+  issuesCount: number;
 
   // Features and Specifications
   @Column({

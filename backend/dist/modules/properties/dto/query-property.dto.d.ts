@@ -6,6 +6,8 @@ export declare class QueryPropertyDto {
     state?: string;
     status?: string;
     projectType?: string;
+    projectId?: string;
     sortBy?: string;
     sortOrder?: 'ASC' | 'DESC';
+    isActive?: boolean;
 }

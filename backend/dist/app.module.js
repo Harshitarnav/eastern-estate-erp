@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const auth_module_1 = require("./auth/auth.module");
@@ -15,6 +16,7 @@ const users_module_1 = require("./modules/users/users.module");
 const properties_module_1 = require("./modules/properties/properties.module");
 const towers_module_1 = require("./modules/towers/towers.module");
 const flats_module_1 = require("./modules/flats/flats.module");
+const projects_module_1 = require("./modules/projects/projects.module");
 const customers_module_1 = require("./modules/customers/customers.module");
 const leads_module_1 = require("./modules/leads/leads.module");
 const bookings_module_1 = require("./modules/bookings/bookings.module");
@@ -31,6 +33,9 @@ const accounting_module_1 = require("./modules/accounting/accounting.module");
 const purchase_orders_module_1 = require("./modules/purchase-orders/purchase-orders.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
+const throttler_1 = require("@nestjs/throttler");
+const configuration_1 = require("./config/configuration");
+const validation_1 = require("./config/validation");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -40,25 +45,45 @@ exports.AppModule = AppModule = __decorate([
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
                 envFilePath: '.env',
+                load: [configuration_1.default],
+                validationSchema: validation_1.validationSchema,
+                validationOptions: {
+                    abortEarly: false,
+                },
             }),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 useFactory: (configService) => ({
                     type: 'postgres',
-                    host: configService.get('DB_HOST'),
-                    port: +configService.get('DB_PORT'),
-                    username: configService.get('DB_USERNAME'),
-                    password: configService.get('DB_PASSWORD'),
-                    database: configService.get('DB_DATABASE'),
+                    host: configService.getOrThrow('database.host'),
+                    port: configService.getOrThrow('database.port'),
+                    username: configService.getOrThrow('database.username'),
+                    password: configService.get('database.password') ?? '',
+                    database: configService.getOrThrow('database.name'),
                     entities: [__dirname + '/**/*.entity{.ts,.js}'],
                     synchronize: false,
-                    logging: configService.get('DB_LOGGING') === 'true',
-                    ssl: configService.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+                    logging: configService.get('database.logging') ?? false,
+                    ssl: (configService.get('database.sslEnabled') ?? false)
+                        ? { rejectUnauthorized: false }
+                        : false,
                     namingStrategy: new typeorm_naming_strategies_1.SnakeNamingStrategy(),
                 }),
                 inject: [config_1.ConfigService],
             }),
+            throttler_1.ThrottlerModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: (configService) => ({
+                    throttlers: [
+                        {
+                            ttl: configService.getOrThrow('security.rateLimitTtl'),
+                            limit: configService.getOrThrow('security.rateLimitMax'),
+                        },
+                    ],
+                }),
+                inject: [config_1.ConfigService],
+            }),
             auth_module_1.AuthModule,
+            projects_module_1.ProjectsModule,
             users_module_1.UsersModule,
             properties_module_1.PropertiesModule,
             towers_module_1.TowersModule,
@@ -78,6 +103,12 @@ exports.AppModule = AppModule = __decorate([
             accounting_module_1.AccountingModule,
             purchase_orders_module_1.PurchaseOrdersModule,
             upload_module_1.UploadModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_GUARD,
+                useClass: throttler_1.ThrottlerGuard,
+            },
         ],
     })
 ], AppModule);

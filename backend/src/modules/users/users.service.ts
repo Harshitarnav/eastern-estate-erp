@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -14,6 +15,8 @@ export class UsersService {
     private usersRepository: Repository<User>,
     @InjectRepository(Role)
     private rolesRepository: Repository<Role>,
+    @InjectRepository(Permission)
+    private permissionsRepository: Repository<Permission>,
   ) {}
 
   async create(createUserDto: CreateUserDto, createdById?: string) {
@@ -157,5 +160,31 @@ export class UsersService {
     const user = await this.findOne(id);
     user.isActive = !user.isActive;
     return await this.usersRepository.save(user);
+  }
+
+  async findAllRoles() {
+    return await this.rolesRepository.find({
+      relations: ['permissions'],
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findOneRole(id: string) {
+    const role = await this.rolesRepository.findOne({
+      where: { id },
+      relations: ['permissions'],
+    });
+
+    if (!role) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
+
+    return role;
+  }
+
+  async findAllPermissions() {
+    return await this.permissionsRepository.find({
+      order: { name: 'ASC' },
+    });
   }
 }

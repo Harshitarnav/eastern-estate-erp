@@ -18,6 +18,7 @@ import {
   QueryFlatDto,
   FlatResponseDto,
   PaginatedFlatsResponse,
+  FlatInventorySummaryDto,
 } from './dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -25,6 +26,11 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 export class FlatsController {
   constructor(private readonly flatsService: FlatsService) {}
+
+  @Get('stats')
+  async getGlobalStats() {
+    return this.flatsService.getGlobalStats();
+  }
 
   /**
    * Create a new flat
@@ -74,6 +80,17 @@ export class FlatsController {
     @Param('propertyId') propertyId: string,
   ): Promise<FlatResponseDto[]> {
     return this.flatsService.findByProperty(propertyId);
+  }
+
+  /**
+   * Get tower inventory summary
+   * GET /flats/tower/:towerId/inventory/summary
+   */
+  @Get('tower/:towerId/inventory/summary')
+  async getTowerInventorySummary(
+    @Param('towerId') towerId: string,
+  ): Promise<FlatInventorySummaryDto> {
+    return this.flatsService.getTowerInventorySummary(towerId);
   }
 
   /**

@@ -79,28 +79,28 @@ class ConstructionService {
       });
     }
 
-    const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    const response = await api.get<PaginatedConstructionResponse>(`${this.baseUrl}?${params.toString()}`);
+    return response;
   }
 
   async getProject(id: string): Promise<ConstructionProject> {
-    const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    const response = await api.get<ConstructionProject>(`${this.baseUrl}/${id}`);
+    return response;
   }
 
   async getStatistics(): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    const response = await api.get<any>(`${this.baseUrl}/statistics`);
+    return response;
   }
 
   async createProject(data: Partial<ConstructionProject>): Promise<ConstructionProject> {
-    const response = await api.post(this.baseUrl, data);
-    return response.data;
+    const response = await api.post<ConstructionProject>(this.baseUrl, data);
+    return response;
   }
 
   async updateProject(id: string, data: Partial<ConstructionProject>): Promise<ConstructionProject> {
-    const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    const response = await api.put<ConstructionProject>(`${this.baseUrl}/${id}`, data);
+    return response;
   }
 
   async deleteProject(id: string): Promise<void> {
@@ -108,8 +108,8 @@ class ConstructionService {
   }
 
   async updateProgress(id: string, phase: string, progress: number): Promise<ConstructionProject> {
-    const response = await api.post(`${this.baseUrl}/${id}/progress`, { phase, progress });
-    return response.data;
+    const response = await api.post<ConstructionProject>(`${this.baseUrl}/${id}/progress`, { phase, progress });
+    return response;
   }
 }
 

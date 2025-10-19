@@ -543,7 +543,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       <Form
         fields={currentFields}
         onSubmit={onSubmit}
-        initialData={initialData}
+        initialValues={initialData}
         submitLabel={initialData ? 'Update Employee' : 'Add Employee'}
         onCancel={onCancel}
       />

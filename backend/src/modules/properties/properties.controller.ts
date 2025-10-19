@@ -18,7 +18,9 @@ import {
   UpdatePropertyDto, 
   QueryPropertyDto,
   PaginatedPropertyResponseDto,
-  PropertyResponseDto
+  PropertyResponseDto,
+  PropertyHierarchyDto,
+  PropertyInventorySummaryDto,
 } from './dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
@@ -49,6 +51,16 @@ export class PropertiesController {
   @Get('code/:code')
   async findByCode(@Param('code') code: string): Promise<PropertyResponseDto> {
     return this.propertiesService.findByCode(code);
+  }
+
+  @Get(':id/hierarchy')
+  async getHierarchy(@Param('id') id: string): Promise<PropertyHierarchyDto> {
+    return this.propertiesService.getHierarchy(id);
+  }
+
+  @Get(':id/inventory/summary')
+  async getInventorySummary(@Param('id') id: string): Promise<PropertyInventorySummaryDto> {
+    return this.propertiesService.getInventorySummary(id);
   }
 
   @Get(':id')

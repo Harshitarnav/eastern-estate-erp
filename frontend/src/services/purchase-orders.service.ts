@@ -69,27 +69,35 @@ class PurchaseOrdersService {
     }
 
     const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    return response;
   }
 
   async getOrder(id: string): Promise<PurchaseOrder> {
     const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    return response;
   }
 
   async getStatistics(): Promise<any> {
     const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    return response;
   }
 
   async createOrder(data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
     const response = await api.post(this.baseUrl, data);
-    return response.data;
+    return response;
+  }
+
+  async createPurchaseOrder(data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
+    return this.createOrder(data);
   }
 
   async updateOrder(id: string, data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
     const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    return response;
+  }
+
+  async updatePurchaseOrder(id: string, data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
+    return this.updateOrder(id, data);
   }
 
   async deleteOrder(id: string): Promise<void> {
@@ -98,17 +106,17 @@ class PurchaseOrdersService {
 
   async approveOrder(id: string, approvedBy: string, approvedByName: string): Promise<PurchaseOrder> {
     const response = await api.post(`${this.baseUrl}/${id}/approve`, { approvedBy, approvedByName });
-    return response.data;
+    return response;
   }
 
   async rejectOrder(id: string, rejectedBy: string, rejectedByName: string, reason: string): Promise<PurchaseOrder> {
     const response = await api.post(`${this.baseUrl}/${id}/reject`, { rejectedBy, rejectedByName, reason });
-    return response.data;
+    return response;
   }
 
   async receiveItems(id: string, receivedData: any): Promise<PurchaseOrder> {
     const response = await api.post(`${this.baseUrl}/${id}/receive`, receivedData);
-    return response.data;
+    return response;
   }
 }
 

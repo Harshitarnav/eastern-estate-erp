@@ -7,8 +7,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Property } from '../../properties/entities/property.entity';
+import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 
 /**
  * Tower Entity
@@ -45,6 +53,10 @@ export class Tower {
   @Column({ type: 'varchar', length: 50 })
   towerNumber: string;
 
+  @Column({ name: 'tower_code', type: 'varchar', length: 50 })
+  @Index()
+  towerCode: string;
+
   /**
    * Detailed description of the tower
    * Including unique features, views, or special characteristics
@@ -57,7 +69,7 @@ export class Tower {
    * Excludes basement/parking levels
    * @example 15
    */
-  @Column({ type: 'int' })
+  @Column({ name: 'total_floors', type: 'int' })
   totalFloors: number;
 
   /**
@@ -65,22 +77,35 @@ export class Tower {
    * Sum of all flats across all floors
    * @example 60
    */
-  @Column({ type: 'int' })
+  @Column({ name: 'total_units', type: 'int' })
   totalUnits: number;
+
+  /**
+   * Planned number of units in the tower
+   * Helps identify missing unit definitions
+   */
+  @Column({ name: 'units_planned', type: 'int', default: 0 })
+  unitsPlanned: number;
+
+  /**
+   * Number of units already defined (persisted flats)
+   */
+  @Column({ name: 'units_defined', type: 'int', default: 0 })
+  unitsDefined: number;
 
   /**
    * Number of basement levels (if any)
    * Used for parking or utility spaces
    * @example 2
    */
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'basement_levels', type: 'int', default: 0 })
   basementLevels: number;
 
   /**
    * Units per floor configuration
    * @example "4 units per floor (2BHK + 3BHK)"
    */
-  @Column({ type: 'varchar', length: 200, nullable: true })
+  @Column({ name: 'units_per_floor', type: 'varchar', length: 200, nullable: true })
   unitsPerFloor: string;
 
   /**
@@ -96,6 +121,7 @@ export class Tower {
    * Tracks the current state of tower construction
    */
   @Column({
+    name: 'construction_status',
     type: 'enum',
     enum: ['PLANNED', 'UNDER_CONSTRUCTION', 'COMPLETED', 'READY_TO_MOVE'],
     default: 'PLANNED',
@@ -105,13 +131,13 @@ export class Tower {
   /**
    * Construction start date
    */
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'construction_start_date', type: 'date', nullable: true })
   constructionStartDate: Date;
 
   /**
    * Expected/Actual completion date
    */
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'completion_date', type: 'date', nullable: true })
   completionDate: Date;
 
   /**
@@ -119,42 +145,42 @@ export class Tower {
    * Required for compliance and customer trust
    * @example "RERA/OR/2024/12345"
    */
-  @Column({ type: 'varchar', length: 100, nullable: true })
+  @Column({ name: 'rera_number', type: 'varchar', length: 100, nullable: true })
   reraNumber: string;
 
   /**
    * Total built-up area of the tower (in sq.ft)
    * @example 75000
    */
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ name: 'built_up_area', type: 'decimal', precision: 10, scale: 2, nullable: true })
   builtUpArea: number;
 
   /**
    * Total carpet area of the tower (in sq.ft)
    * @example 60000
    */
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ name: 'carpet_area', type: 'decimal', precision: 10, scale: 2, nullable: true })
   carpetArea: number;
 
   /**
    * Floor-to-ceiling height (in feet)
    * @example 10.5
    */
-  @Column({ type: 'decimal', precision: 4, scale: 2, nullable: true })
+  @Column({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true })
   ceilingHeight: number;
 
   /**
    * Number of elevators/lifts in the tower
    * @example 2
    */
-  @Column({ type: 'int', default: 1 })
+  @Column({ name: 'number_of_lifts', type: 'int', default: 1 })
   numberOfLifts: number;
 
   /**
    * Vastu compliance status
    * Important for Indian customers following traditional beliefs
    */
-  @Column({ type: 'boolean', default: true })
+  @Column({ name: 'vastu_compliant', type: 'boolean', default: true })
   vastuCompliant: boolean;
 
   /**
@@ -169,21 +195,59 @@ export class Tower {
    * Marketing points that make this tower unique
    * @example "Premium corner units with 270° views"
    */
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'special_features', type: 'text', nullable: true })
   specialFeatures: string;
 
   /**
    * Active status
    * Soft delete - tower can be deactivated instead of deleted
    */
-  @Column({ type: 'boolean', default: true })
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
+
+  /**
+   * Editorial data completeness checklist
+   * Stores which metadata items are ready
+   */
+  @Column({ name: 'tower_checklist', type: 'jsonb', nullable: true })
+  towerChecklist: Record<string, boolean> | null;
+
+  /**
+   * Data completeness percentage (0-100)
+   */
+  @Column({
+    name: 'data_completion_pct',
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    default: 0,
+    transformer: decimalTransformer,
+  })
+  dataCompletionPct: number;
+
+  /**
+   * Rolling editorial data status
+   */
+  @Column({
+    name: 'data_completeness_status',
+    type: 'enum',
+    enum: DataCompletenessStatus,
+    enumName: 'data_completeness_status_enum',
+    default: DataCompletenessStatus.NOT_STARTED,
+  })
+  dataCompletenessStatus: DataCompletenessStatus;
+
+  /**
+   * Outstanding data issues count
+   */
+  @Column({ name: 'issues_count', type: 'int', default: 0 })
+  issuesCount: number;
 
   /**
    * Display order for listing
    * Lower numbers appear first
    */
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'display_order', type: 'int', default: 0 })
   displayOrder: number;
 
   /**
@@ -198,7 +262,7 @@ export class Tower {
    * JSON object mapping floor numbers to plan URLs
    * @example { "ground": "url1", "1-10": "url2", "11-15": "url3" }
    */
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ name: 'floor_plans', type: 'jsonb', nullable: true })
   floorPlans: Record<string, string>;
 
   /**
@@ -218,10 +282,9 @@ export class Tower {
   /**
    * Flats relationship
    * One tower has many flats/units
-   * Note: This will be implemented when the Flats module is created
    */
-  // @OneToMany(() => Flat, (flat) => flat.tower)
-  // flats: Flat[];
+  @OneToMany(() => Flat, (flat) => flat.tower)
+  flats: Flat[];
 
   /**
    * Creation timestamp
@@ -237,3 +300,6 @@ export class Tower {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
+
+// Import Flat after the class to avoid circular dependency issues
+import { Flat } from '../../flats/entities/flat.entity';

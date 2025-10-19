@@ -1,12 +1,14 @@
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 export declare class UsersService {
     private usersRepository;
     private rolesRepository;
-    constructor(usersRepository: Repository<User>, rolesRepository: Repository<Role>);
+    private permissionsRepository;
+    constructor(usersRepository: Repository<User>, rolesRepository: Repository<Role>, permissionsRepository: Repository<Permission>);
     create(createUserDto: CreateUserDto, createdById?: string): Promise<User>;
     findAll(query?: any): Promise<{
         data: User[];
@@ -24,4 +26,7 @@ export declare class UsersService {
         message: string;
     }>;
     toggleActive(id: string): Promise<User>;
+    findAllRoles(): Promise<Role[]>;
+    findOneRole(id: string): Promise<Role>;
+    findAllPermissions(): Promise<Permission[]>;
 }

@@ -91,28 +91,28 @@ class BookingsService {
       });
     }
 
-    const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    const response = await api.get<PaginatedBookingsResponse>(`${this.baseUrl}?${params.toString()}`);
+    return response;
   }
 
   async getBooking(id: string): Promise<Booking> {
-    const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    const response = await api.get<Booking>(`${this.baseUrl}/${id}`);
+    return response;
   }
 
   async getStatistics(): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    const response = await api.get<any>(`${this.baseUrl}/statistics`);
+    return response;
   }
 
   async createBooking(data: Partial<Booking>): Promise<Booking> {
-    const response = await api.post(this.baseUrl, data);
-    return response.data;
+    const response = await api.post<Booking>(this.baseUrl, data);
+    return response;
   }
 
   async updateBooking(id: string, data: Partial<Booking>): Promise<Booking> {
-    const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    const response = await api.put<Booking>(`${this.baseUrl}/${id}`, data);
+    return response;
   }
 
   async deleteBooking(id: string): Promise<void> {
@@ -120,8 +120,8 @@ class BookingsService {
   }
 
   async cancelBooking(id: string, reason: string, refundAmount?: number): Promise<Booking> {
-    const response = await api.post(`${this.baseUrl}/${id}/cancel`, { reason, refundAmount });
-    return response.data;
+    const response = await api.post<Booking>(`${this.baseUrl}/${id}/cancel`, { reason, refundAmount });
+    return response;
   }
 }
 

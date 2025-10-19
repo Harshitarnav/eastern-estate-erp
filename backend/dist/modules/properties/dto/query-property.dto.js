@@ -62,6 +62,11 @@ __decorate([
 ], QueryPropertyDto.prototype, "projectType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)('4'),
+    __metadata("design:type", String)
+], QueryPropertyDto.prototype, "projectId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], QueryPropertyDto.prototype, "sortBy", void 0);
@@ -70,4 +75,10 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], QueryPropertyDto.prototype, "sortOrder", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_transformer_1.Type)(() => Boolean),
+    __metadata("design:type", Boolean)
+], QueryPropertyDto.prototype, "isActive", void 0);
 //# sourceMappingURL=query-property.dto.js.map

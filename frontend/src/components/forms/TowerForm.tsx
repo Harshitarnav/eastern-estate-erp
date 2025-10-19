@@ -160,7 +160,6 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                style={{ focusRing: '#A8211B' }}
                 placeholder="Diamond Tower A"
               />
             </div>

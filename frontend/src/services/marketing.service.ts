@@ -59,27 +59,27 @@ export const marketingService = {
       });
     }
     const response = await api.get(`/marketing/campaigns?${params.toString()}`);
-    return response.data;
+    return response;
   },
 
   async getCampaign(id: string): Promise<Campaign> {
     const response = await api.get(`/marketing/campaigns/${id}`);
-    return response.data;
+    return response;
   },
 
   async createCampaign(data: any): Promise<Campaign> {
     const response = await api.post('/marketing/campaigns', data);
-    return response.data;
+    return response;
   },
 
   async updateCampaign(id: string, data: any): Promise<Campaign> {
     const response = await api.patch(`/marketing/campaigns/${id}`, data);
-    return response.data;
+    return response;
   },
 
   async updateMetrics(id: string, metrics: any): Promise<Campaign> {
     const response = await api.patch(`/marketing/campaigns/${id}/metrics`, metrics);
-    return response.data;
+    return response;
   },
 
   async deleteCampaign(id: string): Promise<void> {
@@ -88,6 +88,6 @@ export const marketingService = {
 
   async getStatistics(): Promise<any> {
     const response = await api.get('/marketing/campaigns/statistics');
-    return response.data;
+    return response;
   },
 };

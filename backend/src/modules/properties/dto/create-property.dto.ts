@@ -1,13 +1,15 @@
-import { 
-  IsString, 
-  IsNotEmpty, 
-  IsOptional, 
-  IsNumber, 
-  IsDateString, 
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsDateString,
   IsArray,
   IsBoolean,
   MaxLength,
-  Min
+  Min,
+  IsInt,
+  IsUUID,
 } from 'class-validator';
 
 export class CreatePropertyDto {
@@ -26,8 +28,17 @@ export class CreatePropertyDto {
   description?: string;
 
   @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  country?: string;
+
+  @IsString()
   @IsNotEmpty()
   address: string;
+
+  @IsString()
+  @IsOptional()
+  location?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -57,10 +68,30 @@ export class CreatePropertyDto {
   @Min(0)
   totalArea?: number;
 
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  builtUpArea?: number;
+
   @IsString()
   @IsOptional()
   @MaxLength(20)
   areaUnit?: string;
+
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  numberOfTowers?: number;
+
+  @IsInt()
+  @IsOptional()
+  @Min(0)
+  numberOfUnits?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  floorsPerTower?: string;
 
   @IsDateString()
   @IsOptional()
@@ -82,7 +113,17 @@ export class CreatePropertyDto {
   @IsString()
   @IsOptional()
   @MaxLength(50)
+  reraStatus?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
   projectType?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  propertyType?: string;
 
   @IsString()
   @IsOptional()
@@ -101,7 +142,38 @@ export class CreatePropertyDto {
   @IsOptional()
   amenities?: string[];
 
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
+  bhkTypes?: string[];
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  priceMin?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  priceMax?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  expectedRevenue?: number;
+
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isFeatured?: boolean;
+
+  @IsString()
+  @IsOptional()
+  nearbyLandmarks?: string;
+
+  @IsUUID('4')
+  projectId: string;
 }

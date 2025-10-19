@@ -83,7 +83,7 @@ export function DeletePropertyButton({ propertyId, propertyName }: { propertyId:
       const response = await fetch(`/api/v1/properties/${propertyId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
 
@@ -136,7 +136,7 @@ export function ActivatePropertyButton({ propertyId }: { propertyId: string }) {
       const response = await fetch(`/api/v1/properties/${propertyId}/activate`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
 

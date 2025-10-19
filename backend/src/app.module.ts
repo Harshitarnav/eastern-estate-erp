@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
@@ -6,6 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { PropertiesModule } from './modules/properties/properties.module';
 import { TowersModule } from './modules/towers/towers.module';
 import { FlatsModule } from './modules/flats/flats.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
@@ -22,34 +24,58 @@ import { AccountingModule } from './modules/accounting/accounting.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
+import { ThrottlerGuard, ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
+import configuration from './config/configuration';
+import { validationSchema } from './config/validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      load: [configuration],
+      validationSchema,
+      validationOptions: {
+        abortEarly: false,
+      },
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: +configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
+        host: configService.getOrThrow<string>('database.host'),
+        port: configService.getOrThrow<number>('database.port'),
+        username: configService.getOrThrow<string>('database.username'),
+        password: configService.get<string>('database.password') ?? '',
+        database: configService.getOrThrow<string>('database.name'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         // synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
-        synchronize: false, // ✅ Move inside and set to false
-        logging: configService.get('DB_LOGGING') === 'true',
-        ssl: configService.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+        synchronize: false, // ✅ Set to false - manual schema management
+        logging: configService.get<boolean>('database.logging') ?? false,
+        ssl:
+          (configService.get<boolean>('database.sslEnabled') ?? false)
+            ? { rejectUnauthorized: false }
+            : false,
         namingStrategy: new SnakeNamingStrategy(), // Add this line
         // migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
         // migrationsRun: true,
       }),
       inject: [ConfigService],      
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService): ThrottlerModuleOptions => ({
+        throttlers: [
+          {
+            ttl: configService.getOrThrow<number>('security.rateLimitTtl'),
+            limit: configService.getOrThrow<number>('security.rateLimitMax'),
+          },
+        ],
+      }),
+      inject: [ConfigService],
+    }),
     AuthModule,
+    ProjectsModule,
     UsersModule,
     PropertiesModule,
     TowersModule,
@@ -69,6 +95,12 @@ import { UploadModule } from './common/upload/upload.module';
     AccountingModule,
     PurchaseOrdersModule,
     UploadModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

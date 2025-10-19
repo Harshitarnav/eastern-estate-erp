@@ -6,8 +6,8 @@ import { Plus, Download, Upload, FileSpreadsheet, BookOpen, Calculator } from 'l
 
 export default function AccountingPage() {
     const [activeTab, setActiveTab] = useState('accounts');
-    const [accounts, setAccounts] = useState([]);
-    const [bankAccounts, setBankAccounts] = useState([]);
+    const [accounts, setAccounts] = useState<any[]>([]);
+    const [bankAccounts, setBankAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     // Chart of Accounts
@@ -41,7 +41,7 @@ export default function AccountingPage() {
     const loadAccounts = async () => {
         try {
             const data = await accountingService.getAccounts();
-            setAccounts(data);
+            setAccounts(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error loading accounts:', error);
         }
@@ -50,7 +50,7 @@ export default function AccountingPage() {
     const loadBankAccounts = async () => {
         try {
             const data = await accountingService.getBankAccounts();
-            setBankAccounts(data);
+            setBankAccounts(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error loading bank accounts:', error);
         }
@@ -86,8 +86,8 @@ export default function AccountingPage() {
 
         setLoading(true);
         try {
-            const result = await accountingService.importJournalEntriesFromExcel(excelFile);
-            alert(`Imported ${result.imported} of ${result.total} entries successfully!`);
+            const result: any = await accountingService.importJournalEntriesFromExcel(excelFile);
+            alert(`Imported ${result?.imported ?? 0} of ${result?.total ?? 0} entries successfully!`);
             setExcelFile(null);
         } catch (error: any) {
             alert(error.response?.data?.message || 'Failed to import Excel file');
@@ -104,8 +104,8 @@ export default function AccountingPage() {
 
         setLoading(true);
         try {
-            const result = await accountingService.uploadBankStatement(selectedBankAccount, bankStatementFile);
-            alert(`Uploaded ${result.total} transactions successfully!`);
+            const result: any = await accountingService.uploadBankStatement(selectedBankAccount, bankStatementFile);
+            alert(`Uploaded ${result?.total ?? 0} transactions successfully!`);
             setBankStatementFile(null);
         } catch (error: any) {
             alert(error.response?.data?.message || 'Failed to upload bank statement');

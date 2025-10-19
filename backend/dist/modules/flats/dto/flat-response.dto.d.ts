@@ -55,6 +55,11 @@ export declare class FlatResponseDto {
     updatedAt: Date;
     property?: any;
     tower?: any;
+    flatChecklist?: Record<string, boolean> | null;
+    dataCompletionPct?: number;
+    completenessStatus?: string;
+    issues?: string[];
+    issuesCount?: number;
     static fromEntity(flat: Flat): FlatResponseDto;
     static fromEntities(flats: Flat[]): FlatResponseDto[];
 }

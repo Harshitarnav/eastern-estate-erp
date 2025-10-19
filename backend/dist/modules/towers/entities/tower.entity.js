@@ -12,6 +12,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Tower = void 0;
 const typeorm_1 = require("typeorm");
 const property_entity_1 = require("../../properties/entities/property.entity");
+const data_completeness_status_enum_1 = require("../../../common/enums/data-completeness-status.enum");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 let Tower = class Tower {
 };
 exports.Tower = Tower;
@@ -28,23 +33,36 @@ __decorate([
     __metadata("design:type", String)
 ], Tower.prototype, "towerNumber", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'tower_code', type: 'varchar', length: 50 }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], Tower.prototype, "towerCode", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Tower.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int' }),
+    (0, typeorm_1.Column)({ name: 'total_floors', type: 'int' }),
     __metadata("design:type", Number)
 ], Tower.prototype, "totalFloors", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int' }),
+    (0, typeorm_1.Column)({ name: 'total_units', type: 'int' }),
     __metadata("design:type", Number)
 ], Tower.prototype, "totalUnits", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)({ name: 'units_planned', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Tower.prototype, "unitsPlanned", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'units_defined', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Tower.prototype, "unitsDefined", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'basement_levels', type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], Tower.prototype, "basementLevels", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 200, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'units_per_floor', type: 'varchar', length: 200, nullable: true }),
     __metadata("design:type", String)
 ], Tower.prototype, "unitsPerFloor", void 0);
 __decorate([
@@ -53,6 +71,7 @@ __decorate([
 ], Tower.prototype, "amenities", void 0);
 __decorate([
     (0, typeorm_1.Column)({
+        name: 'construction_status',
         type: 'enum',
         enum: ['PLANNED', 'UNDER_CONSTRUCTION', 'COMPLETED', 'READY_TO_MOVE'],
         default: 'PLANNED',
@@ -60,35 +79,35 @@ __decorate([
     __metadata("design:type", String)
 ], Tower.prototype, "constructionStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'construction_start_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Tower.prototype, "constructionStartDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'completion_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Tower.prototype, "completionDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 100, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'rera_number', type: 'varchar', length: 100, nullable: true }),
     __metadata("design:type", String)
 ], Tower.prototype, "reraNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'built_up_area', type: 'decimal', precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Tower.prototype, "builtUpArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'carpet_area', type: 'decimal', precision: 10, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Tower.prototype, "carpetArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 4, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Tower.prototype, "ceilingHeight", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 1 }),
+    (0, typeorm_1.Column)({ name: 'number_of_lifts', type: 'int', default: 1 }),
     __metadata("design:type", Number)
 ], Tower.prototype, "numberOfLifts", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
+    (0, typeorm_1.Column)({ name: 'vastu_compliant', type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], Tower.prototype, "vastuCompliant", void 0);
 __decorate([
@@ -96,15 +115,44 @@ __decorate([
     __metadata("design:type", String)
 ], Tower.prototype, "facing", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'special_features', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Tower.prototype, "specialFeatures", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
+    (0, typeorm_1.Column)({ name: 'is_active', type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], Tower.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)({ name: 'tower_checklist', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Object)
+], Tower.prototype, "towerChecklist", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'data_completion_pct',
+        type: 'decimal',
+        precision: 5,
+        scale: 2,
+        default: 0,
+        transformer: decimalTransformer,
+    }),
+    __metadata("design:type", Number)
+], Tower.prototype, "dataCompletionPct", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'data_completeness_status',
+        type: 'enum',
+        enum: data_completeness_status_enum_1.DataCompletenessStatus,
+        enumName: 'data_completeness_status_enum',
+        default: data_completeness_status_enum_1.DataCompletenessStatus.NOT_STARTED,
+    }),
+    __metadata("design:type", String)
+], Tower.prototype, "dataCompletenessStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'issues_count', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Tower.prototype, "issuesCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'display_order', type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], Tower.prototype, "displayOrder", void 0);
 __decorate([
@@ -112,7 +160,7 @@ __decorate([
     __metadata("design:type", Array)
 ], Tower.prototype, "images", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'floor_plans', type: 'jsonb', nullable: true }),
     __metadata("design:type", Object)
 ], Tower.prototype, "floorPlans", void 0);
 __decorate([
@@ -128,6 +176,10 @@ __decorate([
     __metadata("design:type", String)
 ], Tower.prototype, "propertyId", void 0);
 __decorate([
+    (0, typeorm_1.OneToMany)(() => flat_entity_1.Flat, (flat) => flat.tower),
+    __metadata("design:type", Array)
+], Tower.prototype, "flats", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], Tower.prototype, "createdAt", void 0);
@@ -138,4 +190,5 @@ __decorate([
 exports.Tower = Tower = __decorate([
     (0, typeorm_1.Entity)('towers')
 ], Tower);
+const flat_entity_1 = require("../../flats/entities/flat.entity");
 //# sourceMappingURL=tower.entity.js.map

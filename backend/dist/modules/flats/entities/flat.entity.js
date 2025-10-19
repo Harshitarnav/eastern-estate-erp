@@ -13,9 +13,15 @@ exports.Flat = exports.FacingDirection = exports.FlatType = exports.FlatStatus =
 const typeorm_1 = require("typeorm");
 const tower_entity_1 = require("../../towers/entities/tower.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
+const data_completeness_status_enum_1 = require("../../../common/enums/data-completeness-status.enum");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var FlatStatus;
 (function (FlatStatus) {
     FlatStatus["AVAILABLE"] = "AVAILABLE";
+    FlatStatus["ON_HOLD"] = "ON_HOLD";
     FlatStatus["BLOCKED"] = "BLOCKED";
     FlatStatus["BOOKED"] = "BOOKED";
     FlatStatus["SOLD"] = "SOLD";
@@ -51,23 +57,23 @@ __decorate([
     __metadata("design:type", String)
 ], Flat.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)('uuid'),
+    (0, typeorm_1.Column)('uuid', { name: 'property_id' }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Flat.prototype, "propertyId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { onDelete: 'CASCADE' }),
-    (0, typeorm_1.JoinColumn)({ name: 'propertyId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
     __metadata("design:type", property_entity_1.Property)
 ], Flat.prototype, "property", void 0);
 __decorate([
-    (0, typeorm_1.Column)('uuid'),
+    (0, typeorm_1.Column)('uuid', { name: 'tower_id' }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Flat.prototype, "towerId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => tower_entity_1.Tower, { onDelete: 'CASCADE' }),
-    (0, typeorm_1.JoinColumn)({ name: 'towerId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'tower_id' }),
     __metadata("design:type", tower_entity_1.Tower)
 ], Flat.prototype, "tower", void 0);
 __decorate([
@@ -191,6 +197,39 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Flat.prototype, "expectedPossession", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'flat_checklist', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Object)
+], Flat.prototype, "flatChecklist", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'data_completion_pct',
+        type: 'decimal',
+        precision: 5,
+        scale: 2,
+        default: 0,
+        transformer: decimalTransformer,
+    }),
+    __metadata("design:type", Number)
+], Flat.prototype, "dataCompletionPct", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'completeness_status',
+        type: 'enum',
+        enum: data_completeness_status_enum_1.DataCompletenessStatus,
+        enumName: 'data_completeness_status_enum',
+        default: data_completeness_status_enum_1.DataCompletenessStatus.NOT_STARTED,
+    }),
+    __metadata("design:type", String)
+], Flat.prototype, "completenessStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'issues', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Flat.prototype, "issues", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'issues_count', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Flat.prototype, "issuesCount", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',

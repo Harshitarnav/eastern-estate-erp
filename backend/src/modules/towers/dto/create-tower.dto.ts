@@ -58,6 +58,16 @@ export class CreateTowerDto {
   @MaxLength(50)
   towerNumber: string;
 
+  @ApiPropertyOptional({
+    description: 'Tower code identifier (defaults to tower number when omitted)',
+    example: 'T1',
+    maxLength: 50,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  towerCode?: string;
+
   /**
    * Detailed description highlighting unique features
    * Marketing-friendly content focusing on lifestyle and bonding
@@ -99,6 +109,16 @@ export class CreateTowerDto {
   @Min(1, { message: 'Tower must have at least 1 unit' })
   @Type(() => Number)
   totalUnits: number;
+
+  @ApiPropertyOptional({
+    description: 'Planned number of units for the tower',
+    example: 64,
+  })
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  unitsPlanned?: number;
 
   /**
    * Number of basement levels for parking/utility

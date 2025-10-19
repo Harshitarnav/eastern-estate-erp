@@ -1,9 +1,15 @@
 import api from './api';
+import type {
+  DataCompletenessStatus,
+  FlatSalesBreakdown,
+  TowerInventorySummary,
+} from './properties.service';
 
 export interface Tower {
   id: string;
   name: string;
   towerNumber: string;
+  towerCode?: string;
   description?: string;
   totalFloors: number;
   totalUnits: number;
@@ -38,6 +44,11 @@ export interface Tower {
   availableUnits?: number;
   soldUnits?: number;
   occupancyRate?: number;
+  unitsPlanned?: number | null;
+  unitsDefined?: number | null;
+  dataCompletionPct?: number | null;
+  dataCompletenessStatus?: DataCompletenessStatus;
+  issuesCount?: number;
 }
 
 export interface TowerFilters {
@@ -65,6 +76,40 @@ export interface TowersResponse {
   };
 }
 
+export interface TowerChecklistInsight {
+  status: DataCompletenessStatus;
+  count: number;
+}
+
+export interface TowerInventoryOverview {
+  tower: TowerInventorySummary;
+  property: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
+  floorsDefined: number;
+  floorsPlanned: number;
+  typologies: string[];
+  checklistInsights: TowerChecklistInsight[];
+  salesBreakdown: FlatSalesBreakdown;
+  generatedAt: string;
+}
+
+export interface TowerBulkImportError {
+  rowNumber: number;
+  towerNumber?: string;
+  issues: string[];
+}
+
+export interface TowerBulkImportSummary {
+  propertyId: string;
+  totalRows: number;
+  created: number;
+  skipped: number;
+  errors: TowerBulkImportError[];
+}
+
 export const towersService = {
   // Get all towers with filters
   async getTowers(filters?: TowerFilters): Promise<TowersResponse> {
@@ -79,42 +124,58 @@ export const towersService = {
     }
     
     const response = await api.get(`/towers?${params.toString()}`);
-    return response.data;
+    return response;
   },
 
   // Get single tower by ID
   async getTower(id: string): Promise<Tower> {
     const response = await api.get(`/towers/${id}`);
-    return response.data;
+    return response;
   },
 
   // Get towers by property
   async getTowersByProperty(propertyId: string): Promise<Tower[]> {
     const response = await api.get(`/towers/property/${propertyId}`);
-    return response.data;
+    return response;
   },
 
   // Get tower statistics
   async getTowerStatistics(id: string): Promise<any> {
     const response = await api.get(`/towers/${id}/statistics`);
-    return response.data;
+    return response;
+  },
+
+  async getInventoryOverview(id: string): Promise<TowerInventoryOverview> {
+    const response = await api.get(`/towers/${id}/inventory/overview`);
+    return response;
   },
 
   // Create tower
   async createTower(data: Partial<Tower>): Promise<Tower> {
     const response = await api.post('/towers', data);
-    return response.data;
+    return response;
   },
 
   // Update tower
   async updateTower(id: string, data: Partial<Tower>): Promise<Tower> {
     const response = await api.put(`/towers/${id}`, data);
-    return response.data;
+    return response;
   },
 
   // Delete tower
   async deleteTower(id: string): Promise<{ message: string }> {
     const response = await api.delete(`/towers/${id}`);
-    return response.data;
+    return response;
+  },
+
+  async bulkImportTowers(propertyId: string, file: File): Promise<TowerBulkImportSummary> {
+    const formData = new FormData();
+    formData.append('propertyId', propertyId);
+    formData.append('file', file);
+
+    const response = await api.post('/towers/bulk-import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response;
   },
 };

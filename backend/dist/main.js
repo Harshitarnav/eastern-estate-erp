@@ -6,17 +6,52 @@ const config_1 = require("@nestjs/config");
 const app_module_1 = require("./app.module");
 const compression = require("compression");
 const helmet_1 = require("helmet");
+const express_1 = require("express");
+const http_exception_filter_1 = require("./common/filters/http-exception.filter");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
-        logger: ['error', 'warn', 'log', 'debug'],
+        bufferLogs: true,
+        logger: process.env.NODE_ENV === 'production'
+            ? ['error', 'warn', 'log']
+            : ['error', 'warn', 'log', 'debug', 'verbose'],
     });
     const configService = app.get(config_1.ConfigService);
-    app.use((0, helmet_1.default)());
+    const nodeEnv = configService.get('app.nodeEnv') ?? 'development';
+    const isProduction = nodeEnv === 'production';
+    const bodyLimit = configService.get('request.bodyLimit') ?? '1mb';
+    app.use((0, express_1.json)({ limit: bodyLimit }));
+    app.use((0, express_1.urlencoded)({ extended: true, limit: bodyLimit }));
+    const corsOrigins = configService.get('security.corsOrigins');
+    const allowAllOrigins = !corsOrigins || corsOrigins.length === 0 || corsOrigins.includes('*');
+    const cspConnectSources = allowAllOrigins
+        ? ["'self'", '*']
+        : ["'self'", ...corsOrigins];
+    app.use((0, helmet_1.default)({
+        contentSecurityPolicy: isProduction
+            ? {
+                directives: {
+                    defaultSrc: ["'self'"],
+                    scriptSrc: ["'self'", "'unsafe-inline'"],
+                    styleSrc: ["'self'", "'unsafe-inline'"],
+                    imgSrc: ["'self'", 'data:', 'blob:'],
+                    connectSrc: cspConnectSources,
+                    fontSrc: ["'self'", 'data:'],
+                    objectSrc: ["'none'"],
+                    frameAncestors: ["'none'"],
+                },
+            }
+            : false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+        referrerPolicy: { policy: 'no-referrer' },
+    }));
     app.enableCors({
-        origin: true,
+        origin: allowAllOrigins ? true : corsOrigins,
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        exposedHeaders: ['Content-Disposition'],
     });
     app.use(compression());
     app.useGlobalPipes(new common_1.ValidationPipe({
@@ -27,11 +62,15 @@ async function bootstrap() {
             enableImplicitConversion: true,
         },
     }));
-    const apiPrefix = configService.get('API_PREFIX') || 'api/v1';
+    app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
+    const apiPrefix = configService.get('app.apiPrefix') ?? 'api/v1';
     app.setGlobalPrefix(apiPrefix);
-    const port = configService.get('PORT') || 3001;
+    await app.enableShutdownHooks();
+    app.flushLogs();
+    const port = configService.get('app.port') ?? 3001;
+    const appUrl = configService.get('app.url') ?? `http://localhost:${port}`;
     await app.listen(port);
-    console.log(`🚀 Application is running on: http://localhost:${port}/${apiPrefix}`);
+    console.log(`🚀 Application is running on: ${appUrl}/${apiPrefix}`);
 }
 bootstrap();
 //# sourceMappingURL=main.js.map

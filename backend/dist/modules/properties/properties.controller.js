@@ -33,6 +33,12 @@ let PropertiesController = class PropertiesController {
     async findByCode(code) {
         return this.propertiesService.findByCode(code);
     }
+    async getHierarchy(id) {
+        return this.propertiesService.getHierarchy(id);
+    }
+    async getInventorySummary(id) {
+        return this.propertiesService.getInventorySummary(id);
+    }
     async findOne(id) {
         return this.propertiesService.findOne(id);
     }
@@ -76,6 +82,20 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], PropertiesController.prototype, "findByCode", null);
+__decorate([
+    (0, common_1.Get)(':id/hierarchy'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PropertiesController.prototype, "getHierarchy", null);
+__decorate([
+    (0, common_1.Get)(':id/inventory/summary'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], PropertiesController.prototype, "getInventorySummary", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

@@ -18,4 +18,6 @@ __exportStar(require("./create-property.dto"), exports);
 __exportStar(require("./update-property.dto"), exports);
 __exportStar(require("./query-property.dto"), exports);
 __exportStar(require("./property-response.dto"), exports);
+__exportStar(require("./property-hierarchy.dto"), exports);
+__exportStar(require("./property-inventory-summary.dto"), exports);
 //# sourceMappingURL=index.js.map

@@ -40,6 +40,17 @@ __decorate([
 ], CreateTowerDto.prototype, "towerNumber", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
+        description: 'Tower code identifier (defaults to tower number when omitted)',
+        example: 'T1',
+        maxLength: 50,
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(50),
+    __metadata("design:type", String)
+], CreateTowerDto.prototype, "towerCode", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
         description: 'Detailed description of the tower',
         example: 'Premium tower featuring spacious 2BHK and 3BHK apartments with world-class amenities',
     }),
@@ -71,6 +82,17 @@ __decorate([
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateTowerDto.prototype, "totalUnits", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Planned number of units for the tower',
+        example: 64,
+    }),
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateTowerDto.prototype, "unitsPlanned", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Number of basement levels',

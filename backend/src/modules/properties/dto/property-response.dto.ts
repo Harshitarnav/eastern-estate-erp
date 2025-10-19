@@ -3,28 +3,45 @@ export class PropertyResponseDto {
   propertyCode: string;
   name: string;
   description?: string;
+  country?: string;
   address: string;
+  location?: string;
   city: string;
   state: string;
   pincode: string;
   latitude?: number;
   longitude?: number;
   totalArea?: number;
+  builtUpArea?: number;
   areaUnit: string;
+  numberOfTowers?: number;
+  numberOfUnits?: number;
+  floorsPerTower?: string;
   launchDate?: Date;
   expectedCompletionDate?: Date;
   actualCompletionDate?: Date;
   reraNumber?: string;
+  reraStatus?: string;
   projectType?: string;
+  propertyType?: string;
   status: string;
   images?: any;
   documents?: any;
   amenities?: any;
+  bhkTypes?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  expectedRevenue?: number;
+  nearbyLandmarks?: string;
   isActive: boolean;
+  isFeatured?: boolean;
   createdBy?: string;
   updatedBy?: string;
   createdAt: Date;
   updatedAt: Date;
+  projectId?: string;
+  projectCode?: string;
+  projectName?: string;
   
   // Calculated fields
   towers?: number;
@@ -40,5 +57,6 @@ export class PaginatedPropertyResponseDto {
     page: number;
     limit: number;
     totalPages: number;
+    dataHash?: string;
   };
 }

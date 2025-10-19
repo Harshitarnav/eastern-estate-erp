@@ -6,16 +6,19 @@ import FlatForm from '@/components/forms/FlatForm';
 import { flatsService } from '@/services/flats.service';
 import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
+import { customersService } from '@/services/customers.service';
 
 export default function NewFlatPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
   const [towers, setTowers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
 
   useEffect(() => {
     fetchProperties();
     fetchTowers();
+    fetchCustomers();
   }, []);
 
   const fetchProperties = async () => {
@@ -36,9 +39,64 @@ export default function NewFlatPage() {
     }
   };
 
+  const fetchCustomers = async () => {
+    try {
+      const response = await customersService.getCustomers({ isActive: true, limit: 100, page: 1 });
+      setCustomers(response.data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
   const handleSubmit = async (data: any) => {
     setLoading(true);
     try {
+      const {
+        customerId: existingCustomerId,
+        customerFirstName,
+        customerLastName,
+        customerEmail,
+        customerPhone,
+        customerType,
+        customerNotes,
+      } = data;
+
+      const trimmedFirstName = customerFirstName?.trim();
+      const trimmedLastName = customerLastName?.trim();
+      const trimmedEmail = customerEmail?.trim();
+      const trimmedPhone = customerPhone?.trim();
+      const hasNewCustomerData =
+        trimmedFirstName || trimmedLastName || trimmedEmail || trimmedPhone || customerNotes;
+
+      let resolvedCustomerId = existingCustomerId;
+
+      if (!resolvedCustomerId && hasNewCustomerData) {
+        if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || !trimmedPhone) {
+          alert('Please provide first name, last name, email, and phone to create a customer.');
+          setLoading(false);
+          return;
+        }
+
+        try {
+          const createdCustomer = await customersService.createCustomer({
+            firstName: trimmedFirstName,
+            lastName: trimmedLastName,
+            email: trimmedEmail,
+            phone: trimmedPhone,
+            type: customerType || 'INDIVIDUAL',
+            notes: customerNotes?.trim(),
+            isActive: true,
+          });
+          resolvedCustomerId = createdCustomer.id;
+          await fetchCustomers();
+        } catch (customerError: any) {
+          console.error('Error creating customer:', customerError);
+          alert(customerError.response?.data?.message || 'Failed to create customer');
+          setLoading(false);
+          return;
+        }
+      }
+
       // Transform form data to match API expectations
       const flatData = {
         propertyId: data.propertyId,
@@ -80,10 +138,21 @@ export default function NewFlatPage() {
         furnishingStatus: data.furnishingStatus,
         amenities: data.amenities ? data.amenities.split(',').map((a: string) => a.trim()) : [],
         specialFeatures: data.specialFeatures,
+        floorPlanUrl: data.floorPlanUrl,
+        images: data.images ? data.images.split(',').map((img: string) => img.trim()) : [],
+        virtualTourUrl: data.virtualTourUrl,
+        bookingDate: data.bookingDate,
+        soldDate: data.soldDate,
+        tokenAmount: data.tokenAmount,
+        paymentPlan: data.paymentPlan,
         remarks: data.remarks,
         isActive: data.isActive !== false,
         displayOrder: data.displayOrder || 0,
       };
+
+      if (resolvedCustomerId) {
+        flatData.customerId = resolvedCustomerId;
+      }
 
       await flatsService.createFlat(flatData);
       alert('Flat created successfully!');
@@ -108,6 +177,7 @@ export default function NewFlatPage() {
         loading={loading}
         properties={properties}
         towers={towers}
+        customers={customers}
       />
     </div>
   );

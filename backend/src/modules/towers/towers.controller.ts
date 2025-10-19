@@ -11,6 +11,9 @@ import {
   HttpStatus,
   ParseUUIDPipe,
   UseGuards,
+  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +21,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { TowersService } from './towers.service';
 import {
@@ -26,8 +30,11 @@ import {
   QueryTowerDto,
   TowerResponseDto,
   PaginatedTowerResponseDto,
+  TowerInventoryOverviewDto,
+  BulkImportTowersSummaryDto,
 } from './dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 /**
  * Towers Controller
@@ -193,6 +200,50 @@ export class TowersController {
     return this.towersService.findOne(id);
   }
 
+  @Post('bulk-import')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: 'Bulk import towers',
+    description: 'Upload a CSV/XLSX file to create multiple towers in a single operation.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Bulk tower import processed',
+    type: BulkImportTowersSummaryDto,
+  })
+  async bulkImport(
+    @Body('propertyId') propertyId: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ): Promise<BulkImportTowersSummaryDto> {
+    if (!propertyId) {
+      throw new BadRequestException('propertyId is required');
+    }
+    if (!file) {
+      throw new BadRequestException('CSV or XLSX file is required');
+    }
+
+    return this.towersService.bulkImport(propertyId, file.buffer);
+  }
+
+  @Get(':id/inventory/overview')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get tower inventory overview',
+    description: 'Summarizes unit completeness, issues, and sales status for a single tower',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Tower UUID',
+    type: String,
+  })
+  async getInventoryOverview(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TowerInventoryOverviewDto> {
+    return this.towersService.getInventoryOverview(id);
+  }
+
   /**
    * Update tower
    * 
@@ -340,52 +391,5 @@ export class TowersController {
     @Param('propertyId', ParseUUIDPipe) propertyId: string,
   ): Promise<TowerResponseDto[]> {
     return this.towersService.findByProperty(propertyId);
-  }
-
-  /**
-   * Get tower statistics
-   * 
-   * GET /api/towers/:id/statistics
-   * 
-   * Retrieves aggregated statistics for a tower.
-   * Includes unit counts, occupancy rate, and construction status.
-   * 
-   * @param id - Tower UUID
-   * @returns Tower statistics
-   * 
-   * @example
-   * GET /api/towers/550e8400-e29b-41d4-a716-446655440000/statistics
-   * 
-   * Response: 200 OK
-   * {
-   *   "towerId": "uuid",
-   *   "towerName": "Diamond Tower A",
-   *   "totalUnits": 60,
-   *   "availableUnits": 45,
-   *   "soldUnits": 15,
-   *   "occupancyRate": 25
-   * }
-   */
-  @Get(':id/statistics')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: 'Get tower statistics',
-    description: 'Retrieves aggregated statistics for a tower including unit counts and occupancy',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Tower UUID',
-    type: String,
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Statistics retrieved successfully',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Tower not found',
-  })
-  async getStatistics(@Param('id', ParseUUIDPipe) id: string): Promise<any> {
-    return this.towersService.getStatistics(id);
   }
 }

@@ -339,7 +339,7 @@ export default function BookingsPage() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => alert(`View booking: ${booking.id}`)}
+                      onClick={() => router.push(`/bookings/${booking.id}`)}
                       className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       style={{ borderColor: '#A8211B', color: '#A8211B' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}
@@ -349,7 +349,7 @@ export default function BookingsPage() {
                       <span>View</span>
                     </button>
                     <button
-                      onClick={() => alert(`Edit booking: ${booking.id}`)}
+                      onClick={() => router.push(`/bookings/${booking.id}/edit`)}
                       className="px-3 py-2 border rounded-lg text-sm font-medium transition-colors"
                       style={{ borderColor: '#F2C94C', color: '#7B1E12' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}

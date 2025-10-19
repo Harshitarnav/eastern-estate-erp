@@ -122,7 +122,6 @@ export default function ReportsPage() {
               className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer ${
                 isSelected ? 'ring-2' : ''
               }`}
-              style={{ ringColor: isSelected ? report.color : 'transparent' }}
               onClick={() => setSelectedReport(report.id)}
             >
               <div className="p-6">

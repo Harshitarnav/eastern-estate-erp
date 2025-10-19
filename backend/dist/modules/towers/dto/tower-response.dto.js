@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaginatedTowerResponseDto = exports.TowerResponseDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
+const data_completeness_status_enum_1 = require("../../../common/enums/data-completeness-status.enum");
 class TowerResponseDto {
 }
 exports.TowerResponseDto = TowerResponseDto;
@@ -35,6 +36,13 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], TowerResponseDto.prototype, "towerNumber", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Tower code',
+        example: 'T1',
+    }),
+    __metadata("design:type", String)
+], TowerResponseDto.prototype, "towerCode", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Tower description',
@@ -212,6 +220,13 @@ __decorate([
 ], TowerResponseDto.prototype, "updatedAt", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
+        description: 'Number of flats in this tower',
+        example: 60,
+    }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "flatsCount", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
         description: 'Number of available units',
         example: 45,
     }),
@@ -231,6 +246,41 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], TowerResponseDto.prototype, "occupancyRate", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Planned number of units for the tower',
+        example: 64,
+    }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "unitsPlanned", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Number of units currently defined',
+        example: 58,
+    }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "unitsDefined", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Data completeness percentage (0-100)',
+        example: 78.5,
+    }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "dataCompletionPct", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Editorial data completeness status',
+        enum: data_completeness_status_enum_1.DataCompletenessStatus,
+    }),
+    __metadata("design:type", String)
+], TowerResponseDto.prototype, "dataCompletenessStatus", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Outstanding data issue count',
+        example: 3,
+    }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "issuesCount", void 0);
 class PaginatedTowerResponseDto {
 }
 exports.PaginatedTowerResponseDto = PaginatedTowerResponseDto;

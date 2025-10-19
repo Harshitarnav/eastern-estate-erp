@@ -79,28 +79,28 @@ class CustomersService {
       });
     }
 
-    const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    const response = await api.get<PaginatedCustomersResponse>(`${this.baseUrl}?${params.toString()}`);
+    return response;
   }
 
   async getCustomer(id: string): Promise<Customer> {
-    const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    const response = await api.get<Customer>(`${this.baseUrl}/${id}`);
+    return response;
   }
 
   async getStatistics(): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    const response = await api.get<any>(`${this.baseUrl}/statistics`);
+    return response;
   }
 
   async createCustomer(data: Partial<Customer>): Promise<Customer> {
-    const response = await api.post(this.baseUrl, data);
-    return response.data;
+    const response = await api.post<Customer>(this.baseUrl, data);
+    return response;
   }
 
   async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer> {
-    const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    const response = await api.put<Customer>(`${this.baseUrl}/${id}`, data);
+    return response;
   }
 
   async deleteCustomer(id: string): Promise<void> {

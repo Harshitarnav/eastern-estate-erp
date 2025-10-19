@@ -158,6 +158,32 @@ const easternEstateProjects = [
     revenue: 1120000000,
     completionPercent: 100
   },
+  { 
+    id: '5',
+    code: 'EECD-LB-005',
+    name: 'Lakeside Boulevard',
+    location: 'Kolkata',
+    city: 'Kolkata',
+    state: 'West Bengal',
+    type: 'Waterfront Premium Residences',
+    totalArea: 12,
+    areaUnit: 'Acres',
+    towers: 5,
+    floors: 'G+15',
+    totalUnits: 420,
+    soldUnits: 210,
+    availableUnits: 210,
+    bhkTypes: '2BHK, 3BHK, Sky Villas',
+    reraNumber: 'WBHIRA/P/KOL/2021/001045',
+    status: 'Under Construction',
+    launchDate: '2021-05-01',
+    possessionDate: '2026-09-30',
+    priceRange: '₹65L - ₹1.5Cr',
+    amenities: ['Sky Lounge', 'Floating Deck', 'Clubhouse', 'EV Charging', 'Aqua Gym'],
+    nearbyLandmarks: 'Adjacent to Eco Park, 15 mins from Airport',
+    revenue: 756000000,
+    completionPercent: 55
+  },
 ];
 
 function DataTable<T extends { id: string | number }>({
@@ -731,8 +757,10 @@ function DataTable<T extends { id: string | number }>({
   );
 }
 
+export default DataTable;
+
 // Demo with Eastern Estate Projects
-export default function Demo() {
+export function DataTableDemo() {
   const columns: Column<typeof easternEstateProjects[0]>[] = [
     { 
       key: 'code', 
@@ -795,7 +823,8 @@ export default function Demo() {
       label: 'Sold / Available',
       width: '150px',
       render: (value, row: any) => {
-        const percent = Math.round((value / row.totalUnits) * 100);
+        const totalUnits = row.totalUnits || 0;
+        const percent = totalUnits > 0 ? Math.round((value / totalUnits) * 100) : 0;
         return (
           <div>
             <div className="text-sm font-medium">{value} / {row.availableUnits}</div>
@@ -831,56 +860,72 @@ export default function Demo() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Eastern Estate Projects</h1>
-          </div>
-          <p className="text-gray-600">
-            Complete overview of all EECD construction and real estate projects
-          </p>
-        </div>
+        {(() => {
+          const totalProjects = easternEstateProjects.length;
+          const totalUnits = easternEstateProjects.reduce((sum, project) => sum + (project.totalUnits || 0), 0);
+          const soldUnits = easternEstateProjects.reduce((sum, project) => sum + (project.soldUnits || 0), 0);
+          const availableUnits = easternEstateProjects.reduce((sum, project) => sum + (project.availableUnits || 0), 0);
+          const totalRevenue = easternEstateProjects.reduce((sum, project) => sum + (project.revenue || 0), 0);
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Projects</p>
-                <p className="text-2xl font-bold text-gray-900">4</p>
+          return (
+            <>
+              <div className="mb-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Building2 className="w-8 h-8 text-blue-600" />
+                  <h1 className="text-3xl font-bold text-gray-900">Eastern Estate Projects</h1>
+                </div>
+                <p className="text-gray-600">
+                  Complete overview of all EECD construction and real estate projects
+                </p>
               </div>
-              <Building2 className="w-10 h-10 text-blue-600 opacity-20" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Units</p>
-                <p className="text-2xl font-bold text-gray-900">1,232</p>
+
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Projects</p>
+                      <p className="text-2xl font-bold text-gray-900">{totalProjects}</p>
+                    </div>
+                    <Building2 className="w-10 h-10 text-blue-600 opacity-20" />
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Units</p>
+                      <p className="text-2xl font-bold text-gray-900">{totalUnits.toLocaleString()}</p>
+                    </div>
+                    <Home className="w-10 h-10 text-green-600 opacity-20" />
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Units Sold</p>
+                      <p className="text-2xl font-bold text-green-700">{soldUnits.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">
+                        {totalUnits > 0 ? Math.round((soldUnits / totalUnits) * 100) : 0}% sold
+                      </p>
+                    </div>
+                    <TrendingUp className="w-10 h-10 text-green-600 opacity-20" />
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg shadow-sm p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Revenue</p>
+                      <p className="text-2xl font-bold text-blue-700">
+                        ₹{(totalRevenue / 10000000).toFixed(1)}Cr
+                      </p>
+                    </div>
+                    <Calendar className="w-10 h-10 text-blue-600 opacity-20" />
+                  </div>
+                </div>
               </div>
-              <Home className="w-10 h-10 text-green-600 opacity-20" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Units Sold</p>
-                <p className="text-2xl font-bold text-green-700">765</p>
-                <p className="text-xs text-gray-500">62% sold</p>
-              </div>
-              <TrendingUp className="w-10 h-10 text-green-600 opacity-20" />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-blue-700">₹20.3Cr</p>
-              </div>
-              <Calendar className="w-10 h-10 text-blue-600 opacity-20" />
-            </div>
-          </div>
-        </div>
+            </>
+          );
+        })()}
 
         <DataTable
           data={easternEstateProjects}

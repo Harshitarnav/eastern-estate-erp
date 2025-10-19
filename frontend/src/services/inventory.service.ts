@@ -62,27 +62,27 @@ class InventoryService {
     }
 
     const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    return response;
   }
 
   async getItem(id: string): Promise<InventoryItem> {
     const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    return response;
   }
 
   async getStatistics(): Promise<any> {
     const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    return response;
   }
 
   async createItem(data: Partial<InventoryItem>): Promise<InventoryItem> {
     const response = await api.post(this.baseUrl, data);
-    return response.data;
+    return response;
   }
 
   async updateItem(id: string, data: Partial<InventoryItem>): Promise<InventoryItem> {
     const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    return response;
   }
 
   async deleteItem(id: string): Promise<void> {
@@ -91,12 +91,12 @@ class InventoryService {
 
   async issueItem(id: string, quantity: number): Promise<InventoryItem> {
     const response = await api.post(`${this.baseUrl}/${id}/issue`, { quantity });
-    return response.data;
+    return response;
   }
 
   async receiveItem(id: string, quantity: number): Promise<InventoryItem> {
     const response = await api.post(`${this.baseUrl}/${id}/receive`, { quantity });
-    return response.data;
+    return response;
   }
 }
 

@@ -56,3 +56,33 @@ export class UsersController {
     return this.usersService.toggleActive(id);
   }
 }
+
+@Controller('roles')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class RolesController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Roles('super_admin', 'admin', 'hr_manager')
+  findAllRoles() {
+    return this.usersService.findAllRoles();
+  }
+
+  @Get(':id')
+  @Roles('super_admin', 'admin', 'hr_manager')
+  findOneRole(@Param('id') id: string) {
+    return this.usersService.findOneRole(id);
+  }
+}
+
+@Controller('permissions')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class PermissionsController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Roles('super_admin', 'admin', 'hr_manager')
+  findAllPermissions() {
+    return this.usersService.findAllPermissions();
+  }
+}

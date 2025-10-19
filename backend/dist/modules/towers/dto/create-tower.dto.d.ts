@@ -1,9 +1,11 @@
 export declare class CreateTowerDto {
     name: string;
     towerNumber: string;
+    towerCode?: string;
     description?: string;
     totalFloors: number;
     totalUnits: number;
+    unitsPlanned?: number;
     basementLevels?: number;
     unitsPerFloor?: string;
     amenities?: string[];

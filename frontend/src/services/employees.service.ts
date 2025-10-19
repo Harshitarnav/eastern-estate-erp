@@ -52,22 +52,22 @@ export const employeesService = {
       });
     }
     const response = await api.get(`/employees?${params.toString()}`);
-    return response.data;
+    return response;
   },
 
   async getEmployee(id: string): Promise<Employee> {
     const response = await api.get(`/employees/${id}`);
-    return response.data;
+    return response;
   },
 
   async createEmployee(data: any): Promise<Employee> {
     const response = await api.post('/employees', data);
-    return response.data;
+    return response;
   },
 
   async updateEmployee(id: string, data: any): Promise<Employee> {
     const response = await api.patch(`/employees/${id}`, data);
-    return response.data;
+    return response;
   },
 
   async deleteEmployee(id: string): Promise<void> {
@@ -76,6 +76,6 @@ export const employeesService = {
 
   async getStatistics(): Promise<any> {
     const response = await api.get('/employees/statistics');
-    return response.data;
+    return response;
   },
 };

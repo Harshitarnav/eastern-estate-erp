@@ -381,7 +381,7 @@ export default function ConstructionPage() {
                       <span>Update Progress</span>
                     </button>
                     <button
-                      onClick={() => alert(`View project: ${project.id}`)}
+                      onClick={() => router.push(`/construction/${project.id}`)}
                       className="flex-1 px-3 py-2 border rounded-lg text-sm font-medium transition-colors"
                       style={{ borderColor: '#A8211B', color: '#A8211B' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}

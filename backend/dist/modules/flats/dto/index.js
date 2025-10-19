@@ -18,4 +18,5 @@ __exportStar(require("./create-flat.dto"), exports);
 __exportStar(require("./update-flat.dto"), exports);
 __exportStar(require("./query-flat.dto"), exports);
 __exportStar(require("./flat-response.dto"), exports);
+__exportStar(require("./flat-inventory-summary.dto"), exports);
 //# sourceMappingURL=index.js.map

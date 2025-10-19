@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsNumber, Min } from 'class-validator';
+import { IsOptional, IsString, IsNumber, Min, IsUUID, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryPropertyDto {
@@ -35,10 +35,19 @@ export class QueryPropertyDto {
   projectType?: string;
 
   @IsOptional()
+  @IsUUID('4')
+  projectId?: string;
+
+  @IsOptional()
   @IsString()
   sortBy?: string = 'createdAt';
 
   @IsOptional()
   @IsString()
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
+
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  isActive?: boolean;
 }

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 // Types
-interface FormField {
+export interface FormField {
   name: string;
   label: string;
   type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency';
@@ -44,7 +44,7 @@ interface FormField {
   suffix?: string;
 }
 
-interface FormSection {
+export interface FormSection {
   title: string;
   description?: string;
   fields: FormField[];
@@ -770,4 +770,3 @@ function PropertyFormDemo() {
 }
 
 export { Form, PropertyFormDemo };
-export type { FormField, FormSection, FormProps };

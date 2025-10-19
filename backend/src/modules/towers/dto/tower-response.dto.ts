@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
 
 /**
  * Tower Response DTO
@@ -27,6 +28,12 @@ export class TowerResponseDto {
     example: 'T1',
   })
   towerNumber: string;
+
+  @ApiProperty({
+    description: 'Tower code',
+    example: 'T1',
+  })
+  towerCode: string;
 
   @ApiPropertyOptional({
     description: 'Tower description',
@@ -186,6 +193,12 @@ export class TowerResponseDto {
 
   // Computed fields
   @ApiPropertyOptional({
+    description: 'Number of flats in this tower',
+    example: 60,
+  })
+  flatsCount?: number;
+
+  @ApiPropertyOptional({
     description: 'Number of available units',
     example: 45,
   })
@@ -202,6 +215,36 @@ export class TowerResponseDto {
     example: 25,
   })
   occupancyRate?: number;
+
+  @ApiPropertyOptional({
+    description: 'Planned number of units for the tower',
+    example: 64,
+  })
+  unitsPlanned?: number;
+
+  @ApiPropertyOptional({
+    description: 'Number of units currently defined',
+    example: 58,
+  })
+  unitsDefined?: number;
+
+  @ApiPropertyOptional({
+    description: 'Data completeness percentage (0-100)',
+    example: 78.5,
+  })
+  dataCompletionPct?: number;
+
+  @ApiPropertyOptional({
+    description: 'Editorial data completeness status',
+    enum: DataCompletenessStatus,
+  })
+  dataCompletenessStatus?: DataCompletenessStatus;
+
+  @ApiPropertyOptional({
+    description: 'Outstanding data issue count',
+    example: 3,
+  })
+  issuesCount?: number;
 }
 
 /**

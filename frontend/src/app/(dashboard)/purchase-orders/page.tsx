@@ -391,11 +391,11 @@ export default function PurchaseOrdersPage() {
                     )}
 
                     <button
-                      onClick={() => alert(`View order: ${order.id}`)}
+                      onClick={() => router.push(`/purchase-orders/${order.id}`)}
                       className="px-3 py-2 border rounded-lg text-sm font-medium transition-colors"
                       style={{ borderColor: '#A8211B', color: '#A8211B' }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#FEF3E2')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       View
                     </button>

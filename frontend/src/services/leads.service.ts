@@ -111,48 +111,48 @@ class LeadsService {
     }
 
     const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response.data;
+    return response;
   }
 
   async getLead(id: string): Promise<Lead> {
     const response = await api.get(`${this.baseUrl}/${id}`);
-    return response.data;
+    return response;
   }
 
   async getStatistics(): Promise<any> {
     const response = await api.get(`${this.baseUrl}/statistics`);
-    return response.data;
+    return response;
   }
 
   async getMyLeads(userId: string): Promise<Lead[]> {
     const response = await api.get(`${this.baseUrl}/my-leads/${userId}`);
-    return response.data;
+    return response;
   }
 
   async getDueFollowUps(userId?: string): Promise<Lead[]> {
     const params = userId ? `?userId=${userId}` : '';
     const response = await api.get(`${this.baseUrl}/due-followups${params}`);
-    return response.data;
+    return response;
   }
 
   async createLead(data: Partial<Lead>): Promise<Lead> {
     const response = await api.post(this.baseUrl, data);
-    return response.data;
+    return response;
   }
 
   async updateLead(id: string, data: Partial<Lead>): Promise<Lead> {
     const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response.data;
+    return response;
   }
 
   async assignLead(id: string, userId: string): Promise<Lead> {
     const response = await api.patch(`${this.baseUrl}/${id}/assign`, { userId });
-    return response.data;
+    return response;
   }
 
   async updateStatus(id: string, status: string, notes?: string): Promise<Lead> {
     const response = await api.patch(`${this.baseUrl}/${id}/status`, { status, notes });
-    return response.data;
+    return response;
   }
 
   async deleteLead(id: string): Promise<void> {

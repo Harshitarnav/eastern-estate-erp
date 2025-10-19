@@ -1,11 +1,15 @@
 import { Property } from '../../properties/entities/property.entity';
+import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
 export declare class Tower {
     id: string;
     name: string;
     towerNumber: string;
+    towerCode: string;
     description: string;
     totalFloors: number;
     totalUnits: number;
+    unitsPlanned: number;
+    unitsDefined: number;
     basementLevels: number;
     unitsPerFloor: string;
     amenities: string[];
@@ -21,11 +25,17 @@ export declare class Tower {
     facing: string;
     specialFeatures: string;
     isActive: boolean;
+    towerChecklist: Record<string, boolean> | null;
+    dataCompletionPct: number;
+    dataCompletenessStatus: DataCompletenessStatus;
+    issuesCount: number;
     displayOrder: number;
     images: string[];
     floorPlans: Record<string, string>;
     property: Property;
     propertyId: string;
+    flats: Flat[];
     createdAt: Date;
     updatedAt: Date;
 }
+import { Flat } from '../../flats/entities/flat.entity';

@@ -1,7 +1,9 @@
 import { Tower } from '../../towers/entities/tower.entity';
 import { Property } from '../../properties/entities/property.entity';
+import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
 export declare enum FlatStatus {
     AVAILABLE = "AVAILABLE",
+    ON_HOLD = "ON_HOLD",
     BLOCKED = "BLOCKED",
     BOOKED = "BOOKED",
     SOLD = "SOLD",
@@ -60,6 +62,11 @@ export declare class Flat {
     isAvailable: boolean;
     availableFrom: Date;
     expectedPossession: Date;
+    flatChecklist: Record<string, boolean> | null;
+    dataCompletionPct: number;
+    completenessStatus: DataCompletenessStatus;
+    issues: string[] | null;
+    issuesCount: number;
     facing: FacingDirection;
     vastuCompliant: boolean;
     cornerUnit: boolean;

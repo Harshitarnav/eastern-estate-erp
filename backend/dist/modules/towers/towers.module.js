@@ -13,16 +13,18 @@ const towers_controller_1 = require("./towers.controller");
 const towers_service_1 = require("./towers.service");
 const tower_entity_1 = require("./entities/tower.entity");
 const property_entity_1 = require("../properties/entities/property.entity");
+const flat_entity_1 = require("../flats/entities/flat.entity");
+const towers_schema_sync_service_1 = require("./towers.schema-sync.service");
 let TowersModule = class TowersModule {
 };
 exports.TowersModule = TowersModule;
 exports.TowersModule = TowersModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([tower_entity_1.Tower, property_entity_1.Property]),
+            typeorm_1.TypeOrmModule.forFeature([tower_entity_1.Tower, property_entity_1.Property, flat_entity_1.Flat]),
         ],
         controllers: [towers_controller_1.TowersController],
-        providers: [towers_service_1.TowersService],
+        providers: [towers_service_1.TowersService, towers_schema_sync_service_1.TowersSchemaSyncService],
         exports: [towers_service_1.TowersService],
     })
 ], TowersModule);

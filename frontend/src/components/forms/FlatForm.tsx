@@ -9,6 +9,7 @@ interface FlatFormProps {
   loading?: boolean;
   properties?: any[];
   towers?: any[];
+  customers?: any[];
 }
 
 export default function FlatForm({ 
@@ -17,7 +18,8 @@ export default function FlatForm({
   onCancel,
   loading = false,
   properties = [],
-  towers = []
+  towers = [],
+  customers = []
 }: FlatFormProps) {
   
   const sections: FormSection[] = [
@@ -282,14 +284,14 @@ export default function FlatForm({
           label: 'Facing Direction',
           type: 'select',
           options: [
-            { value: 'NORTH', label: 'North' },
-            { value: 'SOUTH', label: 'South' },
-            { value: 'EAST', label: 'East' },
-            { value: 'WEST', label: 'West' },
-            { value: 'NORTH_EAST', label: 'North-East' },
-            { value: 'NORTH_WEST', label: 'North-West' },
-            { value: 'SOUTH_EAST', label: 'South-East' },
-            { value: 'SOUTH_WEST', label: 'South-West' },
+            { value: 'North', label: 'North' },
+            { value: 'South', label: 'South' },
+            { value: 'East', label: 'East' },
+            { value: 'West', label: 'West' },
+            { value: 'North-East', label: 'North-East' },
+            { value: 'North-West', label: 'North-West' },
+            { value: 'South-East', label: 'South-East' },
+            { value: 'South-West', label: 'South-West' },
           ],
         },
         {
@@ -334,6 +336,62 @@ export default function FlatForm({
             { value: 'SEMI_FURNISHED', label: 'Semi-Furnished' },
             { value: 'FULLY_FURNISHED', label: 'Fully Furnished' },
           ],
+        },
+      ],
+    },
+    {
+      title: 'Customer Assignment',
+      description: 'Link this unit to a customer so sales and CRM stay in sync.',
+      fields: [
+        {
+          name: 'customerId',
+          label: 'Assign Existing Customer',
+          type: 'select',
+          options: [
+            { value: '', label: 'None' },
+            ...customers.map((customer) => ({
+              value: customer.id,
+              label: `${customer.firstName} ${customer.lastName} (${customer.email})`,
+            })),
+          ],
+          helperText: 'Pick an existing customer or fill details below to create a new one.',
+        },
+        {
+          name: 'customerFirstName',
+          label: 'Customer First Name',
+          type: 'text',
+          helperText: 'Required if you are creating a new customer while saving this unit.',
+        },
+        {
+          name: 'customerLastName',
+          label: 'Customer Last Name',
+          type: 'text',
+        },
+        {
+          name: 'customerEmail',
+          label: 'Customer Email',
+          type: 'email',
+        },
+        {
+          name: 'customerPhone',
+          label: 'Customer Phone',
+          type: 'tel',
+        },
+        {
+          name: 'customerType',
+          label: 'Customer Type',
+          type: 'select',
+          options: [
+            { value: 'INDIVIDUAL', label: 'Individual' },
+            { value: 'CORPORATE', label: 'Corporate' },
+            { value: 'NRI', label: 'NRI' },
+          ],
+        },
+        {
+          name: 'customerNotes',
+          label: 'Customer Notes',
+          type: 'textarea',
+          rows: 3,
         },
       ],
     },

@@ -12,14 +12,16 @@ const typeorm_1 = require("@nestjs/typeorm");
 const flats_controller_1 = require("./flats.controller");
 const flats_service_1 = require("./flats.service");
 const flat_entity_1 = require("./entities/flat.entity");
+const flats_schema_sync_service_1 = require("./flats.schema-sync.service");
+const tower_entity_1 = require("../towers/entities/tower.entity");
 let FlatsModule = class FlatsModule {
 };
 exports.FlatsModule = FlatsModule;
 exports.FlatsModule = FlatsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([flat_entity_1.Flat])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([flat_entity_1.Flat, tower_entity_1.Tower])],
         controllers: [flats_controller_1.FlatsController],
-        providers: [flats_service_1.FlatsService],
+        providers: [flats_service_1.FlatsService, flats_schema_sync_service_1.FlatsSchemaSyncService],
         exports: [flats_service_1.FlatsService],
     })
 ], FlatsModule);

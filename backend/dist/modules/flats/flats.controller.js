@@ -21,6 +21,9 @@ let FlatsController = class FlatsController {
     constructor(flatsService) {
         this.flatsService = flatsService;
     }
+    async getGlobalStats() {
+        return this.flatsService.getGlobalStats();
+    }
     async create(createFlatDto) {
         return this.flatsService.create(createFlatDto);
     }
@@ -36,6 +39,9 @@ let FlatsController = class FlatsController {
     async findByProperty(propertyId) {
         return this.flatsService.findByProperty(propertyId);
     }
+    async getTowerInventorySummary(towerId) {
+        return this.flatsService.getTowerInventorySummary(towerId);
+    }
     async getPropertyStats(propertyId) {
         return this.flatsService.getPropertyStats(propertyId);
     }
@@ -50,6 +56,12 @@ let FlatsController = class FlatsController {
     }
 };
 exports.FlatsController = FlatsController;
+__decorate([
+    (0, common_1.Get)('stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], FlatsController.prototype, "getGlobalStats", null);
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
@@ -86,6 +98,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], FlatsController.prototype, "findByProperty", null);
+__decorate([
+    (0, common_1.Get)('tower/:towerId/inventory/summary'),
+    __param(0, (0, common_1.Param)('towerId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlatsController.prototype, "getTowerInventorySummary", null);
 __decorate([
     (0, common_1.Get)('property/:propertyId/stats'),
     __param(0, (0, common_1.Param)('propertyId')),

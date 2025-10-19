@@ -20,7 +20,7 @@ export function PropertyImageUpload() {
     const response = await fetch('/api/v1/upload/images', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
       body: formData,
     });
@@ -61,7 +61,7 @@ export function DocumentUpload() {
     const response = await fetch('/api/v1/upload/documents', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
       body: formData,
     });
@@ -103,7 +103,7 @@ export function KYCDocumentUpload() {
     const response = await fetch('/api/v1/customers/kyc/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
       body: formData,
     });
@@ -161,7 +161,7 @@ export function PaymentReceiptUpload({ paymentId }: { paymentId: string }) {
     const response = await fetch('/api/v1/payments/upload-receipt', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
       body: formData,
     });
@@ -207,7 +207,7 @@ export function PropertyFormWithUpload() {
     const response = await fetch('/api/v1/upload/property-images', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
       body: formData,
     });
@@ -231,7 +231,7 @@ export function PropertyFormWithUpload() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
       },
       body: JSON.stringify({
         name: formData.name,
