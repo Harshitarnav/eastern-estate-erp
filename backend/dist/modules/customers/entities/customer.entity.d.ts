@@ -9,64 +9,66 @@ export declare enum KYCStatus {
     VERIFIED = "VERIFIED",
     REJECTED = "REJECTED"
 }
+export declare enum CustomerRequirementType {
+    END_USER = "END_USER",
+    INVESTOR = "INVESTOR",
+    BOTH = "BOTH"
+}
+export declare enum PropertyPreference {
+    FLAT = "FLAT",
+    DUPLEX = "DUPLEX",
+    PENTHOUSE = "PENTHOUSE",
+    VILLA = "VILLA",
+    PLOT = "PLOT",
+    COMMERCIAL = "COMMERCIAL",
+    ANY = "ANY"
+}
 export declare class Customer {
     id: string;
-    firstName: string;
-    lastName: string;
+    customerCode: string;
+    fullName: string;
+    get firstName(): string;
+    get lastName(): string;
     email: string;
-    phone: string;
+    phoneNumber: string;
+    get phone(): string;
     alternatePhone: string;
     dateOfBirth: Date;
     gender: string;
-    address: string;
+    occupation: string;
+    companyName: string;
+    get company(): string;
+    addressLine1: string;
+    get address(): string;
+    addressLine2: string;
     city: string;
     state: string;
     pincode: string;
     country: string;
-    type: CustomerType;
-    occupation: string;
-    annualIncome: number;
-    company: string;
-    designation: string;
-    kycStatus: KYCStatus;
     panNumber: string;
     aadharNumber: string;
-    passportNumber: string;
-    voterIdNumber: string;
-    drivingLicenseNumber: string;
-    panCardUrl: string;
-    aadharCardUrl: string;
-    photoUrl: string;
-    otherDocuments: string[];
-    convertedFromLeadId: string;
-    convertedAt: Date;
-    referredBy: string;
-    interestedPropertyTypes: string[];
-    budgetMin: number;
-    budgetMax: number;
-    preferredLocations: string[];
-    needsHomeLoan: boolean;
-    hasApprovedLoan: boolean;
-    bankName: string;
-    approvedLoanAmount: number;
-    emergencyContactName: string;
-    emergencyContactPhone: string;
-    emergencyContactRelation: string;
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    whatsappNotifications: boolean;
+    customerType: string;
+    get type(): CustomerType;
+    leadSource: string;
+    assignedSalesPerson: string;
+    creditLimit: number;
+    outstandingBalance: number;
     totalBookings: number;
     totalPurchases: number;
-    totalSpent: number;
-    lastPurchaseDate: Date;
-    notes: string;
-    tags: string[];
+    get totalSpent(): number;
+    kycStatus: string;
+    kycDocuments: any;
     isActive: boolean;
-    isVIP: boolean;
-    isBlacklisted: boolean;
-    blacklistReason: string;
+    notes: string;
+    metadata: any;
     createdAt: Date;
     updatedAt: Date;
-    createdBy: string;
-    updatedBy: string;
+    requirementType: string;
+    propertyPreference: string;
+    tentativePurchaseTimeframe: string;
+    get lastBookingDate(): Date;
+    set lastBookingDate(value: Date);
+    get isVIP(): boolean;
+    get designation(): string;
+    get annualIncome(): number;
 }

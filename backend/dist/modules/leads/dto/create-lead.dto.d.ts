@@ -15,7 +15,7 @@ export declare class CreateLeadDto {
     leadScore?: number;
     notes?: string;
     propertyId?: string;
-    interestedPropertyTypes?: string[];
+    interestedPropertyTypes?: string;
     budgetMin?: number;
     budgetMax?: number;
     preferredLocation?: string;

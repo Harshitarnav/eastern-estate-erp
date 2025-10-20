@@ -10,12 +10,12 @@ export interface Booking {
   bookingDate: string;
   totalAmount: number;
   tokenAmount: number;
-  agreementAmount: number;
+  // agreementAmount: number; // Removed - column doesn't exist
   paidAmount: number;
   balanceAmount: number;
-  paymentStatus: string;
-  tokenPaidDate?: string;
-  tokenReceiptNumber?: string;
+  // paymentStatus: string; // Removed - column doesn't exist
+  // tokenPaidDate?: string; // Removed - column doesn't exist
+  // tokenReceiptNumber?: string; // Removed - column doesn't exist
   tokenPaymentMode?: string;
   agreementNumber?: string;
   agreementDate?: string;

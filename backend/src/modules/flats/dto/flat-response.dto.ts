@@ -61,15 +61,21 @@ export class FlatResponseDto {
   completenessStatus?: string;
   issues?: string[];
   issuesCount?: number;
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
 
-  static fromEntity(flat: Flat): FlatResponseDto {
+  static fromEntity(flat: Flat, extras?: Partial<FlatResponseDto>): FlatResponseDto {
     const dto = new FlatResponseDto();
     Object.assign(dto, flat);
+    if (extras) {
+      Object.assign(dto, extras);
+    }
     return dto;
   }
 
-  static fromEntities(flats: Flat[]): FlatResponseDto[] {
-    return flats.map((flat) => this.fromEntity(flat));
+  static fromEntities(flats: Flat[], extras?: Record<string, Partial<FlatResponseDto>>): FlatResponseDto[] {
+    return flats.map((flat) => this.fromEntity(flat, extras?.[flat.id]));
   }
 }
 

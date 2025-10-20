@@ -46,6 +46,9 @@ export declare class PropertyResponseDto {
     totalFlats?: number;
     soldFlats?: number;
     availableFlats?: number;
+    fundsTarget?: number;
+    fundsRealized?: number;
+    fundsOutstanding?: number;
 }
 export declare class PaginatedPropertyResponseDto {
     data: PropertyResponseDto[];

@@ -240,4 +240,12 @@ export class CreateBookingDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  paymentPlan?: 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT';
+
+  @IsOptional()
+  @IsUUID()
+  towerId?: string;
 }

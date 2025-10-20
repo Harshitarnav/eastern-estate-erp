@@ -29,6 +29,7 @@ import {
 import { towersService, Tower } from '@/services/towers.service';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import { formatCurrency } from '@/utils/formatters';
 
 const COMPLETENESS_BADGE: Record<string, { label: string; text: string; bg: string; border: string }> = {
   NOT_STARTED: {
@@ -189,6 +190,7 @@ export default function FlatsInventoryPage() {
       unitsText: `${formatIndianNumber(summary.unitsDefined)} defined · ${formatIndianNumber(summary.missingUnits)} missing`,
       salesText: `${formatIndianNumber(summary.salesBreakdown.available)} available · ${formatIndianNumber(summary.salesBreakdown.booked + summary.salesBreakdown.sold)} committed`,
       issuesText: `${summary.completeness.complete} complete · ${summary.completeness.needsReview} needs review`,
+      fundsText: `${formatCurrency(summary.fundsRealized ?? 0)} realised · ${formatCurrency(summary.fundsOutstanding ?? 0)} pending`,
     };
   }, [summary]);
 
@@ -288,6 +290,7 @@ export default function FlatsInventoryPage() {
             <SummaryCard title="Units" description={headerStats.unitsText} />
             <SummaryCard title="Sales mix" description={headerStats.salesText} />
             <SummaryCard title="Completeness" description={headerStats.issuesText} />
+            <SummaryCard title="Receivables" description={headerStats.fundsText} />
           </div>
         ) : null}
       </section>
@@ -349,6 +352,7 @@ export default function FlatsInventoryPage() {
                       <th className="px-4 py-3 text-left">Area (carpet / super)</th>
                       <th className="px-4 py-3 text-left">Facing</th>
                       <th className="px-4 py-3 text-left">Price</th>
+                      <th className="px-4 py-3 text-left">Receivables</th>
                       <th className="px-4 py-3 text-left">Sales status</th>
                       <th className="px-4 py-3 text-left">Completeness</th>
                       <th className="px-4 py-3 text-left">Warnings</th>
@@ -542,6 +546,10 @@ function UnitRow({ unit, onOpen }: { unit: FlatInventoryUnit; onOpen: () => void
       </td>
       <td className="px-4 py-3 text-gray-700">{unit.facing ?? '—'}</td>
       <td className="px-4 py-3 text-gray-700">₹{formatIndianNumber(unit.basePrice)}</td>
+      <td className="px-4 py-3 text-gray-700">
+        <div className="text-sm font-semibold text-gray-900">{formatCurrency(unit.fundsRealized ?? 0)}</div>
+        <div className="text-xs text-gray-500">Pending {formatCurrency(unit.fundsOutstanding ?? Math.max((unit.fundsTarget ?? 0) - (unit.fundsRealized ?? 0), 0))}</div>
+      </td>
       <td className="px-4 py-3">
         <span
           className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold text-white"

@@ -310,6 +310,10 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Employee.prototype, "isActive", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Employee.prototype, "userId", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], Employee.prototype, "createdAt", void 0);

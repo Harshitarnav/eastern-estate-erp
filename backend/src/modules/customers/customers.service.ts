@@ -21,11 +21,31 @@ export class CustomersService {
     private customersRepository: Repository<Customer>,
   ) {}
 
+  /**
+   * Generate unique customer code
+   */
+  private async generateCustomerCode(): Promise<string> {
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    
+    // Get count of customers this month to generate sequence
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const count = await this.customersRepository.count({
+      where: {
+        createdAt: startOfMonth as any,
+      },
+    });
+    
+    const sequence = (count + 1).toString().padStart(4, '0');
+    return `CU${year}${month}${sequence}`;
+  }
+
   async create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto> {
     const existing = await this.customersRepository.findOne({
       where: [
         { email: createCustomerDto.email },
-        { phone: createCustomerDto.phone },
+        { phoneNumber: createCustomerDto.phone },
       ],
     });
 
@@ -33,7 +53,26 @@ export class CustomersService {
       throw new ConflictException('Customer with this email or phone already exists');
     }
 
-    const customer = this.customersRepository.create(createCustomerDto);
+    // Generate unique customer code
+    const customerCode = await this.generateCustomerCode();
+
+    // Map firstName and lastName to fullName
+    const { firstName, lastName, phone, isVIP, ...rest } = createCustomerDto;
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    // Handle isVIP and other metadata fields
+    const metadata: any = {};
+    if (isVIP !== undefined) {
+      metadata.isVIP = isVIP;
+    }
+
+    const customer = this.customersRepository.create({
+      ...rest,
+      customerCode,
+      fullName,
+      phoneNumber: phone,
+      metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+    });
     const savedCustomer = await this.customersRepository.save(customer);
 
     return CustomerResponseDto.fromEntity(savedCustomer);
@@ -137,7 +176,7 @@ export class CustomersService {
       const existing = await this.customersRepository.findOne({
         where: [
           { email: updateCustomerDto.email || customer.email },
-          { phone: updateCustomerDto.phone || customer.phone },
+          { phoneNumber: updateCustomerDto.phone || customer.phoneNumber },
         ],
       });
 
@@ -146,7 +185,20 @@ export class CustomersService {
       }
     }
 
-    Object.assign(customer, updateCustomerDto);
+    // Map firstName and lastName to fullName if provided
+    const { firstName, lastName, phone, ...rest } = updateCustomerDto;
+    
+    if (firstName || lastName) {
+      const newFirstName = firstName || customer.firstName;
+      const newLastName = lastName || customer.lastName;
+      customer.fullName = `${newFirstName} ${newLastName}`.trim();
+    }
+    
+    if (phone) {
+      customer.phoneNumber = phone;
+    }
+
+    Object.assign(customer, rest);
     const updatedCustomer = await this.customersRepository.save(customer);
 
     return CustomerResponseDto.fromEntity(updatedCustomer);

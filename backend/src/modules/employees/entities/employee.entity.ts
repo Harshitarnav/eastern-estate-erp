@@ -261,6 +261,10 @@ export class Employee {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  // User Account Link
+  @Column({ type: 'uuid', nullable: true })
+  userId: string;
+
   // System Fields
   @CreateDateColumn()
   createdAt: Date;

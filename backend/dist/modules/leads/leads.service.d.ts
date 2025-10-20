@@ -4,6 +4,7 @@ import { CreateLeadDto, UpdateLeadDto, QueryLeadDto, LeadResponseDto, PaginatedL
 export declare class LeadsService {
     private leadsRepository;
     constructor(leadsRepository: Repository<Lead>);
+    private generateLeadCode;
     create(createLeadDto: CreateLeadDto): Promise<LeadResponseDto>;
     findAll(query: QueryLeadDto): Promise<PaginatedLeadsResponse>;
     findOne(id: string): Promise<LeadResponseDto>;

@@ -11,16 +11,18 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const payments_controller_1 = require("./payments.controller");
 const payments_service_1 = require("./payments.service");
+const payment_schedule_service_1 = require("./payment-schedule.service");
 const payment_entity_1 = require("./entities/payment.entity");
+const payment_schedule_entity_1 = require("./entities/payment-schedule.entity");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
 exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([payment_entity_1.Payment])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([payment_entity_1.Payment, payment_schedule_entity_1.PaymentSchedule])],
         controllers: [payments_controller_1.PaymentsController],
-        providers: [payments_service_1.PaymentsService],
-        exports: [payments_service_1.PaymentsService],
+        providers: [payments_service_1.PaymentsService, payment_schedule_service_1.PaymentScheduleService],
+        exports: [payments_service_1.PaymentsService, payment_schedule_service_1.PaymentScheduleService],
     })
 ], PaymentsModule);
 //# sourceMappingURL=payments.module.js.map

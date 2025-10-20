@@ -9,12 +9,8 @@ export declare class BookingResponseDto {
     bookingDate: string;
     totalAmount: number;
     tokenAmount: number;
-    agreementAmount: number;
     paidAmount: number;
     balanceAmount: number;
-    paymentStatus: string;
-    tokenPaidDate?: string;
-    tokenReceiptNumber?: string;
     tokenPaymentMode?: string;
     agreementNumber?: string;
     agreementDate?: string;

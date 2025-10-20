@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource, EntityManager } from 'typeorm';
 import { Property } from './entities/property.entity';
@@ -6,6 +6,8 @@ import { Project } from '../projects/entities/project.entity';
 import { Tower } from '../towers/entities/tower.entity';
 import { Flat, FlatStatus } from '../flats/entities/flat.entity';
 import { Customer } from '../customers/entities/customer.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import { ConstructionProject } from '../construction/entities/construction-project.entity';
 import {
   CreatePropertyDto,
   UpdatePropertyDto,
@@ -20,6 +22,7 @@ import {
   CustomerSummaryDto,
   PropertyInventorySummaryDto,
   TowerInventorySummaryDto,
+  TowerPaymentStageDto,
   emptySalesBreakdown,
   emptyTowersCompleteness,
   flatStatusToBreakdownKey,
@@ -29,6 +32,7 @@ import { buildDefaultFlatPayloads, parseFloorsDescriptor } from '../towers/utils
 
 @Injectable()
 export class PropertiesService {
+  private readonly logger = new Logger(PropertiesService.name);
   constructor(
     @InjectRepository(Property)
     private propertiesRepository: Repository<Property>,
@@ -40,6 +44,10 @@ export class PropertiesService {
     private flatsRepository: Repository<Flat>,
     @InjectRepository(Customer)
     private customersRepository: Repository<Customer>,
+    @InjectRepository(Booking)
+    private bookingsRepository: Repository<Booking>,
+    @InjectRepository(ConstructionProject)
+    private constructionRepository: Repository<ConstructionProject>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -210,6 +218,31 @@ export class PropertiesService {
     const towerStatusAggregation: Record<string, { total: number; statuses: Record<string, number> }> = {};
     const propertySalesBreakdown = emptySalesBreakdown();
 
+    const towerFinancials = await this.getTowerFinancials(towerIds);
+    let towerConstructionProjects: ConstructionProject[] = [];
+    if (towerIds.length) {
+      try {
+        towerConstructionProjects = await this.constructionRepository.find({
+          where: { towerId: In(towerIds), isActive: true },
+          order: { updatedAt: 'DESC' },
+          select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
+        });
+      } catch (error) {
+        this.logger.warn('Construction schema missing tower linkage; skipping tower stage data');
+        towerConstructionProjects = [];
+      }
+    }
+    const constructionMap = new Map<string, ConstructionProject>();
+    towerConstructionProjects.forEach((project) => {
+      if (!project.towerId) {
+        return;
+      }
+      const existing = constructionMap.get(project.towerId);
+      if (!existing || (existing.updatedAt ?? 0) < (project.updatedAt ?? 0)) {
+        constructionMap.set(project.towerId, project);
+      }
+    });
+
     if (towerIds.length > 0) {
       const flatAggregation = await this.flatsRepository
         .createQueryBuilder('flat')
@@ -242,57 +275,106 @@ export class PropertiesService {
 
     const towersCompleteness = emptyTowersCompleteness();
     const towersToPatch: { id: string; unitsDefined: number }[] = [];
-    const towerSummaries: TowerInventorySummaryDto[] = towers.map((tower) => {
-      const aggregation = towerStatusAggregation[tower.id] ?? { total: 0, statuses: {} };
-      const salesBreakdown = emptySalesBreakdown();
+    const towerSummaries: TowerInventorySummaryDto[] = await Promise.all(
+      towers.map(async (tower) => {
+        const aggregation = towerStatusAggregation[tower.id] ?? { total: 0, statuses: {} };
+        const salesBreakdown = emptySalesBreakdown();
 
-      Object.entries(aggregation.statuses).forEach(([statusKey, count]) => {
-        const key = flatStatusToBreakdownKey(statusKey as FlatStatus);
-        salesBreakdown[key] += count;
-        salesBreakdown.total += count;
-      });
+        Object.entries(aggregation.statuses).forEach(([statusKey, count]) => {
+          const key = flatStatusToBreakdownKey(statusKey as FlatStatus);
+          salesBreakdown[key] += count;
+          salesBreakdown.total += count;
+        });
 
-      const plannedUnits = tower.unitsPlanned ?? tower.totalUnits ?? 0;
-      const unitsDefined = aggregation.total;
-      const missingUnits = Math.max(plannedUnits - unitsDefined, 0);
+        const plannedUnits = tower.unitsPlanned ?? tower.totalUnits ?? 0;
+        const unitsDefined = aggregation.total;
+        const missingUnits = Math.max(plannedUnits - unitsDefined, 0);
 
-      switch (tower.dataCompletenessStatus) {
-        case DataCompletenessStatus.NOT_STARTED:
-          towersCompleteness.notStarted += 1;
-          break;
-        case DataCompletenessStatus.IN_PROGRESS:
-          towersCompleteness.inProgress += 1;
-          break;
-        case DataCompletenessStatus.NEEDS_REVIEW:
-          towersCompleteness.needsReview += 1;
-          break;
-        case DataCompletenessStatus.COMPLETE:
-          towersCompleteness.complete += 1;
-          break;
-        default:
-          towersCompleteness.inProgress += 1;
-      }
+        switch (tower.dataCompletenessStatus) {
+          case DataCompletenessStatus.NOT_STARTED:
+            towersCompleteness.notStarted += 1;
+            break;
+          case DataCompletenessStatus.IN_PROGRESS:
+            towersCompleteness.inProgress += 1;
+            break;
+          case DataCompletenessStatus.NEEDS_REVIEW:
+            towersCompleteness.needsReview += 1;
+            break;
+          case DataCompletenessStatus.COMPLETE:
+            towersCompleteness.complete += 1;
+            break;
+          default:
+            towersCompleteness.inProgress += 1;
+        }
 
-      if ((tower.unitsDefined ?? 0) !== unitsDefined) {
-        towersToPatch.push({ id: tower.id, unitsDefined });
-      }
+        if ((tower.unitsDefined ?? 0) !== unitsDefined) {
+          towersToPatch.push({ id: tower.id, unitsDefined });
+        }
 
-      return {
-        id: tower.id,
-        name: tower.name,
-        towerNumber: tower.towerNumber,
-        towerCode: tower.towerCode,
-        totalFloors: tower.totalFloors,
-        totalUnits: tower.totalUnits,
-        unitsPlanned: plannedUnits,
-        unitsDefined,
-        missingUnits,
-        dataCompletionPct: Number(tower.dataCompletionPct ?? 0),
-        dataCompletenessStatus: tower.dataCompletenessStatus ?? DataCompletenessStatus.NOT_STARTED,
-        issuesCount: tower.issuesCount ?? 0,
-        salesBreakdown,
-      } as TowerInventorySummaryDto;
-    });
+        const financial = towerFinancials[tower.id] ?? {
+          fundsTarget: 0,
+          fundsRealized: 0,
+          fundsOutstanding: 0,
+        };
+
+        const imageGallery = this.normalizeImageArray(tower.images);
+        const heroImage = imageGallery.length > 0 ? imageGallery[0] : null;
+
+        const sampleFlats = await this.flatsRepository.find({
+          where: { towerId: tower.id, isActive: true },
+          order: { updatedAt: 'DESC' },
+          take: 4,
+        });
+
+        const flatFinancialMap = await this.getFlatFinancialMap(sampleFlats.map((flat) => flat.id));
+
+        const unitStagePreviews = sampleFlats.map((flat) => {
+          const finances = flatFinancialMap.get(flat.id);
+          return {
+            id: flat.id,
+            flatNumber: flat.flatNumber,
+            status: flat.status,
+            floor: flat.floor ?? null,
+            type: flat.type ? String(flat.type) : null,
+            facing: flat.facing ?? null,
+            images: this.normalizeImageArray(flat.images),
+            fundsTarget: finances?.fundsTarget,
+            fundsRealized: finances?.fundsRealized,
+            fundsOutstanding: finances?.fundsOutstanding,
+          };
+        });
+
+        const paymentStages = this.buildTowerPaymentStages(
+          tower,
+          financial,
+          constructionMap.get(tower.id),
+        );
+
+        return {
+          id: tower.id,
+          name: tower.name,
+          towerNumber: tower.towerNumber,
+          towerCode: tower.towerCode,
+          totalFloors: tower.totalFloors,
+          totalUnits: tower.totalUnits,
+          unitsPlanned: plannedUnits,
+          unitsDefined,
+          missingUnits,
+          dataCompletionPct: Number(tower.dataCompletionPct ?? 0),
+          dataCompletenessStatus: tower.dataCompletenessStatus ?? DataCompletenessStatus.NOT_STARTED,
+          issuesCount: tower.issuesCount ?? 0,
+          salesBreakdown,
+          constructionStatus: tower.constructionStatus ?? null,
+          heroImage,
+          imageGallery,
+          unitStagePreviews,
+          fundsTarget: financial.fundsTarget,
+          fundsRealized: financial.fundsRealized,
+          fundsOutstanding: financial.fundsOutstanding,
+          paymentStages,
+        } as TowerInventorySummaryDto;
+      }),
+    );
 
     const towersPlanned = property.totalTowersPlanned ?? property.numberOfTowers ?? towerSummaries.length;
     const towersDefined = towerSummaries.length;
@@ -318,6 +400,8 @@ export class PropertiesService {
       );
     }
 
+    const financials = await this.calculatePropertyFinancials(property.id);
+
     const summary: PropertyInventorySummaryDto = {
       propertyId: property.id,
       propertyName: property.name,
@@ -333,6 +417,9 @@ export class PropertiesService {
       towersCompleteness,
       salesBreakdown: propertySalesBreakdown,
       towers: towerSummaries,
+      fundsTarget: financials.fundsTarget,
+      fundsRealized: financials.fundsRealized,
+      fundsOutstanding: financials.fundsOutstanding,
       generatedAt: new Date().toISOString(),
     };
 
@@ -431,6 +518,8 @@ export class PropertiesService {
     });
 
     const propertyStats = this.calculatePropertyStats(towerHierarchies);
+
+    const financials = await this.calculatePropertyFinancials(property.id);
 
     return {
       id: property.id,
@@ -601,6 +690,8 @@ export class PropertiesService {
     const soldFlats = Number(flatStats.sold ?? 0);
     const availableFlats = Number(flatStats.available ?? 0);
 
+    const financials = await this.calculatePropertyFinancials(property.id);
+
     return {
       id: property.id,
       propertyCode: property.propertyCode,
@@ -650,6 +741,9 @@ export class PropertiesService {
       totalFlats,
       soldFlats,
       availableFlats,
+      fundsTarget: financials.fundsTarget,
+      fundsRealized: financials.fundsRealized,
+      fundsOutstanding: financials.fundsOutstanding,
     };
   }
 
@@ -726,6 +820,163 @@ export class PropertiesService {
     });
 
     return stats;
+  }
+
+  private async getTowerFinancials(
+    towerIds: string[],
+  ): Promise<Record<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }>> {
+    const map: Record<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> = {};
+    if (!towerIds.length) {
+      return map;
+    }
+
+    const rows = await this.bookingsRepository
+      .createQueryBuilder('booking')
+      .select('flat.towerId', 'towerId')
+      .addSelect('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+      .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+      .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+      .innerJoin(Flat, 'flat', 'flat.id = booking.flatId')
+      .where('flat.towerId IN (:...towerIds)', { towerIds })
+      .groupBy('flat.towerId')
+      .getRawMany<{ towerId: string; totalAmount: string; paidAmount: string; balanceAmount: string }>();
+
+    rows.forEach((row) => {
+      const towerId = row.towerId;
+      const fundsTarget = Number(row.totalAmount ?? 0);
+      const fundsRealized = Number(row.paidAmount ?? 0);
+      const balance = Number(row.balanceAmount ?? Math.max(fundsTarget - fundsRealized, 0));
+      const fundsOutstanding = Number.isFinite(balance) ? balance : Math.max(fundsTarget - fundsRealized, 0);
+      map[towerId] = { fundsTarget, fundsRealized, fundsOutstanding };
+    });
+
+    return map;
+  }
+
+  private async getFlatFinancialMap(
+    flatIds: string[],
+  ): Promise<Map<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }>> {
+    const map = new Map<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }>();
+    if (!flatIds.length) {
+      return map;
+    }
+
+    const rows = await this.bookingsRepository
+      .createQueryBuilder('booking')
+      .select('booking.flatId', 'flatId')
+      .addSelect('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+      .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+      .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+      .where('booking.flatId IN (:...flatIds)', { flatIds })
+      .groupBy('booking.flatId')
+      .getRawMany<{ flatId: string; totalAmount: string; paidAmount: string; balanceAmount: string }>();
+
+    rows.forEach((row) => {
+      const fundsTarget = Number(row.totalAmount ?? 0);
+      const fundsRealized = Number(row.paidAmount ?? 0);
+      const balance = Number(row.balanceAmount ?? Math.max(fundsTarget - fundsRealized, 0));
+      const fundsOutstanding = Number.isFinite(balance) ? balance : Math.max(fundsTarget - fundsRealized, 0);
+      map.set(row.flatId, { fundsTarget, fundsRealized, fundsOutstanding });
+    });
+
+    return map;
+  }
+
+  private buildTowerPaymentStages(
+    tower: Tower,
+    financials: { fundsTarget: number; fundsRealized: number; fundsOutstanding: number },
+    construction?: ConstructionProject,
+  ): TowerPaymentStageDto[] {
+    const totalFloors = Math.max(Number(tower.totalFloors ?? 0), 0);
+    if (totalFloors === 0) {
+      return [];
+    }
+
+    const fundsTarget = Number(financials.fundsTarget ?? 0);
+    const fundsRealized = Number(financials.fundsRealized ?? 0);
+
+    const perFloorDue = totalFloors > 0 ? fundsTarget / totalFloors : 0;
+    const structureProgress = Math.max(Math.min(Number(construction?.structureProgress ?? 0), 100), 0);
+    const floorsCompleted = Math.floor((structureProgress / 100) * totalFloors);
+
+    let remainingRealized = fundsRealized;
+
+    const stages: TowerPaymentStageDto[] = [];
+
+    for (let floorNumber = 1; floorNumber <= totalFloors; floorNumber += 1) {
+      const paymentCollected = Math.min(Math.max(remainingRealized, 0), perFloorDue);
+      remainingRealized -= paymentCollected;
+      const paymentBalance = Math.max(perFloorDue - paymentCollected, 0);
+
+      let constructionStatus: 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING' = 'UPCOMING';
+      if (floorNumber <= floorsCompleted) {
+        constructionStatus = 'COMPLETED';
+      } else if (floorNumber === floorsCompleted + 1 && structureProgress < 100) {
+        constructionStatus = 'IN_PROGRESS';
+      }
+
+      stages.push({
+        floorNumber,
+        stageLabel: `Floor ${floorNumber}`,
+        constructionStatus,
+        paymentDue: perFloorDue,
+        paymentCollected,
+        paymentBalance,
+        isPaymentComplete: paymentBalance === 0,
+        completedAt:
+          constructionStatus === 'COMPLETED'
+            ? construction?.updatedAt?.toISOString?.() ?? null
+            : null,
+      });
+    }
+
+    return stages;
+  }
+
+  private async calculatePropertyFinancials(
+    propertyId: string,
+  ): Promise<{ fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> {
+    const finance = await this.bookingsRepository
+      .createQueryBuilder('booking')
+      .select('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+      .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+      .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+      .where('booking.propertyId = :propertyId', { propertyId })
+      .getRawOne<{ totalAmount: string; paidAmount: string; balanceAmount: string }>();
+
+    const fundsTarget = Number(finance?.totalAmount ?? 0);
+    const fundsRealized = Number(finance?.paidAmount ?? 0);
+    const inferredOutstanding = Math.max(fundsTarget - fundsRealized, 0);
+    const rawOutstanding = Number(finance?.balanceAmount ?? inferredOutstanding);
+
+    const fundsOutstanding = Number.isFinite(rawOutstanding) ? rawOutstanding : inferredOutstanding;
+
+    return {
+      fundsTarget,
+      fundsRealized,
+      fundsOutstanding,
+    };
+  }
+
+  private normalizeImageArray(value: unknown): string[] {
+    if (!value) {
+      return [];
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => (item !== null && item !== undefined ? String(item).trim() : ''))
+        .filter(Boolean);
+    }
+
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+
+    return [];
   }
 
   private calculatePropertyStats(towers: TowerHierarchyDto[]): PropertyHierarchyStatsDto {

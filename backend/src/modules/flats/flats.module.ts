@@ -5,9 +5,10 @@ import { FlatsService } from './flats.service';
 import { Flat } from './entities/flat.entity';
 import { FlatsSchemaSyncService } from './flats.schema-sync.service';
 import { Tower } from '../towers/entities/tower.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Flat, Tower])],
+  imports: [TypeOrmModule.forFeature([Flat, Tower, Booking])],
   controllers: [FlatsController],
   providers: [FlatsService, FlatsSchemaSyncService],
   exports: [FlatsService],

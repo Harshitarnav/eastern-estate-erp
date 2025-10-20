@@ -20,44 +20,90 @@ export enum KYCStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum CustomerRequirementType {
+  END_USER = 'END_USER',
+  INVESTOR = 'INVESTOR',
+  BOTH = 'BOTH',
+}
+
+export enum PropertyPreference {
+  FLAT = 'FLAT',
+  DUPLEX = 'DUPLEX',
+  PENTHOUSE = 'PENTHOUSE',
+  VILLA = 'VILLA',
+  PLOT = 'PLOT',
+  COMMERCIAL = 'COMMERCIAL',
+  ANY = 'ANY',
+}
+
 /**
- * Customer Entity
- * 
- * Represents verified customers who have been converted from leads
- * or directly registered. Contains KYC information and documentation.
+ * Customer Entity - Matches actual database schema
  */
 @Entity('customers')
 @Index(['email'])
-@Index(['phone'])
+@Index(['phoneNumber'])
 @Index(['isActive'])
 export class Customer {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Basic Information
-  @Column({ length: 100 })
-  firstName: string;
+  @Column({ name: 'customer_code', length: 50, unique: true })
+  @Index()
+  customerCode: string;
 
-  @Column({ length: 100 })
-  lastName: string;
+  @Column({ name: 'full_name', length: 255 })
+  @Index()
+  fullName: string;
 
-  @Column({ length: 200, unique: true })
+  // Getters for backward compatibility
+  get firstName(): string {
+    return this.fullName?.split(' ')[0] || '';
+  }
+
+  get lastName(): string {
+    const parts = this.fullName?.split(' ') || [];
+    return parts.slice(1).join(' ') || '';
+  }
+
+  @Column({ length: 255, nullable: true })
   email: string;
 
-  @Column({ length: 20, unique: true })
-  phone: string;
+  @Column({ name: 'phone_number', length: 20 })
+  @Index()
+  phoneNumber: string;
 
-  @Column({ length: 20, nullable: true })
+  get phone(): string {
+    return this.phoneNumber;
+  }
+
+  @Column({ name: 'alternate_phone', length: 20, nullable: true })
   alternatePhone: string;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
   dateOfBirth: Date;
 
-  @Column({ length: 10, nullable: true })
+  @Column({ length: 20, nullable: true })
   gender: string;
 
-  @Column({ type: 'text', nullable: true })
-  address: string;
+  @Column({ length: 100, nullable: true })
+  occupation: string;
+
+  @Column({ name: 'company_name', length: 255, nullable: true })
+  companyName: string;
+
+  get company(): string {
+    return this.companyName;
+  }
+
+  @Column({ name: 'address_line1', type: 'text', nullable: true })
+  addressLine1: string;
+
+  get address(): string {
+    return this.addressLine1;
+  }
+
+  @Column({ name: 'address_line2', type: 'text', nullable: true })
+  addressLine2: string;
 
   @Column({ length: 100, nullable: true })
   city: string;
@@ -65,166 +111,101 @@ export class Customer {
   @Column({ length: 100, nullable: true })
   state: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ length: 10, nullable: true })
   pincode: string;
 
   @Column({ length: 100, default: 'India' })
   country: string;
 
-  // Customer Classification
-  @Column({
-    type: 'enum',
-    enum: CustomerType,
-    default: CustomerType.INDIVIDUAL,
-  })
-  type: CustomerType;
-
-  @Column({ length: 100, nullable: true })
-  occupation: string;
-
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
-  annualIncome: number;
-
-  @Column({ length: 100, nullable: true })
-  company: string;
-
-  @Column({ length: 100, nullable: true })
-  designation: string;
-
-  // KYC Information
-  @Column({
-    type: 'enum',
-    enum: KYCStatus,
-    default: KYCStatus.PENDING,
-  })
-  @Index()
-  kycStatus: KYCStatus;
-
-  @Column({ length: 20, nullable: true })
+  @Column({ name: 'pan_number', length: 20, nullable: true })
   panNumber: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ name: 'aadhar_number', length: 20, nullable: true })
   aadharNumber: string;
 
-  @Column({ length: 30, nullable: true })
-  passportNumber: string;
+  @Column({ name: 'customer_type', length: 50, default: 'INDIVIDUAL' })
+  customerType: string;
 
-  @Column({ length: 30, nullable: true })
-  voterIdNumber: string;
+  get type(): CustomerType {
+    return this.customerType as CustomerType;
+  }
 
-  @Column({ length: 30, nullable: true })
-  drivingLicenseNumber: string;
+  @Column({ name: 'lead_source', length: 100, nullable: true })
+  leadSource: string;
 
-  @Column({ type: 'text', nullable: true })
-  panCardUrl: string;
+  @Column({ name: 'assigned_sales_person', length: 255, nullable: true })
+  assignedSalesPerson: string;
 
-  @Column({ type: 'text', nullable: true })
-  aadharCardUrl: string;
+  @Column({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  creditLimit: number;
 
-  @Column({ type: 'text', nullable: true })
-  photoUrl: string;
+  @Column({ name: 'outstanding_balance', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  outstandingBalance: number;
 
-  @Column({ type: 'simple-array', nullable: true })
-  otherDocuments: string[];
-
-  // Lead Source
-  @Column({ type: 'uuid', nullable: true })
-  convertedFromLeadId: string;
-
-  @Column({ type: 'date', nullable: true })
-  convertedAt: Date;
-
-  @Column({ length: 100, nullable: true })
-  referredBy: string;
-
-  // Preferences
-  @Column({ type: 'simple-array', nullable: true })
-  interestedPropertyTypes: string[];
-
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
-  budgetMin: number;
-
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
-  budgetMax: number;
-
-  @Column({ type: 'simple-array', nullable: true })
-  preferredLocations: string[];
-
-  // Financial
-  @Column({ type: 'boolean', default: false })
-  needsHomeLoan: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  hasApprovedLoan: boolean;
-
-  @Column({ length: 100, nullable: true })
-  bankName: string;
-
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
-  approvedLoanAmount: number;
-
-  // Emergency Contact
-  @Column({ length: 200, nullable: true })
-  emergencyContactName: string;
-
-  @Column({ length: 20, nullable: true })
-  emergencyContactPhone: string;
-
-  @Column({ length: 100, nullable: true })
-  emergencyContactRelation: string;
-
-  // Communication Preferences
-  @Column({ type: 'boolean', default: true })
-  emailNotifications: boolean;
-
-  @Column({ type: 'boolean', default: true })
-  smsNotifications: boolean;
-
-  @Column({ type: 'boolean', default: true })
-  whatsappNotifications: boolean;
-
-  // Statistics
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'total_bookings', type: 'int', default: 0 })
   totalBookings: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'total_purchases', type: 'decimal', precision: 15, scale: 2, default: 0 })
   totalPurchases: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  totalSpent: number;
+  get totalSpent(): number {
+    return this.totalPurchases;
+  }
 
-  @Column({ type: 'date', nullable: true })
-  lastPurchaseDate: Date;
+  @Column({ name: 'kyc_status', length: 50, default: 'PENDING' })
+  @Index()
+  kycStatus: string;
 
-  // Notes
+  @Column({ name: 'kyc_documents', type: 'jsonb', nullable: true })
+  kycDocuments: any;
+
+  @Column({ name: 'is_active', type: 'boolean', default: true })
+  isActive: boolean;
+
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ type: 'simple-array', nullable: true })
-  tags: string[];
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: any;
 
-  // System Fields
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  isVIP: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  isBlacklisted: boolean;
-
-  @Column({ type: 'text', nullable: true })
-  blacklistReason: string;
-
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ type: 'uuid', nullable: true })
-  createdBy: string;
+  @Column({ name: 'requirement_type', type: 'varchar', nullable: true })
+  @Index()
+  requirementType: string;
 
-  @Column({ type: 'uuid', nullable: true })
-  updatedBy: string;
+  @Column({ name: 'property_preference', type: 'varchar', nullable: true })
+  @Index()
+  propertyPreference: string;
+
+  @Column({ name: 'tentative_purchase_timeframe', length: 100, nullable: true })
+  tentativePurchaseTimeframe: string;
+
+  // Virtual properties for backward compatibility (not in DB)
+  get lastBookingDate(): Date {
+    return this.metadata?.lastBookingDate || null;
+  }
+
+  set lastBookingDate(value: Date) {
+    if (!this.metadata) {
+      this.metadata = {};
+    }
+    this.metadata.lastBookingDate = value;
+  }
+
+  get isVIP(): boolean {
+    return this.metadata?.isVIP || false;
+  }
+
+  get designation(): string {
+    return this.metadata?.designation || null;
+  }
+
+  get annualIncome(): number {
+    return this.metadata?.annualIncome || null;
+  }
 }

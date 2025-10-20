@@ -10,12 +10,12 @@ export class BookingResponseDto {
   bookingDate: string;
   totalAmount: number;
   tokenAmount: number;
-  agreementAmount: number;
+  // agreementAmount: number; // Column doesn't exist in DB
   paidAmount: number;
   balanceAmount: number;
-  paymentStatus: string;
-  tokenPaidDate?: string;
-  tokenReceiptNumber?: string;
+  // paymentStatus: string; // Column doesn't exist in DB
+  // tokenPaidDate?: string; // Column doesn't exist in DB
+  // tokenReceiptNumber?: string; // Column doesn't exist in DB
   tokenPaymentMode?: string;
   agreementNumber?: string;
   agreementDate?: string;
@@ -74,12 +74,12 @@ export class BookingResponseDto {
     dto.bookingDate = booking.bookingDate?.toString();
     dto.totalAmount = Number(booking.totalAmount);
     dto.tokenAmount = Number(booking.tokenAmount);
-    dto.agreementAmount = Number(booking.agreementAmount);
+    // dto.agreementAmount = Number(booking.agreementAmount); // Column doesn't exist in DB
     dto.paidAmount = Number(booking.paidAmount);
     dto.balanceAmount = Number(booking.balanceAmount);
-    dto.paymentStatus = booking.paymentStatus;
-    dto.tokenPaidDate = booking.tokenPaidDate?.toString();
-    dto.tokenReceiptNumber = booking.tokenReceiptNumber;
+    // dto.paymentStatus = booking.paymentStatus; // Column doesn't exist in DB
+    // dto.tokenPaidDate = booking.tokenPaidDate?.toString(); // Column doesn't exist in DB
+    // dto.tokenReceiptNumber = booking.tokenReceiptNumber; // Column doesn't exist in DB
     dto.tokenPaymentMode = booking.tokenPaymentMode;
     dto.agreementNumber = booking.agreementNumber;
     dto.agreementDate = booking.agreementDate?.toString();

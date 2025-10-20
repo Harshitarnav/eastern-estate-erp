@@ -17,33 +17,54 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const lead_entity_1 = require("./entities/lead.entity");
+const user_entity_1 = require("../users/entities/user.entity");
 const dto_1 = require("./dto");
 let LeadsService = class LeadsService {
     constructor(leadsRepository) {
         this.leadsRepository = leadsRepository;
     }
+    async generateLeadCode() {
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const count = await this.leadsRepository.count({
+            where: {
+                createdAt: startOfMonth,
+            },
+        });
+        const sequence = (count + 1).toString().padStart(4, '0');
+        return `LD${year}${month}${sequence}`;
+    }
     async create(createLeadDto) {
         const existing = await this.leadsRepository.findOne({
             where: [
                 { email: createLeadDto.email },
-                { phone: createLeadDto.phone },
+                { phoneNumber: createLeadDto.phone },
             ],
         });
         if (existing) {
             throw new common_1.ConflictException('Lead with this email or phone already exists');
         }
-        const lead = this.leadsRepository.create(createLeadDto);
+        const leadCode = await this.generateLeadCode();
+        const { firstName, lastName, phone, ...rest } = createLeadDto;
+        const fullName = `${firstName} ${lastName}`.trim();
+        const lead = this.leadsRepository.create({
+            ...rest,
+            leadCode,
+            fullName,
+            phoneNumber: phone,
+        });
         const savedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(savedLead);
     }
     async findAll(query) {
-        const { search, status, source, priority, propertyId, assignedTo, isQualified, needsHomeLoan, hasSiteVisit, minBudget, maxBudget, createdFrom, createdTo, followUpDue, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
+        const { search, status, source, priority, assignedTo, isQualified, needsHomeLoan, hasSiteVisit, minBudget, maxBudget, createdFrom, createdTo, followUpDue, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const queryBuilder = this.leadsRepository
             .createQueryBuilder('lead')
-            .leftJoinAndSelect('lead.property', 'property')
-            .leftJoinAndSelect('lead.assignedUser', 'assignedUser');
+            .leftJoinAndMapOne('lead.assignedUser', user_entity_1.User, 'assignedUser', '"assignedUser"."id"::text = "lead"."assigned_to"');
         if (search) {
-            queryBuilder.andWhere('(lead.firstName ILIKE :search OR lead.lastName ILIKE :search OR lead.email ILIKE :search OR lead.phone ILIKE :search)', { search: `%${search}%` });
+            queryBuilder.andWhere('(lead.fullName ILIKE :search OR lead.email ILIKE :search OR lead.phoneNumber ILIKE :search)', { search: `%${search}%` });
         }
         if (status) {
             queryBuilder.andWhere('lead.status = :status', { status });
@@ -54,11 +75,10 @@ let LeadsService = class LeadsService {
         if (priority) {
             queryBuilder.andWhere('lead.priority = :priority', { priority });
         }
-        if (propertyId) {
-            queryBuilder.andWhere('lead.propertyId = :propertyId', { propertyId });
-        }
         if (assignedTo) {
-            queryBuilder.andWhere('lead.assignedTo = :assignedTo', { assignedTo });
+            queryBuilder.andWhere('lead.assignedTo = :assignedTo', {
+                assignedTo,
+            });
         }
         if (isQualified !== undefined) {
             queryBuilder.andWhere('lead.isQualified = :isQualified', {
@@ -112,10 +132,11 @@ let LeadsService = class LeadsService {
         };
     }
     async findOne(id) {
-        const lead = await this.leadsRepository.findOne({
-            where: { id },
-            relations: ['property', 'assignedUser'],
-        });
+        const lead = await this.leadsRepository
+            .createQueryBuilder('lead')
+            .leftJoinAndMapOne('lead.assignedUser', user_entity_1.User, 'assignedUser', '"assignedUser"."id"::text = "lead"."assigned_to"')
+            .where('lead.id = :id', { id })
+            .getOne();
         if (!lead) {
             throw new common_1.NotFoundException(`Lead with ID ${id} not found`);
         }
@@ -130,14 +151,23 @@ let LeadsService = class LeadsService {
             const existing = await this.leadsRepository.findOne({
                 where: [
                     { email: updateLeadDto.email || lead.email },
-                    { phone: updateLeadDto.phone || lead.phone },
+                    { phoneNumber: updateLeadDto.phone || lead.phoneNumber },
                 ],
             });
             if (existing && existing.id !== id) {
                 throw new common_1.ConflictException('Lead with this email or phone already exists');
             }
         }
-        Object.assign(lead, updateLeadDto);
+        const { firstName, lastName, phone, ...rest } = updateLeadDto;
+        if (firstName || lastName) {
+            const newFirstName = firstName || lead.firstName;
+            const newLastName = lastName || lead.lastName;
+            lead.fullName = `${newFirstName} ${newLastName}`.trim();
+        }
+        if (phone) {
+            lead.phoneNumber = phone;
+        }
+        Object.assign(lead, rest);
         const updatedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(updatedLead);
     }
@@ -166,7 +196,7 @@ let LeadsService = class LeadsService {
         }
         lead.status = status;
         if (notes) {
-            lead.notes = lead.notes ? `${lead.notes}\n${notes}` : notes;
+            lead.followUpNotes = lead.followUpNotes ? `${lead.followUpNotes}\n${notes}` : notes;
         }
         const updatedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(updatedLead);
@@ -193,19 +223,21 @@ let LeadsService = class LeadsService {
         };
     }
     async getMyLeads(userId) {
-        const leads = await this.leadsRepository.find({
-            where: { assignedTo: userId, isActive: true },
-            relations: ['property'],
-            order: { createdAt: 'DESC' },
-        });
+        const leads = await this.leadsRepository
+            .createQueryBuilder('lead')
+            .leftJoinAndMapOne('lead.assignedUser', user_entity_1.User, 'assignedUser', '\"assignedUser\".\"id\"::text = \"lead\".\"assigned_to\"')
+            .where('lead.assignedTo = :userId', { userId })
+            .andWhere('lead.isActive = true')
+            .orderBy('lead.createdAt', 'DESC')
+            .getMany();
         return dto_1.LeadResponseDto.fromEntities(leads);
     }
     async getDueFollowUps(userId) {
         const queryBuilder = this.leadsRepository
             .createQueryBuilder('lead')
-            .leftJoinAndSelect('lead.property', 'property')
+            .leftJoinAndMapOne('lead.assignedUser', user_entity_1.User, 'assignedUser', '\"assignedUser\".\"id\"::text = \"lead\".\"assigned_to\"')
             .where('lead.nextFollowUpDate <= :today', { today: new Date() })
-            .andWhere('lead.isActive = :isActive', { isActive: true });
+            .andWhere('lead.isActive = true');
         if (userId) {
             queryBuilder.andWhere('lead.assignedTo = :userId', { userId });
         }

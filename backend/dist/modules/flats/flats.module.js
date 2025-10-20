@@ -14,12 +14,13 @@ const flats_service_1 = require("./flats.service");
 const flat_entity_1 = require("./entities/flat.entity");
 const flats_schema_sync_service_1 = require("./flats.schema-sync.service");
 const tower_entity_1 = require("../towers/entities/tower.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
 let FlatsModule = class FlatsModule {
 };
 exports.FlatsModule = FlatsModule;
 exports.FlatsModule = FlatsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([flat_entity_1.Flat, tower_entity_1.Tower])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([flat_entity_1.Flat, tower_entity_1.Tower, booking_entity_1.Booking])],
         controllers: [flats_controller_1.FlatsController],
         providers: [flats_service_1.FlatsService, flats_schema_sync_service_1.FlatsSchemaSyncService],
         exports: [flats_service_1.FlatsService],

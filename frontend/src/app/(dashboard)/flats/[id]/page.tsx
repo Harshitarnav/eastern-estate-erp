@@ -7,6 +7,7 @@ import { flatsService, Flat } from '@/services/flats.service';
 import { customersService, Customer } from '@/services/customers.service';
 import { BrandHero, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import { formatCurrency } from '@/utils/formatters';
 
 const CHECKLIST_LABELS: Record<string, string> = {
   has_area: 'Area details captured',
@@ -121,18 +122,27 @@ export default function FlatDetailPage() {
 
   return (
     <div className="space-y-6 p-6 md:p-8" style={{ backgroundColor: brandPalette.background, borderRadius: '24px' }}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/flats')}
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to inventory
+          </button>
+          <BrandSecondaryButton onClick={handleRefresh}>
+            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            Refresh
+          </BrandSecondaryButton>
+        </div>
         <button
-          onClick={() => router.push('/flats')}
-          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
+          onClick={() => router.push(`/flats/${flatId}/edit`)}
+          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition"
+          style={{ backgroundColor: brandPalette.primary }}
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to inventory
+          Edit Flat
         </button>
-        <BrandSecondaryButton onClick={handleRefresh}>
-          {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Refresh
-        </BrandSecondaryButton>
       </div>
 
       <BrandHero
@@ -236,6 +246,18 @@ export default function FlatDetailPage() {
 
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="border-b border-gray-100 pb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Payment Status</h2>
+                <p className="mt-1 text-sm text-gray-600">Stay in sync with finance as construction progresses.</p>
+              </header>
+              <FlatFinancialSnapshot
+                target={flat.fundsTarget}
+                realized={flat.fundsRealized}
+                outstanding={flat.fundsOutstanding}
+              />
+            </section>
+
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Customer</h2>
                 <p className="mt-1 text-sm text-gray-600">
                   {flat.customerId ? 'Linked buyer details keep CRM and inventory aligned.' : 'Link a customer to track booking progress.'}
@@ -333,6 +355,40 @@ function DetailItem({ label, value }: { label: string; value: React.ReactNode })
     <div className="space-y-1 text-sm">
       <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
       <dd className="text-gray-800">{value ?? '—'}</dd>
+    </div>
+  );
+}
+
+function FlatFinancialSnapshot({
+  target,
+  realized,
+  outstanding,
+}: {
+  target?: number | null;
+  realized?: number | null;
+  outstanding?: number | null;
+}) {
+  const rows = [
+    { label: 'Projected Collections', amount: target, tone: 'text-indigo-600' },
+    { label: 'Funds Realised', amount: realized, tone: 'text-emerald-600' },
+    { label: 'Funds Outstanding', amount: outstanding, tone: 'text-orange-600' },
+  ];
+
+  return (
+    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      {rows.map(({ label, amount, tone }) => (
+        <div key={label} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+          <p className={`mt-2 text-base font-semibold ${tone}`}>
+            {amount !== undefined && amount !== null ? formatCurrency(amount) : '—'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {amount !== undefined && amount !== null
+              ? `${formatIndianNumber(Math.round(amount))} INR`
+              : 'Awaiting data'}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

@@ -65,6 +65,9 @@ export interface Flat {
   completenessStatus?: DataCompletenessStatus;
   issues?: string[];
   issuesCount?: number;
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
 }
 
 export interface FlatFilters {
@@ -121,6 +124,9 @@ export interface FlatInventoryUnit {
   checklist: Record<string, boolean> | null;
   issues: string[];
   issuesCount: number;
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
 }
 
 export interface FlatInventorySummary {
@@ -139,6 +145,9 @@ export interface FlatInventorySummary {
   salesBreakdown: FlatSalesBreakdown;
   units: FlatInventoryUnit[];
   generatedAt: string;
+  fundsTarget: number;
+  fundsRealized: number;
+  fundsOutstanding: number;
 }
 
 class FlatsService extends BaseCachedService {

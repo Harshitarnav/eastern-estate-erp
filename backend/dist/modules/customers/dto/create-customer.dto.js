@@ -118,4 +118,14 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], CreateCustomerDto.prototype, "isActive", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateCustomerDto.prototype, "isVIP", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(customer_entity_1.KYCStatus),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateCustomerDto.prototype, "kycStatus", void 0);
 //# sourceMappingURL=create-customer.dto.js.map

@@ -1,0 +1,32 @@
+import { Repository, DataSource } from 'typeorm';
+import { SalesTarget, TargetPeriod } from './entities/sales-target.entity';
+import { CreateSalesTargetDto } from './dto/create-sales-target.dto';
+import { Lead } from '../leads/entities/lead.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+export declare class SalesTargetService {
+    private salesTargetRepository;
+    private leadRepository;
+    private bookingRepository;
+    private dataSource;
+    private readonly logger;
+    constructor(salesTargetRepository: Repository<SalesTarget>, leadRepository: Repository<Lead>, bookingRepository: Repository<Booking>, dataSource: DataSource);
+    create(createTargetDto: CreateSalesTargetDto): Promise<SalesTarget>;
+    findOne(id: string): Promise<SalesTarget>;
+    findBySalesPerson(salesPersonId: string): Promise<SalesTarget[]>;
+    getActiveTarget(salesPersonId: string, period?: TargetPeriod): Promise<SalesTarget | null>;
+    updateAchievement(targetId: string): Promise<SalesTarget>;
+    private fetchPerformanceData;
+    private calculatePercentage;
+    private calculateOverallAchievement;
+    private determineStatus;
+    private calculateIncentives;
+    private generateMotivationalMessage;
+    updateSelfTarget(targetId: string, selfTargetBookings: number, selfTargetRevenue: number, notes?: string): Promise<SalesTarget>;
+    markIncentivePaid(targetId: string): Promise<SalesTarget>;
+    getTeamTargets(teamMemberIds: string[], period?: TargetPeriod): Promise<SalesTarget[]>;
+    getTeamPerformanceSummary(teamMemberIds: string[]): Promise<any>;
+    private getTopPerformers;
+    private getNeedsAttention;
+    update(id: string, updateData: Partial<CreateSalesTargetDto>): Promise<SalesTarget>;
+    remove(id: string): Promise<void>;
+}

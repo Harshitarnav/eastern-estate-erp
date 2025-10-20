@@ -4,6 +4,7 @@ import { CreateCustomerDto, UpdateCustomerDto, QueryCustomerDto, CustomerRespons
 export declare class CustomersService {
     private customersRepository;
     constructor(customersRepository: Repository<Customer>);
+    private generateCustomerCode;
     create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto>;
     findAll(query: QueryCustomerDto): Promise<PaginatedCustomersResponse>;
     findOne(id: string): Promise<CustomerResponseDto>;

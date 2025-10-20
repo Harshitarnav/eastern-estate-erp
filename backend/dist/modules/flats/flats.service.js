@@ -18,13 +18,15 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const flat_entity_1 = require("./entities/flat.entity");
 const tower_entity_1 = require("../towers/entities/tower.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
 const dto_1 = require("./dto");
 const property_inventory_summary_dto_1 = require("../properties/dto/property-inventory-summary.dto");
 const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 let FlatsService = class FlatsService {
-    constructor(flatsRepository, towersRepository) {
+    constructor(flatsRepository, towersRepository, bookingsRepository) {
         this.flatsRepository = flatsRepository;
         this.towersRepository = towersRepository;
+        this.bookingsRepository = bookingsRepository;
     }
     normalizeSimpleArray(values) {
         if (!values) {
@@ -41,6 +43,37 @@ let FlatsService = class FlatsService {
         }
         const numeric = Number(value);
         return Number.isFinite(numeric) ? numeric : 0;
+    }
+    async getFlatFinancialMap(flatIds) {
+        const map = new Map();
+        if (!flatIds.length) {
+            return map;
+        }
+        const rows = await this.bookingsRepository
+            .createQueryBuilder('booking')
+            .select('booking.flatId', 'flatId')
+            .addSelect('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+            .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+            .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+            .where('booking.flatId IN (:...flatIds)', { flatIds })
+            .groupBy('booking.flatId')
+            .getRawMany();
+        rows.forEach((row) => {
+            const fundsTarget = Number(row.totalAmount ?? 0);
+            const fundsRealized = Number(row.paidAmount ?? 0);
+            const balance = Number(row.balanceAmount ?? Math.max(fundsTarget - fundsRealized, 0));
+            const fundsOutstanding = Number.isFinite(balance) ? balance : Math.max(fundsTarget - fundsRealized, 0);
+            map.set(row.flatId, { fundsTarget, fundsRealized, fundsOutstanding });
+        });
+        return map;
+    }
+    async getFlatFinancials(flatId) {
+        const map = await this.getFlatFinancialMap([flatId]);
+        return (map.get(flatId) ?? {
+            fundsTarget: 0,
+            fundsRealized: 0,
+            fundsOutstanding: 0,
+        });
     }
     buildChecklist(flatLike) {
         const superBuiltUpArea = this.toNumber(flatLike.superBuiltUpArea);
@@ -206,8 +239,13 @@ let FlatsService = class FlatsService {
             .skip((page - 1) * limit)
             .take(limit)
             .getMany();
+        const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
+        const extras = {};
+        financialMap.forEach((value, key) => {
+            extras[key] = value;
+        });
         return {
-            data: dto_1.FlatResponseDto.fromEntities(flats),
+            data: dto_1.FlatResponseDto.fromEntities(flats, extras),
             meta: {
                 total,
                 page,
@@ -224,7 +262,8 @@ let FlatsService = class FlatsService {
         if (!flat) {
             throw new common_1.NotFoundException(`Flat with ID ${id} not found`);
         }
-        return dto_1.FlatResponseDto.fromEntity(flat);
+        const finances = await this.getFlatFinancials(flat.id);
+        return dto_1.FlatResponseDto.fromEntity(flat, finances);
     }
     async findByTower(towerId) {
         const flats = await this.flatsRepository.find({
@@ -232,7 +271,12 @@ let FlatsService = class FlatsService {
             relations: ['property', 'tower'],
             order: { floor: 'ASC', flatNumber: 'ASC' },
         });
-        return dto_1.FlatResponseDto.fromEntities(flats);
+        const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
+        const extras = {};
+        financialMap.forEach((value, key) => {
+            extras[key] = value;
+        });
+        return dto_1.FlatResponseDto.fromEntities(flats, extras);
     }
     async findByProperty(propertyId) {
         const flats = await this.flatsRepository.find({
@@ -240,7 +284,12 @@ let FlatsService = class FlatsService {
             relations: ['property', 'tower'],
             order: { createdAt: 'DESC' },
         });
-        return dto_1.FlatResponseDto.fromEntities(flats);
+        const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
+        const extras = {};
+        financialMap.forEach((value, key) => {
+            extras[key] = value;
+        });
+        return dto_1.FlatResponseDto.fromEntities(flats, extras);
     }
     async getTowerInventorySummary(towerId) {
         const tower = await this.towersRepository.findOne({
@@ -254,10 +303,14 @@ let FlatsService = class FlatsService {
             where: { towerId, isActive: true },
             order: { floor: 'ASC', flatNumber: 'ASC' },
         });
+        const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
         const salesBreakdown = (0, property_inventory_summary_dto_1.emptySalesBreakdown)();
         const completeness = (0, dto_1.emptyFlatCompleteness)();
         let completionAccumulator = 0;
         let issuesAccumulator = 0;
+        let fundsTargetAccumulator = 0;
+        let fundsRealizedAccumulator = 0;
+        let fundsOutstandingAccumulator = 0;
         const units = flats.map((flat) => {
             const statusKey = (0, property_inventory_summary_dto_1.flatStatusToBreakdownKey)(flat.status);
             salesBreakdown[statusKey] += 1;
@@ -292,6 +345,17 @@ let FlatsService = class FlatsService {
             }
             completionAccumulator += dataCompletionPct;
             issuesAccumulator += issuesCount;
+            const finances = financialMap.get(flat.id) ?? {
+                fundsTarget: this.toNumber(flat.finalPrice ?? flat.totalPrice ?? flat.basePrice ?? 0),
+                fundsRealized: this.toNumber(flat.tokenAmount ?? 0),
+                fundsOutstanding: 0,
+            };
+            if (finances.fundsOutstanding === undefined || finances.fundsOutstanding === null) {
+                finances.fundsOutstanding = Math.max(finances.fundsTarget - finances.fundsRealized, 0);
+            }
+            fundsTargetAccumulator += finances.fundsTarget;
+            fundsRealizedAccumulator += finances.fundsRealized;
+            fundsOutstandingAccumulator += finances.fundsOutstanding;
             return {
                 id: flat.id,
                 flatNumber: flat.flatNumber,
@@ -309,6 +373,9 @@ let FlatsService = class FlatsService {
                 checklist,
                 issues,
                 issuesCount,
+                fundsTarget: finances.fundsTarget,
+                fundsRealized: finances.fundsRealized,
+                fundsOutstanding: finances.fundsOutstanding,
             };
         });
         const unitsDefined = flats.length;
@@ -332,6 +399,9 @@ let FlatsService = class FlatsService {
             issuesCount: issuesAccumulator,
             salesBreakdown,
             units,
+            fundsTarget: fundsTargetAccumulator,
+            fundsRealized: fundsRealizedAccumulator,
+            fundsOutstanding: fundsOutstandingAccumulator,
             generatedAt: new Date().toISOString(),
         };
     }
@@ -473,7 +543,9 @@ exports.FlatsService = FlatsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __param(1, (0, typeorm_1.InjectRepository)(tower_entity_1.Tower)),
+    __param(2, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], FlatsService);
 //# sourceMappingURL=flats.service.js.map

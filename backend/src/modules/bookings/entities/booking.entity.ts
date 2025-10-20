@@ -83,14 +83,15 @@ export class Booking {
   bookingDate: Date;
 
   // Financial Details
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 })
   totalAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ name: 'booking_amount', type: 'decimal', precision: 15, scale: 2 })
   tokenAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
-  agreementAmount: number;
+  // Note: agreement_amount column doesn't exist in DB, commenting out for now
+  // @Column({ name: 'agreement_amount', type: 'decimal', precision: 15, scale: 2, nullable: true })
+  // agreementAmount: number;
 
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
   paidAmount: number;
@@ -98,22 +99,23 @@ export class Booking {
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
   balanceAmount: number;
 
-  @Column({
-    type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
-  })
-  @Index()
-  paymentStatus: PaymentStatus;
+  // Note: payment_status column doesn't exist in DB, commenting out for now
+  // @Column({
+  //   type: 'enum',
+  //   enum: PaymentStatus,
+  //   default: PaymentStatus.PENDING,
+  // })
+  // @Index()
+  // paymentStatus: PaymentStatus;
 
   // Token Details
-  @Column({ type: 'date', nullable: true })
-  tokenPaidDate: Date;
+  // @Column({ type: 'date', nullable: true })
+  // tokenPaidDate: Date;
 
-  @Column({ length: 100, nullable: true })
-  tokenReceiptNumber: string;
+  // @Column({ length: 100, nullable: true })
+  // tokenReceiptNumber: string; // Column doesn't exist in DB
 
-  @Column({ length: 100, nullable: true })
+  @Column({ name: 'token_payment_mode', length: 100, nullable: true })
   tokenPaymentMode: string;
 
   // Agreement Details
@@ -225,6 +227,13 @@ export class Booking {
   // Documents
   @Column({ type: 'simple-array', nullable: true })
   documents: string[];
+
+  // Payment Plan
+  @Column({ length: 50, nullable: true })
+  paymentPlan: string; // 'CONSTRUCTION_LINKED', 'TIME_LINKED', 'DOWN_PAYMENT'
+
+  @Column({ type: 'uuid', nullable: true })
+  towerId: string;
 
   // Notes & Remarks
   @Column({ type: 'text', nullable: true })

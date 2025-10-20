@@ -95,4 +95,12 @@ export class CreateCustomerDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  isVIP?: boolean;
+
+  @IsEnum(KYCStatus)
+  @IsOptional()
+  kycStatus?: KYCStatus;
 }

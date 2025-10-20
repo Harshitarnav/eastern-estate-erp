@@ -60,8 +60,11 @@ export declare class FlatResponseDto {
     completenessStatus?: string;
     issues?: string[];
     issuesCount?: number;
-    static fromEntity(flat: Flat): FlatResponseDto;
-    static fromEntities(flats: Flat[]): FlatResponseDto[];
+    fundsTarget?: number;
+    fundsRealized?: number;
+    fundsOutstanding?: number;
+    static fromEntity(flat: Flat, extras?: Partial<FlatResponseDto>): FlatResponseDto;
+    static fromEntities(flats: Flat[], extras?: Record<string, Partial<FlatResponseDto>>): FlatResponseDto[];
 }
 export interface PaginatedFlatsResponse {
     data: FlatResponseDto[];

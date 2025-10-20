@@ -150,7 +150,7 @@ export function FileUpload({
         type: file.type,
         preview,
         status: error ? 'error' : 'pending',
-        error: error ?? undefined,
+        error : error ?? undefined,
         progress: 0,
       };
 

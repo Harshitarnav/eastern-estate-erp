@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Plus, Search, Mail, Phone, Briefcase } from 'lucide-react';
+import { Users, Plus, Search, Mail, Phone, Briefcase, UserCog, Shield } from 'lucide-react';
 import { employeesService, Employee, EmployeeFilters } from '@/services/employees.service';
 
 export default function EmployeesPage() {
@@ -13,7 +13,6 @@ export default function EmployeesPage() {
   const [filters, setFilters] = useState<EmployeeFilters>({
     page: 1,
     limit: 12,
-    isActive: true,
   });
   const [meta, setMeta] = useState({
     total: 0,
@@ -149,6 +148,26 @@ export default function EmployeesPage() {
         </div>
 
         <div className="flex gap-4">
+          <button
+            onClick={() => router.push('/users')}
+            className="px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2"
+            style={{ borderColor: '#A8211B', color: '#A8211B' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <UserCog className="h-5 w-5" />
+            <span>Manage Users</span>
+          </button>
+          <button
+            onClick={() => router.push('/roles')}
+            className="px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2"
+            style={{ borderColor: '#A8211B', color: '#A8211B' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            <Shield className="h-5 w-5" />
+            <span>View Roles</span>
+          </button>
           <div className="flex-1"></div>
           <button
             onClick={() => router.push('/employees/new')}

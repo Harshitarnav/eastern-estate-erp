@@ -7,8 +7,8 @@ import { Modal, DeleteConfirmDialog, AlertDialog } from '@/components/modals/Mod
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
-import { Building2, Plus, Calendar, TrendingUp, Home, Sparkles, AlertTriangle } from 'lucide-react';
-import { propertiesService, Property as ApiProperty } from '@/services/properties.service';
+import { Building2, Plus, Calendar, TrendingUp, Home, Sparkles, AlertTriangle, IndianRupee, Loader2 } from 'lucide-react';
+import { propertiesService, Property as ApiProperty, PropertyInventorySummary, TowerInventorySummary, TowerUnitStagePreview } from '@/services/properties.service';
 import { formatCurrency } from '@/utils/formatters';
 
 interface PropertyRow {
@@ -36,6 +36,9 @@ interface PropertyRow {
   revenue?: number;
   createdAt?: string;
   updatedAt?: string;
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
@@ -43,6 +46,22 @@ const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   'Under Construction': { bg: 'rgba(242, 201, 76, 0.25)', text: brandPalette.secondary },
   Active: { bg: 'rgba(61, 163, 93, 0.15)', text: brandPalette.success },
   Completed: { bg: 'rgba(34, 197, 94, 0.15)', text: brandPalette.primary },
+};
+
+const CONSTRUCTION_STATUS_LABELS: Record<string, string> = {
+  PLANNED: 'Planned',
+  UNDER_CONSTRUCTION: 'Under Construction',
+  COMPLETED: 'Completed',
+  READY_TO_MOVE: 'Ready to Move',
+};
+
+const FLAT_STAGE_LABELS: Record<string, string> = {
+  AVAILABLE: 'Available',
+  BOOKED: 'Booked',
+  SOLD: 'Sold',
+  BLOCKED: 'Blocked',
+  ON_HOLD: 'On Hold',
+  UNDER_CONSTRUCTION: 'Under Construction',
 };
 
 const mapPropertyToRow = (property: ApiProperty): PropertyRow => {
@@ -97,6 +116,19 @@ const mapPropertyToRow = (property: ApiProperty): PropertyRow => {
       (property as any).revenue,
   );
 
+  const fundsTarget = toNumber(
+    property.fundsTarget ??
+      (property as any).fundsTarget ??
+      property.expectedRevenue ??
+      revenue,
+  );
+  const fundsRealized = toNumber(
+    property.fundsRealized ?? (property as any).fundsRealized,
+  );
+  const fundsOutstanding = toNumber(
+    property.fundsOutstanding ?? (property as any).fundsOutstanding,
+  );
+
   const normalizeDate = (value?: string) =>
     value ? value.split('T')[0] : undefined;
 
@@ -125,6 +157,9 @@ const mapPropertyToRow = (property: ApiProperty): PropertyRow => {
     revenue,
     createdAt: property.createdAt,
     updatedAt: property.updatedAt,
+    fundsTarget,
+    fundsRealized,
+    fundsOutstanding,
   };
 };
 
@@ -140,6 +175,9 @@ export default function PropertiesPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [inventorySummary, setInventorySummary] = useState<PropertyInventorySummary | null>(null);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -161,6 +199,42 @@ export default function PropertiesPage() {
     fetchProperties();
   }, []);
 
+  useEffect(() => {
+    if (!showDetails || !selectedProperty) {
+      setInventorySummary(null);
+      setInventoryError(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadInventory = async () => {
+      try {
+        setInventoryLoading(true);
+        const summary = await propertiesService.getInventorySummary(selectedProperty.id);
+        if (!isCancelled) {
+          setInventorySummary(summary);
+          setInventoryError(null);
+        }
+      } catch (err: any) {
+        if (!isCancelled) {
+          setInventorySummary(null);
+          setInventoryError(err?.response?.data?.message ?? 'Unable to load tower stages for this property.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setInventoryLoading(false);
+        }
+      }
+    };
+
+    loadInventory();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [showDetails, selectedProperty]);
+
   const stats = useMemo(() => {
     const totalProjects = properties.length;
     const totalUnits = properties.reduce((sum, p) => sum + (p.totalUnits ?? 0), 0);
@@ -169,16 +243,30 @@ export default function PropertiesPage() {
       (sum, p) => sum + (p.availableUnits ?? Math.max((p.totalUnits ?? 0) - (p.soldUnits ?? 0), 0)),
       0,
     );
-    const totalRevenue = properties.reduce((sum, p) => sum + (p.revenue ?? 0), 0);
     const absorptionRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0;
+    const fundsTarget = properties.reduce(
+      (sum, p) => sum + (p.fundsTarget ?? p.revenue ?? 0),
+      0,
+    );
+    const fundsRealized = properties.reduce((sum, p) => sum + (p.fundsRealized ?? 0), 0);
+    const fundsOutstanding = properties.reduce((sum, p) => {
+      if (p.fundsOutstanding !== undefined) {
+        return sum + p.fundsOutstanding;
+      }
+      const target = p.fundsTarget ?? p.revenue ?? 0;
+      const realized = p.fundsRealized ?? 0;
+      return sum + Math.max(target - realized, 0);
+    }, 0);
 
     return {
       totalProjects,
       totalUnits,
       soldUnits,
       availableUnits,
-      totalRevenue,
       absorptionRate,
+      fundsTarget,
+      fundsRealized,
+      fundsOutstanding,
     };
   }, [properties]);
 
@@ -416,11 +504,25 @@ export default function PropertiesPage() {
           accentColor="rgba(61, 163, 93, 0.25)"
         />
         <BrandStatCard
-          title="Realised Revenue"
-          primary={formatCurrency(stats.totalRevenue)}
-          subLabel={`${formatToCrore(stats.totalRevenue)} booked`}
+          title="Projected Collections"
+          primary={formatCurrency(stats.fundsTarget)}
+          subLabel={`${formatToCrore(stats.fundsTarget)} expected`}
           icon={<Calendar className="w-8 h-8" />}
-          accentColor="rgba(168, 33, 27, 0.2)"
+          accentColor="rgba(61, 163, 93, 0.12)"
+        />
+        <BrandStatCard
+          title="Funds Realised"
+          primary={formatCurrency(stats.fundsRealized)}
+          subLabel={`${formatToCrore(stats.fundsRealized)} received`}
+          icon={<IndianRupee className="w-8 h-8" />}
+          accentColor="rgba(34, 197, 94, 0.15)"
+        />
+        <BrandStatCard
+          title="Funds Outstanding"
+          primary={formatCurrency(stats.fundsOutstanding)}
+          subLabel={`${formatToCrore(stats.fundsOutstanding)} pending`}
+          icon={<AlertTriangle className="w-8 h-8" />}
+          accentColor="rgba(168, 33, 27, 0.18)"
         />
       </section>
 
@@ -498,6 +600,18 @@ export default function PropertiesPage() {
                 </div>
               ))}
             </div>
+
+            <FinancialSnapshot
+              realized={selectedProperty.fundsRealized ?? inventorySummary?.fundsRealized}
+              outstanding={selectedProperty.fundsOutstanding ?? inventorySummary?.fundsOutstanding}
+              target={selectedProperty.fundsTarget ?? inventorySummary?.fundsTarget ?? selectedProperty.revenue}
+            />
+
+            <TowerStageSection
+              summary={inventorySummary}
+              loading={inventoryLoading}
+              error={inventoryError}
+            />
           </div>
         )}
       </Modal>
@@ -517,35 +631,6 @@ export default function PropertiesPage() {
         description={successMessage}
         type="success"
       />
-    </div>
-  );
-}
-
-interface StatCardProps {
-  title: string;
-  primary: string;
-  subLabel: string;
-  icon: React.ReactNode;
-  accentColor: string;
-}
-
-function StatCard({ title, primary, subLabel, icon, accentColor }: StatCardProps) {
-  return (
-    <div
-      className="rounded-2xl border bg-white px-5 py-6 shadow-sm space-y-3"
-      style={{ borderColor: `${accentColor}55` }}
-    >
-      <div
-        className="w-12 h-12 rounded-xl flex items-center justify-center"
-        style={{ backgroundColor: accentColor }}
-      >
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs uppercase tracking-widest text-gray-500">{title}</p>
-        <p className="mt-2 text-2xl font-bold text-gray-900">{primary}</p>
-        <p className="text-xs text-gray-500 mt-1">{subLabel}</p>
-      </div>
     </div>
   );
 }
@@ -571,9 +656,278 @@ function propertyDetails(property: PropertyRow) {
     { label: 'Possession Date', value: property.possessionDate || '—' },
     { label: 'Status', value: property.status || '—' },
     { label: 'Portfolio Revenue', value: property.revenue ? formatCurrency(property.revenue) : '—' },
+    { label: 'Funds Realised', value: property.fundsRealized !== undefined ? formatCurrency(property.fundsRealized) : '—' },
+    { label: 'Funds Outstanding', value: property.fundsOutstanding !== undefined ? formatCurrency(property.fundsOutstanding) : '—' },
+    { label: 'Projected Collections', value: property.fundsTarget !== undefined ? formatCurrency(property.fundsTarget) : '—' },
   ];
 
   return detailPairs;
+}
+
+function FinancialSnapshot({
+  realized,
+  outstanding,
+  target,
+}: {
+  realized?: number | null;
+  outstanding?: number | null;
+  target?: number | null;
+}) {
+  if (realized === undefined && outstanding === undefined && target === undefined) {
+    return null;
+  }
+
+  const displayValue = (value?: number | null) =>
+    value !== undefined && value !== null ? formatCurrency(value) : '—';
+
+  const items = [
+    {
+      label: 'Funds Realised',
+      amount: realized,
+      tone: 'text-emerald-600',
+      suffix: 'received',
+    },
+    {
+      label: 'Funds Outstanding',
+      amount: outstanding,
+      tone: 'text-orange-600',
+      suffix: 'pending',
+    },
+    {
+      label: 'Projected Collections',
+      amount: target,
+      tone: 'text-indigo-600',
+      suffix: 'target',
+    },
+  ];
+
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+        Financial Snapshot
+      </h3>
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        {items.map(({ label, amount, tone, suffix }) => (
+          <div key={label} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+            <p className={`mt-2 text-lg font-semibold ${tone}`}>{displayValue(amount)}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              {amount !== undefined && amount !== null
+                ? `${formatToCrore(amount)} ${suffix}`
+                : 'Awaiting data'}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TowerStageSection({
+  summary,
+  loading,
+  error,
+}: {
+  summary: PropertyInventorySummary | null;
+  loading: boolean;
+  error: string | null;
+}) {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            Construction & Unit Stages
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Visual progress snapshots aligned to each tower and unit stage.
+          </p>
+        </div>
+        {summary ? (
+          <div className="flex items-center gap-3 text-xs text-gray-500">
+            <span>{formatIndianNumber(summary.towersDefined)} towers</span>
+            <span>•</span>
+            <span>{formatIndianNumber(summary.unitsDefined)} units defined</span>
+          </div>
+        ) : null}
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-500">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Fetching the latest tower imagery…
+        </div>
+      ) : error ? (
+        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700">
+          {error}
+        </div>
+      ) : summary && summary.towers.length > 0 ? (
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {summary.towers.map((tower) => (
+            <TowerStageCard key={tower.id} tower={tower} />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+          Define towers and add imagery to showcase construction progress.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TowerStageCard({ tower }: { tower: TowerInventorySummary }) {
+  const stageLabel = getConstructionStatusLabel(tower.constructionStatus);
+  const heroImage = tower.heroImage ?? tower.imageGallery?.[0];
+  const additionalImages = Math.max((tower.imageGallery?.length ?? 0) - (heroImage ? 1 : 0), 0);
+  const unitPreviews: TowerUnitStagePreview[] = tower.unitStagePreviews ?? [];
+  const paymentStages = tower.paymentStages ?? [];
+
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm">
+      <div className="relative h-40 overflow-hidden rounded-2xl bg-gray-100">
+        {heroImage ? (
+          <img src={heroImage} alt={`${tower.name} stage`} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-xs text-gray-400">
+            Add tower imagery to inspire buyers
+          </div>
+        )}
+        <span className="absolute left-3 top-3 inline-flex items-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-gray-700">
+          {stageLabel}
+        </span>
+        {additionalImages > 0 && (
+          <span className="absolute bottom-3 right-3 inline-flex items-center rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">
+            +{additionalImages} photos
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="text-xs uppercase tracking-wide text-gray-500">Tower {tower.towerNumber}</p>
+        <h4 className="text-lg font-semibold text-gray-900">{tower.name}</h4>
+      </div>
+      <div className="grid gap-3 rounded-2xl border border-gray-100 bg-gray-50 px-3 py-3 text-xs text-gray-600 sm:grid-cols-3">
+        <div>
+          <p className="font-semibold uppercase tracking-wide text-gray-500">Projected</p>
+          <p className="mt-1 text-sm font-semibold text-gray-900">{formatCurrency(tower.fundsTarget ?? 0)}</p>
+        </div>
+        <div>
+          <p className="font-semibold uppercase tracking-wide text-gray-500">Realised</p>
+          <p className="mt-1 text-sm font-semibold text-emerald-600">{formatCurrency(tower.fundsRealized ?? 0)}</p>
+        </div>
+        <div>
+          <p className="font-semibold uppercase tracking-wide text-gray-500">Outstanding</p>
+          <p className="mt-1 text-sm font-semibold text-orange-600">{formatCurrency(tower.fundsOutstanding ?? 0)}</p>
+        </div>
+      </div>
+      {unitPreviews.length > 0 ? (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Unit Snapshots</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {unitPreviews.map((unit) => (
+              <div key={unit.id} className="flex gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                <div className="h-12 w-12 overflow-hidden rounded-lg bg-white shadow-inner">
+                  {unit.images?.[0] ? (
+                    <img src={unit.images[0]} alt={`${unit.flatNumber} ${unit.status}`} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-gray-900">{unit.flatNumber}</p>
+                  <p className="text-xs text-gray-500">{getFlatStageLabel(unit.status)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-gray-200 px-3 py-4 text-xs text-gray-500">
+          Add unit imagery to highlight readiness.
+        </div>
+      )}
+      {paymentStages.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment Schedule</p>
+          <div className="overflow-hidden rounded-xl border border-gray-100">
+            <table className="min-w-full divide-y divide-gray-100 text-xs text-left">
+              <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500">
+                <tr>
+                  <th className="px-3 py-2">Stage</th>
+                  <th className="px-3 py-2">Due</th>
+                  <th className="px-3 py-2">Collected</th>
+                  <th className="px-3 py-2">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {paymentStages.map((stage) => (
+                  <tr key={stage.floorNumber}>
+                    <td className="px-3 py-2 font-medium text-gray-900">{stage.stageLabel}</td>
+                    <td className="px-3 py-2 text-gray-700">{formatCurrency(stage.paymentDue ?? 0)}</td>
+                    <td className="px-3 py-2 text-emerald-600">{formatCurrency(stage.paymentCollected ?? 0)}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold"
+                        style={{
+                          backgroundColor:
+                            stage.constructionStatus === 'COMPLETED'
+                              ? 'rgba(34,197,94,0.15)'
+                              : stage.constructionStatus === 'IN_PROGRESS'
+                              ? 'rgba(251,191,36,0.2)'
+                              : 'rgba(209,213,219,0.45)',
+                          color:
+                            stage.constructionStatus === 'COMPLETED'
+                              ? '#15803d'
+                              : stage.constructionStatus === 'IN_PROGRESS'
+                              ? '#b45309'
+                              : '#4b5563',
+                        }}
+                      >
+                        {getConstructionStatusLabel(stage.constructionStatus)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-dashed border-gray-200 px-3 py-4 text-xs text-gray-500">
+          Configure payment triggers per floor to track receivables.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getConstructionStatusLabel(status?: string | null): string {
+  if (!status) {
+    return 'Status Pending';
+  }
+  const upper = status.toUpperCase();
+  if (CONSTRUCTION_STATUS_LABELS[upper]) {
+    return CONSTRUCTION_STATUS_LABELS[upper];
+  }
+  return status
+    .toLowerCase()
+    .split('_')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
+}
+
+function getFlatStageLabel(status?: string | null): string {
+  if (!status) {
+    return 'Stage Pending';
+  }
+  const upper = status.toUpperCase();
+  return FLAT_STAGE_LABELS[upper] ?? status
+    .toLowerCase()
+    .split('_')
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
 }
 
 function convertToCSV(data: PropertyRow[]): string {

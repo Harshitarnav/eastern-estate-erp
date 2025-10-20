@@ -89,6 +89,7 @@ export declare class Employee {
     notes: string;
     tags: string[];
     isActive: boolean;
+    userId: string;
     createdAt: Date;
     updatedAt: Date;
     createdBy: string;

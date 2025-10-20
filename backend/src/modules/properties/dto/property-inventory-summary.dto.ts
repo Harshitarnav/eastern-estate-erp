@@ -32,6 +32,38 @@ export class TowerInventorySummaryDto {
   dataCompletenessStatus: DataCompletenessStatus;
   issuesCount: number;
   salesBreakdown: FlatSalesStatusBreakdown;
+  constructionStatus?: string | null;
+  heroImage?: string | null;
+  imageGallery?: string[];
+  unitStagePreviews?: TowerUnitStagePreviewDto[];
+  fundsTarget: number;
+  fundsRealized: number;
+  fundsOutstanding: number;
+  paymentStages: TowerPaymentStageDto[];
+}
+
+export class TowerUnitStagePreviewDto {
+  id: string;
+  flatNumber: string;
+  status: FlatStatus;
+  floor?: number | null;
+  type?: string | null;
+  facing?: string | null;
+  images: string[];
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
+}
+
+export class TowerPaymentStageDto {
+  floorNumber: number;
+  stageLabel: string;
+  constructionStatus: 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING';
+  paymentDue: number;
+  paymentCollected: number;
+  paymentBalance: number;
+  isPaymentComplete: boolean;
+  completedAt?: string | null;
 }
 
 export class PropertyInventorySummaryDto {
@@ -49,6 +81,9 @@ export class PropertyInventorySummaryDto {
   towersCompleteness: PropertyTowersCompletenessBreakdown;
   salesBreakdown: FlatSalesStatusBreakdown;
   towers: TowerInventorySummaryDto[];
+  fundsTarget: number;
+  fundsRealized: number;
+  fundsOutstanding: number;
   generatedAt: string;
 }
 

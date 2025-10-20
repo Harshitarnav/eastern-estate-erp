@@ -53,4 +53,6 @@ export declare class CreateBookingDto {
     specialTerms?: string;
     tags?: string[];
     isActive?: boolean;
+    paymentPlan?: 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT';
+    towerId?: string;
 }

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Booking Alert - Eastern Estate</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #A8211B 0%, #7B1E12 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .alert-badge {
+            background-color: #FFB800;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 600;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .alert-message {
+            background-color: #fff3cd;
+            border-left: 4px solid #FFB800;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .alert-message strong {
+            color: #856404;
+            font-size: 16px;
+        }
+        .section {
+            margin: 25px 0;
+        }
+        .section-title {
+            color: #A8211B;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #FEF3E2;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            flex: 0 0 40%;
+        }
+        .info-value {
+            color: #333;
+            flex: 1;
+            text-align: right;
+        }
+        .financial-summary {
+            background: linear-gradient(135deg, #FEF3E2 0%, #fff8e1 100%);
+            border: 2px solid #A8211B;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .financial-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 16px;
+        }
+        .financial-label {
+            font-weight: 600;
+            color: #7B1E12;
+        }
+        .financial-value {
+            font-weight: bold;
+            color: #333;
+        }
+        .total-row {
+            border-top: 2px solid #A8211B;
+            padding-top: 15px !important;
+            margin-top: 10px;
+            font-size: 18px;
+        }
+        .total-row .financial-value {
+            color: #3DA35D;
+            font-size: 20px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .status-token-paid {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .action-required {
+            background-color: #e8f5e9;
+            border-left: 4px solid #3DA35D;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .action-required h4 {
+            margin: 0 0 10px 0;
+            color: #2e7d32;
+        }
+        .action-required ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .action-required li {
+            margin: 5px 0;
+            color: #424242;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+            font-size: 13px;
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            background-color: #A8211B;
+            color: white;
+            padding: 10px 25px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🚨 New Booking Alert</h1>
+            <span class="alert-badge">Action Required</span>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div class="alert-message">
+                <strong>A new booking has been created in the system!</strong>
+                <p style="margin: 10px 0 0 0; font-size: 14px;">Booking Number: <strong>{{bookingNumber}}</strong></p>
+            </div>
+
+            <!-- Customer Information -->
+            <div class="section">
+                <h3 class="section-title">👤 Customer Information</h3>
+                <div class="info-box">
+                    <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value"><strong>{{customerName}}</strong></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value"><a href="mailto:{{customerEmail}}">{{customerEmail}}</a></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value"><a href="tel:{{customerPhone}}">{{customerPhone}}</a></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Details -->
+            <div class="section">
+                <h3 class="section-title">🏢 Property & Unit Details</h3>
+                <div class="info-box">
+                    <div class="info-row">
+                        <span class="info-label">Property:</span>
+                        <span class="info-value"><strong>{{propertyName}}</strong></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Unit Number:</span>
+                        <span class="info-value"><strong>{{flatNumber}}</strong></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Unit Type:</span>
+                        <span class="info-value">{{flatType}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="section">
+                <h3 class="section-title">💰 Financial Summary</h3>
+                <div class="financial-summary">
+                    <div class="financial-row">
+                        <span class="financial-label">Token Amount Paid:</span>
+                        <span class="financial-value" style="color: #3DA35D;">{{tokenAmount}}</span>
+                    </div>
+                    <div class="financial-row">
+                        <span class="financial-label">Balance Amount:</span>
+                        <span class="financial-value" style="color: #A8211B;">{{balanceAmount}}</span>
+                    </div>
+                    <div class="financial-row total-row">
+                        <span class="financial-label">Total Booking Amount:</span>
+                        <span class="financial-value">{{totalAmount}}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Status -->
+            <div class="section">
+                <h3 class="section-title">📊 Booking Status</h3>
+                <div class="info-box">
+                    <div class="info-row">
+                        <span class="info-label">Booking Date:</span>
+                        <span class="info-value">{{bookingDate}}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Booking Status:</span>
+                        <span class="info-value">
+                            <span class="status-badge status-token-paid">{{status}}</span>
+                        </span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Payment Status:</span>
+                        <span class="info-value">
+                            <span class="status-badge status-pending">{{paymentStatus}}</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Required -->
+            <div class="action-required">
+                <h4>✅ Action Required</h4>
+                <ul>
+                    <li>Review the booking details in the ERP system</li>
+                    <li>Verify customer KYC documents</li>
+                    <li>Schedule agreement signing appointment</li>
+                    <li>Generate and share payment schedule with customer</li>
+                    <li>Update flat status and inventory</li>
+                </ul>
+            </div>
+
+            <!-- Call to Action -->
+            <div style="text-align: center; margin-top: 25px;">
+                <a href="http://localhost:3000/dashboard/bookings/{{bookingNumber}}" class="button">
+                    View Booking Details
+                </a>
+                <a href="mailto:{{customerEmail}}" class="button" style="background-color: #3DA35D;">
+                    Contact Customer
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Eastern Estate ERP System</strong></p>
+            <p>This is an automated notification from the ERP system.</p>
+            <p style="margin-top: 10px; font-size: 12px; color: #999;">
+                © {{currentYear}} Eastern Estate. Internal Use Only.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+
+
+

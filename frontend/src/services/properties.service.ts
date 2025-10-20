@@ -48,6 +48,9 @@ export interface Property {
   totalFlats?: number;
   soldFlats?: number;
   availableFlats?: number;
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
 }
 
 export interface CreatePropertyDto {
@@ -133,6 +136,30 @@ export interface TowersCompletenessBreakdown {
   complete: number;
 }
 
+export interface TowerUnitStagePreview {
+  id: string;
+  flatNumber: string;
+  status: string;
+  floor?: number | null;
+  type?: string | null;
+  facing?: string | null;
+  images: string[];
+  fundsTarget?: number;
+  fundsRealized?: number;
+  fundsOutstanding?: number;
+}
+
+export interface TowerPaymentStage {
+  floorNumber: number;
+  stageLabel: string;
+  constructionStatus: 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING';
+  paymentDue: number;
+  paymentCollected: number;
+  paymentBalance: number;
+  isPaymentComplete: boolean;
+  completedAt?: string | null;
+}
+
 export interface TowerInventorySummary {
   id: string;
   name: string;
@@ -147,6 +174,14 @@ export interface TowerInventorySummary {
   dataCompletenessStatus: DataCompletenessStatus;
   issuesCount: number;
   salesBreakdown: FlatSalesBreakdown;
+  constructionStatus?: string | null;
+  heroImage?: string | null;
+  imageGallery?: string[];
+  unitStagePreviews?: TowerUnitStagePreview[];
+  fundsTarget: number;
+  fundsRealized: number;
+  fundsOutstanding: number;
+  paymentStages: TowerPaymentStage[];
 }
 
 export interface PropertyInventorySummary {
@@ -164,6 +199,9 @@ export interface PropertyInventorySummary {
   towersCompleteness: TowersCompletenessBreakdown;
   salesBreakdown: FlatSalesBreakdown;
   towers: TowerInventorySummary[];
+  fundsTarget: number;
+  fundsRealized: number;
+  fundsOutstanding: number;
   generatedAt: string;
 }
 

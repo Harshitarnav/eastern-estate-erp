@@ -24,11 +24,14 @@ import {
 } from './dto';
 import {
   TowerInventorySummaryDto,
+  TowerPaymentStageDto,
   emptySalesBreakdown,
   flatStatusToBreakdownKey,
 } from '../properties/dto/property-inventory-summary.dto';
 import { DataCompletenessStatus } from '../../common/enums/data-completeness-status.enum';
 import * as XLSX from 'xlsx';
+import { Booking } from '../bookings/entities/booking.entity';
+import { ConstructionProject } from '../construction/entities/construction-project.entity';
 
 /**
  * Towers Service
@@ -55,6 +58,10 @@ export class TowersService {
     private readonly propertyRepository: Repository<Property>,
     @InjectRepository(Flat)
     private readonly flatRepository: Repository<Flat>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(ConstructionProject)
+    private readonly constructionRepository: Repository<ConstructionProject>,
   ) {}
 
   /**
@@ -562,6 +569,19 @@ export class TowersService {
       order: { floor: 'ASC', flatNumber: 'ASC' },
     });
 
+    const financials = await this.getTowerFinancialSnapshot(id);
+    let construction: ConstructionProject | null = null;
+    try {
+      construction = await this.constructionRepository.findOne({
+        where: { towerId: id, isActive: true },
+        order: { updatedAt: 'DESC' },
+        select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
+      });
+    } catch (error) {
+      this.logger.warn(`Construction schema missing tower linkage for tower ${id}; skipping payment stages.`);
+      construction = null;
+    }
+
     const salesBreakdown = emptySalesBreakdown();
     const floorsSet = new Set<number>();
     const typologySet = new Set<string>();
@@ -594,6 +614,10 @@ export class TowersService {
     const unitsDefined = salesBreakdown.total;
     const missingUnits = Math.max(plannedUnits - unitsDefined, 0);
 
+    const imageGallery = this.normalizeImageArray(tower.images);
+    const heroImage = imageGallery[0] ?? null;
+    const paymentStages = this.buildTowerPaymentStages(tower, financials, construction ?? undefined);
+
     const summary: TowerInventorySummaryDto = {
       id: tower.id,
       name: tower.name,
@@ -608,6 +632,14 @@ export class TowersService {
       dataCompletenessStatus: tower.dataCompletenessStatus ?? DataCompletenessStatus.NOT_STARTED,
       issuesCount: tower.issuesCount ?? 0,
       salesBreakdown,
+      constructionStatus: tower.constructionStatus,
+      heroImage,
+      imageGallery,
+      unitStagePreviews: undefined,
+      fundsTarget: financials.fundsTarget,
+      fundsRealized: financials.fundsRealized,
+      fundsOutstanding: financials.fundsOutstanding,
+      paymentStages,
     };
 
     if ((tower.unitsDefined ?? 0) !== unitsDefined) {
@@ -852,6 +884,98 @@ export class TowersService {
 
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private normalizeImageArray(value: unknown): string[] {
+    if (!value) {
+      return [];
+    }
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => (item !== null && item !== undefined ? String(item).trim() : ''))
+        .filter(Boolean);
+    }
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }
+
+  private async getTowerFinancialSnapshot(
+    towerId: string,
+  ): Promise<{ fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> {
+    const finance = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .select('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+      .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+      .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+      .innerJoin(Flat, 'flat', 'flat.id = booking.flatId')
+      .where('flat.towerId = :towerId', { towerId })
+      .getRawOne<{ totalAmount: string; paidAmount: string; balanceAmount: string }>();
+
+    const fundsTarget = Number(finance?.totalAmount ?? 0);
+    const fundsRealized = Number(finance?.paidAmount ?? 0);
+    const inferredOutstanding = Math.max(fundsTarget - fundsRealized, 0);
+    const rawOutstanding = Number(finance?.balanceAmount ?? inferredOutstanding);
+    const fundsOutstanding = Number.isFinite(rawOutstanding) ? rawOutstanding : inferredOutstanding;
+
+    return {
+      fundsTarget,
+      fundsRealized,
+      fundsOutstanding,
+    };
+  }
+
+  private buildTowerPaymentStages(
+    tower: Tower,
+    financials: { fundsTarget: number; fundsRealized: number; fundsOutstanding: number },
+    construction?: ConstructionProject,
+  ): TowerPaymentStageDto[] {
+    const totalFloors = Math.max(Number(tower.totalFloors ?? 0), 0);
+    if (totalFloors === 0) {
+      return [];
+    }
+
+    const fundsTarget = Number(financials.fundsTarget ?? 0);
+    const fundsRealized = Number(financials.fundsRealized ?? 0);
+    const perFloorDue = totalFloors > 0 ? fundsTarget / totalFloors : 0;
+    const structureProgress = Math.max(Math.min(Number(construction?.structureProgress ?? 0), 100), 0);
+    const floorsCompleted = Math.floor((structureProgress / 100) * totalFloors);
+
+    let remainingRealized = fundsRealized;
+    const stages: TowerPaymentStageDto[] = [];
+
+    for (let floorNumber = 1; floorNumber <= totalFloors; floorNumber += 1) {
+      const paymentCollected = Math.min(Math.max(remainingRealized, 0), perFloorDue);
+      remainingRealized -= paymentCollected;
+      const paymentBalance = Math.max(perFloorDue - paymentCollected, 0);
+
+      let constructionStatus: 'COMPLETED' | 'IN_PROGRESS' | 'UPCOMING' = 'UPCOMING';
+      if (floorNumber <= floorsCompleted) {
+        constructionStatus = 'COMPLETED';
+      } else if (floorNumber === floorsCompleted + 1 && structureProgress < 100) {
+        constructionStatus = 'IN_PROGRESS';
+      }
+
+      stages.push({
+        floorNumber,
+        stageLabel: `Floor ${floorNumber}`,
+        constructionStatus,
+        paymentDue: perFloorDue,
+        paymentCollected,
+        paymentBalance,
+        isPaymentComplete: paymentBalance === 0,
+        completedAt:
+          constructionStatus === 'COMPLETED'
+            ? construction?.updatedAt?.toISOString?.() ?? null
+            : null,
+      } as TowerPaymentStageDto);
+    }
+
+    return stages;
   }
 
   /**

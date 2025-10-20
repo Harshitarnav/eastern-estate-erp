@@ -1,6 +1,7 @@
 import { Lead } from '../entities/lead.entity';
 export declare class LeadResponseDto {
     id: string;
+    leadCode: string;
     firstName: string;
     lastName: string;
     email: string;
@@ -16,7 +17,7 @@ export declare class LeadResponseDto {
     leadScore: number;
     notes: string;
     propertyId: string;
-    interestedPropertyTypes: string[];
+    interestedPropertyTypes: string;
     budgetMin: number;
     budgetMax: number;
     preferredLocation: string;

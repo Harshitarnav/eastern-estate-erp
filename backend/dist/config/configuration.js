@@ -65,5 +65,14 @@ exports.default = () => ({
         useSsl: toBoolean(process.env.MINIO_USE_SSL, false),
         bucket: process.env.MINIO_BUCKET ?? '',
     },
+    email: {
+        host: process.env.EMAIL_HOST ?? 'smtp.gmail.com',
+        port: toNumber(process.env.EMAIL_PORT, 587),
+        secure: toBoolean(process.env.EMAIL_SECURE, false),
+        user: process.env.EMAIL_USER ?? '',
+        password: process.env.EMAIL_PASSWORD ?? '',
+        from: process.env.EMAIL_FROM ?? 'noreply@easternestates.com',
+        adminEmail: process.env.ADMIN_EMAIL ?? 'admin@easternestates.com',
+    },
 });
 //# sourceMappingURL=configuration.js.map

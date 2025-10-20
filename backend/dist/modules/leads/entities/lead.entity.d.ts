@@ -1,4 +1,3 @@
-import { Property } from '../../properties/entities/property.entity';
 import { User } from '../../users/entities/user.entity';
 export declare enum LeadStatus {
     NEW = "NEW",
@@ -27,36 +26,64 @@ export declare enum LeadPriority {
     HIGH = "HIGH",
     URGENT = "URGENT"
 }
+export declare enum SiteVisitStatus {
+    NOT_SCHEDULED = "NOT_SCHEDULED",
+    SCHEDULED = "SCHEDULED",
+    PENDING = "PENDING",
+    DONE = "DONE",
+    CANCELLED = "CANCELLED"
+}
+export declare enum CustomerRequirementType {
+    END_USER = "END_USER",
+    INVESTOR = "INVESTOR",
+    BOTH = "BOTH"
+}
+export declare enum PropertyPreference {
+    FLAT = "FLAT",
+    DUPLEX = "DUPLEX",
+    PENTHOUSE = "PENTHOUSE",
+    VILLA = "VILLA",
+    PLOT = "PLOT",
+    COMMERCIAL = "COMMERCIAL",
+    ANY = "ANY"
+}
 export declare class Lead {
     id: string;
-    firstName: string;
-    lastName: string;
+    leadCode: string;
+    fullName: string;
+    get firstName(): string;
+    get lastName(): string;
     email: string;
-    phone: string;
+    phoneNumber: string;
+    get phone(): string;
     alternatePhone: string;
     address: string;
     city: string;
     state: string;
-    pincode: string;
     status: LeadStatus;
     source: LeadSource;
     priority: LeadPriority;
-    leadScore: number;
-    notes: string;
-    propertyId: string;
-    property: Property;
-    interestedPropertyTypes: string[];
+    interestedPropertyTypes: string;
+    requirementType: CustomerRequirementType;
+    propertyPreference: PropertyPreference;
     budgetMin: number;
     budgetMax: number;
     preferredLocation: string;
     requirements: string[];
+    tentativePurchaseTimeframe: string;
     expectedPurchaseDate: Date;
     lastContactedAt: Date;
     nextFollowUpDate: Date;
     followUpNotes: string;
+    get notes(): string;
+    lastFollowUpFeedback: string;
+    totalFollowUps: number;
+    sendFollowUpReminder: boolean;
+    reminderSent: boolean;
+    reminderSentAt: Date;
     assignedTo: string;
-    assignedUser: User;
     assignedAt: Date;
+    assignedUser: User;
     isQualified: boolean;
     isFirstTimeBuyer: boolean;
     hasExistingProperty: boolean;
@@ -73,9 +100,11 @@ export declare class Lead {
     referralName: string;
     referralPhone: string;
     hasSiteVisit: boolean;
-    siteVisitDate: Date;
+    siteVisitStatus: SiteVisitStatus;
+    siteVisitTime: string;
     siteVisitFeedback: string;
     totalSiteVisits: number;
+    lastSiteVisitDate: Date;
     totalCalls: number;
     totalEmails: number;
     totalMeetings: number;

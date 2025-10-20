@@ -84,17 +84,13 @@ __decorate([
     __metadata("design:type", Date)
 ], Booking.prototype, "bookingDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 }),
     __metadata("design:type", Number)
 ], Booking.prototype, "totalAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'booking_amount', type: 'decimal', precision: 15, scale: 2 }),
     __metadata("design:type", Number)
 ], Booking.prototype, "tokenAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
-    __metadata("design:type", Number)
-], Booking.prototype, "agreementAmount", void 0);
 __decorate([
     (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
@@ -104,24 +100,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Booking.prototype, "balanceAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: PaymentStatus,
-        default: PaymentStatus.PENDING,
-    }),
-    (0, typeorm_1.Index)(),
-    __metadata("design:type", String)
-], Booking.prototype, "paymentStatus", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], Booking.prototype, "tokenPaidDate", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
-    __metadata("design:type", String)
-], Booking.prototype, "tokenReceiptNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'token_payment_mode', length: 100, nullable: true }),
     __metadata("design:type", String)
 ], Booking.prototype, "tokenPaymentMode", void 0);
 __decorate([
@@ -260,6 +239,14 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
     __metadata("design:type", Array)
 ], Booking.prototype, "documents", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "paymentPlan", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "towerId", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)

@@ -1,4 +1,4 @@
-import { CustomerType } from '../entities/customer.entity';
+import { CustomerType, KYCStatus } from '../entities/customer.entity';
 export declare class CreateCustomerDto {
     firstName: string;
     lastName: string;
@@ -20,4 +20,6 @@ export declare class CreateCustomerDto {
     needsHomeLoan?: boolean;
     notes?: string;
     isActive?: boolean;
+    isVIP?: boolean;
+    kycStatus?: KYCStatus;
 }

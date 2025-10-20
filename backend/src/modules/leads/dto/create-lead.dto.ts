@@ -83,10 +83,9 @@ export class CreateLeadDto {
   @IsOptional()
   propertyId?: string;
 
-  @IsArray()
-  @IsString({ each: true })
+  @IsString()
   @IsOptional()
-  interestedPropertyTypes?: string[];
+  interestedPropertyTypes?: string;
 
   @IsNumber()
   @IsOptional()

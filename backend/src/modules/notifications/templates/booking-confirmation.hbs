@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmation - Eastern Estate</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #A8211B 0%, #7B1E12 100%);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .success-badge {
+            background-color: #3DA35D;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .message {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 15px;
+        }
+        .details-box {
+            background-color: #FEF3E2;
+            border-left: 4px solid #A8211B;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0e5d0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #7B1E12;
+        }
+        .detail-value {
+            color: #333;
+            text-align: right;
+        }
+        .highlight {
+            background-color: #3DA35D;
+            color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .highlight-amount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .next-steps {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .next-steps h3 {
+            color: #A8211B;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .next-steps ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .next-steps li {
+            margin: 8px 0;
+            color: #666;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e0e0e0;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .contact-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #A8211B;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏠 Eastern Estate</h1>
+            <p>Building Homes, Nurturing Bonds</p>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <div style="text-align: center;">
+                <span class="success-badge">✓ Booking Confirmed</span>
+            </div>
+
+            <p class="greeting">Dear {{customerName}},</p>
+
+            <p class="message">
+                Congratulations! Your booking for <strong>{{propertyName}}</strong> has been successfully confirmed. 
+                We are thrilled to welcome you to the Eastern Estate family!
+            </p>
+
+            <!-- Booking Details -->
+            <div class="details-box">
+                <h3 style="margin-top: 0; color: #A8211B;">Booking Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Booking Number:</span>
+                    <span class="detail-value"><strong>{{bookingNumber}}</strong></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Property:</span>
+                    <span class="detail-value">{{propertyName}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Location:</span>
+                    <span class="detail-value">{{propertyAddress}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Unit Number:</span>
+                    <span class="detail-value">{{flatNumber}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Unit Type:</span>
+                    <span class="detail-value">{{flatType}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Carpet Area:</span>
+                    <span class="detail-value">{{carpetArea}} sq.ft</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Booking Date:</span>
+                    <span class="detail-value">{{bookingDate}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Expected Possession:</span>
+                    <span class="detail-value">{{expectedPossessionDate}}</span>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="highlight">
+                <div style="font-size: 14px; margin-bottom: 5px;">Total Booking Amount</div>
+                <div class="highlight-amount">{{totalAmount}}</div>
+            </div>
+
+            <div class="details-box">
+                <h3 style="margin-top: 0; color: #A8211B;">Payment Summary</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Token Amount Paid:</span>
+                    <span class="detail-value" style="color: #3DA35D; font-weight: bold;">{{tokenAmount}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Balance Amount:</span>
+                    <span class="detail-value" style="color: #A8211B; font-weight: bold;">{{balanceAmount}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Payment Plan:</span>
+                    <span class="detail-value">{{paymentPlan}}</span>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="next-steps">
+                <h3>📋 Next Steps</h3>
+                <ul>
+                    <li>Our sales team will contact you within 24 hours to schedule the agreement signing</li>
+                    <li>Please keep your KYC documents ready (PAN Card, Aadhar Card, Address Proof)</li>
+                    <li>A detailed payment schedule will be shared with you shortly</li>
+                    <li>You will receive regular updates on construction progress</li>
+                </ul>
+            </div>
+
+            <p class="message">
+                If you have any questions or need assistance, please don't hesitate to reach out to our customer service team.
+            </p>
+
+            <div style="text-align: center;">
+                <a href="tel:+919876543210" class="button">📞 Contact Us</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>Eastern Estate Construction & Development</strong></p>
+            <p>Building Homes, Nurturing Bonds</p>
+            
+            <div class="contact-info">
+                <p>📧 Email: info@easternestates.com</p>
+                <p>📞 Phone: +91-98765-43210</p>
+                <p>🌐 Website: www.easternestates.com</p>
+                <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                    © {{currentYear}} Eastern Estate. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+
+

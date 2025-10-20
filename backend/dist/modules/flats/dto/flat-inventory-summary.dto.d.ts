@@ -25,6 +25,9 @@ export declare class FlatInventoryUnitDto {
     checklist: Record<string, boolean> | null;
     issues: string[];
     issuesCount: number;
+    fundsTarget?: number;
+    fundsRealized?: number;
+    fundsOutstanding?: number;
 }
 export declare class FlatInventorySummaryDto {
     towerId: string;
@@ -41,6 +44,9 @@ export declare class FlatInventorySummaryDto {
     issuesCount: number;
     salesBreakdown: FlatSalesStatusBreakdown;
     units: FlatInventoryUnitDto[];
+    fundsTarget: number;
+    fundsRealized: number;
+    fundsOutstanding: number;
     generatedAt: string;
 }
 export { emptySalesBreakdown };

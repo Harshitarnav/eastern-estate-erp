@@ -8,7 +8,6 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
-import { Property } from '../../properties/entities/property.entity';
 import { User } from '../../users/entities/user.entity';
 
 export enum LeadStatus {
@@ -41,6 +40,30 @@ export enum LeadPriority {
   URGENT = 'URGENT',
 }
 
+export enum SiteVisitStatus {
+  NOT_SCHEDULED = 'NOT_SCHEDULED',
+  SCHEDULED = 'SCHEDULED',
+  PENDING = 'PENDING',
+  DONE = 'DONE',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum CustomerRequirementType {
+  END_USER = 'END_USER',
+  INVESTOR = 'INVESTOR',
+  BOTH = 'BOTH',
+}
+
+export enum PropertyPreference {
+  FLAT = 'FLAT',
+  DUPLEX = 'DUPLEX',
+  PENTHOUSE = 'PENTHOUSE',
+  VILLA = 'VILLA',
+  PLOT = 'PLOT',
+  COMMERCIAL = 'COMMERCIAL',
+  ANY = 'ANY',
+}
+
 /**
  * Lead Entity
  * 
@@ -59,32 +82,47 @@ export enum LeadPriority {
 @Entity('leads')
 @Index(['status', 'isActive'])
 @Index(['assignedTo', 'status'])
-@Index(['propertyId', 'status'])
+// @Index(['propertyId', 'status']) // Commented out since propertyId column doesn't exist
 export class Lead {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Basic Information
-  @Column({ length: 100 })
+  // Unique Lead Code
+  @Column({ name: 'lead_code', length: 50, unique: true })
   @Index()
-  firstName: string;
+  leadCode: string;
 
-  @Column({ length: 100 })
+  // Basic Information
+  @Column({ name: 'full_name', length: 255 })
   @Index()
-  lastName: string;
+  fullName: string;
+
+  // Getters for backward compatibility
+  get firstName(): string {
+    return this.fullName?.split(' ')[0] || '';
+  }
+
+  get lastName(): string {
+    const parts = this.fullName?.split(' ') || [];
+    return parts.slice(1).join(' ') || '';
+  }
 
   @Column({ length: 200 })
   @Index()
   email: string;
 
-  @Column({ length: 20 })
+  @Column({ name: 'phone_number', length: 20 })
   @Index()
-  phone: string;
+  phoneNumber: string;
 
-  @Column({ length: 20, nullable: true })
+  get phone(): string {
+    return this.phoneNumber;
+  }
+
+  @Column({ name: 'alternate_phone', length: 20, nullable: true })
   alternatePhone: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'address_line1', type: 'text', nullable: true })
   address: string;
 
   @Column({ length: 100, nullable: true })
@@ -93,8 +131,9 @@ export class Lead {
   @Column({ length: 100, nullable: true })
   state: string;
 
-  @Column({ length: 20, nullable: true })
-  pincode: string;
+  // Note: pincode column doesn't exist in DB
+  // @Column({ length: 20, nullable: true })
+  // pincode: string;
 
   // Lead Details
   @Column({
@@ -120,23 +159,39 @@ export class Lead {
   @Index()
   priority: LeadPriority;
 
-  @Column('int', { default: 0 })
-  leadScore: number; // 0-100 based on various factors
-
-  @Column({ type: 'text', nullable: true })
-  notes: string;
+  // Note: lead_score column doesn't exist in DB, commenting out for now
+  // @Column('int', { default: 0 })
+  // leadScore: number; // 0-100 based on various factors
 
   // Property Interest
-  @Column({ type: 'uuid', nullable: true })
+  // Note: property_id column doesn't exist in DB, commenting out for now
+  // @Column({ type: 'uuid', nullable: true })
+  // @Index()
+  // propertyId: string;
+
+  // @ManyToOne(() => Property, { nullable: true })
+  // @JoinColumn({ name: 'propertyId' })
+  // property: Property;
+
+  @Column({ name: 'interested_in', type: 'varchar', length: 255, nullable: true })
+  interestedPropertyTypes: string; // 2BHK, 3BHK, Villa, etc.
+
+  // Customer Requirement Details
+  @Column({
+    type: 'enum',
+    enum: CustomerRequirementType,
+    default: CustomerRequirementType.END_USER,
+  })
   @Index()
-  propertyId: string;
+  requirementType: CustomerRequirementType;
 
-  @ManyToOne(() => Property, { nullable: true })
-  @JoinColumn({ name: 'propertyId' })
-  property: Property;
-
-  @Column({ type: 'simple-array', nullable: true })
-  interestedPropertyTypes: string[]; // 2BHK, 3BHK, Villa, etc.
+  @Column({
+    type: 'enum',
+    enum: PropertyPreference,
+    default: PropertyPreference.FLAT,
+  })
+  @Index()
+  propertyPreference: PropertyPreference;
 
   @Column('decimal', { precision: 15, scale: 2, nullable: true })
   budgetMin: number;
@@ -144,36 +199,60 @@ export class Lead {
   @Column('decimal', { precision: 15, scale: 2, nullable: true })
   budgetMax: number;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ name: 'preferred_location', length: 100, nullable: true })
   preferredLocation: string;
 
   @Column({ type: 'simple-array', nullable: true })
   requirements: string[]; // Parking, Vastu, Corner Unit, etc.
 
+  @Column({ length: 100, nullable: true })
+  tentativePurchaseTimeframe: string; // "1-3 months", "3-6 months", "6-12 months", "1+ year"
+
   // Timeline
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'timeline', type: 'date', nullable: true })
   expectedPurchaseDate: Date;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'last_contact_date', type: 'date', nullable: true })
   lastContactedAt: Date;
 
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'follow_up_date', type: 'date', nullable: true })
   nextFollowUpDate: Date;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'notes', type: 'text', nullable: true })
   followUpNotes: string;
 
+  // Getter for backward compatibility
+  get notes(): string {
+    return this.followUpNotes;
+  }
+
+  @Column({ name: 'last_follow_up_feedback', type: 'text', nullable: true })
+  lastFollowUpFeedback: string;
+
+  @Column({ type: 'int', default: 0 })
+  totalFollowUps: number;
+
+  // Reminder System
+  @Column({ type: 'boolean', default: true })
+  sendFollowUpReminder: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  reminderSent: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  reminderSentAt: Date;
+
   // Assignment
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ name: 'assigned_to', type: 'varchar', nullable: true })
   @Index()
   assignedTo: string;
 
-  @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'assignedTo' })
-  assignedUser: User;
-
-  @Column({ type: 'date', nullable: true })
+  @Column({ name: 'assigned_at', type: 'timestamp', nullable: true })
   assignedAt: Date;
+
+  @ManyToOne(() => User, { nullable: true, createForeignKeyConstraints: false })
+  @JoinColumn({ name: 'assigned_to' })
+  assignedUser: User;
 
   // Qualification
   @Column({ type: 'boolean', default: false })
@@ -224,17 +303,33 @@ export class Lead {
   referralPhone: string;
 
   // Site Visit
-  @Column({ type: 'boolean', default: false })
+  @Column({ name: 'has_site_visit', type: 'boolean', default: false, nullable: true })
   hasSiteVisit: boolean;
 
-  @Column({ type: 'date', nullable: true })
-  siteVisitDate: Date;
+  @Column({
+    name: 'site_visit_status',
+    type: 'enum',
+    enum: SiteVisitStatus,
+    default: SiteVisitStatus.NOT_SCHEDULED,
+  })
+  @Index()
+  siteVisitStatus: SiteVisitStatus;
 
-  @Column({ type: 'text', nullable: true })
+  // Note: site_visit_date column doesn't exist in DB, commenting out for now
+  // @Column({ type: 'date', nullable: true })
+  // siteVisitDate: Date;
+
+  @Column({ name: 'site_visit_time', type: 'time', nullable: true })
+  siteVisitTime: string;
+
+  @Column({ name: 'site_visit_feedback', type: 'text', nullable: true })
   siteVisitFeedback: string;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'total_site_visits', type: 'int', default: 0, nullable: true })
   totalSiteVisits: number;
+
+  @Column({ name: 'last_site_visit_date', type: 'date', nullable: true })
+  lastSiteVisitDate: Date;
 
   // Communication
   @Column({ type: 'int', default: 0 })
@@ -256,7 +351,7 @@ export class Lead {
   lastMeetingDate: Date;
 
   // Conversion
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ name: 'converted_to_customer', type: 'uuid', nullable: true })
   convertedToCustomerId: string;
 
   @Column({ type: 'date', nullable: true })

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var PropertiesService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PropertiesService = void 0;
 const common_1 = require("@nestjs/common");
@@ -21,17 +22,22 @@ const project_entity_1 = require("../projects/entities/project.entity");
 const tower_entity_1 = require("../towers/entities/tower.entity");
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
+const construction_project_entity_1 = require("../construction/entities/construction-project.entity");
 const dto_1 = require("./dto");
 const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 const flat_generation_util_1 = require("../towers/utils/flat-generation.util");
-let PropertiesService = class PropertiesService {
-    constructor(propertiesRepository, projectsRepository, towersRepository, flatsRepository, customersRepository, dataSource) {
+let PropertiesService = PropertiesService_1 = class PropertiesService {
+    constructor(propertiesRepository, projectsRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, constructionRepository, dataSource) {
         this.propertiesRepository = propertiesRepository;
         this.projectsRepository = projectsRepository;
         this.towersRepository = towersRepository;
         this.flatsRepository = flatsRepository;
         this.customersRepository = customersRepository;
+        this.bookingsRepository = bookingsRepository;
+        this.constructionRepository = constructionRepository;
         this.dataSource = dataSource;
+        this.logger = new common_1.Logger(PropertiesService_1.name);
     }
     async create(createPropertyDto, userId) {
         const existingProperty = await this.propertiesRepository.findOne({
@@ -146,6 +152,31 @@ let PropertiesService = class PropertiesService {
         const towerIds = towers.map((tower) => tower.id);
         const towerStatusAggregation = {};
         const propertySalesBreakdown = (0, dto_1.emptySalesBreakdown)();
+        const towerFinancials = await this.getTowerFinancials(towerIds);
+        let towerConstructionProjects = [];
+        if (towerIds.length) {
+            try {
+                towerConstructionProjects = await this.constructionRepository.find({
+                    where: { towerId: (0, typeorm_2.In)(towerIds), isActive: true },
+                    order: { updatedAt: 'DESC' },
+                    select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
+                });
+            }
+            catch (error) {
+                this.logger.warn('Construction schema missing tower linkage; skipping tower stage data');
+                towerConstructionProjects = [];
+            }
+        }
+        const constructionMap = new Map();
+        towerConstructionProjects.forEach((project) => {
+            if (!project.towerId) {
+                return;
+            }
+            const existing = constructionMap.get(project.towerId);
+            if (!existing || (existing.updatedAt ?? 0) < (project.updatedAt ?? 0)) {
+                constructionMap.set(project.towerId, project);
+            }
+        });
         if (towerIds.length > 0) {
             const flatAggregation = await this.flatsRepository
                 .createQueryBuilder('flat')
@@ -173,7 +204,7 @@ let PropertiesService = class PropertiesService {
         }
         const towersCompleteness = (0, dto_1.emptyTowersCompleteness)();
         const towersToPatch = [];
-        const towerSummaries = towers.map((tower) => {
+        const towerSummaries = await Promise.all(towers.map(async (tower) => {
             const aggregation = towerStatusAggregation[tower.id] ?? { total: 0, statuses: {} };
             const salesBreakdown = (0, dto_1.emptySalesBreakdown)();
             Object.entries(aggregation.statuses).forEach(([statusKey, count]) => {
@@ -203,6 +234,35 @@ let PropertiesService = class PropertiesService {
             if ((tower.unitsDefined ?? 0) !== unitsDefined) {
                 towersToPatch.push({ id: tower.id, unitsDefined });
             }
+            const financial = towerFinancials[tower.id] ?? {
+                fundsTarget: 0,
+                fundsRealized: 0,
+                fundsOutstanding: 0,
+            };
+            const imageGallery = this.normalizeImageArray(tower.images);
+            const heroImage = imageGallery.length > 0 ? imageGallery[0] : null;
+            const sampleFlats = await this.flatsRepository.find({
+                where: { towerId: tower.id, isActive: true },
+                order: { updatedAt: 'DESC' },
+                take: 4,
+            });
+            const flatFinancialMap = await this.getFlatFinancialMap(sampleFlats.map((flat) => flat.id));
+            const unitStagePreviews = sampleFlats.map((flat) => {
+                const finances = flatFinancialMap.get(flat.id);
+                return {
+                    id: flat.id,
+                    flatNumber: flat.flatNumber,
+                    status: flat.status,
+                    floor: flat.floor ?? null,
+                    type: flat.type ? String(flat.type) : null,
+                    facing: flat.facing ?? null,
+                    images: this.normalizeImageArray(flat.images),
+                    fundsTarget: finances?.fundsTarget,
+                    fundsRealized: finances?.fundsRealized,
+                    fundsOutstanding: finances?.fundsOutstanding,
+                };
+            });
+            const paymentStages = this.buildTowerPaymentStages(tower, financial, constructionMap.get(tower.id));
             return {
                 id: tower.id,
                 name: tower.name,
@@ -217,8 +277,16 @@ let PropertiesService = class PropertiesService {
                 dataCompletenessStatus: tower.dataCompletenessStatus ?? data_completeness_status_enum_1.DataCompletenessStatus.NOT_STARTED,
                 issuesCount: tower.issuesCount ?? 0,
                 salesBreakdown,
+                constructionStatus: tower.constructionStatus ?? null,
+                heroImage,
+                imageGallery,
+                unitStagePreviews,
+                fundsTarget: financial.fundsTarget,
+                fundsRealized: financial.fundsRealized,
+                fundsOutstanding: financial.fundsOutstanding,
+                paymentStages,
             };
-        });
+        }));
         const towersPlanned = property.totalTowersPlanned ?? property.numberOfTowers ?? towerSummaries.length;
         const towersDefined = towerSummaries.length;
         const missingTowers = Math.max(towersPlanned - towersDefined, 0);
@@ -234,6 +302,7 @@ let PropertiesService = class PropertiesService {
         if (towersToPatch.length > 0) {
             await Promise.all(towersToPatch.map(({ id: towerId, unitsDefined: defined }) => this.towersRepository.update(towerId, { unitsDefined: defined })));
         }
+        const financials = await this.calculatePropertyFinancials(property.id);
         const summary = {
             propertyId: property.id,
             propertyName: property.name,
@@ -249,6 +318,9 @@ let PropertiesService = class PropertiesService {
             towersCompleteness,
             salesBreakdown: propertySalesBreakdown,
             towers: towerSummaries,
+            fundsTarget: financials.fundsTarget,
+            fundsRealized: financials.fundsRealized,
+            fundsOutstanding: financials.fundsOutstanding,
             generatedAt: new Date().toISOString(),
         };
         return summary;
@@ -323,6 +395,7 @@ let PropertiesService = class PropertiesService {
             };
         });
         const propertyStats = this.calculatePropertyStats(towerHierarchies);
+        const financials = await this.calculatePropertyFinancials(property.id);
         return {
             id: property.id,
             propertyCode: property.propertyCode,
@@ -448,6 +521,7 @@ let PropertiesService = class PropertiesService {
         const totalFlats = Number(flatStats.total ?? 0);
         const soldFlats = Number(flatStats.sold ?? 0);
         const availableFlats = Number(flatStats.available ?? 0);
+        const financials = await this.calculatePropertyFinancials(property.id);
         return {
             id: property.id,
             propertyCode: property.propertyCode,
@@ -496,6 +570,9 @@ let PropertiesService = class PropertiesService {
             totalFlats,
             soldFlats,
             availableFlats,
+            fundsTarget: financials.fundsTarget,
+            fundsRealized: financials.fundsRealized,
+            fundsOutstanding: financials.fundsOutstanding,
         };
     }
     mapFlatToHierarchyDto(flat, customer) {
@@ -567,6 +644,128 @@ let PropertiesService = class PropertiesService {
             }
         });
         return stats;
+    }
+    async getTowerFinancials(towerIds) {
+        const map = {};
+        if (!towerIds.length) {
+            return map;
+        }
+        const rows = await this.bookingsRepository
+            .createQueryBuilder('booking')
+            .select('flat.towerId', 'towerId')
+            .addSelect('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+            .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+            .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+            .innerJoin(flat_entity_1.Flat, 'flat', 'flat.id = booking.flatId')
+            .where('flat.towerId IN (:...towerIds)', { towerIds })
+            .groupBy('flat.towerId')
+            .getRawMany();
+        rows.forEach((row) => {
+            const towerId = row.towerId;
+            const fundsTarget = Number(row.totalAmount ?? 0);
+            const fundsRealized = Number(row.paidAmount ?? 0);
+            const balance = Number(row.balanceAmount ?? Math.max(fundsTarget - fundsRealized, 0));
+            const fundsOutstanding = Number.isFinite(balance) ? balance : Math.max(fundsTarget - fundsRealized, 0);
+            map[towerId] = { fundsTarget, fundsRealized, fundsOutstanding };
+        });
+        return map;
+    }
+    async getFlatFinancialMap(flatIds) {
+        const map = new Map();
+        if (!flatIds.length) {
+            return map;
+        }
+        const rows = await this.bookingsRepository
+            .createQueryBuilder('booking')
+            .select('booking.flatId', 'flatId')
+            .addSelect('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+            .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+            .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+            .where('booking.flatId IN (:...flatIds)', { flatIds })
+            .groupBy('booking.flatId')
+            .getRawMany();
+        rows.forEach((row) => {
+            const fundsTarget = Number(row.totalAmount ?? 0);
+            const fundsRealized = Number(row.paidAmount ?? 0);
+            const balance = Number(row.balanceAmount ?? Math.max(fundsTarget - fundsRealized, 0));
+            const fundsOutstanding = Number.isFinite(balance) ? balance : Math.max(fundsTarget - fundsRealized, 0);
+            map.set(row.flatId, { fundsTarget, fundsRealized, fundsOutstanding });
+        });
+        return map;
+    }
+    buildTowerPaymentStages(tower, financials, construction) {
+        const totalFloors = Math.max(Number(tower.totalFloors ?? 0), 0);
+        if (totalFloors === 0) {
+            return [];
+        }
+        const fundsTarget = Number(financials.fundsTarget ?? 0);
+        const fundsRealized = Number(financials.fundsRealized ?? 0);
+        const perFloorDue = totalFloors > 0 ? fundsTarget / totalFloors : 0;
+        const structureProgress = Math.max(Math.min(Number(construction?.structureProgress ?? 0), 100), 0);
+        const floorsCompleted = Math.floor((structureProgress / 100) * totalFloors);
+        let remainingRealized = fundsRealized;
+        const stages = [];
+        for (let floorNumber = 1; floorNumber <= totalFloors; floorNumber += 1) {
+            const paymentCollected = Math.min(Math.max(remainingRealized, 0), perFloorDue);
+            remainingRealized -= paymentCollected;
+            const paymentBalance = Math.max(perFloorDue - paymentCollected, 0);
+            let constructionStatus = 'UPCOMING';
+            if (floorNumber <= floorsCompleted) {
+                constructionStatus = 'COMPLETED';
+            }
+            else if (floorNumber === floorsCompleted + 1 && structureProgress < 100) {
+                constructionStatus = 'IN_PROGRESS';
+            }
+            stages.push({
+                floorNumber,
+                stageLabel: `Floor ${floorNumber}`,
+                constructionStatus,
+                paymentDue: perFloorDue,
+                paymentCollected,
+                paymentBalance,
+                isPaymentComplete: paymentBalance === 0,
+                completedAt: constructionStatus === 'COMPLETED'
+                    ? construction?.updatedAt?.toISOString?.() ?? null
+                    : null,
+            });
+        }
+        return stages;
+    }
+    async calculatePropertyFinancials(propertyId) {
+        const finance = await this.bookingsRepository
+            .createQueryBuilder('booking')
+            .select('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+            .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+            .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+            .where('booking.propertyId = :propertyId', { propertyId })
+            .getRawOne();
+        const fundsTarget = Number(finance?.totalAmount ?? 0);
+        const fundsRealized = Number(finance?.paidAmount ?? 0);
+        const inferredOutstanding = Math.max(fundsTarget - fundsRealized, 0);
+        const rawOutstanding = Number(finance?.balanceAmount ?? inferredOutstanding);
+        const fundsOutstanding = Number.isFinite(rawOutstanding) ? rawOutstanding : inferredOutstanding;
+        return {
+            fundsTarget,
+            fundsRealized,
+            fundsOutstanding,
+        };
+    }
+    normalizeImageArray(value) {
+        if (!value) {
+            return [];
+        }
+        if (Array.isArray(value)) {
+            return value
+                .map((item) => (item !== null && item !== undefined ? String(item).trim() : ''))
+                .filter(Boolean);
+        }
+        if (typeof value === 'string') {
+            return value
+                .split(',')
+                .map((item) => item.trim())
+                .filter(Boolean);
+        }
+        return [];
     }
     calculatePropertyStats(towers) {
         const aggregated = {
@@ -755,14 +954,18 @@ let PropertiesService = class PropertiesService {
     }
 };
 exports.PropertiesService = PropertiesService;
-exports.PropertiesService = PropertiesService = __decorate([
+exports.PropertiesService = PropertiesService = PropertiesService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(property_entity_1.Property)),
     __param(1, (0, typeorm_1.InjectRepository)(project_entity_1.Project)),
     __param(2, (0, typeorm_1.InjectRepository)(tower_entity_1.Tower)),
     __param(3, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __param(4, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
+    __param(5, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __param(6, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

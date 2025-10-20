@@ -1,13 +1,17 @@
 import { Repository } from 'typeorm';
 import { Flat } from './entities/flat.entity';
 import { Tower } from '../towers/entities/tower.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import { CreateFlatDto, UpdateFlatDto, QueryFlatDto, FlatResponseDto, PaginatedFlatsResponse, FlatInventorySummaryDto } from './dto';
 export declare class FlatsService {
     private flatsRepository;
     private towersRepository;
-    constructor(flatsRepository: Repository<Flat>, towersRepository: Repository<Tower>);
+    private bookingsRepository;
+    constructor(flatsRepository: Repository<Flat>, towersRepository: Repository<Tower>, bookingsRepository: Repository<Booking>);
     private normalizeSimpleArray;
     private toNumber;
+    private getFlatFinancialMap;
+    private getFlatFinancials;
     private buildChecklist;
     private evaluateFlatMetadata;
     create(createFlatDto: CreateFlatDto): Promise<FlatResponseDto>;

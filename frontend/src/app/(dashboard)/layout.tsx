@@ -49,6 +49,7 @@ export default function DashboardLayout({
       label: 'Sales & CRM', 
       icon: TrendingUp,
       children: [
+        { id: 'sales-dashboard', label: '📊 Sales Dashboard', href: '/sales' },
         { id: 'leads', label: 'Leads', href: '/leads' },
         { id: 'customers', label: 'Customers', href: '/customers' },
         { id: 'bookings', label: 'Bookings', href: '/bookings' },

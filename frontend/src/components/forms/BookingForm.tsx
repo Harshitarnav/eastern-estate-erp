@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Form, FormField } from './Form';
 import { propertiesService } from '@/services/properties.service';
+import { towersService } from '@/services/towers.service';
 import { flatsService } from '@/services/flats.service';
 import { customersService } from '@/services/customers.service';
 
@@ -14,9 +15,12 @@ interface BookingFormProps {
 
 export default function BookingForm({ onSubmit, initialData, onCancel }: BookingFormProps) {
   const [properties, setProperties] = useState<any[]>([]);
+  const [towers, setTowers] = useState<any[]>([]);
   const [flats, setFlats] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedProperty, setSelectedProperty] = useState('');
+  const [selectedTower, setSelectedTower] = useState('');
+  const [selectedFlat, setSelectedFlat] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [isHomeLoan, setIsHomeLoan] = useState(false);
@@ -27,9 +31,21 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   useEffect(() => {
     if (selectedProperty) {
-      fetchFlats(selectedProperty);
+      setTowers([]);
+      setFlats([]);
+      setSelectedTower('');
+      fetchTowers(selectedProperty);
     }
   }, [selectedProperty]);
+
+  useEffect(() => {
+    if (selectedTower) {
+      setFlats([]);
+      fetchFlats(selectedTower);
+    } else {
+      setFlats([]);
+    }
+  }, [selectedTower]);
 
   const fetchData = async () => {
     try {
@@ -46,12 +62,34 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     }
   };
 
-  const fetchFlats = async (propertyId: string) => {
+  const fetchTowers = async (propertyId: string) => {
     try {
-      const res = await flatsService.getFlats({ propertyId, status: 'Available', limit: 100 });
-      setFlats(res.data);
+      const res = await towersService.getTowersByProperty(propertyId);
+      setTowers(Array.isArray(res) ? res : []);
+    } catch (error) {
+      console.error('Error fetching towers:', error);
+      setTowers([]);
+    }
+  };
+
+  const fetchFlats = async (towerId: string) => {
+    try {
+      console.log('Fetching flats for tower:', towerId);
+      const res = await flatsService.getFlats({ towerId, limit: 100 });
+      console.log('Flats response:', res);
+      setFlats(res.data || []);
     } catch (error) {
       console.error('Error fetching flats:', error);
+      setFlats([]);
+    }
+  };
+
+  const handleFlatSelection = async (flatId: string) => {
+    try {
+      const flat = flats.find(f => f.id === flatId);
+      setSelectedFlat(flat);
+    } catch (error) {
+      console.error('Error fetching flat details:', error);
     }
   };
 
@@ -71,41 +109,51 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       required: true,
     },
     {
-      name: 'status',
-      label: 'Booking Status *',
-      type: 'select',
-      required: true,
-      options: [
-        { value: 'TOKEN_PAID', label: 'Token Paid' },
-        { value: 'AGREEMENT_PENDING', label: 'Agreement Pending' },
-        { value: 'AGREEMENT_SIGNED', label: 'Agreement Signed' },
-        { value: 'CONFIRMED', label: 'Confirmed' },
-        { value: 'CANCELLED', label: 'Cancelled' },
-        { value: 'TRANSFERRED', label: 'Transferred' },
-        { value: 'COMPLETED', label: 'Completed' },
-      ],
-    },
-    {
       name: 'customerId',
       label: 'Customer *',
       type: 'select',
       required: true,
-      options: customers.map(c => ({ value: c.id, label: `${c.fullName} (${c.phoneNumber})` })),
+      options: customers.map(c => ({ value: c.id, label: `${c.firstName} ${c.lastName} (${c.phone || c.phoneNumber})` })),
     },
     {
       name: 'propertyId',
       label: 'Property *',
       type: 'select',
       required: true,
-      options: properties.map(p => ({ value: p.id, label: `${p.name} - ${p.location}` })),
+      options: properties.map(p => ({ value: p.id, label: `${p.name} - ${p.city}` })),
+      onChange: (value: string) => setSelectedProperty(value),
+    },
+    {
+      name: 'towerId',
+      label: 'Tower *',
+      type: 'select',
+      required: true,
+      options: towers.map(t => ({ value: t.id, label: `${t.name} - ${t.totalFloors} Floors` })),
+      disabled: !selectedProperty || towers.length === 0,
+      onChange: (value: string) => setSelectedTower(value),
     },
     {
       name: 'flatId',
       label: 'Flat/Unit *',
       type: 'select',
       required: true,
-      options: flats.map(f => ({ value: f.id, label: `${f.flatNumber} - ${f.bhkType} (₹${(f.salePrice / 100000).toFixed(2)}L)` })),
-      disabled: !selectedProperty,
+      options: flats.map(f => ({ 
+        value: f.id, 
+        label: `${f.flatNumber} - ${f.type} (₹${(f.finalPrice / 100000).toFixed(2)}L, ${f.carpetArea} sq.ft)` 
+      })),
+      disabled: !selectedTower,
+      onChange: (value: string) => handleFlatSelection(value),
+    },
+    {
+      name: 'paymentPlan',
+      label: 'Payment Plan *',
+      type: 'select',
+      required: true,
+      options: [
+        { value: 'CONSTRUCTION_LINKED', label: 'Construction Linked (7 Milestones)' },
+        { value: 'TIME_LINKED', label: 'Time Linked (12 Monthly Installments)' },
+        { value: 'DOWN_PAYMENT', label: 'Down Payment (20% + 80% on Possession)' },
+      ],
     },
   ];
 

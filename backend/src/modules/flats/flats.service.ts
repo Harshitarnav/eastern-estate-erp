@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Flat, FlatStatus } from './entities/flat.entity';
 import { Tower } from '../towers/entities/tower.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import {
   CreateFlatDto,
   UpdateFlatDto,
@@ -31,6 +32,8 @@ export class FlatsService {
     private flatsRepository: Repository<Flat>,
     @InjectRepository(Tower)
     private towersRepository: Repository<Tower>,
+    @InjectRepository(Booking)
+    private bookingsRepository: Repository<Booking>,
   ) {}
 
   private normalizeSimpleArray(values?: string[] | null): string[] | undefined {
@@ -49,6 +52,46 @@ export class FlatsService {
     }
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : 0;
+  }
+
+  private async getFlatFinancialMap(
+    flatIds: string[],
+  ): Promise<Map<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }>> {
+    const map = new Map<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }>();
+    if (!flatIds.length) {
+      return map;
+    }
+
+    const rows = await this.bookingsRepository
+      .createQueryBuilder('booking')
+      .select('booking.flatId', 'flatId')
+      .addSelect('COALESCE(SUM(booking.totalAmount), 0)', 'totalAmount')
+      .addSelect('COALESCE(SUM(booking.paidAmount), 0)', 'paidAmount')
+      .addSelect('COALESCE(SUM(booking.balanceAmount), 0)', 'balanceAmount')
+      .where('booking.flatId IN (:...flatIds)', { flatIds })
+      .groupBy('booking.flatId')
+      .getRawMany<{ flatId: string; totalAmount: string; paidAmount: string; balanceAmount: string }>();
+
+    rows.forEach((row) => {
+      const fundsTarget = Number(row.totalAmount ?? 0);
+      const fundsRealized = Number(row.paidAmount ?? 0);
+      const balance = Number(row.balanceAmount ?? Math.max(fundsTarget - fundsRealized, 0));
+      const fundsOutstanding = Number.isFinite(balance) ? balance : Math.max(fundsTarget - fundsRealized, 0);
+      map.set(row.flatId, { fundsTarget, fundsRealized, fundsOutstanding });
+    });
+
+    return map;
+  }
+
+  private async getFlatFinancials(flatId: string): Promise<{ fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> {
+    const map = await this.getFlatFinancialMap([flatId]);
+    return (
+      map.get(flatId) ?? {
+        fundsTarget: 0,
+        fundsRealized: 0,
+        fundsOutstanding: 0,
+      }
+    );
   }
 
   private buildChecklist(flatLike: Partial<Record<string, any>>): Record<string, boolean> {
@@ -295,8 +338,14 @@ export class FlatsService {
       .take(limit)
       .getMany();
 
+    const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
+    const extras: Record<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> = {};
+    financialMap.forEach((value, key) => {
+      extras[key] = value;
+    });
+
     return {
-      data: FlatResponseDto.fromEntities(flats),
+      data: FlatResponseDto.fromEntities(flats, extras),
       meta: {
         total,
         page,
@@ -319,7 +368,8 @@ export class FlatsService {
       throw new NotFoundException(`Flat with ID ${id} not found`);
     }
 
-    return FlatResponseDto.fromEntity(flat);
+    const finances = await this.getFlatFinancials(flat.id);
+    return FlatResponseDto.fromEntity(flat, finances);
   }
 
   /**
@@ -332,7 +382,13 @@ export class FlatsService {
       order: { floor: 'ASC', flatNumber: 'ASC' },
     });
 
-    return FlatResponseDto.fromEntities(flats);
+    const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
+    const extras: Record<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> = {};
+    financialMap.forEach((value, key) => {
+      extras[key] = value;
+    });
+
+    return FlatResponseDto.fromEntities(flats, extras);
   }
 
   /**
@@ -345,7 +401,13 @@ export class FlatsService {
       order: { createdAt: 'DESC' },
     });
 
-    return FlatResponseDto.fromEntities(flats);
+    const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
+    const extras: Record<string, { fundsTarget: number; fundsRealized: number; fundsOutstanding: number }> = {};
+    financialMap.forEach((value, key) => {
+      extras[key] = value;
+    });
+
+    return FlatResponseDto.fromEntities(flats, extras);
   }
 
   async getTowerInventorySummary(towerId: string): Promise<FlatInventorySummaryDto> {
@@ -363,11 +425,15 @@ export class FlatsService {
       order: { floor: 'ASC', flatNumber: 'ASC' },
     });
 
+    const financialMap = await this.getFlatFinancialMap(flats.map((flat) => flat.id));
     const salesBreakdown = emptySalesBreakdown();
     const completeness = emptyFlatCompleteness();
 
     let completionAccumulator = 0;
     let issuesAccumulator = 0;
+    let fundsTargetAccumulator = 0;
+    let fundsRealizedAccumulator = 0;
+    let fundsOutstandingAccumulator = 0;
 
     const units: FlatInventoryUnitDto[] = flats.map((flat) => {
       const statusKey = flatStatusToBreakdownKey(flat.status);
@@ -408,6 +474,19 @@ export class FlatsService {
       completionAccumulator += dataCompletionPct;
       issuesAccumulator += issuesCount;
 
+      const finances = financialMap.get(flat.id) ?? {
+        fundsTarget: this.toNumber(flat.finalPrice ?? flat.totalPrice ?? flat.basePrice ?? 0),
+        fundsRealized: this.toNumber(flat.tokenAmount ?? 0),
+        fundsOutstanding: 0,
+      };
+      if (finances.fundsOutstanding === undefined || finances.fundsOutstanding === null) {
+        finances.fundsOutstanding = Math.max(finances.fundsTarget - finances.fundsRealized, 0);
+      }
+
+      fundsTargetAccumulator += finances.fundsTarget;
+      fundsRealizedAccumulator += finances.fundsRealized;
+      fundsOutstandingAccumulator += finances.fundsOutstanding;
+
       return {
         id: flat.id,
         flatNumber: flat.flatNumber,
@@ -425,6 +504,9 @@ export class FlatsService {
         checklist,
         issues,
         issuesCount,
+        fundsTarget: finances.fundsTarget,
+        fundsRealized: finances.fundsRealized,
+        fundsOutstanding: finances.fundsOutstanding,
       };
     });
 
@@ -450,6 +532,9 @@ export class FlatsService {
       issuesCount: issuesAccumulator,
       salesBreakdown,
       units,
+      fundsTarget: fundsTargetAccumulator,
+      fundsRealized: fundsRealizedAccumulator,
+      fundsOutstanding: fundsOutstandingAccumulator,
       generatedAt: new Date().toISOString(),
     };
   }

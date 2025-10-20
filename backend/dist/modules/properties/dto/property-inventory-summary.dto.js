@@ -1,10 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.flatStatusToBreakdownKey = exports.emptyTowersCompleteness = exports.emptySalesBreakdown = exports.PropertyInventorySummaryDto = exports.TowerInventorySummaryDto = void 0;
+exports.flatStatusToBreakdownKey = exports.emptyTowersCompleteness = exports.emptySalesBreakdown = exports.PropertyInventorySummaryDto = exports.TowerPaymentStageDto = exports.TowerUnitStagePreviewDto = exports.TowerInventorySummaryDto = void 0;
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 class TowerInventorySummaryDto {
 }
 exports.TowerInventorySummaryDto = TowerInventorySummaryDto;
+class TowerUnitStagePreviewDto {
+}
+exports.TowerUnitStagePreviewDto = TowerUnitStagePreviewDto;
+class TowerPaymentStageDto {
+}
+exports.TowerPaymentStageDto = TowerPaymentStageDto;
 class PropertyInventorySummaryDto {
 }
 exports.PropertyInventorySummaryDto = PropertyInventorySummaryDto;

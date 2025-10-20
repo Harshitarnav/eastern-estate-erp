@@ -27,6 +27,7 @@ export interface FormField {
   required?: boolean;
   disabled?: boolean;
   options?: { value: string | number; label: string }[];
+  onChange?: (value: any) => void; // Add onChange callback
   validation?: {
     min?: number;
     max?: number;
@@ -139,6 +140,11 @@ export default function Form({
         ...prev,
         [name]: error || '',
       }));
+      
+      // Call field's onChange callback if provided
+      if (field.onChange) {
+        field.onChange(value);
+      }
     }
   };
 

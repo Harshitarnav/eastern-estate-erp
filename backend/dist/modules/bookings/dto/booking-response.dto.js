@@ -13,12 +13,8 @@ class BookingResponseDto {
         dto.bookingDate = booking.bookingDate?.toString();
         dto.totalAmount = Number(booking.totalAmount);
         dto.tokenAmount = Number(booking.tokenAmount);
-        dto.agreementAmount = Number(booking.agreementAmount);
         dto.paidAmount = Number(booking.paidAmount);
         dto.balanceAmount = Number(booking.balanceAmount);
-        dto.paymentStatus = booking.paymentStatus;
-        dto.tokenPaidDate = booking.tokenPaidDate?.toString();
-        dto.tokenReceiptNumber = booking.tokenReceiptNumber;
         dto.tokenPaymentMode = booking.tokenPaymentMode;
         dto.agreementNumber = booking.agreementNumber;
         dto.agreementDate = booking.agreementDate?.toString();

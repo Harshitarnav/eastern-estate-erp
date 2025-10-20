@@ -6,6 +6,8 @@ import { Tower } from './entities/tower.entity';
 import { Property } from '../properties/entities/property.entity';
 import { Flat } from '../flats/entities/flat.entity';
 import { TowersSchemaSyncService } from './towers.schema-sync.service';
+import { Booking } from '../bookings/entities/booking.entity';
+import { ConstructionProject } from '../construction/entities/construction-project.entity';
 
 /**
  * Towers Module
@@ -35,7 +37,7 @@ import { TowersSchemaSyncService } from './towers.schema-sync.service';
 @Module({
   imports: [
     // Register entities with TypeORM
-    TypeOrmModule.forFeature([Tower, Property, Flat]),
+    TypeOrmModule.forFeature([Tower, Property, Flat, Booking, ConstructionProject]),
   ],
   controllers: [TowersController],
   providers: [TowersService, TowersSchemaSyncService],

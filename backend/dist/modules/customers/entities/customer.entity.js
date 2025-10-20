@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Customer = exports.KYCStatus = exports.CustomerType = void 0;
+exports.Customer = exports.PropertyPreference = exports.CustomerRequirementType = exports.KYCStatus = exports.CustomerType = void 0;
 const typeorm_1 = require("typeorm");
 var CustomerType;
 (function (CustomerType) {
@@ -24,7 +24,63 @@ var KYCStatus;
     KYCStatus["VERIFIED"] = "VERIFIED";
     KYCStatus["REJECTED"] = "REJECTED";
 })(KYCStatus || (exports.KYCStatus = KYCStatus = {}));
+var CustomerRequirementType;
+(function (CustomerRequirementType) {
+    CustomerRequirementType["END_USER"] = "END_USER";
+    CustomerRequirementType["INVESTOR"] = "INVESTOR";
+    CustomerRequirementType["BOTH"] = "BOTH";
+})(CustomerRequirementType || (exports.CustomerRequirementType = CustomerRequirementType = {}));
+var PropertyPreference;
+(function (PropertyPreference) {
+    PropertyPreference["FLAT"] = "FLAT";
+    PropertyPreference["DUPLEX"] = "DUPLEX";
+    PropertyPreference["PENTHOUSE"] = "PENTHOUSE";
+    PropertyPreference["VILLA"] = "VILLA";
+    PropertyPreference["PLOT"] = "PLOT";
+    PropertyPreference["COMMERCIAL"] = "COMMERCIAL";
+    PropertyPreference["ANY"] = "ANY";
+})(PropertyPreference || (exports.PropertyPreference = PropertyPreference = {}));
 let Customer = class Customer {
+    get firstName() {
+        return this.fullName?.split(' ')[0] || '';
+    }
+    get lastName() {
+        const parts = this.fullName?.split(' ') || [];
+        return parts.slice(1).join(' ') || '';
+    }
+    get phone() {
+        return this.phoneNumber;
+    }
+    get company() {
+        return this.companyName;
+    }
+    get address() {
+        return this.addressLine1;
+    }
+    get type() {
+        return this.customerType;
+    }
+    get totalSpent() {
+        return this.totalPurchases;
+    }
+    get lastBookingDate() {
+        return this.metadata?.lastBookingDate || null;
+    }
+    set lastBookingDate(value) {
+        if (!this.metadata) {
+            this.metadata = {};
+        }
+        this.metadata.lastBookingDate = value;
+    }
+    get isVIP() {
+        return this.metadata?.isVIP || false;
+    }
+    get designation() {
+        return this.metadata?.designation || null;
+    }
+    get annualIncome() {
+        return this.metadata?.annualIncome || null;
+    }
 };
 exports.Customer = Customer;
 __decorate([
@@ -32,37 +88,52 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 100 }),
+    (0, typeorm_1.Column)({ name: 'customer_code', length: 50, unique: true }),
+    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
-], Customer.prototype, "firstName", void 0);
+], Customer.prototype, "customerCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 100 }),
+    (0, typeorm_1.Column)({ name: 'full_name', length: 255 }),
+    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
-], Customer.prototype, "lastName", void 0);
+], Customer.prototype, "fullName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, unique: true }),
+    (0, typeorm_1.Column)({ length: 255, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20, unique: true }),
+    (0, typeorm_1.Column)({ name: 'phone_number', length: 20 }),
+    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
-], Customer.prototype, "phone", void 0);
+], Customer.prototype, "phoneNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'alternate_phone', length: 20, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "alternatePhone", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'date_of_birth', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Customer.prototype, "dateOfBirth", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 10, nullable: true }),
+    (0, typeorm_1.Column)({ length: 20, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "gender", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ length: 100, nullable: true }),
     __metadata("design:type", String)
-], Customer.prototype, "address", void 0);
+], Customer.prototype, "occupation", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'company_name', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "companyName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'address_line1', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "addressLine1", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'address_line2', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "addressLine2", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 100, nullable: true }),
     __metadata("design:type", String)
@@ -72,7 +143,7 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "state", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20, nullable: true }),
+    (0, typeorm_1.Column)({ length: 10, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "pincode", void 0);
 __decorate([
@@ -80,202 +151,88 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "country", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: CustomerType,
-        default: CustomerType.INDIVIDUAL,
-    }),
+    (0, typeorm_1.Column)({ name: 'pan_number', length: 20, nullable: true }),
     __metadata("design:type", String)
-], Customer.prototype, "type", void 0);
+], Customer.prototype, "panNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'aadhar_number', length: 20, nullable: true }),
     __metadata("design:type", String)
-], Customer.prototype, "occupation", void 0);
+], Customer.prototype, "aadharNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'customer_type', length: 50, default: 'INDIVIDUAL' }),
+    __metadata("design:type", String)
+], Customer.prototype, "customerType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'lead_source', length: 100, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "leadSource", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'assigned_sales_person', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "assignedSalesPerson", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
-], Customer.prototype, "annualIncome", void 0);
+], Customer.prototype, "creditLimit", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "company", void 0);
+    (0, typeorm_1.Column)({ name: 'outstanding_balance', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Customer.prototype, "outstandingBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "designation", void 0);
+    (0, typeorm_1.Column)({ name: 'total_bookings', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Customer.prototype, "totalBookings", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: KYCStatus,
-        default: KYCStatus.PENDING,
-    }),
+    (0, typeorm_1.Column)({ name: 'total_purchases', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], Customer.prototype, "totalPurchases", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'kyc_status', length: 50, default: 'PENDING' }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "kycStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "panNumber", void 0);
+    (0, typeorm_1.Column)({ name: 'kyc_documents', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Object)
+], Customer.prototype, "kycDocuments", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "aadharNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 30, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "passportNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 30, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "voterIdNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 30, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "drivingLicenseNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "panCardUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "aadharCardUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "photoUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
-    __metadata("design:type", Array)
-], Customer.prototype, "otherDocuments", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "convertedFromLeadId", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], Customer.prototype, "convertedAt", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "referredBy", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
-    __metadata("design:type", Array)
-], Customer.prototype, "interestedPropertyTypes", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
-    __metadata("design:type", Number)
-], Customer.prototype, "budgetMin", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
-    __metadata("design:type", Number)
-], Customer.prototype, "budgetMax", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
-    __metadata("design:type", Array)
-], Customer.prototype, "preferredLocations", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
+    (0, typeorm_1.Column)({ name: 'is_active', type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
-], Customer.prototype, "needsHomeLoan", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "hasApprovedLoan", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "bankName", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
-    __metadata("design:type", Number)
-], Customer.prototype, "approvedLoanAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "emergencyContactName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 20, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "emergencyContactPhone", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 100, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "emergencyContactRelation", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "emailNotifications", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "smsNotifications", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "whatsappNotifications", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
-    __metadata("design:type", Number)
-], Customer.prototype, "totalBookings", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
-    __metadata("design:type", Number)
-], Customer.prototype, "totalPurchases", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], Customer.prototype, "totalSpent", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], Customer.prototype, "lastPurchaseDate", void 0);
+], Customer.prototype, "isActive", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
-    __metadata("design:type", Array)
-], Customer.prototype, "tags", void 0);
+    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
+    __metadata("design:type", Object)
+], Customer.prototype, "metadata", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "isActive", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "isVIP", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: false }),
-    __metadata("design:type", Boolean)
-], Customer.prototype, "isBlacklisted", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "blacklistReason", void 0);
-__decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], Customer.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)(),
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
     __metadata("design:type", Date)
 ], Customer.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'requirement_type', type: 'varchar', nullable: true }),
+    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
-], Customer.prototype, "createdBy", void 0);
+], Customer.prototype, "requirementType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'property_preference', type: 'varchar', nullable: true }),
+    (0, typeorm_1.Index)(),
     __metadata("design:type", String)
-], Customer.prototype, "updatedBy", void 0);
+], Customer.prototype, "propertyPreference", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'tentative_purchase_timeframe', length: 100, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "tentativePurchaseTimeframe", void 0);
 exports.Customer = Customer = __decorate([
     (0, typeorm_1.Entity)('customers'),
     (0, typeorm_1.Index)(['email']),
-    (0, typeorm_1.Index)(['phone']),
+    (0, typeorm_1.Index)(['phoneNumber']),
     (0, typeorm_1.Index)(['isActive'])
 ], Customer);
 //# sourceMappingURL=customer.entity.js.map

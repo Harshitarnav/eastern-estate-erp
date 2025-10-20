@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
+const schedule_1 = require("@nestjs/schedule");
 const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./modules/users/users.module");
 const properties_module_1 = require("./modules/properties/properties.module");
@@ -51,6 +52,7 @@ exports.AppModule = AppModule = __decorate([
                     abortEarly: false,
                 },
             }),
+            schedule_1.ScheduleModule.forRoot(),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 useFactory: (configService) => ({

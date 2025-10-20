@@ -43,5 +43,14 @@ declare const _default: () => {
         useSsl: boolean;
         bucket: string;
     };
+    email: {
+        host: string;
+        port: number;
+        secure: boolean;
+        user: string;
+        password: string;
+        from: string;
+        adminEmail: string;
+    };
 };
 export default _default;

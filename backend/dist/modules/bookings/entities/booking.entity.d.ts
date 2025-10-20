@@ -29,12 +29,8 @@ export declare class Booking {
     bookingDate: Date;
     totalAmount: number;
     tokenAmount: number;
-    agreementAmount: number;
     paidAmount: number;
     balanceAmount: number;
-    paymentStatus: PaymentStatus;
-    tokenPaidDate: Date;
-    tokenReceiptNumber: string;
     tokenPaymentMode: string;
     agreementNumber: string;
     agreementDate: Date;
@@ -70,6 +66,8 @@ export declare class Booking {
     refundAmount: number;
     refundDate: Date;
     documents: string[];
+    paymentPlan: string;
+    towerId: string;
     notes: string;
     specialTerms: string;
     tags: string[];
