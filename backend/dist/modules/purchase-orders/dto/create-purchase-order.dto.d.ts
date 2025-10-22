@@ -1,30 +1,21 @@
-import { OrderStatus, PaymentTerms } from '../entities/purchase-order.entity';
-declare class OrderItemDto {
-    itemId: string;
-    itemCode: string;
-    itemName: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    discount?: number;
-    taxPercent?: number;
-}
+import { PurchaseOrderStatus } from '../entities/purchase-order.entity';
 export declare class CreatePurchaseOrderDto {
-    orderNumber: string;
-    orderDate: string;
-    orderStatus?: OrderStatus;
-    supplierId: string;
-    supplierName: string;
-    supplierEmail?: string;
-    supplierPhone?: string;
-    supplierAddress?: string;
-    items: OrderItemDto[];
-    paymentTerms?: PaymentTerms;
-    shippingCost?: number;
+    poNumber?: string;
+    poDate?: string;
+    vendorId: string;
+    propertyId?: string;
+    constructionProjectId?: string;
+    status?: PurchaseOrderStatus;
     expectedDeliveryDate?: string;
+    subtotal?: number;
+    taxAmount?: number;
+    discountAmount?: number;
+    totalAmount: number;
+    paymentTerms?: string;
+    advancePaid?: number;
     deliveryAddress?: string;
+    deliveryContact?: string;
+    deliveryPhone?: string;
     notes?: string;
-    tags?: string[];
+    termsAndConditions?: string;
 }
-export {};

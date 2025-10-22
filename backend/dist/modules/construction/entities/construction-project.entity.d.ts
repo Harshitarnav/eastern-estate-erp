@@ -1,132 +1,52 @@
 import { Property } from '../../properties/entities/property.entity';
 import { Tower } from '../../towers/entities/tower.entity';
-export declare enum ProjectPhase {
+import { Employee } from '../../employees/entities/employee.entity';
+import { User } from '../../users/entities/user.entity';
+export declare enum ConstructionProjectPhase {
     PLANNING = "PLANNING",
-    SITE_PREPARATION = "SITE_PREPARATION",
+    EXCAVATION = "EXCAVATION",
     FOUNDATION = "FOUNDATION",
     STRUCTURE = "STRUCTURE",
-    MASONRY = "MASONRY",
-    ROOFING = "ROOFING",
-    PLUMBING = "PLUMBING",
-    ELECTRICAL = "ELECTRICAL",
-    PLASTERING = "PLASTERING",
-    FLOORING = "FLOORING",
-    PAINTING = "PAINTING",
     FINISHING = "FINISHING",
-    LANDSCAPING = "LANDSCAPING",
-    HANDOVER = "HANDOVER",
-    COMPLETED = "COMPLETED"
+    COMPLETE = "COMPLETE"
 }
-export declare enum ProjectStatus {
-    NOT_STARTED = "NOT_STARTED",
-    IN_PROGRESS = "IN_PROGRESS",
+export declare enum ConstructionProjectStatus {
+    ACTIVE = "ACTIVE",
     ON_HOLD = "ON_HOLD",
     DELAYED = "DELAYED",
     COMPLETED = "COMPLETED",
     CANCELLED = "CANCELLED"
 }
-export declare enum InspectionStatus {
-    PENDING = "PENDING",
-    PASSED = "PASSED",
-    FAILED = "FAILED",
-    CONDITIONAL = "CONDITIONAL"
-}
 export declare class ConstructionProject {
     id: string;
-    projectCode: string;
-    projectName: string;
-    description: string;
     propertyId: string;
     property: Property;
-    towerId: string;
+    towerId: string | null;
     tower: Tower;
-    projectPhase: ProjectPhase;
-    projectStatus: ProjectStatus;
+    projectCode: string;
+    projectName: string;
+    projectPhase: ConstructionProjectPhase;
+    startDate: Date | null;
+    expectedCompletionDate: Date | null;
+    actualCompletionDate: Date | null;
     overallProgress: number;
-    planningProgress: number;
-    sitePrepProgress: number;
-    foundationProgress: number;
     structureProgress: number;
-    masonryProgress: number;
-    roofingProgress: number;
-    plumbingProgress: number;
-    electricalProgress: number;
-    plasteringProgress: number;
-    flooringProgress: number;
-    paintingProgress: number;
+    interiorProgress: number;
     finishingProgress: number;
-    landscapingProgress: number;
-    plannedStartDate: Date;
-    plannedEndDate: Date;
-    actualStartDate: Date;
-    actualEndDate: Date;
-    estimatedCompletionDate: Date;
-    delayDays: number;
-    mainContractorName: string;
-    mainContractorEmail: string;
-    mainContractorPhone: string;
-    mainContractorAddress: string;
-    subContractors: {
-        name: string;
-        type: string;
-        phone: string;
-        email?: string;
-    }[];
-    estimatedBudget: number;
-    actualCost: number;
-    materialCost: number;
-    laborCost: number;
-    overheadCost: number;
-    milestones: {
-        id: string;
-        name: string;
-        phase: string;
-        targetDate: string;
-        completedDate?: string;
-        status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
-        progress: number;
-    }[];
-    inspections: {
-        id: string;
-        inspectionType: string;
-        inspectionDate: string;
-        inspector: string;
-        status: InspectionStatus;
-        remarks?: string;
-        photos?: string[];
-    }[];
-    totalInspections: number;
-    passedInspections: number;
-    failedInspections: number;
-    materialUsage: {
-        itemId: string;
-        itemName: string;
-        quantityUsed: number;
-        unit: string;
-        usedDate: string;
-    }[];
-    workersCount: number;
-    engineersCount: number;
-    supervisorsCount: number;
-    projectManager: string;
-    siteEngineer: string;
-    safetyIncidents: number;
-    lastSafetyInspection: Date;
-    safetyCompliant: boolean;
-    permits: string[];
-    allPermitsObtained: boolean;
-    photos: string[];
-    documents: string[];
-    blueprints: string[];
-    weatherDelayDays: number;
-    weatherRemarks: string;
-    notes: string;
-    tags: string[];
-    risksIdentified: string;
-    mitigationStrategies: string;
+    siteEngineerId: string | null;
+    siteEngineer: Employee;
+    contractorName: string | null;
+    contractorContact: string | null;
+    status: ConstructionProjectStatus;
+    budgetAllocated: number;
+    budgetSpent: number;
+    notes: string | null;
+    issues: string[] | null;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
-    createdBy: string;
-    updatedBy: string;
+    createdBy: string | null;
+    creator: User;
+    updatedBy: string | null;
+    updater: User;
 }

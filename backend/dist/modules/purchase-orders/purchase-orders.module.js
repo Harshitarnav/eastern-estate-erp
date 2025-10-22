@@ -9,18 +9,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PurchaseOrdersModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const purchase_orders_controller_1 = require("./purchase-orders.controller");
-const purchase_orders_service_1 = require("./purchase-orders.service");
 const purchase_order_entity_1 = require("./entities/purchase-order.entity");
+const purchase_order_item_entity_1 = require("./entities/purchase-order-item.entity");
+const purchase_orders_service_1 = require("./purchase-orders.service");
+const purchase_orders_controller_1 = require("./purchase-orders.controller");
+const purchase_order_items_service_1 = require("./purchase-order-items.service");
+const purchase_order_items_controller_1 = require("./purchase-order-items.controller");
 let PurchaseOrdersModule = class PurchaseOrdersModule {
 };
 exports.PurchaseOrdersModule = PurchaseOrdersModule;
 exports.PurchaseOrdersModule = PurchaseOrdersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([purchase_order_entity_1.PurchaseOrder])],
-        controllers: [purchase_orders_controller_1.PurchaseOrdersController],
-        providers: [purchase_orders_service_1.PurchaseOrdersService],
-        exports: [purchase_orders_service_1.PurchaseOrdersService],
+        imports: [typeorm_1.TypeOrmModule.forFeature([purchase_order_entity_1.PurchaseOrder, purchase_order_item_entity_1.PurchaseOrderItem])],
+        controllers: [purchase_orders_controller_1.PurchaseOrdersController, purchase_order_items_controller_1.PurchaseOrderItemsController],
+        providers: [purchase_orders_service_1.PurchaseOrdersService, purchase_order_items_service_1.PurchaseOrderItemsService],
+        exports: [purchase_orders_service_1.PurchaseOrdersService, purchase_order_items_service_1.PurchaseOrderItemsService],
     })
 ], PurchaseOrdersModule);
 //# sourceMappingURL=purchase-orders.module.js.map

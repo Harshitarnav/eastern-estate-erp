@@ -26,14 +26,12 @@ const property_inventory_summary_dto_1 = require("../properties/dto/property-inv
 const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 const XLSX = require("xlsx");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
-const construction_project_entity_1 = require("../construction/entities/construction-project.entity");
 let TowersService = TowersService_1 = class TowersService {
-    constructor(towerRepository, propertyRepository, flatRepository, bookingRepository, constructionRepository) {
+    constructor(towerRepository, propertyRepository, flatRepository, bookingRepository) {
         this.towerRepository = towerRepository;
         this.propertyRepository = propertyRepository;
         this.flatRepository = flatRepository;
         this.bookingRepository = bookingRepository;
-        this.constructionRepository = constructionRepository;
         this.logger = new common_1.Logger(TowersService_1.name);
     }
     async create(createTowerDto) {
@@ -351,18 +349,7 @@ let TowersService = TowersService_1 = class TowersService {
             order: { floor: 'ASC', flatNumber: 'ASC' },
         });
         const financials = await this.getTowerFinancialSnapshot(id);
-        let construction = null;
-        try {
-            construction = await this.constructionRepository.findOne({
-                where: { towerId: id, isActive: true },
-                order: { updatedAt: 'DESC' },
-                select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
-            });
-        }
-        catch (error) {
-            this.logger.warn(`Construction schema missing tower linkage for tower ${id}; skipping payment stages.`);
-            construction = null;
-        }
+        const construction = null;
         const salesBreakdown = (0, property_inventory_summary_dto_1.emptySalesBreakdown)();
         const floorsSet = new Set();
         const typologySet = new Set();
@@ -726,9 +713,7 @@ exports.TowersService = TowersService = TowersService_1 = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(property_entity_1.Property)),
     __param(2, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __param(3, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
-    __param(4, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])

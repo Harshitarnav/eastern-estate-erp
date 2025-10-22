@@ -4,113 +4,203 @@ export interface ConstructionProject {
   id: string;
   projectCode: string;
   projectName: string;
-  description?: string;
   propertyId: string;
-  towerId?: string;
-  projectPhase: string;
-  projectStatus: string;
-  overallProgress: number;
-  plannedStartDate: string;
-  plannedEndDate: string;
-  actualStartDate?: string;
+  status: string;
+  startDate: string;
+  estimatedEndDate: string;
   actualEndDate?: string;
-  estimatedCompletionDate?: string;
-  delayDays: number;
-  mainContractorName?: string;
-  mainContractorPhone?: string;
   estimatedBudget: number;
-  actualCost: number;
-  materialCost: number;
-  laborCost: number;
-  projectManager?: string;
-  siteEngineer?: string;
-  workersCount: number;
-  totalInspections: number;
-  passedInspections: number;
-  failedInspections: number;
-  safetyCompliant: boolean;
-  allPermitsObtained: boolean;
-  photos?: string[];
-  notes?: string;
-  tags?: string[];
+  budgetSpent: number;
+  progress: number;
+  description?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  property?: any;
-  tower?: any;
-  milestones?: any[];
-  inspections?: any[];
 }
 
-export interface ConstructionFilters {
-  search?: string;
-  projectPhase?: string;
-  projectStatus?: string;
-  propertyId?: string;
-  towerId?: string;
-  isActive?: boolean;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
+export interface DailyProgressReport {
+  id: string;
+  constructionProjectId: string;
+  reportDate: string;
+  reportedBy: string;
+  workCompleted: string;
+  materialsUsed?: string;
+  workersPresent: number;
+  progressPercentage: number;
+  remarks?: string;
 }
 
-export interface PaginatedConstructionResponse {
-  data: ConstructionProject[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
+export interface PainPoint {
+  id: string;
+  constructionProjectId: string;
+  issueTitle: string;
+  description: string;
+  severity: string;
+  status: string;
+  reportedDate: string;
+  resolvedDate?: string;
+  resolutionNotes?: string;
+}
+
+export interface MaterialShortage {
+  id: string;
+  constructionProjectId: string;
+  materialId: string;
+  requiredQuantity: number;
+  shortageDate: string;
+  priority: string;
+  status: string;
+  estimatedDelay?: number;
+}
+
+export interface WorkSchedule {
+  id: string;
+  constructionProjectId: string;
+  taskName: string;
+  description?: string;
+  assignedTo: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  progress: number;
+  dependencies?: string[];
 }
 
 class ConstructionService {
-  private readonly baseUrl = '/construction';
+  private projectsUrl = '/construction-projects';
+  private reportsUrl = '/daily-progress-reports';
+  private painPointsUrl = '/pain-points';
+  private shortagesUrl = '/material-shortages';
+  private schedulesUrl = '/work-schedules';
 
-  async getProjects(filters?: ConstructionFilters): Promise<PaginatedConstructionResponse> {
+  // Construction Projects
+  async getAllProjects(filters?: { status?: string; propertyId?: string }) {
     const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.propertyId) params.append('propertyId', filters.propertyId);
     
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, String(value));
-        }
-      });
-    }
-
-    const response = await api.get<PaginatedConstructionResponse>(`${this.baseUrl}?${params.toString()}`);
-    return response;
+    return await api.get<ConstructionProject[]>(`${this.projectsUrl}?${params.toString()}`);
   }
 
-  async getProject(id: string): Promise<ConstructionProject> {
-    const response = await api.get<ConstructionProject>(`${this.baseUrl}/${id}`);
-    return response;
+  async getProject(id: string) {
+    return await api.get<ConstructionProject>(`${this.projectsUrl}/${id}`);
   }
 
-  async getStatistics(): Promise<any> {
-    const response = await api.get<any>(`${this.baseUrl}/statistics`);
-    return response;
+  async createProject(data: Partial<ConstructionProject>) {
+    return await api.post<ConstructionProject>(this.projectsUrl, data);
   }
 
-  async createProject(data: Partial<ConstructionProject>): Promise<ConstructionProject> {
-    const response = await api.post<ConstructionProject>(this.baseUrl, data);
-    return response;
+  async updateProject(id: string, data: Partial<ConstructionProject>) {
+    return await api.patch<ConstructionProject>(`${this.projectsUrl}/${id}`, data);
   }
 
-  async updateProject(id: string, data: Partial<ConstructionProject>): Promise<ConstructionProject> {
-    const response = await api.put<ConstructionProject>(`${this.baseUrl}/${id}`, data);
-    return response;
+  async getStatistics() {
+    return await api.get(`${this.projectsUrl}/statistics`);
   }
 
-  async deleteProject(id: string): Promise<void> {
-    await api.delete(`${this.baseUrl}/${id}`);
+  async getOverdueProjects() {
+    return await api.get<ConstructionProject[]>(`${this.projectsUrl}/overdue`);
   }
 
-  async updateProgress(id: string, phase: string, progress: number): Promise<ConstructionProject> {
-    const response = await api.post<ConstructionProject>(`${this.baseUrl}/${id}/progress`, { phase, progress });
-    return response;
+  async updateProgress(id: string, progress: number) {
+    return await api.patch(`${this.projectsUrl}/${id}/progress`, { progress });
+  }
+
+  async updateBudget(id: string, amount: number) {
+    return await api.patch(`${this.projectsUrl}/${id}/budget`, { amount });
+  }
+
+  // Daily Progress Reports
+  async getAllReports(filters?: { projectId?: string; fromDate?: string; toDate?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.projectId) params.append('projectId', filters.projectId);
+    if (filters?.fromDate) params.append('fromDate', filters.fromDate);
+    if (filters?.toDate) params.append('toDate', filters.toDate);
+    
+    return await api.get<DailyProgressReport[]>(`${this.reportsUrl}?${params.toString()}`);
+  }
+
+  async createReport(data: Partial<DailyProgressReport>) {
+    return await api.post<DailyProgressReport>(this.reportsUrl, data);
+  }
+
+  async getAttendanceSummary(projectId: string, month: number, year: number) {
+    return await api.get(`${this.reportsUrl}/attendance/${projectId}/${month}/${year}`);
+  }
+
+  // Pain Points
+  async getAllPainPoints(filters?: { projectId?: string; status?: string; severity?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.projectId) params.append('projectId', filters.projectId);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.severity) params.append('severity', filters.severity);
+    
+    return await api.get<PainPoint[]>(`${this.painPointsUrl}?${params.toString()}`);
+  }
+
+  async createPainPoint(data: Partial<PainPoint>) {
+    return await api.post<PainPoint>(this.painPointsUrl, data);
+  }
+
+  async getOpenIssues(projectId: string) {
+    return await api.get<PainPoint[]>(`${this.painPointsUrl}/project/${projectId}/open`);
+  }
+
+  async resolvePainPoint(id: string, resolutionNotes: string) {
+    return await api.patch(`${this.painPointsUrl}/${id}/resolve`, { resolutionNotes });
+  }
+
+  // Material Shortages
+  async getAllShortages(filters?: { projectId?: string; status?: string; priority?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.projectId) params.append('projectId', filters.projectId);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.priority) params.append('priority', filters.priority);
+    
+    return await api.get<MaterialShortage[]>(`${this.shortagesUrl}?${params.toString()}`);
+  }
+
+  async createShortage(data: Partial<MaterialShortage>) {
+    return await api.post<MaterialShortage>(this.shortagesUrl, data);
+  }
+
+  async getCriticalShortages(projectId: string) {
+    return await api.get<MaterialShortage[]>(`${this.shortagesUrl}/project/${projectId}/critical`);
+  }
+
+  async resolveShortage(id: string) {
+    return await api.patch(`${this.shortagesUrl}/${id}/resolve`);
+  }
+
+  // Work Schedules
+  async getAllSchedules(filters?: { projectId?: string; assignedTo?: string; status?: string }) {
+    const params = new URLSearchParams();
+    if (filters?.projectId) params.append('projectId', filters.projectId);
+    if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
+    if (filters?.status) params.append('status', filters.status);
+    
+    return await api.get<WorkSchedule[]>(`${this.schedulesUrl}?${params.toString()}`);
+  }
+
+  async createSchedule(data: Partial<WorkSchedule>) {
+    return await api.post<WorkSchedule>(this.schedulesUrl, data);
+  }
+
+  async getUpcomingTasks(projectId: string, days: number = 7) {
+    return await api.get<WorkSchedule[]>(`${this.schedulesUrl}/project/${projectId}/upcoming?days=${days}`);
+  }
+
+  async getOverdueTasks(projectId: string) {
+    return await api.get<WorkSchedule[]>(`${this.schedulesUrl}/project/${projectId}/overdue`);
+  }
+
+  async getTasksByEngineer(engineerId: string) {
+    return await api.get<WorkSchedule[]>(`${this.schedulesUrl}/engineer/${engineerId}`);
+  }
+
+  async updateScheduleProgress(id: string, progress: number) {
+    return await api.patch(`${this.schedulesUrl}/${id}/progress`, { progress });
   }
 }
 
-export const constructionService = new ConstructionService();
+export default new ConstructionService();

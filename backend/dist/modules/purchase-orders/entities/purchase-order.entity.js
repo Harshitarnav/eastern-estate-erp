@@ -9,37 +9,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PurchaseOrder = exports.PaymentTerms = exports.PaymentStatus = exports.OrderStatus = void 0;
+exports.PurchaseOrder = exports.PurchaseOrderStatus = void 0;
 const typeorm_1 = require("typeorm");
-var OrderStatus;
-(function (OrderStatus) {
-    OrderStatus["DRAFT"] = "DRAFT";
-    OrderStatus["PENDING_APPROVAL"] = "PENDING_APPROVAL";
-    OrderStatus["APPROVED"] = "APPROVED";
-    OrderStatus["REJECTED"] = "REJECTED";
-    OrderStatus["ORDERED"] = "ORDERED";
-    OrderStatus["PARTIALLY_RECEIVED"] = "PARTIALLY_RECEIVED";
-    OrderStatus["RECEIVED"] = "RECEIVED";
-    OrderStatus["CANCELLED"] = "CANCELLED";
-})(OrderStatus || (exports.OrderStatus = OrderStatus = {}));
-var PaymentStatus;
-(function (PaymentStatus) {
-    PaymentStatus["UNPAID"] = "UNPAID";
-    PaymentStatus["PARTIALLY_PAID"] = "PARTIALLY_PAID";
-    PaymentStatus["PAID"] = "PAID";
-    PaymentStatus["OVERDUE"] = "OVERDUE";
-})(PaymentStatus || (exports.PaymentStatus = PaymentStatus = {}));
-var PaymentTerms;
-(function (PaymentTerms) {
-    PaymentTerms["IMMEDIATE"] = "IMMEDIATE";
-    PaymentTerms["NET_7"] = "NET_7";
-    PaymentTerms["NET_15"] = "NET_15";
-    PaymentTerms["NET_30"] = "NET_30";
-    PaymentTerms["NET_60"] = "NET_60";
-    PaymentTerms["NET_90"] = "NET_90";
-    PaymentTerms["ADVANCE_50"] = "ADVANCE_50";
-    PaymentTerms["ADVANCE_100"] = "ADVANCE_100";
-})(PaymentTerms || (exports.PaymentTerms = PaymentTerms = {}));
+const vendor_entity_1 = require("../../vendors/entities/vendor.entity");
+const property_entity_1 = require("../../properties/entities/property.entity");
+const user_entity_1 = require("../../users/entities/user.entity");
+var PurchaseOrderStatus;
+(function (PurchaseOrderStatus) {
+    PurchaseOrderStatus["DRAFT"] = "DRAFT";
+    PurchaseOrderStatus["PENDING_APPROVAL"] = "PENDING_APPROVAL";
+    PurchaseOrderStatus["APPROVED"] = "APPROVED";
+    PurchaseOrderStatus["ORDERED"] = "ORDERED";
+    PurchaseOrderStatus["PARTIALLY_RECEIVED"] = "PARTIALLY_RECEIVED";
+    PurchaseOrderStatus["RECEIVED"] = "RECEIVED";
+    PurchaseOrderStatus["CANCELLED"] = "CANCELLED";
+})(PurchaseOrderStatus || (exports.PurchaseOrderStatus = PurchaseOrderStatus = {}));
 let PurchaseOrder = class PurchaseOrder {
 };
 exports.PurchaseOrder = PurchaseOrder;
@@ -48,235 +32,144 @@ __decorate([
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 100, unique: true }),
-    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)({ name: 'po_number', type: 'varchar', length: 50, unique: true }),
     __metadata("design:type", String)
-], PurchaseOrder.prototype, "orderNumber", void 0);
+], PurchaseOrder.prototype, "poNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date' }),
+    (0, typeorm_1.Column)({ name: 'po_date', type: 'date' }),
     __metadata("design:type", Date)
-], PurchaseOrder.prototype, "orderDate", void 0);
+], PurchaseOrder.prototype, "poDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'vendor_id', type: 'uuid' }),
+    __metadata("design:type", String)
+], PurchaseOrder.prototype, "vendorId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => vendor_entity_1.Vendor),
+    (0, typeorm_1.JoinColumn)({ name: 'vendor_id' }),
+    __metadata("design:type", vendor_entity_1.Vendor)
+], PurchaseOrder.prototype, "vendor", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], PurchaseOrder.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], PurchaseOrder.prototype, "property", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'construction_project_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], PurchaseOrder.prototype, "constructionProjectId", void 0);
 __decorate([
     (0, typeorm_1.Column)({
+        name: 'status',
         type: 'enum',
-        enum: OrderStatus,
-        default: OrderStatus.DRAFT,
-    }),
-    (0, typeorm_1.Index)(),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "orderStatus", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'uuid' }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "supplierId", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 200 }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "supplierName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "supplierEmail", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 50, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "supplierPhone", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "supplierAddress", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 50, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "supplierGSTIN", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'simple-json' }),
-    __metadata("design:type", Array)
-], PurchaseOrder.prototype, "items", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "subtotal", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "discountAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "discountPercent", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "taxAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "shippingCost", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "otherCharges", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "totalAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: PaymentStatus,
-        default: PaymentStatus.UNPAID,
-    }),
-    (0, typeorm_1.Index)(),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "paymentStatus", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: PaymentTerms,
-        default: PaymentTerms.NET_30,
+        enum: PurchaseOrderStatus,
+        default: PurchaseOrderStatus.DRAFT,
     }),
     __metadata("design:type", String)
-], PurchaseOrder.prototype, "paymentTerms", void 0);
+], PurchaseOrder.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "paidAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "balanceAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], PurchaseOrder.prototype, "paymentDueDate", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'expected_delivery_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], PurchaseOrder.prototype, "expectedDeliveryDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'actual_delivery_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], PurchaseOrder.prototype, "actualDeliveryDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "deliveryAddress", void 0);
+    (0, typeorm_1.Column)({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrder.prototype, "subtotal", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "deliveryContact", void 0);
+    (0, typeorm_1.Column)({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrder.prototype, "taxAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 50, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "deliveryPhone", void 0);
+    (0, typeorm_1.Column)({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrder.prototype, "discountAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "trackingNumber", void 0);
+    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 }),
+    __metadata("design:type", Number)
+], PurchaseOrder.prototype, "totalAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'payment_terms', type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
-], PurchaseOrder.prototype, "courierService", void 0);
+], PurchaseOrder.prototype, "paymentTerms", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "requestedBy", void 0);
+    (0, typeorm_1.Column)({ name: 'advance_paid', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrder.prototype, "advancePaid", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "requestedByName", void 0);
+    (0, typeorm_1.Column)({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    __metadata("design:type", Number)
+], PurchaseOrder.prototype, "balanceAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'approved_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "approvedBy", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "approvedByName", void 0);
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'approved_by' }),
+    __metadata("design:type", user_entity_1.User)
+], PurchaseOrder.prototype, "approver", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'approved_at', type: 'timestamp', nullable: true }),
     __metadata("design:type", Date)
 ], PurchaseOrder.prototype, "approvedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'delivery_address', type: 'text', nullable: true }),
     __metadata("design:type", String)
-], PurchaseOrder.prototype, "rejectedBy", void 0);
+], PurchaseOrder.prototype, "deliveryAddress", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'delivery_contact', type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
-], PurchaseOrder.prototype, "rejectedByName", void 0);
+], PurchaseOrder.prototype, "deliveryContact", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
-    __metadata("design:type", Date)
-], PurchaseOrder.prototype, "rejectedAt", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'delivery_phone', type: 'varchar', length: 20, nullable: true }),
     __metadata("design:type", String)
-], PurchaseOrder.prototype, "rejectionReason", void 0);
+], PurchaseOrder.prototype, "deliveryPhone", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'simple-json', nullable: true }),
-    __metadata("design:type", Array)
-], PurchaseOrder.prototype, "receivedItems", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "totalItemsOrdered", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
-    __metadata("design:type", Number)
-], PurchaseOrder.prototype, "totalItemsReceived", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
-    __metadata("design:type", Array)
-], PurchaseOrder.prototype, "attachments", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "invoiceNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
-    __metadata("design:type", Date)
-], PurchaseOrder.prototype, "invoiceDate", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'notes', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'terms_and_conditions', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "termsAndConditions", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
-    __metadata("design:type", Array)
-], PurchaseOrder.prototype, "tags", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ length: 200, nullable: true }),
-    __metadata("design:type", String)
-], PurchaseOrder.prototype, "projectReference", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'boolean', default: true }),
-    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)({ name: 'is_active', type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], PurchaseOrder.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)(),
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], PurchaseOrder.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.UpdateDateColumn)(),
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
     __metadata("design:type", Date)
 ], PurchaseOrder.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'created_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "createdBy", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'created_by' }),
+    __metadata("design:type", user_entity_1.User)
+], PurchaseOrder.prototype, "creator", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'updated_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "updatedBy", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'updated_by' }),
+    __metadata("design:type", user_entity_1.User)
+], PurchaseOrder.prototype, "updater", void 0);
 exports.PurchaseOrder = PurchaseOrder = __decorate([
-    (0, typeorm_1.Entity)('purchase_orders'),
-    (0, typeorm_1.Index)(['supplierId'])
+    (0, typeorm_1.Entity)('purchase_orders')
 ], PurchaseOrder);
 //# sourceMappingURL=purchase-order.entity.js.map

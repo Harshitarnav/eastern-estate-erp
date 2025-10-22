@@ -7,7 +7,7 @@ import { Tower } from '../towers/entities/tower.entity';
 import { Flat, FlatStatus } from '../flats/entities/flat.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { Booking } from '../bookings/entities/booking.entity';
-import { ConstructionProject } from '../construction/entities/construction-project.entity';
+// import { ConstructionProject } from '../construction/entities/construction-project.entity'; // Removed
 import {
   CreatePropertyDto,
   UpdatePropertyDto,
@@ -46,8 +46,8 @@ export class PropertiesService {
     private customersRepository: Repository<Customer>,
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
-    @InjectRepository(ConstructionProject)
-    private constructionRepository: Repository<ConstructionProject>,
+    // @InjectRepository(ConstructionProject) // Removed
+    // private constructionRepository: Repository<ConstructionProject>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -219,29 +219,29 @@ export class PropertiesService {
     const propertySalesBreakdown = emptySalesBreakdown();
 
     const towerFinancials = await this.getTowerFinancials(towerIds);
-    let towerConstructionProjects: ConstructionProject[] = [];
-    if (towerIds.length) {
-      try {
-        towerConstructionProjects = await this.constructionRepository.find({
-          where: { towerId: In(towerIds), isActive: true },
-          order: { updatedAt: 'DESC' },
-          select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
-        });
-      } catch (error) {
-        this.logger.warn('Construction schema missing tower linkage; skipping tower stage data');
-        towerConstructionProjects = [];
-      }
-    }
-    const constructionMap = new Map<string, ConstructionProject>();
-    towerConstructionProjects.forEach((project) => {
-      if (!project.towerId) {
-        return;
-      }
-      const existing = constructionMap.get(project.towerId);
-      if (!existing || (existing.updatedAt ?? 0) < (project.updatedAt ?? 0)) {
-        constructionMap.set(project.towerId, project);
-      }
-    });
+    // let towerConstructionProjects: ConstructionProject[] = []; // Removed
+    // if (towerIds.length) {
+    //   try {
+    //     towerConstructionProjects = await this.constructionRepository.find({
+    //       where: { towerId: In(towerIds), isActive: true },
+    //       order: { updatedAt: 'DESC' },
+    //       select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
+    //     });
+    //   } catch (error) {
+    //     this.logger.warn('Construction schema missing tower linkage; skipping tower stage data');
+    //     towerConstructionProjects = [];
+    //   }
+    // }
+    const constructionMap = new Map<string, any>(); // Changed from ConstructionProject to any
+    // towerConstructionProjects.forEach((project) => {
+    //   if (!project.towerId) {
+    //     return;
+    //   }
+    //   const existing = constructionMap.get(project.towerId);
+    //   if (!existing || (existing.updatedAt ?? 0) < (project.updatedAt ?? 0)) {
+    //     constructionMap.set(project.towerId, project);
+    //   }
+    // });
 
     if (towerIds.length > 0) {
       const flatAggregation = await this.flatsRepository
@@ -885,7 +885,7 @@ export class PropertiesService {
   private buildTowerPaymentStages(
     tower: Tower,
     financials: { fundsTarget: number; fundsRealized: number; fundsOutstanding: number },
-    construction?: ConstructionProject,
+    construction?: any, // Changed from ConstructionProject
   ): TowerPaymentStageDto[] {
     const totalFloors = Math.max(Number(tower.totalFloors ?? 0), 0);
     if (totalFloors === 0) {

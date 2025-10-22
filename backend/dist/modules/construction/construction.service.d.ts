@@ -20,7 +20,7 @@ export declare class ConstructionService {
         totalBudget: number;
         totalCost: number;
         budgetVariance: number;
-        totalDelayDays: number;
+        totalDelayDays: any;
         avgProgress: number;
         byPhase: {
             planning: number;

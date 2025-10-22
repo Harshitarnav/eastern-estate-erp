@@ -14,7 +14,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { BookingsModule } from './modules/bookings/bookings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
-import { ConstructionModule } from './modules/construction/construction.module';
+// import { ConstructionModule } from './modules/construction/construction.module'; // Removed - using existing construction module
 import { StoreModule } from './modules/store/store.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { HrModule } from './modules/hr/hr.module';
@@ -23,6 +23,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
+import { ConstructionModule } from './modules/construction/construction.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 import { ThrottlerGuard, ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
@@ -87,7 +88,7 @@ import { validationSchema } from './config/validation';
     BookingsModule,
     PaymentsModule,
     InventoryModule,
-    ConstructionModule,
+    // ConstructionModule, // Removed - conflicts with existing module
     StoreModule,
     EmployeesModule,
     HrModule,
@@ -96,6 +97,7 @@ import { validationSchema } from './config/validation';
     NotificationsModule,
     AccountingModule,
     PurchaseOrdersModule,
+    ConstructionModule,
     UploadModule,
   ],
   providers: [

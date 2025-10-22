@@ -7,7 +7,7 @@ import { Property } from '../properties/entities/property.entity';
 import { Flat } from '../flats/entities/flat.entity';
 import { TowersSchemaSyncService } from './towers.schema-sync.service';
 import { Booking } from '../bookings/entities/booking.entity';
-import { ConstructionProject } from '../construction/entities/construction-project.entity';
+// import { ConstructionProject } from '../construction/entities/construction-project.entity'; // Removed - using existing module
 
 /**
  * Towers Module
@@ -37,7 +37,7 @@ import { ConstructionProject } from '../construction/entities/construction-proje
 @Module({
   imports: [
     // Register entities with TypeORM
-    TypeOrmModule.forFeature([Tower, Property, Flat, Booking, ConstructionProject]),
+    TypeOrmModule.forFeature([Tower, Property, Flat, Booking]), // Removed ConstructionProject
   ],
   controllers: [TowersController],
   providers: [TowersService, TowersSchemaSyncService],

@@ -2,122 +2,120 @@ import api from './api';
 
 export interface PurchaseOrder {
   id: string;
-  orderNumber: string;
-  orderDate: string;
-  orderStatus: string;
-  supplierId: string;
-  supplierName: string;
-  supplierEmail?: string;
-  supplierPhone?: string;
-  items: any[];
-  subtotal: number;
-  discountAmount: number;
-  taxAmount: number;
-  shippingCost: number;
-  totalAmount: number;
-  paymentStatus: string;
-  paymentTerms: string;
-  paidAmount: number;
-  balanceAmount: number;
-  paymentDueDate?: string;
+  poNumber: string;
+  poDate: string;
+  vendorId: string;
+  vendorName?: string;
+  propertyId?: string;
+  propertyName?: string;
+  constructionProjectId?: string;
+  status: 'DRAFT' | 'APPROVED' | 'ORDERED' | 'RECEIVED' | 'CANCELLED';
   expectedDeliveryDate?: string;
   actualDeliveryDate?: string;
-  totalItemsOrdered: number;
-  totalItemsReceived: number;
-  invoiceNumber?: string;
+  subtotal: number;
+  taxAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  advancePaid: number;
+  balanceAmount: number;
+  paymentTerms?: string;
+  deliveryAddress?: string;
+  deliveryContact?: string;
+  deliveryPhone?: string;
   notes?: string;
-  tags?: string[];
+  termsAndConditions?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface PurchaseOrderFilters {
-  search?: string;
-  orderStatus?: string;
-  paymentStatus?: string;
-  supplierId?: string;
-  isActive?: boolean;
+export interface PurchaseOrderItem {
+  id: string;
+  purchaseOrderId: string;
+  materialId: string;
+  materialName?: string;
+  quantity: number;
+  unitPrice: number;
+  taxPercentage: number;
+  discountPercentage: number;
+  totalAmount: number;
+  notes?: string;
+}
+
+export interface POQueryParams {
   page?: number;
   limit?: number;
+  search?: string;
+  status?: string;
+  vendorId?: string;
+  propertyId?: string;
+  startDate?: string;
+  endDate?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
 
-export interface PaginatedPurchaseOrdersResponse {
-  data: PurchaseOrder[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
 class PurchaseOrdersService {
-  private readonly baseUrl = '/purchase-orders';
+  private baseUrl = '/purchase-orders';
+  private itemsUrl = '/purchase-order-items';
 
-  async getOrders(filters?: PurchaseOrderFilters): Promise<PaginatedPurchaseOrdersResponse> {
-    const params = new URLSearchParams();
-    
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, String(value));
+  // Purchase Orders
+  async getAll(params?: POQueryParams) {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
         }
       });
     }
-
-    const response = await api.get(`${this.baseUrl}?${params.toString()}`);
-    return response;
+    return await api.get(`${this.baseUrl}?${queryParams.toString()}`);
   }
 
-  async getOrder(id: string): Promise<PurchaseOrder> {
-    const response = await api.get(`${this.baseUrl}/${id}`);
-    return response;
+  async getOne(id: string) {
+    return await api.get<PurchaseOrder>(`${this.baseUrl}/${id}`);
   }
 
-  async getStatistics(): Promise<any> {
-    const response = await api.get(`${this.baseUrl}/statistics`);
-    return response;
+  async create(data: Partial<PurchaseOrder>) {
+    return await api.post<PurchaseOrder>(this.baseUrl, data);
   }
 
-  async createOrder(data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
-    const response = await api.post(this.baseUrl, data);
-    return response;
+  async update(id: string, data: Partial<PurchaseOrder>) {
+    return await api.patch<PurchaseOrder>(`${this.baseUrl}/${id}`, data);
   }
 
-  async createPurchaseOrder(data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
-    return this.createOrder(data);
+  async updateStatus(id: string, status: PurchaseOrder['status']) {
+    return await api.patch(`${this.baseUrl}/${id}/status`, { status });
   }
 
-  async updateOrder(id: string, data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
-    const response = await api.put(`${this.baseUrl}/${id}`, data);
-    return response;
+  async delete(id: string) {
+    return await api.delete(`${this.baseUrl}/${id}`);
   }
 
-  async updatePurchaseOrder(id: string, data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
-    return this.updateOrder(id, data);
+  async getStats() {
+    return await api.get(`${this.baseUrl}/stats`);
   }
 
-  async deleteOrder(id: string): Promise<void> {
-    await api.delete(`${this.baseUrl}/${id}`);
+  // PO Items
+  async getItemsByPO(purchaseOrderId: string) {
+    return await api.get<PurchaseOrderItem[]>(`${this.itemsUrl}/purchase-order/${purchaseOrderId}`);
   }
 
-  async approveOrder(id: string, approvedBy: string, approvedByName: string): Promise<PurchaseOrder> {
-    const response = await api.post(`${this.baseUrl}/${id}/approve`, { approvedBy, approvedByName });
-    return response;
+  async getItemTotal(purchaseOrderId: string) {
+    return await api.get(`${this.itemsUrl}/purchase-order/${purchaseOrderId}/total`);
   }
 
-  async rejectOrder(id: string, rejectedBy: string, rejectedByName: string, reason: string): Promise<PurchaseOrder> {
-    const response = await api.post(`${this.baseUrl}/${id}/reject`, { rejectedBy, rejectedByName, reason });
-    return response;
+  async createItem(data: Partial<PurchaseOrderItem>) {
+    return await api.post<PurchaseOrderItem>(this.itemsUrl, data);
   }
 
-  async receiveItems(id: string, receivedData: any): Promise<PurchaseOrder> {
-    const response = await api.post(`${this.baseUrl}/${id}/receive`, receivedData);
-    return response;
+  async updateItem(id: string, data: Partial<PurchaseOrderItem>) {
+    return await api.patch<PurchaseOrderItem>(`${this.itemsUrl}/${id}`, data);
+  }
+
+  async deleteItem(id: string) {
+    return await api.delete(`${this.itemsUrl}/${id}`);
   }
 }
 
-export const purchaseOrdersService = new PurchaseOrdersService();
+export default new PurchaseOrdersService();

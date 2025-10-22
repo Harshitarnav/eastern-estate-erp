@@ -5,7 +5,6 @@ import { Tower } from '../towers/entities/tower.entity';
 import { Flat } from '../flats/entities/flat.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { Booking } from '../bookings/entities/booking.entity';
-import { ConstructionProject } from '../construction/entities/construction-project.entity';
 import { CreatePropertyDto, UpdatePropertyDto, QueryPropertyDto, PaginatedPropertyResponseDto, PropertyResponseDto, PropertyHierarchyDto, PropertyInventorySummaryDto } from './dto';
 export declare class PropertiesService {
     private propertiesRepository;
@@ -14,10 +13,9 @@ export declare class PropertiesService {
     private flatsRepository;
     private customersRepository;
     private bookingsRepository;
-    private constructionRepository;
     private readonly dataSource;
     private readonly logger;
-    constructor(propertiesRepository: Repository<Property>, projectsRepository: Repository<Project>, towersRepository: Repository<Tower>, flatsRepository: Repository<Flat>, customersRepository: Repository<Customer>, bookingsRepository: Repository<Booking>, constructionRepository: Repository<ConstructionProject>, dataSource: DataSource);
+    constructor(propertiesRepository: Repository<Property>, projectsRepository: Repository<Project>, towersRepository: Repository<Tower>, flatsRepository: Repository<Flat>, customersRepository: Repository<Customer>, bookingsRepository: Repository<Booking>, dataSource: DataSource);
     create(createPropertyDto: CreatePropertyDto, userId?: string): Promise<PropertyResponseDto>;
     findAll(queryDto: QueryPropertyDto): Promise<PaginatedPropertyResponseDto>;
     getInventorySummary(propertyId: string): Promise<PropertyInventorySummaryDto>;

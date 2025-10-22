@@ -6,316 +6,136 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  Index,
 } from 'typeorm';
 import { Property } from '../../properties/entities/property.entity';
 import { Tower } from '../../towers/entities/tower.entity';
+import { Employee } from '../../employees/entities/employee.entity';
+import { User } from '../../users/entities/user.entity';
 
-export enum ProjectPhase {
+export enum ConstructionProjectPhase {
   PLANNING = 'PLANNING',
-  SITE_PREPARATION = 'SITE_PREPARATION',
+  EXCAVATION = 'EXCAVATION',
   FOUNDATION = 'FOUNDATION',
   STRUCTURE = 'STRUCTURE',
-  MASONRY = 'MASONRY',
-  ROOFING = 'ROOFING',
-  PLUMBING = 'PLUMBING',
-  ELECTRICAL = 'ELECTRICAL',
-  PLASTERING = 'PLASTERING',
-  FLOORING = 'FLOORING',
-  PAINTING = 'PAINTING',
   FINISHING = 'FINISHING',
-  LANDSCAPING = 'LANDSCAPING',
-  HANDOVER = 'HANDOVER',
-  COMPLETED = 'COMPLETED',
+  COMPLETE = 'COMPLETE',
 }
 
-export enum ProjectStatus {
-  NOT_STARTED = 'NOT_STARTED',
-  IN_PROGRESS = 'IN_PROGRESS',
+export enum ConstructionProjectStatus {
+  ACTIVE = 'ACTIVE',
   ON_HOLD = 'ON_HOLD',
   DELAYED = 'DELAYED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
 }
 
-export enum InspectionStatus {
-  PENDING = 'PENDING',
-  PASSED = 'PASSED',
-  FAILED = 'FAILED',
-  CONDITIONAL = 'CONDITIONAL',
-}
-
-/**
- * ConstructionProject Entity
- * 
- * Tracks construction progress, milestones, contractors, and quality inspections.
- */
 @Entity('construction_projects')
-@Index(['projectPhase'])
-@Index(['projectStatus'])
-@Index(['propertyId'])
 export class ConstructionProject {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Project Information
-  @Column({ length: 100, unique: true })
-  @Index()
-  projectCode: string;
-
-  @Column({ length: 200 })
-  projectName: string;
-
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
-  @Column({ type: 'uuid' })
+  @Column({ name: 'property_id', type: 'uuid' })
   propertyId: string;
 
   @ManyToOne(() => Property)
   @JoinColumn({ name: 'property_id' })
   property: Property;
 
-  @Column({ type: 'uuid', nullable: true })
-  towerId: string;
+  @Column({ name: 'tower_id', type: 'uuid', nullable: true })
+  towerId: string | null;
 
   @ManyToOne(() => Tower, { nullable: true })
   @JoinColumn({ name: 'tower_id' })
   tower: Tower;
 
-  // Phase & Status
-  @Column({
-    type: 'enum',
-    enum: ProjectPhase,
-    default: ProjectPhase.PLANNING,
-  })
-  projectPhase: ProjectPhase;
+  @Column({ name: 'project_code', type: 'varchar', length: 50, unique: true })
+  projectCode: string;
+
+  @Column({ name: 'project_name', type: 'varchar', length: 255 })
+  projectName: string;
 
   @Column({
+    name: 'project_phase',
     type: 'enum',
-    enum: ProjectStatus,
-    default: ProjectStatus.NOT_STARTED,
+    enum: ConstructionProjectPhase,
+    default: ConstructionProjectPhase.PLANNING,
   })
-  projectStatus: ProjectStatus;
+  projectPhase: ConstructionProjectPhase;
 
-  // Progress Tracking
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  overallProgress: number; // 0-100%
+  @Column({ name: 'start_date', type: 'date', nullable: true })
+  startDate: Date | null;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  planningProgress: number;
+  @Column({ name: 'expected_completion_date', type: 'date', nullable: true })
+  expectedCompletionDate: Date | null;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  sitePrepProgress: number;
+  @Column({ name: 'actual_completion_date', type: 'date', nullable: true })
+  actualCompletionDate: Date | null;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  foundationProgress: number;
+  @Column({ name: 'overall_progress', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  overallProgress: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'structure_progress', type: 'decimal', precision: 5, scale: 2, default: 0 })
   structureProgress: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  masonryProgress: number;
+  @Column({ name: 'interior_progress', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  interiorProgress: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  roofingProgress: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  plumbingProgress: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  electricalProgress: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  plasteringProgress: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  flooringProgress: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  paintingProgress: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'finishing_progress', type: 'decimal', precision: 5, scale: 2, default: 0 })
   finishingProgress: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  landscapingProgress: number;
+  @Column({ name: 'site_engineer_id', type: 'uuid', nullable: true })
+  siteEngineerId: string | null;
 
-  // Timeline
-  @Column({ type: 'date' })
-  plannedStartDate: Date;
+  @ManyToOne(() => Employee, { nullable: true })
+  @JoinColumn({ name: 'site_engineer_id' })
+  siteEngineer: Employee;
 
-  @Column({ type: 'date' })
-  plannedEndDate: Date;
+  @Column({ name: 'contractor_name', type: 'varchar', length: 255, nullable: true })
+  contractorName: string | null;
 
-  @Column({ type: 'date', nullable: true })
-  actualStartDate: Date;
+  @Column({ name: 'contractor_contact', type: 'varchar', length: 20, nullable: true })
+  contractorContact: string | null;
 
-  @Column({ type: 'date', nullable: true })
-  actualEndDate: Date;
+  @Column({
+    name: 'status',
+    type: 'enum',
+    enum: ConstructionProjectStatus,
+    default: ConstructionProjectStatus.ACTIVE,
+  })
+  status: ConstructionProjectStatus;
 
-  @Column({ type: 'date', nullable: true })
-  estimatedCompletionDate: Date;
+  @Column({ name: 'budget_allocated', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  budgetAllocated: number;
 
-  @Column({ type: 'int', default: 0 })
-  delayDays: number;
+  @Column({ name: 'budget_spent', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  budgetSpent: number;
 
-  // Contractor Information
-  @Column({ length: 200, nullable: true })
-  mainContractorName: string;
+  @Column({ name: 'notes', type: 'text', nullable: true })
+  notes: string | null;
 
-  @Column({ length: 200, nullable: true })
-  mainContractorEmail: string;
+  @Column({ name: 'issues', type: 'text', array: true, nullable: true })
+  issues: string[] | null;
 
-  @Column({ length: 50, nullable: true })
-  mainContractorPhone: string;
-
-  @Column({ type: 'text', nullable: true })
-  mainContractorAddress: string;
-
-  @Column({ type: 'simple-json', nullable: true })
-  subContractors: {
-    name: string;
-    type: string; // Electrical, Plumbing, etc.
-    phone: string;
-    email?: string;
-  }[];
-
-  // Budget & Costs
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  estimatedBudget: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  actualCost: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  materialCost: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  laborCost: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  overheadCost: number;
-
-  // Milestones
-  @Column({ type: 'simple-json', nullable: true })
-  milestones: {
-    id: string;
-    name: string;
-    phase: string;
-    targetDate: string;
-    completedDate?: string;
-    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'DELAYED';
-    progress: number;
-  }[];
-
-  // Quality Inspections
-  @Column({ type: 'simple-json', nullable: true })
-  inspections: {
-    id: string;
-    inspectionType: string;
-    inspectionDate: string;
-    inspector: string;
-    status: InspectionStatus;
-    remarks?: string;
-    photos?: string[];
-  }[];
-
-  @Column({ type: 'int', default: 0 })
-  totalInspections: number;
-
-  @Column({ type: 'int', default: 0 })
-  passedInspections: number;
-
-  @Column({ type: 'int', default: 0 })
-  failedInspections: number;
-
-  // Material Usage
-  @Column({ type: 'simple-json', nullable: true })
-  materialUsage: {
-    itemId: string;
-    itemName: string;
-    quantityUsed: number;
-    unit: string;
-    usedDate: string;
-  }[];
-
-  // Team & Labor
-  @Column({ type: 'int', default: 0 })
-  workersCount: number;
-
-  @Column({ type: 'int', default: 0 })
-  engineersCount: number;
-
-  @Column({ type: 'int', default: 0 })
-  supervisorsCount: number;
-
-  @Column({ length: 200, nullable: true })
-  projectManager: string;
-
-  @Column({ length: 200, nullable: true })
-  siteEngineer: string;
-
-  // Safety & Compliance
-  @Column({ type: 'int', default: 0 })
-  safetyIncidents: number;
-
-  @Column({ type: 'date', nullable: true })
-  lastSafetyInspection: Date;
-
-  @Column({ type: 'boolean', default: true })
-  safetyCompliant: boolean;
-
-  @Column({ type: 'simple-array', nullable: true })
-  permits: string[];
-
-  @Column({ type: 'boolean', default: false })
-  allPermitsObtained: boolean;
-
-  // Documentation
-  @Column({ type: 'simple-array', nullable: true })
-  photos: string[];
-
-  @Column({ type: 'simple-array', nullable: true })
-  documents: string[];
-
-  @Column({ type: 'simple-array', nullable: true })
-  blueprints: string[];
-
-  // Weather Impact
-  @Column({ type: 'int', default: 0 })
-  weatherDelayDays: number;
-
-  @Column({ type: 'text', nullable: true })
-  weatherRemarks: string;
-
-  // Additional Info
-  @Column({ type: 'text', nullable: true })
-  notes: string;
-
-  @Column({ type: 'simple-array', nullable: true })
-  tags: string[];
-
-  @Column({ type: 'text', nullable: true })
-  risksIdentified: string;
-
-  @Column({ type: 'text', nullable: true })
-  mitigationStrategies: string;
-
-  @Column({ type: 'boolean', default: true })
-  @Index()
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
-  // System Fields
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ type: 'uuid', nullable: true })
-  createdBy: string;
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy: string | null;
 
-  @Column({ type: 'uuid', nullable: true })
-  updatedBy: string;
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  creator: User;
+
+  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
+  updatedBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'updated_by' })
+  updater: User;
 }

@@ -17,84 +17,53 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const purchase_order_entity_1 = require("./entities/purchase-order.entity");
-const dto_1 = require("./dto");
 let PurchaseOrdersService = class PurchaseOrdersService {
     constructor(purchaseOrderRepository) {
         this.purchaseOrderRepository = purchaseOrderRepository;
     }
     async create(createDto) {
-        const existing = await this.purchaseOrderRepository.findOne({
-            where: { orderNumber: createDto.orderNumber },
+        const balanceAmount = createDto.totalAmount - (createDto.advancePaid || 0);
+        const purchaseOrder = this.purchaseOrderRepository.create({
+            ...createDto,
+            balanceAmount,
+            poDate: createDto.poDate ? new Date(createDto.poDate) : new Date(),
+            expectedDeliveryDate: createDto.expectedDeliveryDate
+                ? new Date(createDto.expectedDeliveryDate)
+                : null,
         });
-        if (existing) {
-            throw new common_1.ConflictException('Order number already exists');
-        }
-        const calculatedOrder = this.calculateOrderTotals(createDto);
-        const order = this.purchaseOrderRepository.create(calculatedOrder);
-        const savedOrder = await this.purchaseOrderRepository.save(order);
-        const orderResult = Array.isArray(savedOrder) ? savedOrder[0] : savedOrder;
-        return dto_1.PurchaseOrderResponseDto.fromEntity(orderResult);
-    }
-    calculateOrderTotals(dto) {
-        let subtotal = 0;
-        let totalTax = 0;
-        const processedItems = dto.items.map((item) => {
-            const itemSubtotal = item.quantity * item.unitPrice;
-            const discount = item.discount || 0;
-            const taxPercent = item.taxPercent || 0;
-            const afterDiscount = itemSubtotal - discount;
-            const taxAmount = (afterDiscount * taxPercent) / 100;
-            const totalAmount = afterDiscount + taxAmount;
-            subtotal += itemSubtotal;
-            totalTax += taxAmount;
-            return {
-                ...item,
-                discount,
-                taxPercent,
-                taxAmount,
-                totalAmount,
-            };
-        });
-        const discountAmount = dto.discountAmount || 0;
-        const shippingCost = dto.shippingCost || 0;
-        const otherCharges = dto.otherCharges || 0;
-        const totalAmount = subtotal - discountAmount + totalTax + shippingCost + otherCharges;
-        return {
-            ...dto,
-            items: processedItems,
-            subtotal,
-            taxAmount: totalTax,
-            totalAmount,
-            balanceAmount: totalAmount,
-            totalItemsOrdered: processedItems.reduce((sum, item) => sum + item.quantity, 0),
-        };
+        return await this.purchaseOrderRepository.save(purchaseOrder);
     }
     async findAll(query) {
-        const { search, orderStatus, paymentStatus, supplierId, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
-        const queryBuilder = this.purchaseOrderRepository.createQueryBuilder('order');
+        const { page = 1, limit = 10, search, status, vendorId, propertyId, startDate, endDate, sortBy = 'createdAt', sortOrder = 'DESC' } = query;
+        const queryBuilder = this.purchaseOrderRepository
+            .createQueryBuilder('po')
+            .leftJoinAndSelect('po.vendor', 'vendor')
+            .leftJoinAndSelect('po.property', 'property');
         if (search) {
-            queryBuilder.andWhere('(order.orderNumber ILIKE :search OR order.supplierName ILIKE :search)', { search: `%${search}%` });
+            queryBuilder.andWhere('(po.poNumber ILIKE :search OR po.notes ILIKE :search OR vendor.vendorName ILIKE :search)', { search: `%${search}%` });
         }
-        if (orderStatus) {
-            queryBuilder.andWhere('order.orderStatus = :orderStatus', { orderStatus });
+        if (status) {
+            queryBuilder.andWhere('po.status = :status', { status });
         }
-        if (paymentStatus) {
-            queryBuilder.andWhere('order.paymentStatus = :paymentStatus', { paymentStatus });
+        if (vendorId) {
+            queryBuilder.andWhere('po.vendorId = :vendorId', { vendorId });
         }
-        if (supplierId) {
-            queryBuilder.andWhere('order.supplierId = :supplierId', { supplierId });
+        if (propertyId) {
+            queryBuilder.andWhere('po.propertyId = :propertyId', { propertyId });
         }
-        if (isActive !== undefined) {
-            queryBuilder.andWhere('order.isActive = :isActive', { isActive });
+        if (startDate) {
+            queryBuilder.andWhere('po.poDate >= :startDate', { startDate });
         }
-        queryBuilder.orderBy(`order.${sortBy}`, sortOrder);
-        const total = await queryBuilder.getCount();
-        const orders = await queryBuilder
+        if (endDate) {
+            queryBuilder.andWhere('po.poDate <= :endDate', { endDate });
+        }
+        queryBuilder.orderBy(`po.${sortBy}`, sortOrder);
+        const [data, total] = await queryBuilder
             .skip((page - 1) * limit)
             .take(limit)
-            .getMany();
+            .getManyAndCount();
         return {
-            data: dto_1.PurchaseOrderResponseDto.fromEntities(orders),
+            data,
             meta: {
                 total,
                 page,
@@ -104,100 +73,48 @@ let PurchaseOrdersService = class PurchaseOrdersService {
         };
     }
     async findOne(id) {
-        const order = await this.purchaseOrderRepository.findOne({ where: { id } });
-        if (!order) {
-            throw new common_1.NotFoundException(`Purchase order with ID ${id} not found`);
+        const po = await this.purchaseOrderRepository.findOne({
+            where: { id },
+            relations: ['vendor', 'property'],
+        });
+        if (!po) {
+            throw new common_1.NotFoundException(`Purchase Order with ID ${id} not found`);
         }
-        return dto_1.PurchaseOrderResponseDto.fromEntity(order);
+        return po;
     }
     async update(id, updateDto) {
-        const order = await this.purchaseOrderRepository.findOne({ where: { id } });
-        if (!order) {
-            throw new common_1.NotFoundException(`Purchase order with ID ${id} not found`);
+        const po = await this.findOne(id);
+        Object.assign(po, updateDto);
+        if (updateDto.expectedDeliveryDate) {
+            po.expectedDeliveryDate = new Date(updateDto.expectedDeliveryDate);
         }
-        if (updateDto.items) {
-            const calculatedOrder = this.calculateOrderTotals({ ...order, ...updateDto });
-            Object.assign(order, calculatedOrder);
+        if (updateDto.totalAmount !== undefined || updateDto.advancePaid !== undefined) {
+            po.balanceAmount = po.totalAmount - po.advancePaid;
         }
-        else {
-            Object.assign(order, updateDto);
+        return await this.purchaseOrderRepository.save(po);
+    }
+    async updateStatus(id, status) {
+        const po = await this.findOne(id);
+        po.status = status;
+        if (status === purchase_order_entity_1.PurchaseOrderStatus.RECEIVED && !po.actualDeliveryDate) {
+            po.actualDeliveryDate = new Date();
         }
-        const updatedOrder = await this.purchaseOrderRepository.save(order);
-        return dto_1.PurchaseOrderResponseDto.fromEntity(updatedOrder);
+        return await this.purchaseOrderRepository.save(po);
     }
     async remove(id) {
-        const order = await this.purchaseOrderRepository.findOne({ where: { id } });
-        if (!order) {
-            throw new common_1.NotFoundException(`Purchase order with ID ${id} not found`);
-        }
-        order.isActive = false;
-        await this.purchaseOrderRepository.save(order);
+        const po = await this.findOne(id);
+        await this.purchaseOrderRepository.remove(po);
     }
-    async approve(id, approvedBy, approvedByName) {
-        const order = await this.purchaseOrderRepository.findOne({ where: { id } });
-        if (!order) {
-            throw new common_1.NotFoundException(`Purchase order with ID ${id} not found`);
-        }
-        if (order.orderStatus !== purchase_order_entity_1.OrderStatus.PENDING_APPROVAL) {
-            throw new common_1.BadRequestException('Order is not pending approval');
-        }
-        order.orderStatus = purchase_order_entity_1.OrderStatus.APPROVED;
-        order.approvedBy = approvedBy;
-        order.approvedByName = approvedByName;
-        order.approvedAt = new Date();
-        const updatedOrder = await this.purchaseOrderRepository.save(order);
-        return dto_1.PurchaseOrderResponseDto.fromEntity(updatedOrder);
-    }
-    async reject(id, rejectedBy, rejectedByName, reason) {
-        const order = await this.purchaseOrderRepository.findOne({ where: { id } });
-        if (!order) {
-            throw new common_1.NotFoundException(`Purchase order with ID ${id} not found`);
-        }
-        order.orderStatus = purchase_order_entity_1.OrderStatus.REJECTED;
-        order.rejectedBy = rejectedBy;
-        order.rejectedByName = rejectedByName;
-        order.rejectedAt = new Date();
-        order.rejectionReason = reason;
-        const updatedOrder = await this.purchaseOrderRepository.save(order);
-        return dto_1.PurchaseOrderResponseDto.fromEntity(updatedOrder);
-    }
-    async receiveItems(id, receivedData) {
-        const order = await this.purchaseOrderRepository.findOne({ where: { id } });
-        if (!order) {
-            throw new common_1.NotFoundException(`Purchase order with ID ${id} not found`);
-        }
-        order.receivedItems = receivedData.items;
-        order.totalItemsReceived = receivedData.items.reduce((sum, item) => sum + item.quantityReceived, 0);
-        if (order.totalItemsReceived >= order.totalItemsOrdered) {
-            order.orderStatus = purchase_order_entity_1.OrderStatus.RECEIVED;
-        }
-        else if (order.totalItemsReceived > 0) {
-            order.orderStatus = purchase_order_entity_1.OrderStatus.PARTIALLY_RECEIVED;
-        }
-        order.actualDeliveryDate = new Date();
-        const updatedOrder = await this.purchaseOrderRepository.save(order);
-        return dto_1.PurchaseOrderResponseDto.fromEntity(updatedOrder);
-    }
-    async getStatistics() {
-        const orders = await this.purchaseOrderRepository.find({ where: { isActive: true } });
-        const total = orders.length;
-        const draft = orders.filter((o) => o.orderStatus === 'DRAFT').length;
-        const pending = orders.filter((o) => o.orderStatus === 'PENDING_APPROVAL').length;
-        const approved = orders.filter((o) => o.orderStatus === 'APPROVED').length;
-        const received = orders.filter((o) => o.orderStatus === 'RECEIVED').length;
-        const totalAmount = orders.reduce((sum, o) => sum + Number(o.totalAmount), 0);
-        const paidAmount = orders.reduce((sum, o) => sum + Number(o.paidAmount), 0);
-        const balanceAmount = orders.reduce((sum, o) => sum + Number(o.balanceAmount), 0);
-        return {
-            total,
-            draft,
-            pending,
-            approved,
-            received,
-            totalAmount,
-            paidAmount,
-            balanceAmount,
-        };
+    async getStats() {
+        const stats = await this.purchaseOrderRepository
+            .createQueryBuilder('po')
+            .select('po.status', 'status')
+            .addSelect('COUNT(*)', 'count')
+            .addSelect('SUM(po.totalAmount)', 'totalAmount')
+            .where('po.isActive = :isActive', { isActive: true })
+            .groupBy('po.status')
+            .getRawMany();
+        return stats;
     }
 };
 exports.PurchaseOrdersService = PurchaseOrdersService;

@@ -4,15 +4,13 @@ import { Property } from '../properties/entities/property.entity';
 import { Flat } from '../flats/entities/flat.entity';
 import { CreateTowerDto, UpdateTowerDto, QueryTowerDto, TowerResponseDto, PaginatedTowerResponseDto, TowerInventoryOverviewDto, BulkImportTowersSummaryDto } from './dto';
 import { Booking } from '../bookings/entities/booking.entity';
-import { ConstructionProject } from '../construction/entities/construction-project.entity';
 export declare class TowersService {
     private readonly towerRepository;
     private readonly propertyRepository;
     private readonly flatRepository;
     private readonly bookingRepository;
-    private readonly constructionRepository;
     private readonly logger;
-    constructor(towerRepository: Repository<Tower>, propertyRepository: Repository<Property>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>, constructionRepository: Repository<ConstructionProject>);
+    constructor(towerRepository: Repository<Tower>, propertyRepository: Repository<Property>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>);
     create(createTowerDto: CreateTowerDto): Promise<TowerResponseDto>;
     findAll(queryDto: QueryTowerDto): Promise<PaginatedTowerResponseDto>;
     findOne(id: string): Promise<TowerResponseDto>;

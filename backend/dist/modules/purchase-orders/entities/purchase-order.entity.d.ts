@@ -1,102 +1,47 @@
-export declare enum OrderStatus {
+import { Vendor } from '../../vendors/entities/vendor.entity';
+import { Property } from '../../properties/entities/property.entity';
+import { User } from '../../users/entities/user.entity';
+export declare enum PurchaseOrderStatus {
     DRAFT = "DRAFT",
     PENDING_APPROVAL = "PENDING_APPROVAL",
     APPROVED = "APPROVED",
-    REJECTED = "REJECTED",
     ORDERED = "ORDERED",
     PARTIALLY_RECEIVED = "PARTIALLY_RECEIVED",
     RECEIVED = "RECEIVED",
     CANCELLED = "CANCELLED"
 }
-export declare enum PaymentStatus {
-    UNPAID = "UNPAID",
-    PARTIALLY_PAID = "PARTIALLY_PAID",
-    PAID = "PAID",
-    OVERDUE = "OVERDUE"
-}
-export declare enum PaymentTerms {
-    IMMEDIATE = "IMMEDIATE",
-    NET_7 = "NET_7",
-    NET_15 = "NET_15",
-    NET_30 = "NET_30",
-    NET_60 = "NET_60",
-    NET_90 = "NET_90",
-    ADVANCE_50 = "ADVANCE_50",
-    ADVANCE_100 = "ADVANCE_100"
-}
 export declare class PurchaseOrder {
     id: string;
-    orderNumber: string;
-    orderDate: Date;
-    orderStatus: OrderStatus;
-    supplierId: string;
-    supplierName: string;
-    supplierEmail: string;
-    supplierPhone: string;
-    supplierAddress: string;
-    supplierGSTIN: string;
-    items: {
-        itemId: string;
-        itemCode: string;
-        itemName: string;
-        category: string;
-        quantity: number;
-        unit: string;
-        unitPrice: number;
-        discount: number;
-        taxPercent: number;
-        taxAmount: number;
-        totalAmount: number;
-    }[];
+    poNumber: string;
+    poDate: Date;
+    vendorId: string;
+    vendor: Vendor;
+    propertyId: string | null;
+    property: Property;
+    constructionProjectId: string | null;
+    status: PurchaseOrderStatus;
+    expectedDeliveryDate: Date | null;
+    actualDeliveryDate: Date | null;
     subtotal: number;
-    discountAmount: number;
-    discountPercent: number;
     taxAmount: number;
-    shippingCost: number;
-    otherCharges: number;
+    discountAmount: number;
     totalAmount: number;
-    paymentStatus: PaymentStatus;
-    paymentTerms: PaymentTerms;
-    paidAmount: number;
+    paymentTerms: string | null;
+    advancePaid: number;
     balanceAmount: number;
-    paymentDueDate: Date;
-    expectedDeliveryDate: Date;
-    actualDeliveryDate: Date;
-    deliveryAddress: string;
-    deliveryContact: string;
-    deliveryPhone: string;
-    trackingNumber: string;
-    courierService: string;
-    requestedBy: string;
-    requestedByName: string;
-    approvedBy: string;
-    approvedByName: string;
-    approvedAt: Date;
-    rejectedBy: string;
-    rejectedByName: string;
-    rejectedAt: Date;
-    rejectionReason: string;
-    receivedItems: {
-        itemId: string;
-        quantityOrdered: number;
-        quantityReceived: number;
-        receivedDate: string;
-        receivedBy: string;
-        condition: string;
-        remarks?: string;
-    }[];
-    totalItemsOrdered: number;
-    totalItemsReceived: number;
-    attachments: string[];
-    invoiceNumber: string;
-    invoiceDate: Date;
-    notes: string;
-    termsAndConditions: string;
-    tags: string[];
-    projectReference: string;
+    approvedBy: string | null;
+    approver: User;
+    approvedAt: Date | null;
+    deliveryAddress: string | null;
+    deliveryContact: string | null;
+    deliveryPhone: string | null;
+    notes: string | null;
+    termsAndConditions: string | null;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
-    createdBy: string;
-    updatedBy: string;
+    createdBy: string | null;
+    creator: User;
+    updatedBy: string | null;
+    updater: User;
 }

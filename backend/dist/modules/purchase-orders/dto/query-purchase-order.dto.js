@@ -24,32 +24,6 @@ class QueryPurchaseOrderDto {
 exports.QueryPurchaseOrderDto = QueryPurchaseOrderDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], QueryPurchaseOrderDto.prototype, "search", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(purchase_order_entity_1.OrderStatus),
-    __metadata("design:type", String)
-], QueryPurchaseOrderDto.prototype, "orderStatus", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(purchase_order_entity_1.PaymentStatus),
-    __metadata("design:type", String)
-], QueryPurchaseOrderDto.prototype, "paymentStatus", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsUUID)(),
-    __metadata("design:type", String)
-], QueryPurchaseOrderDto.prototype, "supplierId", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsBoolean)(),
-    (0, class_transformer_1.Type)(() => Boolean),
-    __metadata("design:type", Boolean)
-], QueryPurchaseOrderDto.prototype, "isActive", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], QueryPurchaseOrderDto.prototype, "page", void 0);
@@ -62,10 +36,40 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
+], QueryPurchaseOrderDto.prototype, "search", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(purchase_order_entity_1.PurchaseOrderStatus),
+    __metadata("design:type", String)
+], QueryPurchaseOrderDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], QueryPurchaseOrderDto.prototype, "vendorId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], QueryPurchaseOrderDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], QueryPurchaseOrderDto.prototype, "startDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], QueryPurchaseOrderDto.prototype, "endDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
 ], QueryPurchaseOrderDto.prototype, "sortBy", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(['ASC', 'DESC']),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], QueryPurchaseOrderDto.prototype, "sortOrder", void 0);
 //# sourceMappingURL=query-purchase-order.dto.js.map

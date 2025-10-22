@@ -15,7 +15,7 @@ export declare class ConstructionController {
         totalBudget: number;
         totalCost: number;
         budgetVariance: number;
-        totalDelayDays: number;
+        totalDelayDays: any;
         avgProgress: number;
         byPhase: {
             planning: number;

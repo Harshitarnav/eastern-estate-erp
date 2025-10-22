@@ -1,90 +1,49 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { PurchaseOrdersService } from './purchase-orders.service';
-import {
-  CreatePurchaseOrderDto,
-  UpdatePurchaseOrderDto,
-  QueryPurchaseOrderDto,
-  PurchaseOrderResponseDto,
-  PaginatedPurchaseOrdersResponse,
-} from './dto';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
+import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
+import { QueryPurchaseOrderDto } from './dto/query-purchase-order.dto';
+import { PurchaseOrderStatus } from './entities/purchase-order.entity';
 
 @Controller('purchase-orders')
-@UseGuards(JwtAuthGuard)
 export class PurchaseOrdersController {
   constructor(private readonly purchaseOrdersService: PurchaseOrdersService) {}
 
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createDto: CreatePurchaseOrderDto): Promise<PurchaseOrderResponseDto> {
+  create(@Body() createDto: CreatePurchaseOrderDto) {
     return this.purchaseOrdersService.create(createDto);
   }
 
   @Get()
-  async findAll(@Query() query: QueryPurchaseOrderDto): Promise<PaginatedPurchaseOrdersResponse> {
+  findAll(@Query() query: QueryPurchaseOrderDto) {
     return this.purchaseOrdersService.findAll(query);
   }
 
-  @Get('statistics')
-  async getStatistics() {
-    return this.purchaseOrdersService.getStatistics();
+  @Get('stats')
+  getStats() {
+    return this.purchaseOrdersService.getStats();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<PurchaseOrderResponseDto> {
+  findOne(@Param('id') id: string) {
     return this.purchaseOrdersService.findOne(id);
   }
 
-  @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateDto: UpdatePurchaseOrderDto,
-  ): Promise<PurchaseOrderResponseDto> {
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateDto: UpdatePurchaseOrderDto) {
     return this.purchaseOrdersService.update(id, updateDto);
   }
 
+  @Patch(':id/status')
+  updateStatus(
+    @Param('id') id: string,
+    @Body('status') status: PurchaseOrderStatus
+  ) {
+    return this.purchaseOrdersService.updateStatus(id, status);
+  }
+
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
+  remove(@Param('id') id: string) {
     return this.purchaseOrdersService.remove(id);
-  }
-
-  @Post(':id/approve')
-  @HttpCode(HttpStatus.OK)
-  async approve(
-    @Param('id') id: string,
-    @Body() body: { approvedBy: string; approvedByName: string },
-  ): Promise<PurchaseOrderResponseDto> {
-    return this.purchaseOrdersService.approve(id, body.approvedBy, body.approvedByName);
-  }
-
-  @Post(':id/reject')
-  @HttpCode(HttpStatus.OK)
-  async reject(
-    @Param('id') id: string,
-    @Body() body: { rejectedBy: string; rejectedByName: string; reason: string },
-  ): Promise<PurchaseOrderResponseDto> {
-    return this.purchaseOrdersService.reject(id, body.rejectedBy, body.rejectedByName, body.reason);
-  }
-
-  @Post(':id/receive')
-  @HttpCode(HttpStatus.OK)
-  async receiveItems(
-    @Param('id') id: string,
-    @Body() receivedData: any,
-  ): Promise<PurchaseOrderResponseDto> {
-    return this.purchaseOrdersService.receiveItems(id, receivedData);
   }
 }

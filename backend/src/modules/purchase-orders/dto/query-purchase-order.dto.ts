@@ -1,29 +1,8 @@
-import { IsOptional, IsString, IsEnum, IsUUID, IsBoolean } from 'class-validator';
+import { IsOptional, IsEnum, IsUUID, IsDateString, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderStatus, PaymentStatus } from '../entities/purchase-order.entity';
+import { PurchaseOrderStatus } from '../entities/purchase-order.entity';
 
 export class QueryPurchaseOrderDto {
-  @IsOptional()
-  @IsString()
-  search?: string;
-
-  @IsOptional()
-  @IsEnum(OrderStatus)
-  orderStatus?: OrderStatus;
-
-  @IsOptional()
-  @IsEnum(PaymentStatus)
-  paymentStatus?: PaymentStatus;
-
-  @IsOptional()
-  @IsUUID()
-  supplierId?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  isActive?: boolean;
-
   @IsOptional()
   @Type(() => Number)
   page?: number = 1;
@@ -34,9 +13,33 @@ export class QueryPurchaseOrderDto {
 
   @IsOptional()
   @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(PurchaseOrderStatus)
+  status?: PurchaseOrderStatus;
+
+  @IsOptional()
+  @IsUUID()
+  vendorId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  propertyId?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
   sortBy?: string = 'createdAt';
 
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'])
+  @IsString()
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }

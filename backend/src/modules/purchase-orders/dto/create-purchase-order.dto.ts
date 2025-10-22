@@ -1,111 +1,67 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsArray,
-  IsDateString,
-  IsUUID,
-  ValidateNested,
-  Min,
-} from 'class-validator';
+import { IsString, IsUUID, IsEnum, IsOptional, IsNumber, IsDateString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderStatus, PaymentTerms } from '../entities/purchase-order.entity';
-
-class OrderItemDto {
-  @IsNotEmpty()
-  @IsUUID()
-  itemId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  itemCode: string;
-
-  @IsNotEmpty()
-  @IsString()
-  itemName: string;
-
-  @IsNotEmpty()
-  @IsString()
-  category: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  quantity: number;
-
-  @IsNotEmpty()
-  @IsString()
-  unit: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  unitPrice: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  discount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  taxPercent?: number;
-}
+import { PurchaseOrderStatus } from '../entities/purchase-order.entity';
 
 export class CreatePurchaseOrderDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  orderNumber: string;
+  poNumber?: string; // Auto-generated if not provided
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
-  orderDate: string;
+  poDate?: string; // Defaults to today
 
-  @IsOptional()
-  @IsEnum(OrderStatus)
-  orderStatus?: OrderStatus;
-
-  @IsNotEmpty()
   @IsUUID()
-  supplierId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  supplierName: string;
+  vendorId: string;
 
   @IsOptional()
-  @IsString()
-  supplierEmail?: string;
+  @IsUUID()
+  propertyId?: string;
 
   @IsOptional()
-  @IsString()
-  supplierPhone?: string;
+  @IsUUID()
+  constructionProjectId?: string;
 
   @IsOptional()
-  @IsString()
-  supplierAddress?: string;
-
-  @IsNotEmpty()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => OrderItemDto)
-  items: OrderItemDto[];
-
-  @IsOptional()
-  @IsEnum(PaymentTerms)
-  paymentTerms?: PaymentTerms;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  shippingCost?: number;
+  @IsEnum(PurchaseOrderStatus)
+  status?: PurchaseOrderStatus;
 
   @IsOptional()
   @IsDateString()
   expectedDeliveryDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  subtotal?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  taxAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  discountAmount?: number;
+
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  totalAmount: number;
+
+  @IsOptional()
+  @IsString()
+  paymentTerms?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  advancePaid?: number;
 
   @IsOptional()
   @IsString()
@@ -113,10 +69,17 @@ export class CreatePurchaseOrderDto {
 
   @IsOptional()
   @IsString()
+  deliveryContact?: string;
+
+  @IsOptional()
+  @IsString()
+  deliveryPhone?: string;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
+  @IsString()
+  termsAndConditions?: string;
 }

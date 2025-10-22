@@ -4,253 +4,131 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Vendor } from '../../vendors/entities/vendor.entity';
+import { Property } from '../../properties/entities/property.entity';
+import { User } from '../../users/entities/user.entity';
 
-export enum OrderStatus {
+export enum PurchaseOrderStatus {
   DRAFT = 'DRAFT',
   PENDING_APPROVAL = 'PENDING_APPROVAL',
   APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
   ORDERED = 'ORDERED',
   PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
   RECEIVED = 'RECEIVED',
   CANCELLED = 'CANCELLED',
 }
 
-export enum PaymentStatus {
-  UNPAID = 'UNPAID',
-  PARTIALLY_PAID = 'PARTIALLY_PAID',
-  PAID = 'PAID',
-  OVERDUE = 'OVERDUE',
-}
-
-export enum PaymentTerms {
-  IMMEDIATE = 'IMMEDIATE',
-  NET_7 = 'NET_7',
-  NET_15 = 'NET_15',
-  NET_30 = 'NET_30',
-  NET_60 = 'NET_60',
-  NET_90 = 'NET_90',
-  ADVANCE_50 = 'ADVANCE_50',
-  ADVANCE_100 = 'ADVANCE_100',
-}
-
-/**
- * PurchaseOrder Entity
- * 
- * Tracks inventory purchases from suppliers with approval workflow.
- */
 @Entity('purchase_orders')
-@Index(['supplierId']) // Keep this one - it's not duplicated
 export class PurchaseOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Order Information
-  @Column({ length: 100, unique: true })
-  @Index()
-  orderNumber: string;
+  @Column({ name: 'po_number', type: 'varchar', length: 50, unique: true })
+  poNumber: string;
 
-  @Column({ type: 'date' })
-  orderDate: Date;
+  @Column({ name: 'po_date', type: 'date' })
+  poDate: Date;
+
+  @Column({ name: 'vendor_id', type: 'uuid' })
+  vendorId: string;
+
+  @ManyToOne(() => Vendor)
+  @JoinColumn({ name: 'vendor_id' })
+  vendor: Vendor;
+
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
+
+  @Column({ name: 'construction_project_id', type: 'uuid', nullable: true })
+  constructionProjectId: string | null;
 
   @Column({
+    name: 'status',
     type: 'enum',
-    enum: OrderStatus,
-    default: OrderStatus.DRAFT,
+    enum: PurchaseOrderStatus,
+    default: PurchaseOrderStatus.DRAFT,
   })
-  @Index() // Kept column-level index
-  orderStatus: OrderStatus;
+  status: PurchaseOrderStatus;
 
-  // Supplier Information
-  @Column({ type: 'uuid' })
-  supplierId: string;
+  @Column({ name: 'expected_delivery_date', type: 'date', nullable: true })
+  expectedDeliveryDate: Date | null;
 
-  @Column({ length: 200 })
-  supplierName: string;
+  @Column({ name: 'actual_delivery_date', type: 'date', nullable: true })
+  actualDeliveryDate: Date | null;
 
-  @Column({ length: 200, nullable: true })
-  supplierEmail: string;
-
-  @Column({ length: 50, nullable: true })
-  supplierPhone: string;
-
-  @Column({ type: 'text', nullable: true })
-  supplierAddress: string;
-
-  @Column({ length: 50, nullable: true })
-  supplierGSTIN: string;
-
-  // Order Items
-  @Column({ type: 'simple-json' })
-  items: {
-    itemId: string;
-    itemCode: string;
-    itemName: string;
-    category: string;
-    quantity: number;
-    unit: string;
-    unitPrice: number;
-    discount: number;
-    taxPercent: number;
-    taxAmount: number;
-    totalAmount: number;
-  }[];
-
-  // Pricing
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, default: 0 })
   subtotal: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  discountAmount: number;
-
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
-  discountPercent: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
   taxAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  shippingCost: number;
+  @Column({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  discountAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  otherCharges: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 })
   totalAmount: number;
 
-  // Payment Information
-  @Column({
-    type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.UNPAID,
-  })
-  @Index() // Kept column-level index
-  paymentStatus: PaymentStatus;
+  @Column({ name: 'payment_terms', type: 'varchar', length: 255, nullable: true })
+  paymentTerms: string | null;
 
-  @Column({
-    type: 'enum',
-    enum: PaymentTerms,
-    default: PaymentTerms.NET_30,
-  })
-  paymentTerms: PaymentTerms;
+  @Column({ name: 'advance_paid', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  advancePaid: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
-  paidAmount: number;
-
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
   balanceAmount: number;
 
-  @Column({ type: 'date', nullable: true })
-  paymentDueDate: Date;
+  @Column({ name: 'approved_by', type: 'uuid', nullable: true })
+  approvedBy: string | null;
 
-  // Delivery Information
-  @Column({ type: 'date', nullable: true })
-  expectedDeliveryDate: Date;
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'approved_by' })
+  approver: User;
 
-  @Column({ type: 'date', nullable: true })
-  actualDeliveryDate: Date;
+  @Column({ name: 'approved_at', type: 'timestamp', nullable: true })
+  approvedAt: Date | null;
 
-  @Column({ type: 'text', nullable: true })
-  deliveryAddress: string;
+  @Column({ name: 'delivery_address', type: 'text', nullable: true })
+  deliveryAddress: string | null;
 
-  @Column({ length: 200, nullable: true })
-  deliveryContact: string;
+  @Column({ name: 'delivery_contact', type: 'varchar', length: 255, nullable: true })
+  deliveryContact: string | null;
 
-  @Column({ length: 50, nullable: true })
-  deliveryPhone: string;
+  @Column({ name: 'delivery_phone', type: 'varchar', length: 20, nullable: true })
+  deliveryPhone: string | null;
 
-  // Tracking
-  @Column({ length: 200, nullable: true })
-  trackingNumber: string;
+  @Column({ name: 'notes', type: 'text', nullable: true })
+  notes: string | null;
 
-  @Column({ length: 200, nullable: true })
-  courierService: string;
+  @Column({ name: 'terms_and_conditions', type: 'text', nullable: true })
+  termsAndConditions: string | null;
 
-  // Approval Workflow
-  @Column({ type: 'uuid', nullable: true })
-  requestedBy: string;
-
-  @Column({ length: 200, nullable: true })
-  requestedByName: string;
-
-  @Column({ type: 'uuid', nullable: true })
-  approvedBy: string;
-
-  @Column({ length: 200, nullable: true })
-  approvedByName: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  approvedAt: Date;
-
-  @Column({ type: 'uuid', nullable: true })
-  rejectedBy: string;
-
-  @Column({ length: 200, nullable: true })
-  rejectedByName: string;
-
-  @Column({ type: 'timestamp', nullable: true })
-  rejectedAt: Date;
-
-  @Column({ type: 'text', nullable: true })
-  rejectionReason: string;
-
-  // Receiving Information
-  @Column({ type: 'simple-json', nullable: true })
-  receivedItems: {
-    itemId: string;
-    quantityOrdered: number;
-    quantityReceived: number;
-    receivedDate: string;
-    receivedBy: string;
-    condition: string; // GOOD, DAMAGED, PARTIAL
-    remarks?: string;
-  }[];
-
-  @Column({ type: 'int', default: 0 })
-  totalItemsOrdered: number;
-
-  @Column({ type: 'int', default: 0 })
-  totalItemsReceived: number;
-
-  // Documents
-  @Column({ type: 'simple-array', nullable: true })
-  attachments: string[];
-
-  @Column({ length: 200, nullable: true })
-  invoiceNumber: string;
-
-  @Column({ type: 'date', nullable: true })
-  invoiceDate: Date;
-
-  // Additional Information
-  @Column({ type: 'text', nullable: true })
-  notes: string;
-
-  @Column({ type: 'text', nullable: true })
-  termsAndConditions: string;
-
-  @Column({ type: 'simple-array', nullable: true })
-  tags: string[];
-
-  @Column({ length: 200, nullable: true })
-  projectReference: string;
-
-  @Column({ type: 'boolean', default: true })
-  @Index()
+  @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
-  // System Fields
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ type: 'uuid', nullable: true })
-  createdBy: string;
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  createdBy: string | null;
 
-  @Column({ type: 'uuid', nullable: true })
-  updatedBy: string;
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  creator: User;
+
+  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
+  updatedBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'updated_by' })
+  updater: User;
 }

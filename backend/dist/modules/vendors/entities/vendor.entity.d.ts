@@ -1,0 +1,33 @@
+import { User } from '../../users/entities/user.entity';
+export declare class Vendor {
+    id: string;
+    vendorCode: string;
+    vendorName: string;
+    contactPerson: string;
+    email: string;
+    phoneNumber: string;
+    alternatePhone: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    gstNumber: string;
+    panNumber: string;
+    bankName: string;
+    bankAccountNumber: string;
+    ifscCode: string;
+    materialsSupplied: string[];
+    rating: number;
+    paymentTerms: string;
+    creditLimit: number;
+    outstandingAmount: number;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    createdBy: string;
+    creator: User;
+    updatedBy: string;
+    updater: User;
+    get availableCredit(): number;
+    get isCreditLimitExceeded(): boolean;
+}

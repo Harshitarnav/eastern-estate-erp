@@ -1,43 +1,22 @@
-import { PurchaseOrder } from '../entities/purchase-order.entity';
 export declare class PurchaseOrderResponseDto {
     id: string;
-    orderNumber: string;
-    orderDate: string;
-    orderStatus: string;
-    supplierId: string;
-    supplierName: string;
-    supplierEmail?: string;
-    supplierPhone?: string;
-    items: any[];
+    poNumber: string;
+    poDate: string;
+    vendorId: string;
+    vendorName?: string;
+    propertyId: string | null;
+    propertyName?: string | null;
+    status: string;
+    expectedDeliveryDate: string | null;
+    actualDeliveryDate: string | null;
     subtotal: number;
-    discountAmount: number;
     taxAmount: number;
-    shippingCost: number;
+    discountAmount: number;
     totalAmount: number;
-    paymentStatus: string;
-    paymentTerms: string;
-    paidAmount: number;
+    advancePaid: number;
     balanceAmount: number;
-    paymentDueDate?: string;
-    expectedDeliveryDate?: string;
-    actualDeliveryDate?: string;
-    totalItemsOrdered: number;
-    totalItemsReceived: number;
-    invoiceNumber?: string;
-    notes?: string;
-    tags?: string[];
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-    static fromEntity(order: PurchaseOrder): PurchaseOrderResponseDto;
-    static fromEntities(orders: PurchaseOrder[]): PurchaseOrderResponseDto[];
-}
-export interface PaginatedPurchaseOrdersResponse {
-    data: PurchaseOrderResponseDto[];
-    meta: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-    };
+    deliveryAddress: string | null;
+    notes: string | null;
+    createdAt: Date;
+    updatedAt: Date;
 }

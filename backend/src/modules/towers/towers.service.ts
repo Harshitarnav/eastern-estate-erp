@@ -31,7 +31,7 @@ import {
 import { DataCompletenessStatus } from '../../common/enums/data-completeness-status.enum';
 import * as XLSX from 'xlsx';
 import { Booking } from '../bookings/entities/booking.entity';
-import { ConstructionProject } from '../construction/entities/construction-project.entity';
+// import { ConstructionProject } from '../construction/entities/construction-project.entity'; // Removed
 
 /**
  * Towers Service
@@ -60,8 +60,8 @@ export class TowersService {
     private readonly flatRepository: Repository<Flat>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
-    @InjectRepository(ConstructionProject)
-    private readonly constructionRepository: Repository<ConstructionProject>,
+    // @InjectRepository(ConstructionProject) // Removed
+    // private readonly constructionRepository: Repository<ConstructionProject>,
   ) {}
 
   /**
@@ -570,17 +570,18 @@ export class TowersService {
     });
 
     const financials = await this.getTowerFinancialSnapshot(id);
-    let construction: ConstructionProject | null = null;
-    try {
-      construction = await this.constructionRepository.findOne({
-        where: { towerId: id, isActive: true },
-        order: { updatedAt: 'DESC' },
-        select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
-      });
-    } catch (error) {
-      this.logger.warn(`Construction schema missing tower linkage for tower ${id}; skipping payment stages.`);
-      construction = null;
-    }
+    // let construction: ConstructionProject | null = null; // Removed
+    // try {
+    //   construction = await this.constructionRepository.findOne({
+    //     where: { towerId: id, isActive: true },
+    //     order: { updatedAt: 'DESC' },
+    //     select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
+    //   });
+    // } catch (error) {
+    //   this.logger.warn(`Construction schema missing tower linkage for tower ${id}; skipping payment stages.`);
+    //   construction = null;
+    // }
+    const construction: any = null; // Removed ConstructionProject dependency
 
     const salesBreakdown = emptySalesBreakdown();
     const floorsSet = new Set<number>();
@@ -932,7 +933,7 @@ export class TowersService {
   private buildTowerPaymentStages(
     tower: Tower,
     financials: { fundsTarget: number; fundsRealized: number; fundsOutstanding: number },
-    construction?: ConstructionProject,
+    construction?: any, // Changed from ConstructionProject
   ): TowerPaymentStageDto[] {
     const totalFloors = Math.max(Number(tower.totalFloors ?? 0), 0);
     if (totalFloors === 0) {

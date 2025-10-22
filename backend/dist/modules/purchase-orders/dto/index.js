@@ -18,4 +18,6 @@ __exportStar(require("./create-purchase-order.dto"), exports);
 __exportStar(require("./update-purchase-order.dto"), exports);
 __exportStar(require("./query-purchase-order.dto"), exports);
 __exportStar(require("./purchase-order-response.dto"), exports);
+__exportStar(require("./create-purchase-order-item.dto"), exports);
+__exportStar(require("./update-purchase-order-item.dto"), exports);
 //# sourceMappingURL=index.js.map

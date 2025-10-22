@@ -23,19 +23,17 @@ const tower_entity_1 = require("../towers/entities/tower.entity");
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
-const construction_project_entity_1 = require("../construction/entities/construction-project.entity");
 const dto_1 = require("./dto");
 const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 const flat_generation_util_1 = require("../towers/utils/flat-generation.util");
 let PropertiesService = PropertiesService_1 = class PropertiesService {
-    constructor(propertiesRepository, projectsRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, constructionRepository, dataSource) {
+    constructor(propertiesRepository, projectsRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, dataSource) {
         this.propertiesRepository = propertiesRepository;
         this.projectsRepository = projectsRepository;
         this.towersRepository = towersRepository;
         this.flatsRepository = flatsRepository;
         this.customersRepository = customersRepository;
         this.bookingsRepository = bookingsRepository;
-        this.constructionRepository = constructionRepository;
         this.dataSource = dataSource;
         this.logger = new common_1.Logger(PropertiesService_1.name);
     }
@@ -153,30 +151,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         const towerStatusAggregation = {};
         const propertySalesBreakdown = (0, dto_1.emptySalesBreakdown)();
         const towerFinancials = await this.getTowerFinancials(towerIds);
-        let towerConstructionProjects = [];
-        if (towerIds.length) {
-            try {
-                towerConstructionProjects = await this.constructionRepository.find({
-                    where: { towerId: (0, typeorm_2.In)(towerIds), isActive: true },
-                    order: { updatedAt: 'DESC' },
-                    select: ['id', 'towerId', 'structureProgress', 'updatedAt', 'overallProgress', 'projectPhase'],
-                });
-            }
-            catch (error) {
-                this.logger.warn('Construction schema missing tower linkage; skipping tower stage data');
-                towerConstructionProjects = [];
-            }
-        }
         const constructionMap = new Map();
-        towerConstructionProjects.forEach((project) => {
-            if (!project.towerId) {
-                return;
-            }
-            const existing = constructionMap.get(project.towerId);
-            if (!existing || (existing.updatedAt ?? 0) < (project.updatedAt ?? 0)) {
-                constructionMap.set(project.towerId, project);
-            }
-        });
         if (towerIds.length > 0) {
             const flatAggregation = await this.flatsRepository
                 .createQueryBuilder('flat')
@@ -962,9 +937,7 @@ exports.PropertiesService = PropertiesService = PropertiesService_1 = __decorate
     __param(3, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __param(4, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
     __param(5, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
-    __param(6, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

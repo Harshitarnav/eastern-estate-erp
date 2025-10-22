@@ -15,115 +15,89 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PurchaseOrdersController = void 0;
 const common_1 = require("@nestjs/common");
 const purchase_orders_service_1 = require("./purchase-orders.service");
-const dto_1 = require("./dto");
-const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const create_purchase_order_dto_1 = require("./dto/create-purchase-order.dto");
+const update_purchase_order_dto_1 = require("./dto/update-purchase-order.dto");
+const query_purchase_order_dto_1 = require("./dto/query-purchase-order.dto");
+const purchase_order_entity_1 = require("./entities/purchase-order.entity");
 let PurchaseOrdersController = class PurchaseOrdersController {
     constructor(purchaseOrdersService) {
         this.purchaseOrdersService = purchaseOrdersService;
     }
-    async create(createDto) {
+    create(createDto) {
         return this.purchaseOrdersService.create(createDto);
     }
-    async findAll(query) {
+    findAll(query) {
         return this.purchaseOrdersService.findAll(query);
     }
-    async getStatistics() {
-        return this.purchaseOrdersService.getStatistics();
+    getStats() {
+        return this.purchaseOrdersService.getStats();
     }
-    async findOne(id) {
+    findOne(id) {
         return this.purchaseOrdersService.findOne(id);
     }
-    async update(id, updateDto) {
+    update(id, updateDto) {
         return this.purchaseOrdersService.update(id, updateDto);
     }
-    async remove(id) {
+    updateStatus(id, status) {
+        return this.purchaseOrdersService.updateStatus(id, status);
+    }
+    remove(id) {
         return this.purchaseOrdersService.remove(id);
-    }
-    async approve(id, body) {
-        return this.purchaseOrdersService.approve(id, body.approvedBy, body.approvedByName);
-    }
-    async reject(id, body) {
-        return this.purchaseOrdersService.reject(id, body.rejectedBy, body.rejectedByName, body.reason);
-    }
-    async receiveItems(id, receivedData) {
-        return this.purchaseOrdersService.receiveItems(id, receivedData);
     }
 };
 exports.PurchaseOrdersController = PurchaseOrdersController;
 __decorate([
     (0, common_1.Post)(),
-    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.CreatePurchaseOrderDto]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:paramtypes", [create_purchase_order_dto_1.CreatePurchaseOrderDto]),
+    __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryPurchaseOrderDto]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:paramtypes", [query_purchase_order_dto_1.QueryPurchaseOrderDto]),
+    __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)('statistics'),
+    (0, common_1.Get)('stats'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], PurchaseOrdersController.prototype, "getStatistics", null);
+    __metadata("design:returntype", void 0)
+], PurchaseOrdersController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "findOne", null);
 __decorate([
-    (0, common_1.Put)(':id'),
+    (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, dto_1.UpdatePurchaseOrderDto]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:paramtypes", [String, update_purchase_order_dto_1.UpdatePurchaseOrderDto]),
+    __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "update", null);
 __decorate([
+    (0, common_1.Patch)(':id/status'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('status')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], PurchaseOrdersController.prototype, "updateStatus", null);
+__decorate([
     (0, common_1.Delete)(':id'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "remove", null);
-__decorate([
-    (0, common_1.Post)(':id/approve'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], PurchaseOrdersController.prototype, "approve", null);
-__decorate([
-    (0, common_1.Post)(':id/reject'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], PurchaseOrdersController.prototype, "reject", null);
-__decorate([
-    (0, common_1.Post)(':id/receive'),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], PurchaseOrdersController.prototype, "receiveItems", null);
 exports.PurchaseOrdersController = PurchaseOrdersController = __decorate([
     (0, common_1.Controller)('purchase-orders'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [purchase_orders_service_1.PurchaseOrdersService])
 ], PurchaseOrdersController);
 //# sourceMappingURL=purchase-orders.controller.js.map

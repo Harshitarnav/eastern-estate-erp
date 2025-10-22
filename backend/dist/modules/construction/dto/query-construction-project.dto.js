@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var _a, _b;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryConstructionProjectDto = void 0;
 const class_validator_1 = require("class-validator");
@@ -30,12 +31,12 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(construction_project_entity_1.ProjectPhase),
-    __metadata("design:type", String)
+    __metadata("design:type", typeof (_a = typeof construction_project_entity_1.ProjectPhase !== "undefined" && construction_project_entity_1.ProjectPhase) === "function" ? _a : Object)
 ], QueryConstructionProjectDto.prototype, "projectPhase", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(construction_project_entity_1.ProjectStatus),
-    __metadata("design:type", String)
+    __metadata("design:type", typeof (_b = typeof construction_project_entity_1.ProjectStatus !== "undefined" && construction_project_entity_1.ProjectStatus) === "function" ? _b : Object)
 ], QueryConstructionProjectDto.prototype, "projectStatus", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),

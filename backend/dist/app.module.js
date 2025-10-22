@@ -23,7 +23,6 @@ const leads_module_1 = require("./modules/leads/leads.module");
 const bookings_module_1 = require("./modules/bookings/bookings.module");
 const payments_module_1 = require("./modules/payments/payments.module");
 const inventory_module_1 = require("./modules/inventory/inventory.module");
-const construction_module_1 = require("./modules/construction/construction.module");
 const store_module_1 = require("./modules/store/store.module");
 const employees_module_1 = require("./modules/employees/employees.module");
 const hr_module_1 = require("./modules/hr/hr.module");
@@ -32,6 +31,7 @@ const reports_module_1 = require("./modules/reports/reports.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
 const accounting_module_1 = require("./modules/accounting/accounting.module");
 const purchase_orders_module_1 = require("./modules/purchase-orders/purchase-orders.module");
+const construction_module_1 = require("./modules/construction/construction.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
 const throttler_1 = require("@nestjs/throttler");
@@ -95,7 +95,6 @@ exports.AppModule = AppModule = __decorate([
             bookings_module_1.BookingsModule,
             payments_module_1.PaymentsModule,
             inventory_module_1.InventoryModule,
-            construction_module_1.ConstructionModule,
             store_module_1.StoreModule,
             employees_module_1.EmployeesModule,
             hr_module_1.HrModule,
@@ -104,6 +103,7 @@ exports.AppModule = AppModule = __decorate([
             notifications_module_1.NotificationsModule,
             accounting_module_1.AccountingModule,
             purchase_orders_module_1.PurchaseOrdersModule,
+            construction_module_1.ConstructionModule,
             upload_module_1.UploadModule,
         ],
         providers: [
