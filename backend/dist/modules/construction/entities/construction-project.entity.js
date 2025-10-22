@@ -9,29 +9,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ConstructionProject = exports.ConstructionProjectStatus = exports.ConstructionProjectPhase = void 0;
+exports.ConstructionProject = void 0;
 const typeorm_1 = require("typeorm");
 const property_entity_1 = require("../../properties/entities/property.entity");
-const tower_entity_1 = require("../../towers/entities/tower.entity");
 const employee_entity_1 = require("../../employees/entities/employee.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
-var ConstructionProjectPhase;
-(function (ConstructionProjectPhase) {
-    ConstructionProjectPhase["PLANNING"] = "PLANNING";
-    ConstructionProjectPhase["EXCAVATION"] = "EXCAVATION";
-    ConstructionProjectPhase["FOUNDATION"] = "FOUNDATION";
-    ConstructionProjectPhase["STRUCTURE"] = "STRUCTURE";
-    ConstructionProjectPhase["FINISHING"] = "FINISHING";
-    ConstructionProjectPhase["COMPLETE"] = "COMPLETE";
-})(ConstructionProjectPhase || (exports.ConstructionProjectPhase = ConstructionProjectPhase = {}));
-var ConstructionProjectStatus;
-(function (ConstructionProjectStatus) {
-    ConstructionProjectStatus["ACTIVE"] = "ACTIVE";
-    ConstructionProjectStatus["ON_HOLD"] = "ON_HOLD";
-    ConstructionProjectStatus["DELAYED"] = "DELAYED";
-    ConstructionProjectStatus["COMPLETED"] = "COMPLETED";
-    ConstructionProjectStatus["CANCELLED"] = "CANCELLED";
-})(ConstructionProjectStatus || (exports.ConstructionProjectStatus = ConstructionProjectStatus = {}));
 let ConstructionProject = class ConstructionProject {
 };
 exports.ConstructionProject = ConstructionProject;
@@ -49,85 +31,34 @@ __decorate([
     __metadata("design:type", property_entity_1.Property)
 ], ConstructionProject.prototype, "property", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'tower_id', type: 'uuid', nullable: true }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "towerId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => tower_entity_1.Tower, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'tower_id' }),
-    __metadata("design:type", tower_entity_1.Tower)
-], ConstructionProject.prototype, "tower", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'project_code', type: 'varchar', length: 50, unique: true }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "projectCode", void 0);
-__decorate([
     (0, typeorm_1.Column)({ name: 'project_name', type: 'varchar', length: 255 }),
     __metadata("design:type", String)
 ], ConstructionProject.prototype, "projectName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        name: 'project_phase',
-        type: 'enum',
-        enum: ConstructionProjectPhase,
-        default: ConstructionProjectPhase.PLANNING,
-    }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "projectPhase", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'start_date', type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'start_date', type: 'date' }),
     __metadata("design:type", Date)
 ], ConstructionProject.prototype, "startDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'expected_completion_date', type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'expected_completion_date', type: 'date' }),
     __metadata("design:type", Date)
 ], ConstructionProject.prototype, "expectedCompletionDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'actual_completion_date', type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'actual_end_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], ConstructionProject.prototype, "actualCompletionDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'status',
+        type: 'varchar',
+        length: 20,
+        default: 'PLANNING'
+    }),
+    __metadata("design:type", String)
+], ConstructionProject.prototype, "status", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'overall_progress', type: 'decimal', precision: 5, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], ConstructionProject.prototype, "overallProgress", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'structure_progress', type: 'decimal', precision: 5, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], ConstructionProject.prototype, "structureProgress", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'interior_progress', type: 'decimal', precision: 5, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], ConstructionProject.prototype, "interiorProgress", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'finishing_progress', type: 'decimal', precision: 5, scale: 2, default: 0 }),
-    __metadata("design:type", Number)
-], ConstructionProject.prototype, "finishingProgress", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'site_engineer_id', type: 'uuid', nullable: true }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "siteEngineerId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'site_engineer_id' }),
-    __metadata("design:type", employee_entity_1.Employee)
-], ConstructionProject.prototype, "siteEngineer", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'contractor_name', type: 'varchar', length: 255, nullable: true }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "contractorName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'contractor_contact', type: 'varchar', length: 20, nullable: true }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "contractorContact", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        name: 'status',
-        type: 'enum',
-        enum: ConstructionProjectStatus,
-        default: ConstructionProjectStatus.ACTIVE,
-    }),
-    __metadata("design:type", String)
-], ConstructionProject.prototype, "status", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'budget_allocated', type: 'decimal', precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
@@ -137,17 +68,14 @@ __decorate([
     __metadata("design:type", Number)
 ], ConstructionProject.prototype, "budgetSpent", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'notes', type: 'text', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'project_manager_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
-], ConstructionProject.prototype, "notes", void 0);
+], ConstructionProject.prototype, "projectManagerId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'issues', type: 'text', array: true, nullable: true }),
-    __metadata("design:type", Array)
-], ConstructionProject.prototype, "issues", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'is_active', type: 'boolean', default: true }),
-    __metadata("design:type", Boolean)
-], ConstructionProject.prototype, "isActive", void 0);
+    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'project_manager_id' }),
+    __metadata("design:type", employee_entity_1.Employee)
+], ConstructionProject.prototype, "projectManager", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

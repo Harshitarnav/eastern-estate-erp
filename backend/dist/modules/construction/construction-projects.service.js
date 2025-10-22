@@ -32,20 +32,20 @@ let ConstructionProjectsService = class ConstructionProjectsService {
         return await this.constructionProjectRepository.save(project);
     }
     async findAll(propertyId) {
-        const where = { isActive: true };
+        const where = {};
         if (propertyId) {
             where.propertyId = propertyId;
         }
         return await this.constructionProjectRepository.find({
             where,
-            relations: ['property', 'tower', 'siteEngineer'],
+            relations: ['property', 'projectManager'],
             order: { createdAt: 'DESC' },
         });
     }
     async findOne(id) {
         const project = await this.constructionProjectRepository.findOne({
             where: { id },
-            relations: ['property', 'tower', 'siteEngineer'],
+            relations: ['property', 'projectManager'],
         });
         if (!project) {
             throw new common_1.NotFoundException(`Construction Project with ID ${id} not found`);
@@ -65,13 +65,12 @@ let ConstructionProjectsService = class ConstructionProjectsService {
     }
     async remove(id) {
         const project = await this.findOne(id);
-        project.isActive = false;
-        await this.constructionProjectRepository.save(project);
+        await this.constructionProjectRepository.remove(project);
     }
     async getByProperty(propertyId) {
         return await this.constructionProjectRepository.find({
-            where: { propertyId, isActive: true },
-            relations: ['tower', 'siteEngineer'],
+            where: { propertyId },
+            relations: ['projectManager'],
             order: { createdAt: 'DESC' },
         });
     }

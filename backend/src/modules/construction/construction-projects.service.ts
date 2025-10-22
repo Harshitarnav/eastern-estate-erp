@@ -25,14 +25,14 @@ export class ConstructionProjectsService {
   }
 
   async findAll(propertyId?: string) {
-    const where: any = { isActive: true };
+    const where: any = {};
     if (propertyId) {
       where.propertyId = propertyId;
     }
 
     return await this.constructionProjectRepository.find({
       where,
-      relations: ['property', 'tower', 'siteEngineer'],
+      relations: ['property', 'projectManager'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -40,7 +40,7 @@ export class ConstructionProjectsService {
   async findOne(id: string): Promise<ConstructionProject> {
     const project = await this.constructionProjectRepository.findOne({
       where: { id },
-      relations: ['property', 'tower', 'siteEngineer'],
+      relations: ['property', 'projectManager'],
     });
 
     if (!project) {
@@ -68,14 +68,13 @@ export class ConstructionProjectsService {
 
   async remove(id: string): Promise<void> {
     const project = await this.findOne(id);
-    project.isActive = false;
-    await this.constructionProjectRepository.save(project);
+    await this.constructionProjectRepository.remove(project);
   }
 
   async getByProperty(propertyId: string) {
     return await this.constructionProjectRepository.find({
-      where: { propertyId, isActive: true },
-      relations: ['tower', 'siteEngineer'],
+      where: { propertyId },
+      relations: ['projectManager'],
       order: { createdAt: 'DESC' },
     });
   }
