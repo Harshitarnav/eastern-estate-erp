@@ -1,5 +1,4 @@
 import type { Tower } from '../../towers/entities/tower.entity';
-import type { Project } from '../../projects/entities/project.entity';
 import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
 export declare class Property {
     id: string;
@@ -43,8 +42,6 @@ export declare class Property {
     inventoryChecklist: Record<string, boolean> | null;
     dataCompletionPct: number;
     dataCompletenessStatus: DataCompletenessStatus;
-    projectId: string | null;
-    project: Project | null;
     createdBy: string;
     updatedBy: string;
     createdAt: Date;

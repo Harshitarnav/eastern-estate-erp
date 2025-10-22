@@ -106,6 +106,30 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ length: 100, nullable: true }),
     __metadata("design:type", String)
+], Booking.prototype, "rtgsNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 100, nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "utrNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 100, nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "chequeNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Booking.prototype, "chequeDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 200, nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "paymentBank", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 200, nullable: true }),
+    __metadata("design:type", String)
+], Booking.prototype, "paymentBranch", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ length: 100, nullable: true }),
+    __metadata("design:type", String)
 ], Booking.prototype, "agreementNumber", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'date', nullable: true }),

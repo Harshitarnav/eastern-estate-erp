@@ -7,7 +7,7 @@ export declare class CreateSalesTaskDto {
     status?: TaskStatus;
     assignedTo: string;
     assignedBy?: string;
-    dueDate: Date;
+    dueDate: string | Date;
     dueTime?: string;
     estimatedDurationMinutes?: number;
     leadId?: string;

@@ -301,7 +301,7 @@ export default function EditEmployeePage() {
                 className="w-full px-4 py-2 border rounded-lg"
               >
                 <option value="">No Role Assigned</option>
-                {roles.map((role) => (
+                {((roles || [])).map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
                   </option>

@@ -263,7 +263,7 @@ export function PropertyManagementPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {properties.map((property) => (
+            {((properties || [])).map((property) => (
               <tr key={property.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {property.name}

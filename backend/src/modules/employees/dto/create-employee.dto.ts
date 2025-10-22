@@ -1,21 +1,16 @@
 import {
-  IsNotEmpty,
   IsString,
   IsEnum,
   IsNumber,
   IsOptional,
-  IsDateString,
   IsEmail,
-  Min,
 } from 'class-validator';
 import { EmploymentType, EmploymentStatus, Department } from '../entities/employee.entity';
 
 export class CreateEmployeeDto {
-  @IsNotEmpty()
   @IsString()
   employeeCode: string;
 
-  @IsNotEmpty()
   @IsString()
   fullName: string;
 
@@ -23,60 +18,54 @@ export class CreateEmployeeDto {
   @IsEmail()
   email?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @IsOptional()
   @IsString()
   alternatePhone?: string;
 
-  @IsNotEmpty()
-  @IsDateString()
-  dateOfBirth: string;
+  @IsOptional()
+  dateOfBirth?: string | Date;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  gender: string;
+  gender?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  currentAddress: string;
+  currentAddress?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(Department)
-  department: Department;
+  department?: Department;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  designation: string;
+  designation?: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(EmploymentType)
-  employmentType: EmploymentType;
+  employmentType?: EmploymentType;
 
-  @IsNotEmpty()
-  @IsDateString()
-  joiningDate: string;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  basicSalary: number;
+  @IsOptional()
+  joiningDate?: string | Date;
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  basicSalary?: number;
+
+  @IsOptional()
+  @IsNumber()
   houseRentAllowance?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
   transportAllowance?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
   medicalAllowance?: number;
 
   @IsOptional()

@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateFollowUpDto = void 0;
 const class_validator_1 = require("class-validator");
-const class_transformer_1 = require("class-transformer");
 const followup_entity_1 = require("../entities/followup.entity");
 class CreateFollowUpDto {
 }
@@ -20,11 +19,6 @@ __decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateFollowUpDto.prototype, "leadId", void 0);
-__decorate([
-    (0, class_transformer_1.Type)(() => Date),
-    (0, class_validator_1.IsDate)(),
-    __metadata("design:type", Date)
-], CreateFollowUpDto.prototype, "followUpDate", void 0);
 __decorate([
     (0, class_validator_1.IsEnum)(followup_entity_1.FollowUpType),
     __metadata("design:type", String)
@@ -69,9 +63,7 @@ __decorate([
 ], CreateFollowUpDto.prototype, "leadStatusAfter", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Date),
-    (0, class_validator_1.IsDate)(),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], CreateFollowUpDto.prototype, "nextFollowUpDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),

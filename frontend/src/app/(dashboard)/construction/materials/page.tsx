@@ -29,7 +29,7 @@ export default function MaterialsPage() {
     try {
       const response = await api.get('/materials');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setMaterials(data.filter((m: any) => m.isActive));
+      setMaterials(d((ata || [])).filter((m: any) => m.isActive));
     } catch (error) {
       console.error('Failed to load materials:', error);
     } finally {
@@ -102,22 +102,22 @@ export default function MaterialsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600 mb-1">Total Materials</p>
-          <p className="text-2xl font-bold text-gray-900">{materials.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{(materials || []).length}</p>
         </div>
         <div className="bg-red-50 rounded-lg shadow p-4">
           <p className="text-sm text-red-600 mb-1">Low Stock Items</p>
           <p className="text-2xl font-bold text-red-700">
-            {materials.filter(m => m.currentStock <= m.minimumStockLevel).length}
+            {((materials || [])).filter(m => m.currentStock <= m.minimumStockLevel).length}
           </p>
         </div>
         <div className="bg-green-50 rounded-lg shadow p-4">
           <p className="text-sm text-green-600 mb-1">Active Materials</p>
-          <p className="text-2xl font-bold text-green-700">{materials.length}</p>
+          <p className="text-2xl font-bold text-green-700">{(materials || []).length}</p>
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Total Value</p>
           <p className="text-2xl font-bold text-blue-700">
-            {formatCurrency(materials.reduce((sum, m) => sum + (m.currentStock * m.unitPrice), 0))}
+            {formatCurrency(m((aterials || [])).reduce((sum, m) => sum + (m.currentStock * m.unitPrice), 0))}
           </p>
         </div>
       </div>
@@ -171,7 +171,7 @@ export default function MaterialsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading materials...</p>
           </div>
-        ) : materials.length === 0 ? (
+        ) : (materials || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">🧱</p>
             <p className="text-gray-600 mb-4">No materials found. Contact admin to add materials.</p>
@@ -190,7 +190,7 @@ export default function MaterialsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {materials.map((material) => {
+                {((materials || [])).map((material) => {
                   const stockStatus = getStockStatus(material);
                   return (
                     <tr key={material.id} className="hover:bg-gray-50">

@@ -15,195 +15,98 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UploadController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
-const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
-const multer_1 = require("multer");
-const uuid_1 = require("uuid");
-const path_1 = require("path");
-const fs_1 = require("fs");
-const imageFileFilter = (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-        return cb(new common_1.BadRequestException('Only image files are allowed'), false);
-    }
-    cb(null, true);
-};
-const documentFileFilter = (req, file, cb) => {
-    const allowedExt = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
-    const ext = (0, path_1.extname)(file.originalname).toLowerCase();
-    if (!allowedExt.includes(ext)) {
-        return cb(new common_1.BadRequestException('Only PDF, DOC, DOCX, XLS, XLSX files are allowed'), false);
-    }
-    cb(null, true);
-};
-const getStorage = (destination) => {
-    return (0, multer_1.diskStorage)({
-        destination: `./uploads/${destination}`,
-        filename: (req, file, cb) => {
-            const uniqueName = `${(0, uuid_1.v4)()}${(0, path_1.extname)(file.originalname)}`;
-            cb(null, uniqueName);
-        },
-    });
-};
+const file_validation_pipe_1 = require("./pipes/file-validation.pipe");
+const image_processor_service_1 = require("./image-processor.service");
+const local_storage_service_1 = require("./storage/local-storage.service");
 let UploadController = class UploadController {
-    async uploadPropertyImages(files) {
-        if (!files || files.length === 0) {
-            throw new common_1.BadRequestException('No files uploaded');
-        }
-        const urls = files.map((file) => `${process.env.APP_URL}/api/v1/uploads/properties/${file.filename}`);
-        return {
-            success: true,
-            urls,
-            count: files.length,
-        };
+    constructor(imageProcessor, storage) {
+        this.imageProcessor = imageProcessor;
+        this.storage = storage;
     }
-    async uploadPropertyDocuments(files) {
-        if (!files || files.length === 0) {
-            throw new common_1.BadRequestException('No files uploaded');
-        }
-        const urls = files.map((file) => `${process.env.APP_URL}/api/v1/uploads/documents/${file.filename}`);
-        return {
-            success: true,
-            urls,
-            count: files.length,
-        };
-    }
-    async uploadKYCDocuments(files) {
-        if (!files || files.length === 0) {
-            throw new common_1.BadRequestException('No files uploaded');
-        }
-        const urls = files.map((file) => `${process.env.APP_URL}/api/v1/uploads/kyc/${file.filename}`);
-        return {
-            success: true,
-            urls,
-            count: files.length,
-        };
-    }
-    async uploadPaymentReceipt(file) {
+    async uploadSingle(file) {
         if (!file) {
-            throw new common_1.BadRequestException('No file uploaded');
+            throw new common_1.BadRequestException('File is required');
         }
-        const url = `${process.env.APP_URL}/api/v1/uploads/receipts/${file.filename}`;
-        return {
-            success: true,
-            url,
-            filename: file.originalname,
+        const response = {
+            id: file.filename.split('.')[0],
+            filename: file.filename,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            path: file.path,
+            url: this.storage.getUrl(file.filename),
+            uploadedAt: new Date(),
         };
+        if (this.imageProcessor.isImage(file.mimetype)) {
+            try {
+                const thumbnailPath = `thumbnails/${file.filename}`;
+                await this.imageProcessor.generateThumbnail(file.path, `./uploads/${thumbnailPath}`);
+                response.thumbnailUrl = this.storage.getUrl(thumbnailPath);
+            }
+            catch (error) {
+                console.error('Failed to generate thumbnail:', error);
+            }
+        }
+        return response;
     }
-    async uploadProfilePicture(file) {
-        if (!file) {
-            throw new common_1.BadRequestException('No file uploaded');
+    async uploadMultiple(files) {
+        if (!files || files.length === 0) {
+            throw new common_1.BadRequestException('At least one file is required');
         }
-        const url = `${process.env.APP_URL}/api/v1/uploads/avatars/${file.filename}`;
-        return {
-            success: true,
-            url,
-        };
-    }
-    async serveFile(folder, filename, res) {
-        const allowedFolders = ['properties', 'documents', 'kyc', 'receipts', 'avatars'];
-        if (!allowedFolders.includes(folder)) {
-            throw new common_1.BadRequestException('Invalid folder');
+        const responses = [];
+        for (const file of files) {
+            const response = {
+                id: file.filename.split('.')[0],
+                filename: file.filename,
+                originalName: file.originalname,
+                mimeType: file.mimetype,
+                size: file.size,
+                path: file.path,
+                url: this.storage.getUrl(file.filename),
+                uploadedAt: new Date(),
+            };
+            if (this.imageProcessor.isImage(file.mimetype)) {
+                try {
+                    const thumbnailPath = `thumbnails/${file.filename}`;
+                    await this.imageProcessor.generateThumbnail(file.path, `./uploads/${thumbnailPath}`);
+                    response.thumbnailUrl = this.storage.getUrl(thumbnailPath);
+                }
+                catch (error) {
+                    console.error('Failed to generate thumbnail:', error);
+                }
+            }
+            responses.push(response);
         }
-        const filePath = (0, path_1.join)(process.cwd(), 'uploads', folder, filename);
-        if (!(0, fs_1.existsSync)(filePath)) {
-            throw new common_1.BadRequestException('File not found');
-        }
-        return res.sendFile(filePath);
+        return responses;
     }
 };
 exports.UploadController = UploadController;
 __decorate([
-    (0, common_1.Post)('property-images'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('images', 20, {
-        storage: getStorage('properties'),
-        fileFilter: imageFileFilter,
-        limits: {
-            fileSize: 10 * 1024 * 1024,
-        },
-    })),
-    __param(0, (0, common_1.UploadedFiles)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array]),
-    __metadata("design:returntype", Promise)
-], UploadController.prototype, "uploadPropertyImages", null);
-__decorate([
-    (0, common_1.Post)('property-documents'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('documents', 10, {
-        storage: getStorage('documents'),
-        fileFilter: documentFileFilter,
-        limits: {
-            fileSize: 20 * 1024 * 1024,
-        },
-    })),
-    __param(0, (0, common_1.UploadedFiles)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array]),
-    __metadata("design:returntype", Promise)
-], UploadController.prototype, "uploadPropertyDocuments", null);
-__decorate([
-    (0, common_1.Post)('kyc-documents'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('kyc', 5, {
-        storage: getStorage('kyc'),
-        fileFilter: (req, file, cb) => {
-            const allowed = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-            if (!allowed) {
-                return cb(new common_1.BadRequestException('Only images and PDF files are allowed'), false);
-            }
-            cb(null, true);
-        },
-        limits: {
-            fileSize: 5 * 1024 * 1024,
-        },
-    })),
-    __param(0, (0, common_1.UploadedFiles)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Array]),
-    __metadata("design:returntype", Promise)
-], UploadController.prototype, "uploadKYCDocuments", null);
-__decorate([
-    (0, common_1.Post)('payment-receipt'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('receipt', {
-        storage: getStorage('receipts'),
-        fileFilter: (req, file, cb) => {
-            const allowed = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-            if (!allowed) {
-                return cb(new common_1.BadRequestException('Only images and PDF files are allowed'), false);
-            }
-            cb(null, true);
-        },
-        limits: {
-            fileSize: 10 * 1024 * 1024,
-        },
-    })),
-    __param(0, (0, common_1.UploadedFile)()),
+    (0, common_1.Post)('single'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.UploadedFile)(new file_validation_pipe_1.FileValidationPipe({
+        maxSize: 10 * 1024 * 1024,
+        required: true,
+    }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
-], UploadController.prototype, "uploadPaymentReceipt", null);
+], UploadController.prototype, "uploadSingle", null);
 __decorate([
-    (0, common_1.Post)('profile-picture'),
-    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('avatar', {
-        storage: getStorage('avatars'),
-        fileFilter: imageFileFilter,
-        limits: {
-            fileSize: 2 * 1024 * 1024,
-        },
-    })),
-    __param(0, (0, common_1.UploadedFile)()),
+    (0, common_1.Post)('multiple'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('files', 10)),
+    __param(0, (0, common_1.UploadedFiles)(new file_validation_pipe_1.FilesValidationPipe({
+        maxSize: 10 * 1024 * 1024,
+        maxCount: 10,
+        required: true,
+    }))),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Array]),
     __metadata("design:returntype", Promise)
-], UploadController.prototype, "uploadProfilePicture", null);
-__decorate([
-    (0, common_1.Get)(':folder/:filename'),
-    __param(0, (0, common_1.Param)('folder')),
-    __param(1, (0, common_1.Param)('filename')),
-    __param(2, (0, common_1.Res)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Object]),
-    __metadata("design:returntype", Promise)
-], UploadController.prototype, "serveFile", null);
+], UploadController.prototype, "uploadMultiple", null);
 exports.UploadController = UploadController = __decorate([
     (0, common_1.Controller)('upload'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard)
+    __metadata("design:paramtypes", [image_processor_service_1.ImageProcessorService,
+        local_storage_service_1.LocalStorageService])
 ], UploadController);
 //# sourceMappingURL=upload.controller.js.map

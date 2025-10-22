@@ -8,9 +8,7 @@ import { leadsService } from '@/services/leads.service';
 import { customersService } from '@/services/customers.service';
 import { bookingsService } from '@/services/bookings.service';
 import { paymentsService } from '@/services/payments.service';
-import { inventoryService } from '@/services/inventory.service';
-import { constructionService } from '@/services/construction.service';
-import { purchaseOrdersService } from '@/services/purchase-orders.service';
+import { materialsService } from '@/services/materials.service';
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -51,9 +49,9 @@ export default function DashboardPage() {
         customersService.getStatistics().catch(() => ({ total: 0, active: 0 })),
         bookingsService.getStatistics().catch(() => ({ total: 0, confirmed: 0, totalValue: 0 })),
         paymentsService.getStatistics().catch(() => ({ total: 0, totalReceived: 0, pending: 0 })),
-        inventoryService.getStatistics().catch(() => ({ total: 0, lowStock: 0, totalValue: 0 })),
-        constructionService.getStatistics().catch(() => ({ total: 0, inProgress: 0, avgProgress: 0 })),
-        purchaseOrdersService.getStatistics().catch(() => ({ total: 0, pending: 0, totalAmount: 0 })),
+        materialsService.getStatistics().catch(() => ({ total: 0, lowStock: 0, totalValue: 0 })),
+        Promise.resolve({ total: 0, inProgress: 0, avgProgress: 0 }), // Construction stats
+        Promise.resolve({ total: 0, pending: 0, totalAmount: 0 }), // PO stats
       ]);
 
       setStats({
@@ -74,7 +72,8 @@ export default function DashboardPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined) => {
+    if (!amount || isNaN(amount)) return '₹0';
     if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
     if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
     if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
@@ -108,8 +107,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Properties</p>
-              <p className="text-3xl font-bold" style={{ color: '#7B1E12' }}>{stats.properties.total}</p>
-              <p className="text-xs text-gray-500 mt-1">{stats.properties.active} active</p>
+              <p className="text-3xl font-bold" style={{ color: '#7B1E12' }}>{stats.properties.total || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">{stats.properties.active || 0} active</p>
             </div>
             <div className="p-3 rounded-lg" style={{ backgroundColor: '#FEF3E2' }}>
               <Building2 className="h-8 w-8" style={{ color: '#A8211B' }} />
@@ -121,8 +120,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Flats</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.flats.total}</p>
-              <p className="text-xs text-gray-500 mt-1">{stats.flats.available} available</p>
+              <p className="text-3xl font-bold text-blue-600">{stats.flats.total || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">{stats.flats.available || 0} available</p>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg">
               <Home className="h-8 w-8 text-blue-600" />
@@ -134,8 +133,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
-              <p className="text-3xl font-bold text-purple-600">{formatCurrency(stats.payments.totalReceived)}</p>
-              <p className="text-xs text-gray-500 mt-1">from {stats.payments.total} payments</p>
+              <p className="text-3xl font-bold text-purple-600">{formatCurrency(stats.payments.totalReceived || 0)}</p>
+              <p className="text-xs text-gray-500 mt-1">from {stats.payments.total || 0} payments</p>
             </div>
             <div className="bg-purple-50 p-3 rounded-lg">
               <DollarSign className="h-8 w-8 text-purple-600" />
@@ -147,8 +146,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 mb-1">Total Customers</p>
-              <p className="text-3xl font-bold text-green-600">{stats.customers.total}</p>
-              <p className="text-xs text-gray-500 mt-1">{stats.customers.active} active</p>
+              <p className="text-3xl font-bold text-green-600">{stats.customers.total || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">{stats.customers.active || 0} active</p>
             </div>
             <div className="bg-green-50 p-3 rounded-lg">
               <Users className="h-8 w-8 text-green-600" />
@@ -167,10 +166,10 @@ export default function DashboardPage() {
                 <Target className="h-5 w-5 text-yellow-600" />
                 <div>
                   <p className="font-semibold text-yellow-900">Leads</p>
-                  <p className="text-sm text-yellow-700">{stats.leads.hot} hot leads</p>
+                  <p className="text-sm text-yellow-700">{stats.leads.hot || 0} hot leads</p>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-yellow-600">{stats.leads.total}</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.leads.total || 0}</p>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -178,10 +177,10 @@ export default function DashboardPage() {
                 <Users className="h-5 w-5 text-green-600" />
                 <div>
                   <p className="font-semibold text-green-900">Customers</p>
-                  <p className="text-sm text-green-700">{stats.customers.active} active</p>
+                  <p className="text-sm text-green-700">{stats.customers.active || 0} active</p>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-green-600">{stats.customers.total}</p>
+              <p className="text-2xl font-bold text-green-600">{stats.customers.total || 0}</p>
             </div>
 
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
@@ -189,23 +188,23 @@ export default function DashboardPage() {
                 <Briefcase className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="font-semibold text-blue-900">Bookings</p>
-                  <p className="text-sm text-blue-700">{stats.bookings.confirmed} confirmed</p>
+                  <p className="text-sm text-blue-700">{stats.bookings.confirmed || 0} confirmed</p>
                 </div>
               </div>
-              <p className="text-2xl font-bold text-blue-600">{stats.bookings.total}</p>
+              <p className="text-2xl font-bold text-blue-600">{stats.bookings.total || 0}</p>
             </div>
 
-            {stats.leads.total > 0 && (
+            {(stats.leads.total || 0) > 0 && (
               <div className="pt-3 border-t">
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-600">Conversion Rate</span>
-                  <span className="font-semibold">{stats.leads.conversionRate.toFixed(1)}%</span>
+                  <span className="font-semibold">{(stats.leads.conversionRate || 0).toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className="h-2 rounded-full transition-all"
                     style={{
-                      width: `${stats.leads.conversionRate}%`,
+                      width: `${stats.leads.conversionRate || 0}%`,
                       backgroundColor: '#3DA35D',
                     }}
                   />
@@ -223,7 +222,7 @@ export default function DashboardPage() {
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Booking Value</span>
                 <span className="font-bold" style={{ color: '#3DA35D' }}>
-                  {formatCurrency(stats.bookings.totalValue)}
+                  {formatCurrency(stats.bookings.totalValue || 0)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -235,14 +234,14 @@ export default function DashboardPage() {
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Payments Received</span>
                 <span className="font-bold text-purple-600">
-                  {formatCurrency(stats.payments.totalReceived)}
+                  {formatCurrency(stats.payments.totalReceived || 0)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="h-2 rounded-full bg-purple-600" 
                   style={{ 
-                    width: `${stats.bookings.totalValue > 0 ? (stats.payments.totalReceived / stats.bookings.totalValue) * 100 : 0}%` 
+                    width: `${(stats.bookings.totalValue || 0) > 0 ? ((stats.payments.totalReceived || 0) / (stats.bookings.totalValue || 1)) * 100 : 0}%` 
                   }} 
                 />
               </div>
@@ -252,14 +251,14 @@ export default function DashboardPage() {
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Pending Payments</span>
                 <span className="font-bold text-orange-600">
-                  {formatCurrency(stats.payments.pending)}
+                  {formatCurrency(stats.payments.pending || 0)}
                 </span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="h-2 rounded-full bg-orange-600" 
                   style={{ 
-                    width: `${stats.bookings.totalValue > 0 ? (stats.payments.pending / stats.bookings.totalValue) * 100 : 0}%` 
+                    width: `${(stats.bookings.totalValue || 0) > 0 ? ((stats.payments.pending || 0) / (stats.bookings.totalValue || 1)) * 100 : 0}%` 
                   }} 
                 />
               </div>
@@ -268,12 +267,12 @@ export default function DashboardPage() {
             <div className="pt-3 border-t grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Total Payments</p>
-                <p className="text-xl font-bold">{stats.payments.total}</p>
+                <p className="text-xl font-bold">{stats.payments.total || 0}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Avg. Payment</p>
                 <p className="text-xl font-bold">
-                  {stats.payments.total > 0 ? formatCurrency(stats.payments.totalReceived / stats.payments.total) : '₹0'}
+                  {(stats.payments.total || 0) > 0 ? formatCurrency((stats.payments.totalReceived || 0) / (stats.payments.total || 1)) : '₹0'}
                 </p>
               </div>
             </div>
@@ -291,16 +290,16 @@ export default function DashboardPage() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">Total Items</span>
-              <span className="font-bold">{stats.inventory.total}</span>
+              <span className="font-bold">{stats.inventory.total || 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Total Value</span>
-              <span className="font-bold text-green-600">{formatCurrency(stats.inventory.totalValue)}</span>
+              <span className="font-bold text-green-600">{formatCurrency(stats.inventory.totalValue || 0)}</span>
             </div>
-            {stats.inventory.lowStock > 0 && (
+            {(stats.inventory.lowStock || 0) > 0 && (
               <div className="flex items-center gap-2 p-2 bg-red-50 rounded text-red-700">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-medium">{stats.inventory.lowStock} low stock items</span>
+                <span className="text-sm font-medium">{stats.inventory.lowStock || 0} low stock items</span>
               </div>
             )}
           </div>
@@ -314,16 +313,16 @@ export default function DashboardPage() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">Total Orders</span>
-              <span className="font-bold">{stats.purchaseOrders.total}</span>
+              <span className="font-bold">{stats.purchaseOrders.total || 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Total Amount</span>
-              <span className="font-bold text-blue-600">{formatCurrency(stats.purchaseOrders.totalAmount)}</span>
+              <span className="font-bold text-blue-600">{formatCurrency(stats.purchaseOrders.totalAmount || 0)}</span>
             </div>
-            {stats.purchaseOrders.pending > 0 && (
+            {(stats.purchaseOrders.pending || 0) > 0 && (
               <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded text-yellow-700">
                 <Clock className="h-4 w-4" />
-                <span className="text-sm font-medium">{stats.purchaseOrders.pending} pending approval</span>
+                <span className="text-sm font-medium">{stats.purchaseOrders.pending || 0} pending approval</span>
               </div>
             )}
           </div>
@@ -337,22 +336,22 @@ export default function DashboardPage() {
           <div className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">Total Projects</span>
-              <span className="font-bold">{stats.construction.total}</span>
+              <span className="font-bold">{stats.construction.total || 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">In Progress</span>
-              <span className="font-bold text-blue-600">{stats.construction.inProgress}</span>
+              <span className="font-bold text-blue-600">{stats.construction.inProgress || 0}</span>
             </div>
             <div>
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-600">Avg. Progress</span>
-                <span className="font-semibold">{stats.construction.avgProgress.toFixed(1)}%</span>
+                <span className="font-semibold">{(stats.construction.avgProgress || 0).toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div 
                   className="h-2 rounded-full" 
                   style={{ 
-                    width: `${stats.construction.avgProgress}%`,
+                    width: `${stats.construction.avgProgress || 0}%`,
                     backgroundColor: '#6366F1',
                   }} 
                 />

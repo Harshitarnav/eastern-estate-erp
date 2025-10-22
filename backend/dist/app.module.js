@@ -17,23 +17,21 @@ const users_module_1 = require("./modules/users/users.module");
 const properties_module_1 = require("./modules/properties/properties.module");
 const towers_module_1 = require("./modules/towers/towers.module");
 const flats_module_1 = require("./modules/flats/flats.module");
-const projects_module_1 = require("./modules/projects/projects.module");
 const customers_module_1 = require("./modules/customers/customers.module");
 const leads_module_1 = require("./modules/leads/leads.module");
 const bookings_module_1 = require("./modules/bookings/bookings.module");
 const payments_module_1 = require("./modules/payments/payments.module");
-const inventory_module_1 = require("./modules/inventory/inventory.module");
-const store_module_1 = require("./modules/store/store.module");
 const employees_module_1 = require("./modules/employees/employees.module");
-const hr_module_1 = require("./modules/hr/hr.module");
-const marketing_module_1 = require("./modules/marketing/marketing.module");
-const reports_module_1 = require("./modules/reports/reports.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
 const accounting_module_1 = require("./modules/accounting/accounting.module");
 const purchase_orders_module_1 = require("./modules/purchase-orders/purchase-orders.module");
 const construction_module_1 = require("./modules/construction/construction.module");
+const materials_module_1 = require("./modules/materials/materials.module");
+const vendors_module_1 = require("./modules/vendors/vendors.module");
+const marketing_module_1 = require("./modules/marketing/marketing.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
+const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
 const throttler_1 = require("@nestjs/throttler");
 const configuration_1 = require("./config/configuration");
 const validation_1 = require("./config/validation");
@@ -85,7 +83,6 @@ exports.AppModule = AppModule = __decorate([
                 inject: [config_1.ConfigService],
             }),
             auth_module_1.AuthModule,
-            projects_module_1.ProjectsModule,
             users_module_1.UsersModule,
             properties_module_1.PropertiesModule,
             towers_module_1.TowersModule,
@@ -94,22 +91,24 @@ exports.AppModule = AppModule = __decorate([
             leads_module_1.LeadsModule,
             bookings_module_1.BookingsModule,
             payments_module_1.PaymentsModule,
-            inventory_module_1.InventoryModule,
-            store_module_1.StoreModule,
             employees_module_1.EmployeesModule,
-            hr_module_1.HrModule,
-            marketing_module_1.MarketingModule,
-            reports_module_1.ReportsModule,
             notifications_module_1.NotificationsModule,
             accounting_module_1.AccountingModule,
             purchase_orders_module_1.PurchaseOrdersModule,
             construction_module_1.ConstructionModule,
+            materials_module_1.MaterialsModule,
+            vendors_module_1.VendorsModule,
+            marketing_module_1.MarketingModule,
             upload_module_1.UploadModule,
         ],
         providers: [
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
+            },
+            {
+                provide: core_1.APP_INTERCEPTOR,
+                useClass: logging_interceptor_1.LoggingInterceptor,
             },
         ],
     })

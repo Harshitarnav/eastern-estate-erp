@@ -41,8 +41,8 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
       const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
       const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
       
-      setMaterials(materialsData.filter((m: any) => m.isActive && m.currentStock > 0));
-      setProjects(projectsData.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setMaterials(m((aterialsData || [])).filter((m: any) => m.isActive && m.currentStock > 0));
+      setProjects(p((rojectsData || [])).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load materials and projects');
@@ -119,7 +119,7 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
               required
             >
               <option value="">Select Material</option>
-              {materials.map((material) => (
+              {((materials || [])).map((material) => (
                 <option key={material.id} value={material.id}>
                   {material.materialName} ({material.materialCode})
                 </option>
@@ -148,7 +148,7 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="">Select Project</option>
-              {projects.map((project) => (
+              {((projects || [])).map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.projectName}
                 </option>

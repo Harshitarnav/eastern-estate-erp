@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsOptional, IsNumber, IsDateString, Min } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsNumber, IsISO8601, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateConstructionProjectDto {
@@ -8,14 +8,14 @@ export class CreateConstructionProjectDto {
   @IsString()
   projectName: string;
 
-  @IsDateString()
+  @IsISO8601()
   startDate: string;
 
-  @IsDateString()
+  @IsISO8601()
   expectedCompletionDate: string;
 
   @IsOptional()
-  @IsDateString()
+  @IsISO8601()
   actualCompletionDate?: string;
 
   @IsOptional()

@@ -17,153 +17,169 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const payment_entity_1 = require("./entities/payment.entity");
-const dto_1 = require("./dto");
 let PaymentsService = class PaymentsService {
-    constructor(paymentsRepository) {
-        this.paymentsRepository = paymentsRepository;
+    constructor(paymentRepository) {
+        this.paymentRepository = paymentRepository;
     }
-    async create(createPaymentDto) {
-        const existing = await this.paymentsRepository.findOne({
-            where: { paymentNumber: createPaymentDto.paymentNumber },
-        });
-        if (existing) {
-            throw new common_1.ConflictException('Payment number already exists');
+    async create(createPaymentDto, userId) {
+        if (!createPaymentDto.paymentCode) {
+            createPaymentDto.paymentCode = await this.generatePaymentCode();
         }
-        const payment = this.paymentsRepository.create(createPaymentDto);
-        const savedPayment = await this.paymentsRepository.save(payment);
-        return dto_1.PaymentResponseDto.fromEntity(savedPayment);
+        const payment = this.paymentRepository.create(createPaymentDto);
+        return this.paymentRepository.save(payment);
     }
-    async findAll(query) {
-        const { search, paymentType, paymentMode, status, bookingId, customerId, paymentDateFrom, paymentDateTo, isVerified, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
-        const queryBuilder = this.paymentsRepository
-            .createQueryBuilder('payment')
+    async findAll(filters) {
+        const query = this.paymentRepository.createQueryBuilder('payment')
             .leftJoinAndSelect('payment.booking', 'booking')
             .leftJoinAndSelect('payment.customer', 'customer');
-        if (search) {
-            queryBuilder.andWhere('(payment.paymentNumber ILIKE :search OR payment.receiptNumber ILIKE :search OR payment.transactionId ILIKE :search OR customer.firstName ILIKE :search OR customer.lastName ILIKE :search)', { search: `%${search}%` });
+        if (filters?.bookingId) {
+            query.andWhere('payment.bookingId = :bookingId', { bookingId: filters.bookingId });
         }
-        if (paymentType) {
-            queryBuilder.andWhere('payment.paymentType = :paymentType', { paymentType });
+        if (filters?.customerId) {
+            query.andWhere('payment.customerId = :customerId', { customerId: filters.customerId });
         }
-        if (paymentMode) {
-            queryBuilder.andWhere('payment.paymentMode = :paymentMode', { paymentMode });
+        if (filters?.paymentType) {
+            query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
         }
-        if (status) {
-            queryBuilder.andWhere('payment.status = :status', { status });
+        if (filters?.paymentMethod) {
+            query.andWhere('payment.paymentMethod = :paymentMethod', { paymentMethod: filters.paymentMethod });
         }
-        if (bookingId) {
-            queryBuilder.andWhere('payment.bookingId = :bookingId', { bookingId });
+        if (filters?.status) {
+            query.andWhere('payment.status = :status', { status: filters.status });
         }
-        if (customerId) {
-            queryBuilder.andWhere('payment.customerId = :customerId', { customerId });
+        if (filters?.startDate && filters?.endDate) {
+            query.andWhere('payment.paymentDate BETWEEN :startDate AND :endDate', {
+                startDate: filters.startDate,
+                endDate: filters.endDate,
+            });
         }
-        if (paymentDateFrom) {
-            queryBuilder.andWhere('payment.paymentDate >= :paymentDateFrom', { paymentDateFrom });
+        if (filters?.minAmount) {
+            query.andWhere('payment.amount >= :minAmount', { minAmount: filters.minAmount });
         }
-        if (paymentDateTo) {
-            queryBuilder.andWhere('payment.paymentDate <= :paymentDateTo', { paymentDateTo });
+        if (filters?.maxAmount) {
+            query.andWhere('payment.amount <= :maxAmount', { maxAmount: filters.maxAmount });
         }
-        if (isVerified !== undefined) {
-            queryBuilder.andWhere('payment.isVerified = :isVerified', { isVerified });
-        }
-        if (isActive !== undefined) {
-            queryBuilder.andWhere('payment.isActive = :isActive', { isActive });
-        }
-        queryBuilder.orderBy(`payment.${sortBy}`, sortOrder);
-        const total = await queryBuilder.getCount();
-        const payments = await queryBuilder
-            .skip((page - 1) * limit)
-            .take(limit)
-            .getMany();
-        return {
-            data: dto_1.PaymentResponseDto.fromEntities(payments),
-            meta: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-            },
-        };
+        query.orderBy('payment.paymentDate', 'DESC');
+        return query.getMany();
     }
     async findOne(id) {
-        const payment = await this.paymentsRepository.findOne({
+        const payment = await this.paymentRepository.findOne({
             where: { id },
             relations: ['booking', 'customer'],
         });
         if (!payment) {
             throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
         }
-        return dto_1.PaymentResponseDto.fromEntity(payment);
+        return payment;
+    }
+    async findByPaymentCode(paymentCode) {
+        const payment = await this.paymentRepository.findOne({
+            where: { paymentCode },
+            relations: ['booking', 'customer'],
+        });
+        if (!payment) {
+            throw new common_1.NotFoundException(`Payment with code ${paymentCode} not found`);
+        }
+        return payment;
     }
     async update(id, updatePaymentDto) {
-        const payment = await this.paymentsRepository.findOne({ where: { id } });
-        if (!payment) {
-            throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
-        }
-        if (updatePaymentDto.paymentNumber && updatePaymentDto.paymentNumber !== payment.paymentNumber) {
-            const existing = await this.paymentsRepository.findOne({
-                where: { paymentNumber: updatePaymentDto.paymentNumber },
-            });
-            if (existing && existing.id !== id) {
-                throw new common_1.ConflictException('Payment number already exists');
-            }
+        const payment = await this.findOne(id);
+        if (payment.status === payment_entity_1.PaymentStatus.COMPLETED || payment.status === payment_entity_1.PaymentStatus.REFUNDED) {
+            throw new common_1.BadRequestException(`Cannot update payment with status ${payment.status}`);
         }
         Object.assign(payment, updatePaymentDto);
-        const updatedPayment = await this.paymentsRepository.save(payment);
-        return dto_1.PaymentResponseDto.fromEntity(updatedPayment);
+        return this.paymentRepository.save(payment);
+    }
+    async verify(id, userId) {
+        const payment = await this.findOne(id);
+        if (payment.status === 'COMPLETED') {
+            throw new common_1.BadRequestException('Payment is already verified');
+        }
+        payment.status = 'COMPLETED';
+        return this.paymentRepository.save(payment);
+    }
+    async cancel(id) {
+        const payment = await this.findOne(id);
+        if (payment.status === 'COMPLETED') {
+            throw new common_1.BadRequestException('Cannot cancel a completed payment. Create a refund instead.');
+        }
+        payment.status = 'CANCELLED';
+        return this.paymentRepository.save(payment);
     }
     async remove(id) {
-        const payment = await this.paymentsRepository.findOne({ where: { id } });
-        if (!payment) {
-            throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
+        const payment = await this.findOne(id);
+        if (payment.status === 'COMPLETED') {
+            throw new common_1.BadRequestException('Cannot delete a completed payment');
         }
-        payment.isActive = false;
-        await this.paymentsRepository.save(payment);
+        await this.paymentRepository.remove(payment);
     }
-    async verifyPayment(id, verifiedBy) {
-        const payment = await this.paymentsRepository.findOne({ where: { id } });
-        if (!payment) {
-            throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
+    async getStatistics(filters) {
+        const query = this.paymentRepository.createQueryBuilder('payment');
+        if (filters?.startDate && filters?.endDate) {
+            query.where('payment.paymentDate BETWEEN :startDate AND :endDate', {
+                startDate: filters.startDate,
+                endDate: filters.endDate,
+            });
         }
-        payment.isVerified = true;
-        payment.verifiedBy = verifiedBy;
-        payment.verifiedAt = new Date();
-        const verifiedPayment = await this.paymentsRepository.save(payment);
-        return dto_1.PaymentResponseDto.fromEntity(verifiedPayment);
-    }
-    async getStatistics() {
-        const payments = await this.paymentsRepository.find({ where: { isActive: true } });
-        const total = payments.length;
-        const pending = payments.filter((p) => p.status === 'PENDING').length;
-        const received = payments.filter((p) => p.status === 'RECEIVED').length;
-        const cleared = payments.filter((p) => p.status === 'CLEARED').length;
-        const bounced = payments.filter((p) => p.status === 'BOUNCED').length;
+        if (filters?.paymentType) {
+            query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
+        }
+        const payments = await query.getMany();
+        const totalPayments = payments.length;
         const totalAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
-        const totalNetAmount = payments.reduce((sum, p) => sum + Number(p.netAmount), 0);
-        const totalTDS = payments.reduce((sum, p) => sum + Number(p.tdsAmount), 0);
-        const totalGST = payments.reduce((sum, p) => sum + Number(p.gstAmount), 0);
-        const byPaymentMode = {
-            cash: payments.filter((p) => p.paymentMode === 'CASH').length,
-            cheque: payments.filter((p) => p.paymentMode === 'CHEQUE').length,
-            bankTransfer: payments.filter((p) => p.paymentMode === 'BANK_TRANSFER').length,
-            upi: payments.filter((p) => p.paymentMode === 'UPI').length,
-            online: payments.filter((p) => p.paymentMode === 'ONLINE').length,
-        };
-        const verified = payments.filter((p) => p.isVerified).length;
+        const completedPayments = payments.filter(p => p.status === 'COMPLETED').length;
+        const completedAmount = payments
+            .filter(p => p.status === 'COMPLETED')
+            .reduce((sum, p) => sum + Number(p.amount), 0);
+        const pendingPayments = payments.filter(p => p.status === 'PENDING').length;
+        const pendingAmount = payments
+            .filter(p => p.status === 'PENDING')
+            .reduce((sum, p) => sum + Number(p.amount), 0);
+        const byMethodMap = new Map();
+        payments.forEach(p => {
+            const existing = byMethodMap.get(p.paymentMethod) || { count: 0, amount: 0 };
+            byMethodMap.set(p.paymentMethod, {
+                count: existing.count + 1,
+                amount: existing.amount + Number(p.amount),
+            });
+        });
+        const byMethod = Array.from(byMethodMap.entries()).map(([method, data]) => ({
+            method,
+            ...data,
+        }));
+        const byTypeMap = new Map();
+        payments.forEach(p => {
+            const existing = byTypeMap.get(p.paymentType) || { count: 0, amount: 0 };
+            byTypeMap.set(p.paymentType, {
+                count: existing.count + 1,
+                amount: existing.amount + Number(p.amount),
+            });
+        });
+        const byType = Array.from(byTypeMap.entries()).map(([type, data]) => ({
+            type,
+            ...data,
+        }));
         return {
-            total,
-            pending,
-            received,
-            cleared,
-            bounced,
+            totalPayments,
             totalAmount,
-            totalNetAmount,
-            totalTDS,
-            totalGST,
-            byPaymentMode,
-            verified,
-            verificationRate: total > 0 ? (verified / total) * 100 : 0,
+            completedPayments,
+            completedAmount,
+            pendingPayments,
+            pendingAmount,
+            byMethod,
+            byType,
         };
+    }
+    async generatePaymentCode() {
+        const date = new Date();
+        const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
+        const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+        const code = `PAY${dateStr}${randomNum}`;
+        const existing = await this.paymentRepository.findOne({ where: { paymentCode: code } });
+        if (existing) {
+            return this.generatePaymentCode();
+        }
+        return code;
     }
 };
 exports.PaymentsService = PaymentsService;

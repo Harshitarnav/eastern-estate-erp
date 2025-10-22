@@ -128,7 +128,7 @@ export default function FlatsInventoryPage() {
         const response = await towersService.getTowers({ propertyId: selectedProperty, isActive: true, limit: 200, sortBy: 'displayOrder', sortOrder: 'ASC' });
         const towerList = response.data ?? [];
         setTowers(towerList);
-        if (towerList.length > 0) {
+        if ((towerList || []).length > 0) {
           setSelectedTower(towerList[0].id);
         } else {
           setSelectedTower('');
@@ -170,7 +170,7 @@ export default function FlatsInventoryPage() {
 
   const filteredUnits = useMemo(() => {
     if (!summary) return [];
-    return summary.units.filter((unit) => {
+    return (summary.units || []).filter((unit) => {
       const matchesStatus =
         statusFilter === 'ALL' || unit.status === statusFilter;
       const matchesSearch = searchTerm
@@ -239,9 +239,9 @@ export default function FlatsInventoryPage() {
                 className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition focus:border-gray-300 focus:outline-none sm:w-64"
                 value={selectedProperty}
                 onChange={onChangeProperty}
-                disabled={properties.length === 0}
+                disabled={(properties || []).length === 0}
               >
-                {properties.map((property) => (
+                {((properties || [])).map((property) => (
                   <option key={property.id} value={property.id}>
                     {property.name}
                   </option>
@@ -251,9 +251,9 @@ export default function FlatsInventoryPage() {
                 className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition focus:border-gray-300 focus:outline-none sm:w-64"
                 value={selectedTower}
                 onChange={onChangeTower}
-                disabled={loadingTowers || towers.length === 0}
+                disabled={loadingTowers || (towers || []).length === 0}
               >
-                {towers.map((tower) => (
+                {((towers || [])).map((tower) => (
                   <option key={tower.id} value={tower.id}>
                     {tower.name} ({tower.towerNumber})
                   </option>
@@ -326,7 +326,7 @@ export default function FlatsInventoryPage() {
                     className="rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-gray-300 focus:outline-none"
                   >
                     <option value="ALL">All statuses</option>
-                    {Array.from(new Set(summary.units.map((unit) => unit.status))).map((status) => (
+                    {Array.from(new Set((summary.units || []).map((unit) => unit.status))).map((status) => (
                       <option key={status} value={status}>
                         {STATUS_LABELS[status] ?? status}
                       </option>
@@ -336,7 +336,7 @@ export default function FlatsInventoryPage() {
               </div>
             </header>
 
-            {filteredUnits.length === 0 ? (
+            {(filteredUnits || []).length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50/70 py-14 text-center text-sm text-gray-600">
                 <Shuffle className="h-6 w-6 text-gray-400" />
                 <div>No units match the current filters.</div>
@@ -360,7 +360,7 @@ export default function FlatsInventoryPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {filteredUnits.map((unit) => (
+                    {((filteredUnits || [])).map((unit) => (
                       <UnitRow key={unit.id} unit={unit} onOpen={() => router.push(`/flats/${unit.id}`)} />
                     ))}
                   </tbody>
@@ -457,7 +457,7 @@ function CompletenessBreakdown({ breakdown }: { breakdown: FlatCompletenessBreak
     <div className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
       <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Completeness mix</h3>
       <div className="mt-4 flex flex-wrap gap-3 text-sm text-gray-700">
-        {entries.map((entry) => (
+        {((entries || [])).map((entry) => (
           <div key={entry.key} className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
             <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <span className="font-medium">{entry.label}</span>
@@ -477,7 +477,7 @@ function SalesBreakdown({ breakdown }: { breakdown: FlatSalesBreakdown }) {
       <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Sales status</h3>
       <div className="mt-4 space-y-3">
         <div className="flex h-2 overflow-hidden rounded-full bg-gray-200">
-          {SALES_ORDER.map((key) => {
+          {((SALES_ORDER || [])).map((key) => {
             const value = breakdown[key] ?? 0;
             if (!value) return null;
             const width = Math.max((value / breakdown.total) * 100, 2);
@@ -491,7 +491,7 @@ function SalesBreakdown({ breakdown }: { breakdown: FlatSalesBreakdown }) {
           })}
         </div>
         <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-          {SALES_ORDER.map((key) => {
+          {((SALES_ORDER || [])).map((key) => {
             const value = breakdown[key] ?? 0;
             if (!value) return null;
             return (

@@ -120,3 +120,100 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Mobile Responsive Utilities */
+  .responsive-table {
+    @apply w-full overflow-x-auto;
+  }
+  
+  .responsive-table table {
+    @apply min-w-full;
+  }
+  
+  /* Hide elements on mobile */
+  .hide-mobile {
+    @apply hidden md:block;
+  }
+  
+  /* Show only on mobile */
+  .show-mobile {
+    @apply block md:hidden;
+  }
+  
+  /* Mobile-friendly padding */
+  .mobile-padding {
+    @apply px-4 py-2 md:px-6 md:py-4;
+  }
+  
+  /* Responsive grid */
+  .responsive-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+  
+  /* Full-width on mobile, constrained on desktop */
+  .mobile-full {
+    @apply w-full md:w-auto;
+  }
+  
+  /* Responsive text sizes */
+  .text-responsive-xs {
+    @apply text-xs md:text-sm;
+  }
+  
+  .text-responsive-sm {
+    @apply text-sm md:text-base;
+  }
+  
+  .text-responsive-base {
+    @apply text-base md:text-lg;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg md:text-xl;
+  }
+  
+  .text-responsive-xl {
+    @apply text-xl md:text-2xl;
+  }
+  
+  /* Mobile-friendly buttons */
+  .btn-mobile {
+    @apply w-full md:w-auto px-4 py-2 text-sm md:text-base;
+  }
+  
+  /* Responsive spacing */
+  .space-mobile {
+    @apply space-y-2 md:space-y-4;
+  }
+  
+  /* Mobile modal - full screen on mobile, centered on desktop */
+  .modal-mobile {
+    @apply fixed inset-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl md:rounded-lg;
+  }
+  
+  /* Touch-friendly tap targets (min 44x44px for mobile) */
+  .tap-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  /* Scrollable container with proper mobile handling */
+  .scroll-container {
+    @apply overflow-auto -mx-4 px-4 md:mx-0 md:px-0;
+  }
+  
+  /* Responsive card */
+  .card-responsive {
+    @apply p-4 md:p-6 rounded-lg shadow-sm;
+  }
+  
+  /* Stack on mobile, row on desktop */
+  .stack-mobile {
+    @apply flex flex-col md:flex-row gap-2 md:gap-4;
+  }
+  
+  /* Mobile-safe z-index */
+  .z-mobile-safe {
+    @apply relative z-10;
+  }
+}

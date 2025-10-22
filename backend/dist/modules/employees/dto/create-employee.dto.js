@@ -16,12 +16,10 @@ class CreateEmployeeDto {
 }
 exports.CreateEmployeeDto = CreateEmployeeDto;
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "employeeCode", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "fullName", void 0);
@@ -31,7 +29,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "email", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "phoneNumber", void 0);
@@ -41,62 +39,56 @@ __decorate([
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "alternatePhone", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", String)
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
 ], CreateEmployeeDto.prototype, "dateOfBirth", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "gender", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "currentAddress", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(employee_entity_1.Department),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "department", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "designation", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(employee_entity_1.EmploymentType),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "employmentType", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", String)
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
 ], CreateEmployeeDto.prototype, "joiningDate", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateEmployeeDto.prototype, "basicSalary", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateEmployeeDto.prototype, "houseRentAllowance", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateEmployeeDto.prototype, "transportAllowance", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateEmployeeDto.prototype, "medicalAllowance", void 0);
 __decorate([

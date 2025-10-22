@@ -17,9 +17,9 @@ export class PropertyResponseDto {
   numberOfTowers?: number;
   numberOfUnits?: number;
   floorsPerTower?: string;
-  launchDate?: Date;
-  expectedCompletionDate?: Date;
-  actualCompletionDate?: Date;
+  launchDate?: string | Date;
+  expectedCompletionDate?: string | Date;
+  actualCompletionDate?: string | Date;
   reraNumber?: string;
   reraStatus?: string;
   projectType?: string;
@@ -37,8 +37,8 @@ export class PropertyResponseDto {
   isFeatured?: boolean;
   createdBy?: string;
   updatedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   projectId?: string;
   projectCode?: string;
   projectName?: string;

@@ -39,7 +39,7 @@ export default function AddWorkScheduleModal({ isOpen, onClose, onSuccess, prope
     try {
       const response = await api.get('/construction-teams');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setTeams(data.filter((t: any) => t.isActive));
+      setTeams(d((ata || [])).filter((t: any) => t.isActive));
     } catch (error) {
       console.error('Failed to load teams:', error);
       alert('Failed to load teams');
@@ -131,7 +131,7 @@ export default function AddWorkScheduleModal({ isOpen, onClose, onSuccess, prope
                 required
               >
                 <option value="">Select Team</option>
-                {teams.map((team) => (
+                {((teams || [])).map((team) => (
                   <option key={team.id} value={team.id}>{team.teamName}</option>
                 ))}
               </select>

@@ -34,7 +34,7 @@ __decorate([
 ], QueryPaymentDto.prototype, "paymentType", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(payment_entity_1.PaymentMode),
+    (0, class_validator_1.IsEnum)(payment_entity_1.PaymentMethod),
     __metadata("design:type", String)
 ], QueryPaymentDto.prototype, "paymentMode", void 0);
 __decorate([

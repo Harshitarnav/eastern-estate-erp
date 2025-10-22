@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSalesTaskDto = void 0;
 const class_validator_1 = require("class-validator");
-const class_transformer_1 = require("class-transformer");
 const sales_task_entity_1 = require("../entities/sales-task.entity");
 class CreateSalesTaskDto {
 }
@@ -48,11 +47,6 @@ __decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateSalesTaskDto.prototype, "assignedBy", void 0);
-__decorate([
-    (0, class_transformer_1.Type)(() => Date),
-    (0, class_validator_1.IsDate)(),
-    __metadata("design:type", Date)
-], CreateSalesTaskDto.prototype, "dueDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

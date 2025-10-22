@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { handleApiError } from '@/utils/error-handler';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -29,6 +30,7 @@ class ApiService {
       async (error) => {
         const originalRequest = error.config;
 
+        // Handle 401 errors (unauthorized)
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
 
@@ -53,6 +55,17 @@ class ApiService {
             return Promise.reject(refreshError);
           }
         }
+
+        // Convert error to user-friendly message
+        const friendlyMessage = handleApiError(error);
+        
+        // Log error for debugging (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('API Error:', friendlyMessage);
+        }
+
+        // Attach friendly message to error for components to use
+        error.userMessage = friendlyMessage;
 
         return Promise.reject(error);
       }
@@ -81,28 +94,48 @@ class ApiService {
   }
 
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.api.get<T>(url, config);
-    return response.data;
+    try {
+      const response = await this.api.get<T>(url, config);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.api.post<T>(url, data, config);
-    return response.data;
+    try {
+      const response = await this.api.post<T>(url, data, config);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.api.put<T>(url, data, config);
-    return response.data;
+    try {
+      const response = await this.api.put<T>(url, data, config);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.api.patch<T>(url, data, config);
-    return response.data;
+    try {
+      const response = await this.api.patch<T>(url, data, config);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
   }
 
   async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.api.delete<T>(url, config);
-    return response.data;
+    try {
+      const response = await this.api.delete<T>(url, config);
+      return response.data;
+    } catch (error: any) {
+      throw error;
+    }
   }
 }
 

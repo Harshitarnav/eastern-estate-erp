@@ -17,6 +17,6 @@ export declare class PurchaseOrderResponseDto {
     balanceAmount: number;
     deliveryAddress: string | null;
     notes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string | Date;
+    updatedAt: string | Date;
 }

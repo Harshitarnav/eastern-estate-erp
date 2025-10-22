@@ -60,7 +60,7 @@ export default function ConstructionProjectsPage() {
     });
   };
 
-  const filteredProjects = projects.filter(project => {
+  const filteredProjects = ((projects || [])).filter(project => {
     const matchesProperty = !filterProperty || project.propertyId === filterProperty;
     const matchesStatus = !filterStatus || project.status === filterStatus;
     const matchesSearch = !searchTerm || 
@@ -70,11 +70,11 @@ export default function ConstructionProjectsPage() {
   });
 
   const stats = {
-    total: projects.length,
-    planning: projects.filter(p => p.status === 'PLANNING').length,
-    inProgress: projects.filter(p => p.status === 'IN_PROGRESS').length,
-    onHold: projects.filter(p => p.status === 'ON_HOLD').length,
-    completed: projects.filter(p => p.status === 'COMPLETED').length,
+    total: (projects || []).length,
+    planning: ((projects || [])).filter(p => p.status === 'PLANNING').length,
+    inProgress: ((projects || [])).filter(p => p.status === 'IN_PROGRESS').length,
+    onHold: ((projects || [])).filter(p => p.status === 'ON_HOLD').length,
+    completed: ((projects || [])).filter(p => p.status === 'COMPLETED').length,
   };
 
   return (
@@ -146,7 +146,7 @@ export default function ConstructionProjectsPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="">All Properties</option>
-                {properties.map(property => (
+                {((properties || [])).map(property => (
                   <option key={property.id} value={property.id}>
                     {property.name}
                   </option>
@@ -181,15 +181,15 @@ export default function ConstructionProjectsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading projects...</p>
           </div>
-        ) : filteredProjects.length === 0 ? (
+        ) : (filteredProjects || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">🏗️</p>
             <p className="text-gray-600 mb-4">
-              {projects.length === 0 
+              {(projects || []).length === 0 
                 ? "No projects found. Create your first project!" 
                 : "No projects match your filters."}
             </p>
-            {projects.length === 0 && (
+            {(projects || []).length === 0 && (
               <button
                 onClick={() => router.push('/construction/projects/new')}
                 className="px-6 py-2 text-white rounded-lg"
@@ -201,7 +201,7 @@ export default function ConstructionProjectsPage() {
           </div>
         ) : (
           <div className="divide-y">
-            {filteredProjects.map((project) => (
+            {((filteredProjects || [])).map((project) => (
               <div
                 key={project.id}
                 onClick={() => router.push(`/construction/projects/${project.id}`)}

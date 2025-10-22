@@ -15,6 +15,12 @@ export declare class CreateBookingDto {
     tokenPaidDate?: string;
     tokenReceiptNumber?: string;
     tokenPaymentMode?: string;
+    rtgsNumber?: string;
+    utrNumber?: string;
+    chequeNumber?: string;
+    chequeDate?: string;
+    paymentBank?: string;
+    paymentBranch?: string;
     agreementNumber?: string;
     agreementDate?: string;
     agreementSignedDate?: string;

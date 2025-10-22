@@ -83,13 +83,13 @@ export class TowerResponseDto {
     description: 'Construction start date',
     example: '2024-01-15',
   })
-  constructionStartDate?: Date;
+  constructionStartDate?: string | Date;
 
   @ApiPropertyOptional({
     description: 'Completion date',
     example: '2025-12-31',
   })
-  completionDate?: Date;
+  completionDate?: string | Date;
 
   @ApiPropertyOptional({
     description: 'RERA number',
@@ -183,13 +183,13 @@ export class TowerResponseDto {
     description: 'Creation timestamp',
     example: '2024-01-15T10:30:00Z',
   })
-  createdAt: Date;
+  createdAt: string | Date;
 
   @ApiProperty({
     description: 'Last update timestamp',
     example: '2024-01-20T15:45:00Z',
   })
-  updatedAt: Date;
+  updatedAt: string | Date;
 
   // Computed fields
   @ApiPropertyOptional({

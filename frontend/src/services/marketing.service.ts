@@ -2,29 +2,15 @@ import api from './api';
 
 export interface Campaign {
   id: string;
-  campaignCode: string;
   name: string;
   description?: string;
   type: string;
   status: string;
-  channel: string;
-  startDate: Date;
-  endDate: Date;
-  totalBudget: number;
-  amountSpent: number;
-  remainingBudget: number;
-  budgetUtilization: number;
-  totalImpressions: number;
-  totalClicks: number;
-  clickThroughRate: number;
-  totalLeads: number;
-  qualifiedLeads: number;
-  conversions: number;
-  conversionRate: number;
-  costPerLead: number;
-  costPerConversion: number;
-  revenueGenerated: number;
-  roi: number;
+  budget: number;
+  startDate?: Date;
+  endDate?: Date;
+  notes?: string;
+  attachments?: any[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,7 +19,6 @@ export interface CampaignFilters {
   search?: string;
   type?: string;
   status?: string;
-  channel?: string;
   page?: number;
   limit?: number;
 }
@@ -67,18 +52,13 @@ export const marketingService = {
     return response;
   },
 
-  async createCampaign(data: any): Promise<Campaign> {
+  async createCampaign(data: Partial<Campaign>): Promise<Campaign> {
     const response = await api.post('/marketing/campaigns', data);
     return response;
   },
 
-  async updateCampaign(id: string, data: any): Promise<Campaign> {
+  async updateCampaign(id: string, data: Partial<Campaign>): Promise<Campaign> {
     const response = await api.patch(`/marketing/campaigns/${id}`, data);
-    return response;
-  },
-
-  async updateMetrics(id: string, metrics: any): Promise<Campaign> {
-    const response = await api.patch(`/marketing/campaigns/${id}/metrics`, metrics);
     return response;
   },
 
@@ -86,8 +66,14 @@ export const marketingService = {
     await api.delete(`/marketing/campaigns/${id}`);
   },
 
-  async getStatistics(): Promise<any> {
-    const response = await api.get('/marketing/campaigns/statistics');
+  async uploadFile(file: File): Promise<{ url: string; filename: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post('/upload/single', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response;
   },
 };

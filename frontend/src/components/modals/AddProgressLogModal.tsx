@@ -43,7 +43,7 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
     try {
       const response = await api.get(`/construction-projects?propertyId=${propertyId}`);
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setProjects(data.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setProjects(d((ata || [])).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load projects:', error);
       alert('Failed to load projects');
@@ -128,7 +128,7 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
                 required
               >
                 <option value="">Select Project</option>
-                {projects.map((project) => (
+                {((projects || [])).map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.projectName}
                   </option>
@@ -159,7 +159,7 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 required
               >
-                {SHIFTS.map((shift) => (
+                {((SHIFTS || [])).map((shift) => (
                   <option key={shift} value={shift}>
                     {shift}
                   </option>
@@ -176,7 +176,7 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
                 onChange={(e) => setFormData({ ...formData, weatherCondition: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
-                {WEATHER_CONDITIONS.map((weather) => (
+                {((WEATHER_CONDITIONS || [])).map((weather) => (
                   <option key={weather} value={weather}>
                     {weather}
                   </option>

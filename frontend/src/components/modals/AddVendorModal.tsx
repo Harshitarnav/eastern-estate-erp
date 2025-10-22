@@ -109,7 +109,7 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
     setFormData(prev => ({
       ...prev,
       materialsSupplied: prev.materialsSupplied.includes(material)
-        ? prev.materialsSupplied.filter(m => m !== material)
+        ? prev.((materialsSupplied || [])).filter(m => m !== material)
         : [...prev.materialsSupplied, material]
     }));
   };
@@ -283,7 +283,7 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
             Materials Supplied
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {MATERIAL_CATEGORIES.map((material) => (
+            {((MATERIAL_CATEGORIES || [])).map((material) => (
               <label key={material} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
                 <input
                   type="checkbox"

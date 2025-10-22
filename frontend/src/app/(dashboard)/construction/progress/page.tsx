@@ -71,12 +71,12 @@ export default function ProgressLogsPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600 mb-1">Active Projects</p>
           <p className="text-2xl font-bold text-gray-900">
-            {projects.filter(p => p.status === 'IN_PROGRESS').length}
+            {((projects || [])).filter(p => p.status === 'IN_PROGRESS').length}
           </p>
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Total Logs</p>
-          <p className="text-2xl font-bold text-blue-700">{progressLogs.length}</p>
+          <p className="text-2xl font-bold text-blue-700">{(progressLogs || []).length}</p>
         </div>
         <div className="bg-green-50 rounded-lg shadow p-4">
           <p className="text-sm text-green-600 mb-1">This Week</p>
@@ -89,7 +89,7 @@ export default function ProgressLogsPage() {
       </div>
 
       {/* Active Projects */}
-      {projects.length > 0 && (
+      {(projects || []).length > 0 && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-bold mb-4" style={{ color: '#A8211B' }}>
             Active Construction Projects
@@ -145,7 +145,7 @@ export default function ProgressLogsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading progress logs...</p>
           </div>
-        ) : progressLogs.length === 0 ? (
+        ) : (progressLogs || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">📊</p>
             <p className="text-gray-600 mb-2">No progress logs found for this property</p>
@@ -164,7 +164,7 @@ export default function ProgressLogsPage() {
           <div className="p-6">
             <h3 className="text-lg font-bold mb-4">Recent Progress Logs</h3>
             <div className="space-y-4">
-              {progressLogs.map((log) => (
+              {((progressLogs || [])).map((log) => (
                 <div key={log.id} className="border rounded-lg p-4 hover:bg-gray-50">
                   <div className="flex justify-between items-start mb-2">
                     <div>

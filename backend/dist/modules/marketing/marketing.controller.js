@@ -15,28 +15,25 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MarketingController = void 0;
 const common_1 = require("@nestjs/common");
 const marketing_service_1 = require("./marketing.service");
-const dto_1 = require("./dto");
+const create_campaign_dto_1 = require("./dto/create-campaign.dto");
 let MarketingController = class MarketingController {
     constructor(marketingService) {
         this.marketingService = marketingService;
     }
-    create(createCampaignDto) {
-        return this.marketingService.create(createCampaignDto);
-    }
-    findAll(query) {
-        return this.marketingService.findAll(query);
-    }
-    getStatistics() {
-        return this.marketingService.getStatistics();
+    findAll(page = '1', limit = '12') {
+        return this.marketingService.findAll(+page, +limit);
     }
     findOne(id) {
         return this.marketingService.findOne(id);
     }
-    update(id, updateCampaignDto) {
-        return this.marketingService.update(id, updateCampaignDto);
+    create(createCampaignDto) {
+        return this.marketingService.create(createCampaignDto);
     }
-    updateMetrics(id, metrics) {
-        return this.marketingService.updateMetrics(id, metrics);
+    update(id, updateData) {
+        return this.marketingService.update(id, updateData);
+    }
+    partialUpdate(id, updateData) {
+        return this.marketingService.update(id, updateData);
     }
     remove(id) {
         return this.marketingService.remove(id);
@@ -44,57 +41,52 @@ let MarketingController = class MarketingController {
 };
 exports.MarketingController = MarketingController;
 __decorate([
-    (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Get)('campaigns'),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.CreateCampaignDto]),
-    __metadata("design:returntype", void 0)
-], MarketingController.prototype, "create", null);
-__decorate([
-    (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryCampaignDto]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], MarketingController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)('statistics'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], MarketingController.prototype, "getStatistics", null);
-__decorate([
-    (0, common_1.Get)(':id'),
+    (0, common_1.Get)('campaigns/:id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], MarketingController.prototype, "findOne", null);
 __decorate([
-    (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
+    (0, common_1.Post)('campaigns'),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, dto_1.UpdateCampaignDto]),
+    __metadata("design:paramtypes", [create_campaign_dto_1.CreateCampaignDto]),
     __metadata("design:returntype", void 0)
-], MarketingController.prototype, "update", null);
+], MarketingController.prototype, "create", null);
 __decorate([
-    (0, common_1.Patch)(':id/metrics'),
+    (0, common_1.Put)('campaigns/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
-], MarketingController.prototype, "updateMetrics", null);
+], MarketingController.prototype, "update", null);
 __decorate([
-    (0, common_1.Delete)(':id'),
+    (0, common_1.Patch)('campaigns/:id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], MarketingController.prototype, "partialUpdate", null);
+__decorate([
+    (0, common_1.Delete)('campaigns/:id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], MarketingController.prototype, "remove", null);
 exports.MarketingController = MarketingController = __decorate([
-    (0, common_1.Controller)('marketing/campaigns'),
+    (0, common_1.Controller)('marketing'),
     __metadata("design:paramtypes", [marketing_service_1.MarketingService])
 ], MarketingController);
 //# sourceMappingURL=marketing.controller.js.map

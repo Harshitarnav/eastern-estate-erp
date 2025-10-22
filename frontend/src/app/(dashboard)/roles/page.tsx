@@ -118,7 +118,7 @@ export default function RolesPage() {
         <div className="text-center py-8">Loading...</div>
       ) : (
         <div className="grid gap-4">
-          {roles.map((role) => (
+          {((roles || [])).map((role) => (
             <div key={role.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -129,9 +129,9 @@ export default function RolesPage() {
                   {role.description && (
                     <p className="text-gray-600 mb-3">{role.description}</p>
                   )}
-                  {role.permissions && role.permissions.length > 0 && (
+                  {role.permissions && role.(permissions || []).length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {role.permissions.map(permission => (
+                      {role.((permissions || [])).map(permission => (
                         <Badge key={permission.id} variant="secondary" className="text-xs">
                           {permission.name}
                         </Badge>
@@ -151,7 +151,7 @@ export default function RolesPage() {
             </div>
           ))}
 
-          {roles.length === 0 && (
+          {(roles || []).length === 0 && (
             <div className="text-center py-12 text-gray-500">
               No roles found. Create your first role to get started.
             </div>
@@ -194,7 +194,7 @@ export default function RolesPage() {
                 Select the permissions that users with this role should have
               </p>
               <div className="grid grid-cols-2 gap-3 max-h-60 overflow-y-auto p-2 border rounded">
-                {permissions.map((permission) => (
+                {((permissions || [])).map((permission) => (
                   <div key={permission.id} className="flex items-start space-x-2">
                     <Checkbox
                       checked={formData.permissionIds?.includes(permission.id)}
@@ -215,7 +215,7 @@ export default function RolesPage() {
                     </div>
                   </div>
                 ))}
-                {permissions.length === 0 && (
+                {(permissions || []).length === 0 && (
                   <p className="text-sm text-gray-500 col-span-2 text-center py-4">
                     No permissions available
                   </p>

@@ -15,13 +15,9 @@ export class CreateSalesTargetDto {
   @IsEnum(TargetPeriod)
   targetPeriod: TargetPeriod;
 
-  @Type(() => Date)
-  @IsDate()
-  startDate: Date;
+  startDate: string | Date;
 
-  @Type(() => Date)
-  @IsDate()
-  endDate: Date;
+  endDate: string | Date;
 
   // Target Metrics
   @IsOptional()

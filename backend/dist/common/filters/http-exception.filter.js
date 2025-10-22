@@ -5,176 +5,76 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var HttpExceptionFilter_1;
+var AllExceptionsFilter_1;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HttpExceptionFilter = void 0;
+exports.HttpExceptionFilter = exports.AllExceptionsFilter = void 0;
 const common_1 = require("@nestjs/common");
-const typeorm_1 = require("typeorm");
-let HttpExceptionFilter = HttpExceptionFilter_1 = class HttpExceptionFilter {
+let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
     constructor() {
-        this.logger = new common_1.Logger(HttpExceptionFilter_1.name);
+        this.logger = new common_1.Logger(AllExceptionsFilter_1.name);
     }
     catch(exception, host) {
         const ctx = host.switchToHttp();
         const response = ctx.getResponse();
         const request = ctx.getRequest();
-        let status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-        let message = 'Internal server error';
-        let error = 'Internal Server Error';
-        if (exception instanceof common_1.HttpException) {
-            status = exception.getStatus();
-            const exceptionResponse = exception.getResponse();
-            if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-                const resp = exceptionResponse;
-                message = resp.message || message;
-                error = resp.error || error;
-            }
-            else {
-                message = exceptionResponse;
-            }
-        }
-        else if (exception instanceof typeorm_1.QueryFailedError) {
-            const dbError = exception;
-            switch (dbError.code) {
-                case '23000':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Integrity Constraint Violation';
-                    message = 'Data integrity violation. Please check your input.';
-                    break;
-                case '23001':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Restrict Violation';
-                    message = 'This record cannot be modified as it is referenced by other records.';
-                    break;
-                case '23502':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Not Null Violation';
-                    message = 'Required field is missing. Please fill all required fields.';
-                    break;
-                case '23503':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Foreign Key Violation';
-                    message = 'Referenced record not found. Please check related data.';
-                    break;
-                case '23505':
-                    status = common_1.HttpStatus.CONFLICT;
-                    error = 'Duplicate Entry';
-                    message = 'This record already exists. Please use unique values.';
-                    break;
-                case '23514':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Check Violation';
-                    message = 'Data validation failed. Please check the constraints.';
-                    break;
-                case '22000':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Data Exception';
-                    message = 'Invalid data provided.';
-                    break;
-                case '22001':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'String Data Right Truncation';
-                    message = 'Text is too long for the field. Please shorten your input.';
-                    break;
-                case '22003':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Numeric Value Out of Range';
-                    message = 'Number is too large or too small for this field.';
-                    break;
-                case '22007':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Invalid Datetime Format';
-                    message = 'Invalid date or time format provided.';
-                    break;
-                case '22008':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Datetime Field Overflow';
-                    message = 'Date or time value is out of valid range.';
-                    break;
-                case '22012':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Division by Zero';
-                    message = 'Mathematical operation error: Division by zero.';
-                    break;
-                case '22P02':
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Invalid Text Representation';
-                    message = 'Invalid data format. Please check the data type.';
-                    break;
-                case '42501':
-                    status = common_1.HttpStatus.FORBIDDEN;
-                    error = 'Insufficient Privileges';
-                    message = 'You do not have permission to perform this operation.';
-                    break;
-                case '42601':
-                    status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-                    error = 'Syntax Error';
-                    message = 'Database query error. Please contact support.';
-                    break;
-                case '42703':
-                    status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-                    error = 'Undefined Column';
-                    message = 'Database schema error. Please contact support.';
-                    break;
-                case '42P01':
-                    status = common_1.HttpStatus.INTERNAL_SERVER_ERROR;
-                    error = 'Undefined Table';
-                    message = 'Database table not found. Please contact support.';
-                    break;
-                case '08000':
-                case '08003':
-                case '08006':
-                    status = common_1.HttpStatus.SERVICE_UNAVAILABLE;
-                    error = 'Database Connection Error';
-                    message = 'Unable to connect to database. Please try again later.';
-                    break;
-                case '53000':
-                case '53100':
-                case '53200':
-                case '53300':
-                    status = common_1.HttpStatus.SERVICE_UNAVAILABLE;
-                    error = 'Server Resource Error';
-                    message = 'Server is temporarily unavailable. Please try again later.';
-                    break;
-                case '57000':
-                case '57014':
-                case '57P01':
-                    status = common_1.HttpStatus.SERVICE_UNAVAILABLE;
-                    error = 'Database Operation Cancelled';
-                    message = 'Operation was cancelled. Please try again.';
-                    break;
-                case '40000':
-                case '40001':
-                case '40P01':
-                    status = common_1.HttpStatus.CONFLICT;
-                    error = 'Transaction Conflict';
-                    message = 'Operation conflict detected. Please try again.';
-                    break;
-                default:
-                    status = common_1.HttpStatus.BAD_REQUEST;
-                    error = 'Database Error';
-                    message = 'Database operation failed. Please check your data and try again.';
-                    this.logger.error(`Unhandled database error code: ${dbError.code}`, dbError.stack);
-            }
-            this.logger.error(`Database error [${dbError.code}]: ${dbError.message}`, dbError.stack);
-        }
-        else if (exception instanceof Error) {
-            this.logger.error(`Unexpected error: ${exception.message}`, exception.stack);
-            message = 'An unexpected error occurred. Please try again later.';
-        }
-        this.logger.error(`${request.method} ${request.url} - Status: ${status} - Message: ${JSON.stringify(message)}`);
-        response.status(status).json({
+        const status = exception instanceof common_1.HttpException
+            ? exception.getStatus()
+            : common_1.HttpStatus.INTERNAL_SERVER_ERROR;
+        const message = exception instanceof common_1.HttpException
+            ? exception.getResponse()
+            : 'Internal server error';
+        this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : exception);
+        const errorResponse = {
             statusCode: status,
             timestamp: new Date().toISOString(),
             path: request.url,
             method: request.method,
-            error,
-            message,
-        });
+            message: this.getErrorMessage(message, status),
+            errors: this.getValidationErrors(message),
+            ...(process.env.NODE_ENV === 'development' && {
+                details: message,
+                stack: exception instanceof Error ? exception.stack : undefined,
+            }),
+        };
+        response.status(status).json(errorResponse);
+    }
+    getErrorMessage(message, status) {
+        const errorMessages = {
+            400: 'Invalid input. Please check your data and try again.',
+            401: 'Authentication required. Please log in to continue.',
+            403: "You don't have permission to perform this action.",
+            404: 'The requested resource was not found.',
+            409: 'This record already exists or conflicts with existing data.',
+            422: 'The data you provided is invalid. Please check and try again.',
+            429: 'Too many requests. Please try again later.',
+            500: 'Something went wrong on our end. Please try again later.',
+            503: 'Service temporarily unavailable. Please try again later.',
+        };
+        if (typeof message === 'object' && message.message) {
+            if (Array.isArray(message.message)) {
+                return 'Please fix the following errors and try again.';
+            }
+            return message.message;
+        }
+        if (typeof message === 'string') {
+            return message;
+        }
+        return errorMessages[status] || 'An error occurred. Please try again.';
+    }
+    getValidationErrors(message) {
+        if (typeof message === 'object' && Array.isArray(message.message)) {
+            return message.message.map((msg) => {
+                return msg
+                    .replace(/^[a-z]+\s/, '')
+                    .replace(/^\w/, (c) => c.toUpperCase());
+            });
+        }
+        return undefined;
     }
 };
-exports.HttpExceptionFilter = HttpExceptionFilter;
-exports.HttpExceptionFilter = HttpExceptionFilter = HttpExceptionFilter_1 = __decorate([
+exports.AllExceptionsFilter = AllExceptionsFilter;
+exports.HttpExceptionFilter = AllExceptionsFilter;
+exports.HttpExceptionFilter = exports.AllExceptionsFilter = AllExceptionsFilter = AllExceptionsFilter_1 = __decorate([
     (0, common_1.Catch)()
-], HttpExceptionFilter);
+], AllExceptionsFilter);
 //# sourceMappingURL=http-exception.filter.js.map

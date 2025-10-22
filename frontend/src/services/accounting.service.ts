@@ -1,158 +1,244 @@
 import api from './api';
 
-export const accountingService = {
-  // ============ CHART OF ACCOUNTS ============
-  async getAccounts() {
-    const response = await api.get('/accounting/accounts');
-    return response;
+// Types
+export interface Account {
+  id: string;
+  accountCode: string;
+  accountName: string;
+  accountType: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'INCOME' | 'EXPENSE';
+  accountCategory: string;
+  parentAccountId?: string;
+  isActive: boolean;
+  currentBalance: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Expense {
+  id: string;
+  expenseCode: string;
+  expenseCategory: string;
+  expenseType: string;
+  amount: number;
+  expenseDate: string;
+  description: string;
+  status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED';
+  receiptUrl?: string;
+  invoiceNumber?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  createdAt: string;
+}
+
+export interface Budget {
+  id: string;
+  budgetCode: string;
+  budgetName: string;
+  fiscalYear: number;
+  startDate: string;
+  endDate: string;
+  budgetedAmount: number;
+  actualAmount: number;
+  varianceAmount: number;
+  variancePercentage: number;
+  status: 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'REVISED';
+  notes?: string;
+  createdAt: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  entryNumber: string;
+  entryDate: string;
+  description: string;
+  totalDebit: number;
+  totalCredit: number;
+  status: 'DRAFT' | 'POSTED' | 'VOIDED';
+  lines: JournalEntryLine[];
+  createdAt: string;
+}
+
+export interface JournalEntryLine {
+  id: string;
+  accountId: string;
+  debitAmount: number;
+  creditAmount: number;
+  description?: string;
+  account?: Account;
+}
+
+// Accounts Service
+export const accountsService = {
+  getAll: async (params?: { accountType?: string; isActive?: boolean }) => {
+    const response = await api.get('/accounting/accounts', { params });
+    return response.data;
   },
 
-  async getAccountById(id: string) {
+  getOne: async (id: string) => {
     const response = await api.get(`/accounting/accounts/${id}`);
-    return response;
+    return response.data;
   },
 
-  async createAccount(data: any) {
+  getByCode: async (code: string) => {
+    const response = await api.get(`/accounting/accounts/code/${code}`);
+    return response.data;
+  },
+
+  getHierarchy: async () => {
+    const response = await api.get('/accounting/accounts/hierarchy');
+    return response.data;
+  },
+
+  getBalanceSheet: async () => {
+    const response = await api.get('/accounting/accounts/balance-sheet');
+    return response.data;
+  },
+
+  getProfitLoss: async () => {
+    const response = await api.get('/accounting/accounts/profit-loss');
+    return response.data;
+  },
+
+  create: async (data: Partial<Account>) => {
     const response = await api.post('/accounting/accounts', data);
-    return response;
+    return response.data;
   },
 
-  async updateAccount(id: string, data: any) {
-    const response = await api.put(`/accounting/accounts/${id}`, data);
-    return response;
+  update: async (id: string, data: Partial<Account>) => {
+    const response = await api.patch(`/accounting/accounts/${id}`, data);
+    return response.data;
   },
 
-  // ============ JOURNAL ENTRIES ============
-  async createJournalEntry(data: any) {
-    const response = await api.post('/accounting/journal-entries', data);
-    return response;
+  delete: async (id: string) => {
+    const response = await api.delete(`/accounting/accounts/${id}`);
+    return response.data;
+  },
+};
+
+// Expenses Service
+export const expensesService = {
+  getAll: async (params?: { category?: string; status?: string; startDate?: string; endDate?: string }) => {
+    const response = await api.get('/accounting/expenses', { params });
+    return response.data;
   },
 
-  async getJournalEntryById(id: string) {
-    const response = await api.get(`/accounting/journal-entries/${id}`);
-    return response;
+  getOne: async (id: string) => {
+    const response = await api.get(`/accounting/expenses/${id}`);
+    return response.data;
   },
 
-  async getJournalEntryLines(id: string) {
-    const response = await api.get(`/accounting/journal-entries/${id}/lines`);
-    return response;
+  getSummary: async (params?: { startDate?: string; endDate?: string }) => {
+    const response = await api.get('/accounting/expenses/summary', { params });
+    return response.data;
   },
 
-  async importJournalEntriesFromExcel(file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post('/accounting/journal-entries/import-excel', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+  create: async (data: Partial<Expense>) => {
+    const response = await api.post('/accounting/expenses', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<Expense>) => {
+    const response = await api.patch(`/accounting/expenses/${id}`, data);
+    return response.data;
+  },
+
+  approve: async (id: string, notes?: string) => {
+    const response = await api.post(`/accounting/expenses/${id}/approve`, { notes });
+    return response.data;
+  },
+
+  reject: async (id: string, rejectionReason: string) => {
+    const response = await api.post(`/accounting/expenses/${id}/reject`, { rejectionReason });
+    return response.data;
+  },
+
+  markAsPaid: async (id: string) => {
+    const response = await api.post(`/accounting/expenses/${id}/paid`);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    const response = await api.delete(`/accounting/expenses/${id}`);
+    return response.data;
+  },
+};
+
+// Budgets Service
+export const budgetsService = {
+  getAll: async (params?: { fiscalYear?: number; status?: string }) => {
+    const response = await api.get('/accounting/budgets', { params });
+    return response.data;
+  },
+
+  getOne: async (id: string) => {
+    const response = await api.get(`/accounting/budgets/${id}`);
+    return response.data;
+  },
+
+  getVarianceReport: async (fiscalYear?: number) => {
+    const response = await api.get('/accounting/budgets/variance-report', {
+      params: { fiscalYear },
     });
-    return response;
+    return response.data;
   },
 
-  // ============ LEDGER REPORTS ============
-  async getAccountLedger(accountId: string, startDate: string, endDate: string) {
-    const response = await api.get(`/accounting/ledgers/account/${accountId}`, {
-      params: { startDate, endDate },
-    });
-    return response;
+  create: async (data: Partial<Budget>) => {
+    const response = await api.post('/accounting/budgets', data);
+    return response.data;
   },
 
-  async getWeeklyLedger(week: number, year: number) {
-    const response = await api.get('/accounting/ledgers/weekly', {
-      params: { week, year },
-    });
-    return response;
+  update: async (id: string, data: Partial<Budget>) => {
+    const response = await api.patch(`/accounting/budgets/${id}`, data);
+    return response.data;
   },
 
-  async getCashBook(startDate: string, endDate: string) {
-    const response = await api.get('/accounting/ledgers/cash-book', {
-      params: { startDate, endDate },
-    });
-    return response;
+  delete: async (id: string) => {
+    const response = await api.delete(`/accounting/budgets/${id}`);
+    return response.data;
+  },
+};
+
+// Journal Entries Service
+export const journalEntriesService = {
+  getAll: async (params?: { status?: string; startDate?: string; endDate?: string }) => {
+    const response = await api.get('/journal-entries', { params });
+    return response.data;
   },
 
-  async getBankBook(bankAccountId: string, startDate: string, endDate: string) {
-    const response = await api.get(`/accounting/ledgers/bank-book/${bankAccountId}`, {
-      params: { startDate, endDate },
-    });
-    return response;
+  getOne: async (id: string) => {
+    const response = await api.get(`/journal-entries/${id}`);
+    return response.data;
   },
 
-  // ============ EXPORTS ============
-  async exportLedgerToExcel(accountId: string, startDate: string, endDate: string) {
-    const response = await api.get<Blob>(`/accounting/exports/ledger/${accountId}`, {
-      params: { startDate, endDate },
-      responseType: 'blob',
-    });
-    
-    // Download file
-    const blob = response instanceof Blob ? response : new Blob([response as unknown as BlobPart]);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `ledger-${accountId}.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  create: async (data: { entryDate: string; description: string; lines: Partial<JournalEntryLine>[] }) => {
+    const response = await api.post('/journal-entries', data);
+    return response.data;
   },
 
-  async exportTrialBalance(date: string) {
-    const response = await api.get<Blob>('/accounting/exports/trial-balance', {
-      params: { date },
-      responseType: 'blob',
-    });
-    
-    const blob = response instanceof Blob ? response : new Blob([response as unknown as BlobPart]);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `trial-balance-${date}.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+  update: async (id: string, data: Partial<JournalEntry>) => {
+    const response = await api.patch(`/journal-entries/${id}`, data);
+    return response.data;
   },
 
-  async exportForITR(financialYear: string) {
-    const response = await api.get('/accounting/exports/itr', {
-      params: { financialYear },
-    });
-    return response;
+  post: async (id: string) => {
+    const response = await api.post(`/journal-entries/${id}/post`);
+    return response.data;
   },
 
-  // ============ BANK ACCOUNTS ============
-  async getBankAccounts() {
-    const response = await api.get('/accounting/bank-accounts');
-    return response;
+  void: async (id: string, voidReason: string) => {
+    const response = await api.post(`/journal-entries/${id}/void`, { voidReason });
+    return response.data;
   },
 
-  async getBankAccountById(id: string) {
-    const response = await api.get(`/accounting/bank-accounts/${id}`);
-    return response;
+  delete: async (id: string) => {
+    const response = await api.delete(`/journal-entries/${id}`);
+    return response.data;
   },
+};
 
-  async createBankAccount(data: any) {
-    const response = await api.post('/accounting/bank-accounts', data);
-    return response;
-  },
-
-  // ============ BANK STATEMENTS & RECONCILIATION ============
-  async uploadBankStatement(bankAccountId: string, file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('bankAccountId', bankAccountId);
-    const response = await api.post('/accounting/bank-statements/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return response;
-  },
-
-  async getUnreconciledTransactions(bankAccountId: string) {
-    const response = await api.get(`/accounting/bank-statements/unreconciled/${bankAccountId}`);
-    return response;
-  },
-
-  async reconcileTransaction(statementId: string, journalEntryId: string) {
-    const response = await api.post(`/accounting/bank-statements/${statementId}/reconcile`, {
-      journalEntryId,
-    });
-    return response;
-  },
+export default {
+  accounts: accountsService,
+  expenses: expensesService,
+  budgets: budgetsService,
+  journalEntries: journalEntriesService,
 };

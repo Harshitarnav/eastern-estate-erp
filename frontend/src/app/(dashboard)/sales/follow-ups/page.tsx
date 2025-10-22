@@ -102,7 +102,7 @@ export default function FollowUpsPage() {
     }
   };
 
-  const filteredFollowUps = followUps.filter(followUp => {
+  const filteredFollowUps = ((followUps || [])).filter(followUp => {
     const followUpDate = new Date(followUp.followUpDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -126,14 +126,14 @@ export default function FollowUpsPage() {
   const stats = useMemo(() => {
     const today = new Date().toDateString();
     return {
-      total: followUps.length,
-      today: followUps.filter(f => new Date(f.followUpDate).toDateString() === today).length,
-      successful: followUps.filter(f =>
+      total: (followUps || []).length,
+      today: ((followUps || [])).filter(f => new Date(f.followUpDate).toDateString() === today).length,
+      successful: ((followUps || [])).filter(f =>
         [FollowUpOutcome.CONVERTED, FollowUpOutcome.INTERESTED].includes(
           f.outcome as FollowUpOutcome
         )
       ).length,
-      pending: followUps.filter(f => f.nextFollowUpDate && new Date(f.nextFollowUpDate) > new Date()).length,
+      pending: ((followUps || [])).filter(f => f.nextFollowUpDate && new Date(f.nextFollowUpDate) > new Date()).length,
     };
   }, [followUps]);
 
@@ -313,7 +313,7 @@ export default function FollowUpsPage() {
 
       {/* Follow-ups List */}
       <div className="space-y-4">
-        {filteredFollowUps.length === 0 ? (
+        {(filteredFollowUps || []).length === 0 ? (
           <Card>
             <CardContent className="pt-12 pb-12 text-center">
               <Phone className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -324,7 +324,7 @@ export default function FollowUpsPage() {
             </CardContent>
           </Card>
         ) : (
-          filteredFollowUps.map((followUp) => {
+          ((filteredFollowUps || [])).map((followUp) => {
             const leadName =
               followUp.lead?.firstName || followUp.lead?.lastName
                 ? `${followUp.lead?.firstName ?? ''} ${followUp.lead?.lastName ?? ''}`.trim()

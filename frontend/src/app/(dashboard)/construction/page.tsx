@@ -54,13 +54,13 @@ export default function ConstructionDashboard() {
     }).format(amount);
   };
 
-  const activeProjects = projects.filter(p => p.status === 'IN_PROGRESS');
-  const avgProgress = projects.length > 0 
-    ? Math.round(projects.reduce((sum, p) => sum + (p.overallProgress || 0), 0) / projects.length)
+  const activeProjects = ((projects || [])).filter(p => p.status === 'IN_PROGRESS');
+  const avgProgress = (projects || []).length > 0 
+    ? Math.round((projects || []).reduce((sum, p) => sum + (p.overallProgress || 0), 0) / (projects || []).length)
     : 0;
-  const lowStockMaterials = materials.filter(m => (m.currentStock || 0) <= (m.minimumStock || 0));
-  const pendingPOs = purchaseOrders.filter(po => po.status === 'PENDING' || po.status === 'PENDING_APPROVAL');
-  const activeVendors = vendors.filter(v => v.isActive);
+  const lowStockMaterials = ((materials || [])).filter(m => (m.currentStock || 0) <= (m.minimumStock || 0));
+  const pendingPOs = ((purchaseOrders || [])).filter(po => po.status === 'PENDING' || po.status === 'PENDING_APPROVAL');
+  const activeVendors = ((vendors || [])).filter(v => v.isActive);
 
   if (loading) {
     return (
@@ -77,16 +77,26 @@ export default function ConstructionDashboard() {
     <div className="p-6">
       {/* Eastern Estate Branded Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-14 h-14 rounded-lg flex items-center justify-center text-3xl" style={{ backgroundColor: '#A8211B' }}>
-            🏗️
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-lg flex items-center justify-center text-3xl" style={{ backgroundColor: '#A8211B' }}>
+              🏗️
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold" style={{ color: '#A8211B' }}>
+                Construction & Purchases
+              </h1>
+              <p className="text-sm text-gray-500">Eastern Estate ERP System - Site Management Dashboard</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-4xl font-bold" style={{ color: '#A8211B' }}>
-              Construction & Purchases
-            </h1>
-            <p className="text-sm text-gray-500">Eastern Estate ERP System - Site Management Dashboard</p>
-          </div>
+          <button
+            onClick={() => router.push('/construction/projects/new')}
+            className="px-6 py-3 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg flex items-center gap-2"
+            style={{ backgroundColor: '#A8211B' }}
+          >
+            <span className="text-2xl">➕</span>
+            Create New Project
+          </button>
         </div>
         <p className="text-gray-600 text-lg">
           Comprehensive overview of all construction projects, materials, vendors, and purchases
@@ -100,8 +110,8 @@ export default function ConstructionDashboard() {
             <p className="text-sm font-medium text-gray-600">Total Projects</p>
             <div className="text-2xl">🏗️</div>
           </div>
-          <p className="text-3xl font-bold text-gray-900">{projects.length}</p>
-          <p className="text-xs text-gray-500 mt-1">{activeProjects.length} active</p>
+          <p className="text-3xl font-bold text-gray-900">{(projects || []).length}</p>
+          <p className="text-xs text-gray-500 mt-1">{(activeProjects || []).length} active</p>
         </div>
 
         <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-lg p-5">
@@ -109,7 +119,7 @@ export default function ConstructionDashboard() {
             <p className="text-sm font-medium">Active Projects</p>
             <div className="text-2xl">✅</div>
           </div>
-          <p className="text-3xl font-bold">{activeProjects.length}</p>
+          <p className="text-3xl font-bold">{(activeProjects || []).length}</p>
           <p className="text-xs text-green-100 mt-1">In Progress</p>
         </div>
 
@@ -127,8 +137,8 @@ export default function ConstructionDashboard() {
             <p className="text-sm font-medium">Materials</p>
             <div className="text-2xl">🧱</div>
           </div>
-          <p className="text-3xl font-bold">{materials.length}</p>
-          <p className="text-xs text-orange-100 mt-1">{lowStockMaterials.length} low stock</p>
+          <p className="text-3xl font-bold">{(materials || []).length}</p>
+          <p className="text-xs text-orange-100 mt-1">{(lowStockMaterials || []).length} low stock</p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-5">
@@ -136,8 +146,8 @@ export default function ConstructionDashboard() {
             <p className="text-sm font-medium">Purchase Orders</p>
             <div className="text-2xl">🛒</div>
           </div>
-          <p className="text-3xl font-bold">{purchaseOrders.length}</p>
-          <p className="text-xs text-purple-100 mt-1">{pendingPOs.length} pending</p>
+          <p className="text-3xl font-bold">{(purchaseOrders || []).length}</p>
+          <p className="text-xs text-purple-100 mt-1">{(pendingPOs || []).length} pending</p>
         </div>
       </div>
 
@@ -157,7 +167,7 @@ export default function ConstructionDashboard() {
           <div className="flex gap-4 text-sm">
             <div>
               <p className="text-gray-500">Properties</p>
-              <p className="font-bold text-gray-900">{properties.length}</p>
+              <p className="font-bold text-gray-900">{(properties || []).length}</p>
             </div>
             <div>
               <p className="text-gray-500">Quick Access</p>
@@ -174,9 +184,9 @@ export default function ConstructionDashboard() {
             <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-orange-100 group-hover:bg-orange-500 group-hover:text-white transition-all">
               🧱
             </div>
-            {lowStockMaterials.length > 0 && (
+            {(lowStockMaterials || []).length > 0 && (
               <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {lowStockMaterials.length} Alert{lowStockMaterials.length > 1 ? 's' : ''}
+                {(lowStockMaterials || []).length} Alert{(lowStockMaterials || []).length > 1 ? 's' : ''}
               </span>
             )}
           </div>
@@ -185,11 +195,11 @@ export default function ConstructionDashboard() {
           <div className="flex gap-4 text-sm">
             <div>
               <p className="text-gray-500">Total Items</p>
-              <p className="font-bold text-gray-900">{materials.length}</p>
+              <p className="font-bold text-gray-900">{(materials || []).length}</p>
             </div>
             <div>
               <p className="text-gray-500">Low Stock</p>
-              <p className="font-bold text-red-600">{lowStockMaterials.length}</p>
+              <p className="font-bold text-red-600">{(lowStockMaterials || []).length}</p>
             </div>
           </div>
         </button>
@@ -202,9 +212,9 @@ export default function ConstructionDashboard() {
             <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-purple-100 group-hover:bg-purple-500 group-hover:text-white transition-all">
               🛒
             </div>
-            {pendingPOs.length > 0 && (
+            {(pendingPOs || []).length > 0 && (
               <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-                {pendingPOs.length} Pending
+                {(pendingPOs || []).length} Pending
               </span>
             )}
           </div>
@@ -213,11 +223,11 @@ export default function ConstructionDashboard() {
           <div className="flex gap-4 text-sm">
             <div>
               <p className="text-gray-500">Total POs</p>
-              <p className="font-bold text-gray-900">{purchaseOrders.length}</p>
+              <p className="font-bold text-gray-900">{(purchaseOrders || []).length}</p>
             </div>
             <div>
               <p className="text-gray-500">Pending</p>
-              <p className="font-bold text-yellow-600">{pendingPOs.length}</p>
+              <p className="font-bold text-yellow-600">{(pendingPOs || []).length}</p>
             </div>
           </div>
         </button>
@@ -231,7 +241,7 @@ export default function ConstructionDashboard() {
               🤝
             </div>
             <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-              {activeVendors.length} Active
+              {(activeVendors || []).length} Active
             </span>
           </div>
           <h3 className="text-xl font-bold mb-2 text-gray-900">Vendors</h3>
@@ -239,12 +249,12 @@ export default function ConstructionDashboard() {
           <div className="flex gap-4 text-sm">
             <div>
               <p className="text-gray-500">Total</p>
-              <p className="font-bold text-gray-900">{vendors.length}</p>
+              <p className="font-bold text-gray-900">{(vendors || []).length}</p>
             </div>
             <div>
               <p className="text-gray-500">Outstanding</p>
               <p className="font-bold text-red-600">
-                {formatCurrency(vendors.reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
+                {formatCurrency((vendors || []).reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
               </p>
             </div>
           </div>
@@ -264,7 +274,7 @@ export default function ConstructionDashboard() {
           <div className="flex gap-4 text-sm">
             <div>
               <p className="text-gray-500">Total</p>
-              <p className="font-bold text-gray-900">{projects.length}</p>
+              <p className="font-bold text-gray-900">{(projects || []).length}</p>
             </div>
             <div>
               <p className="text-gray-500">Progress</p>
@@ -289,7 +299,7 @@ export default function ConstructionDashboard() {
           </button>
         </div>
 
-        {activeProjects.length === 0 ? (
+        {(activeProjects || []).length === 0 ? (
           <div className="text-center py-12">
             <p className="text-4xl mb-3">🏗️</p>
             <p className="text-gray-600">No active construction projects</p>
@@ -348,18 +358,18 @@ export default function ConstructionDashboard() {
       </div>
 
       {/* Alerts & Notifications */}
-      {(lowStockMaterials.length > 0 || pendingPOs.length > 0) && (
+      {((lowStockMaterials || []).length > 0 || (pendingPOs || []).length > 0) && (
         <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
           <div className="flex items-start gap-3">
             <div className="text-3xl">⚠️</div>
             <div className="flex-1">
               <h3 className="font-bold text-yellow-900 mb-2">Attention Required</h3>
               <ul className="space-y-1 text-sm text-yellow-800">
-                {lowStockMaterials.length > 0 && (
-                  <li>• {lowStockMaterials.length} material{lowStockMaterials.length > 1 ? 's' : ''} running low on stock</li>
+                {(lowStockMaterials || []).length > 0 && (
+                  <li>• {(lowStockMaterials || []).length} material{(lowStockMaterials || []).length > 1 ? 's' : ''} running low on stock</li>
                 )}
-                {pendingPOs.length > 0 && (
-                  <li>• {pendingPOs.length} purchase order{pendingPOs.length > 1 ? 's' : ''} pending approval/action</li>
+                {(pendingPOs || []).length > 0 && (
+                  <li>• {(pendingPOs || []).length} purchase order{(pendingPOs || []).length > 1 ? 's' : ''} pending approval/action</li>
                 )}
               </ul>
             </div>
@@ -383,24 +393,24 @@ export default function ConstructionDashboard() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>In Progress:</span>
-                <span className="font-bold text-green-600">{activeProjects.length}</span>
+                <span className="font-bold text-green-600">{(activeProjects || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Planning:</span>
                 <span className="font-bold text-blue-600">
-                  {projects.filter(p => p.status === 'PLANNING').length}
+                  {((projects || [])).filter(p => p.status === 'PLANNING').length}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>On Hold:</span>
                 <span className="font-bold text-yellow-600">
-                  {projects.filter(p => p.status === 'ON_HOLD').length}
+                  {((projects || [])).filter(p => p.status === 'ON_HOLD').length}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Completed:</span>
                 <span className="font-bold text-gray-600">
-                  {projects.filter(p => p.status === 'COMPLETED').length}
+                  {((projects || [])).filter(p => p.status === 'COMPLETED').length}
                 </span>
               </div>
             </div>
@@ -411,22 +421,22 @@ export default function ConstructionDashboard() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Total Items:</span>
-                <span className="font-bold">{materials.length}</span>
+                <span className="font-bold">{(materials || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Active:</span>
                 <span className="font-bold text-green-600">
-                  {materials.filter(m => m.isActive).length}
+                  {((materials || [])).filter(m => m.isActive).length}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Low Stock:</span>
-                <span className="font-bold text-red-600">{lowStockMaterials.length}</span>
+                <span className="font-bold text-red-600">{(lowStockMaterials || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Total Value:</span>
                 <span className="font-bold">
-                  {formatCurrency(materials.reduce((sum, m) => sum + ((m.currentStock || 0) * (m.unitPrice || 0)), 0))}
+                  {formatCurrency((materials || []).reduce((sum, m) => sum + ((m.currentStock || 0) * (m.unitPrice || 0)), 0))}
                 </span>
               </div>
             </div>
@@ -437,23 +447,23 @@ export default function ConstructionDashboard() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Total Vendors:</span>
-                <span className="font-bold">{vendors.length}</span>
+                <span className="font-bold">{(vendors || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Active:</span>
-                <span className="font-bold text-green-600">{activeVendors.length}</span>
+                <span className="font-bold text-green-600">{(activeVendors || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Outstanding:</span>
                 <span className="font-bold text-red-600">
-                  {formatCurrency(vendors.reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
+                  {formatCurrency((vendors || []).reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Avg Rating:</span>
                 <span className="font-bold">
-                  {vendors.length > 0 
-                    ? (vendors.reduce((sum, v) => sum + (v.rating || 0), 0) / vendors.length).toFixed(1)
+                  {(vendors || []).length > 0 
+                    ? ((vendors || []).reduce((sum, v) => sum + (v.rating || 0), 0) / (vendors || []).length).toFixed(1)
                     : '0.0'
                   }⭐
                 </span>
@@ -466,22 +476,22 @@ export default function ConstructionDashboard() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span>Total POs:</span>
-                <span className="font-bold">{purchaseOrders.length}</span>
+                <span className="font-bold">{(purchaseOrders || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Pending:</span>
-                <span className="font-bold text-yellow-600">{pendingPOs.length}</span>
+                <span className="font-bold text-yellow-600">{(pendingPOs || []).length}</span>
               </div>
               <div className="flex justify-between">
                 <span>Approved:</span>
                 <span className="font-bold text-blue-600">
-                  {purchaseOrders.filter(po => po.status === 'APPROVED' || po.status === 'SENT').length}
+                  {((purchaseOrders || [])).filter(po => po.status === 'APPROVED' || po.status === 'SENT').length}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span>Total Value:</span>
                 <span className="font-bold">
-                  {formatCurrency(purchaseOrders.reduce((sum, po) => sum + (po.totalAmount || 0), 0))}
+                  {formatCurrency((purchaseOrders || []).reduce((sum, po) => sum + (po.totalAmount || 0), 0))}
                 </span>
               </div>
             </div>

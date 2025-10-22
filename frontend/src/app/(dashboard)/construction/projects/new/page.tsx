@@ -130,7 +130,7 @@ export default function NewConstructionProjectPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="">Select Property</option>
-              {properties.map(property => (
+              {((properties || [])).map(property => (
                 <option key={property.id} value={property.id}>
                   {property.name}
                 </option>
@@ -151,7 +151,7 @@ export default function NewConstructionProjectPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-100"
             >
               <option value="">Select Tower</option>
-              {towers.map(tower => (
+              {((towers || [])).map(tower => (
                 <option key={tower.id} value={tower.id}>
                   {tower.name}
                 </option>
@@ -172,7 +172,7 @@ export default function NewConstructionProjectPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent disabled:bg-gray-100"
             >
               <option value="">Select Flat</option>
-              {flats.map(flat => (
+              {((flats || [])).map(flat => (
                 <option key={flat.id} value={flat.id}>
                   {flat.flatNumber} - {flat.bhkType}
                 </option>
@@ -275,7 +275,7 @@ export default function NewConstructionProjectPage() {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="">Select Project Manager</option>
-              {employees.map(employee => (
+              {((employees || [])).map(employee => (
                 <option key={employee.id} value={employee.id}>
                   {employee.firstName} {employee.lastName} - {employee.position}
                 </option>

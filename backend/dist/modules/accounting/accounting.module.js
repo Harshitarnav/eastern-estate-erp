@@ -9,14 +9,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AccountingModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const platform_express_1 = require("@nestjs/platform-express");
-const accounting_controller_1 = require("./accounting.controller");
-const accounting_service_1 = require("./accounting.service");
 const account_entity_1 = require("./entities/account.entity");
 const journal_entry_entity_1 = require("./entities/journal-entry.entity");
 const journal_entry_line_entity_1 = require("./entities/journal-entry-line.entity");
-const bank_account_entity_1 = require("./entities/bank-account.entity");
-const bank_statement_entity_1 = require("./entities/bank-statement.entity");
+const expense_entity_1 = require("./entities/expense.entity");
+const budget_entity_1 = require("./entities/budget.entity");
+const fiscal_year_entity_1 = require("./entities/fiscal-year.entity");
+const accounts_service_1 = require("./accounts.service");
+const expenses_service_1 = require("./expenses.service");
+const budgets_service_1 = require("./budgets.service");
+const journal_entries_service_1 = require("./journal-entries.service");
+const accounts_controller_1 = require("./accounts.controller");
+const expenses_controller_1 = require("./expenses.controller");
+const budgets_controller_1 = require("./budgets.controller");
+const journal_entries_controller_1 = require("./journal-entries.controller");
 let AccountingModule = class AccountingModule {
 };
 exports.AccountingModule = AccountingModule;
@@ -27,18 +33,29 @@ exports.AccountingModule = AccountingModule = __decorate([
                 account_entity_1.Account,
                 journal_entry_entity_1.JournalEntry,
                 journal_entry_line_entity_1.JournalEntryLine,
-                bank_account_entity_1.BankAccount,
-                bank_statement_entity_1.BankStatement,
+                expense_entity_1.Expense,
+                budget_entity_1.Budget,
+                fiscal_year_entity_1.FiscalYear,
             ]),
-            platform_express_1.MulterModule.register({
-                limits: {
-                    fileSize: 10 * 1024 * 1024,
-                },
-            }),
         ],
-        controllers: [accounting_controller_1.AccountingController],
-        providers: [accounting_service_1.AccountingService],
-        exports: [accounting_service_1.AccountingService],
+        controllers: [
+            accounts_controller_1.AccountsController,
+            expenses_controller_1.ExpensesController,
+            budgets_controller_1.BudgetsController,
+            journal_entries_controller_1.JournalEntriesController,
+        ],
+        providers: [
+            accounts_service_1.AccountsService,
+            expenses_service_1.ExpensesService,
+            budgets_service_1.BudgetsService,
+            journal_entries_service_1.JournalEntriesService,
+        ],
+        exports: [
+            accounts_service_1.AccountsService,
+            expenses_service_1.ExpensesService,
+            budgets_service_1.BudgetsService,
+            journal_entries_service_1.JournalEntriesService,
+        ],
     })
 ], AccountingModule);
 //# sourceMappingURL=accounting.module.js.map

@@ -18,7 +18,6 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const property_entity_1 = require("./entities/property.entity");
-const project_entity_1 = require("../projects/entities/project.entity");
 const tower_entity_1 = require("../towers/entities/tower.entity");
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
@@ -27,9 +26,8 @@ const dto_1 = require("./dto");
 const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 const flat_generation_util_1 = require("../towers/utils/flat-generation.util");
 let PropertiesService = PropertiesService_1 = class PropertiesService {
-    constructor(propertiesRepository, projectsRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, dataSource) {
+    constructor(propertiesRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, dataSource) {
         this.propertiesRepository = propertiesRepository;
-        this.projectsRepository = projectsRepository;
         this.towersRepository = towersRepository;
         this.flatsRepository = flatsRepository;
         this.customersRepository = customersRepository;
@@ -44,15 +42,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         if (existingProperty) {
             throw new common_1.BadRequestException(`Property with code ${createPropertyDto.propertyCode} already exists`);
         }
-        if (!createPropertyDto.projectId) {
-            throw new common_1.BadRequestException('projectId is required to create a property');
-        }
-        const project = await this.projectsRepository.findOne({
-            where: { id: createPropertyDto.projectId },
-        });
-        if (!project) {
-            throw new common_1.NotFoundException(`Project with ID ${createPropertyDto.projectId} not found`);
-        }
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
@@ -63,7 +52,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             const totalUnits = Math.max(createPropertyDto.numberOfUnits ?? towersCount, 1);
             const property = propertyRepository.create({
                 ...normalizedPayload,
-                projectId: project.id,
                 status: normalizedPayload.status ?? 'Active',
                 isActive: normalizedPayload.isActive ?? true,
                 isFeatured: normalizedPayload.isFeatured ?? false,
@@ -80,7 +68,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             await queryRunner.commitTransaction();
             const hydratedProperty = await this.propertiesRepository.findOne({
                 where: { id: savedProperty.id },
-                relations: ['project'],
             });
             return this.mapToResponseDto(hydratedProperty ?? savedProperty);
         }
@@ -97,10 +84,9 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         const activeFilter = isActive ?? true;
         const queryBuilder = this.propertiesRepository
             .createQueryBuilder('property')
-            .leftJoinAndSelect('property.project', 'project')
             .where('property.isActive = :isActive', { isActive: activeFilter });
         if (search) {
-            queryBuilder.andWhere('(property.name ILIKE :search OR property.propertyCode ILIKE :search OR property.address ILIKE :search OR property.reraNumber ILIKE :search OR project.projectCode ILIKE :search)', { search: `%${search}%` });
+            queryBuilder.andWhere('(property.name ILIKE :search OR property.propertyCode ILIKE :search OR property.address ILIKE :search OR property.reraNumber ILIKE :search)', { search: `%${search}%` });
         }
         if (city) {
             queryBuilder.andWhere('property.city ILIKE :city', { city: `%${city}%` });
@@ -303,7 +289,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
     async findOne(id) {
         const property = await this.propertiesRepository.findOne({
             where: { id, isActive: true },
-            relations: ['towers', 'project'],
+            relations: ['towers'],
         });
         if (!property) {
             throw new common_1.NotFoundException(`Property with ID ${id} not found`);
@@ -313,7 +299,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
     async findByCode(code) {
         const property = await this.propertiesRepository.findOne({
             where: { propertyCode: code, isActive: true },
-            relations: ['project'],
         });
         if (!property) {
             throw new common_1.NotFoundException(`Property with code ${code} not found`);
@@ -323,7 +308,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
     async getHierarchy(id) {
         const property = await this.propertiesRepository.findOne({
             where: { id, isActive: true },
-            relations: ['project'],
         });
         if (!property) {
             throw new common_1.NotFoundException(`Property with ID ${id} not found`);
@@ -381,9 +365,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             city: property.city,
             state: property.state,
             pincode: property.pincode,
-            projectId: property.projectId ?? undefined,
-            projectCode: property.project?.projectCode,
-            projectName: property.project?.name,
             totalArea: property.totalArea ?? undefined,
             builtUpArea: property.builtUpArea ?? undefined,
             expectedRevenue: property.expectedRevenue ?? undefined,
@@ -410,25 +391,13 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
                 throw new common_1.BadRequestException(`Property with code ${updatePropertyDto.propertyCode} already exists`);
             }
         }
-        if (updatePropertyDto.projectId) {
-            const project = await this.projectsRepository.findOne({
-                where: { id: updatePropertyDto.projectId },
-            });
-            if (!project) {
-                throw new common_1.NotFoundException(`Project with ID ${updatePropertyDto.projectId} not found`);
-            }
-        }
         const normalizedUpdate = this.normalizePropertyPayload(updatePropertyDto);
         Object.assign(property, normalizedUpdate);
         if (userId) {
             property.updatedBy = userId;
         }
         const updatedProperty = await this.propertiesRepository.save(property);
-        const hydratedProperty = await this.propertiesRepository.findOne({
-            where: { id: updatedProperty.id },
-            relations: ['project'],
-        });
-        return this.mapToResponseDto(hydratedProperty ?? updatedProperty);
+        return this.mapToResponseDto(updatedProperty);
     }
     async remove(id) {
         const property = await this.propertiesRepository.findOne({
@@ -454,11 +423,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         const updatedProperty = await this.propertiesRepository.save(property);
         await this.towersRepository.update({ propertyId: id }, { isActive: updatedProperty.isActive });
         await this.flatsRepository.update({ propertyId: id }, { isActive: updatedProperty.isActive });
-        const hydratedProperty = await this.propertiesRepository.findOne({
-            where: { id: updatedProperty.id },
-            relations: ['project'],
-        });
-        return this.mapToResponseDto(hydratedProperty ?? updatedProperty);
+        return this.mapToResponseDto(updatedProperty);
     }
     async getStats() {
         const totalProperties = await this.propertiesRepository.count({
@@ -481,9 +446,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         };
     }
     async mapToResponseDto(property) {
-        const project = property.project ?? (property.projectId
-            ? await this.projectsRepository.findOne({ where: { id: property.projectId } })
-            : null);
         const towersCountResult = await this.propertiesRepository.query('SELECT COUNT(*) as count FROM towers WHERE property_id = $1', [property.id]);
         const towersCount = parseInt(towersCountResult[0]?.count || '0', 10);
         const flatsCountResult = await this.propertiesRepository.query(`SELECT
@@ -538,9 +500,6 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             updatedBy: property.updatedBy,
             createdAt: property.createdAt,
             updatedAt: property.updatedAt,
-            projectId: property.projectId ?? project?.id,
-            projectCode: project?.projectCode,
-            projectName: project?.name,
             towers: towersCount,
             totalFlats,
             soldFlats,
@@ -932,13 +891,11 @@ exports.PropertiesService = PropertiesService;
 exports.PropertiesService = PropertiesService = PropertiesService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(property_entity_1.Property)),
-    __param(1, (0, typeorm_1.InjectRepository)(project_entity_1.Project)),
-    __param(2, (0, typeorm_1.InjectRepository)(tower_entity_1.Tower)),
-    __param(3, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
-    __param(4, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
-    __param(5, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __param(1, (0, typeorm_1.InjectRepository)(tower_entity_1.Tower)),
+    __param(2, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
+    __param(3, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
+    __param(4, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

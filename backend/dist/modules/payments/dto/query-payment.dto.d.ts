@@ -1,8 +1,8 @@
-import { PaymentType, PaymentMode, PaymentStatus } from '../entities/payment.entity';
+import { PaymentType, PaymentMethod, PaymentStatus } from '../entities/payment.entity';
 export declare class QueryPaymentDto {
     search?: string;
     paymentType?: PaymentType;
-    paymentMode?: PaymentMode;
+    paymentMode?: PaymentMethod;
     status?: PaymentStatus;
     bookingId?: string;
     customerId?: string;

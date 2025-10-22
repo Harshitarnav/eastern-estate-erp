@@ -60,7 +60,7 @@ let AccountingService = class AccountingService {
                 return this.journalEntryLineRepository.create({
                     ...line,
                     journalEntryId: entryResult.id,
-                    lineNumber: index + 1,
+                    line_number: index + 1,
                 });
             });
             await this.journalEntryLineRepository.save(entryLines);
@@ -78,7 +78,7 @@ let AccountingService = class AccountingService {
         return this.journalEntryLineRepository.find({
             where: { journalEntryId: entryId },
             relations: ['account'],
-            order: { lineNumber: 'ASC' },
+            order: { id: 'ASC' },
         });
     }
     async updateAccountBalances(lines) {
@@ -108,7 +108,7 @@ let AccountingService = class AccountingService {
             .andWhere('entry.entryDate BETWEEN :startDate AND :endDate', { startDate, endDate })
             .andWhere('entry.status = :status', { status: journal_entry_entity_1.JournalEntryStatus.POSTED })
             .orderBy('entry.entryDate', 'ASC')
-            .addOrderBy('line.lineNumber', 'ASC')
+            .addOrderBy('line.line_number', 'ASC')
             .getMany();
         let runningBalance = account.openingBalance;
         const ledgerEntries = entries.map((line) => {

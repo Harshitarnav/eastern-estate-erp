@@ -97,11 +97,11 @@ export default function ConstructionInventoryPage() {
   };
 
   const getTowersByProperty = (propertyId: string) => {
-    return towers.filter(t => t.property?.id === propertyId);
+    return ((towers || [])).filter(t => t.property?.id === propertyId);
   };
 
   const getFlatsByTower = (towerId: string) => {
-    return flats.filter(f => f.tower?.id === towerId);
+    return ((flats || [])).filter(f => f.tower?.id === towerId);
   };
 
   if (loading) {
@@ -142,7 +142,7 @@ export default function ConstructionInventoryPage() {
             <p className="text-sm font-medium">Total Properties</p>
             <Building2 className="w-6 h-6" />
           </div>
-          <p className="text-3xl font-bold">{properties.length}</p>
+          <p className="text-3xl font-bold">{(properties || []).length}</p>
         </div>
 
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-5">
@@ -150,7 +150,7 @@ export default function ConstructionInventoryPage() {
             <p className="text-sm font-medium">Total Towers</p>
             <Building2 className="w-6 h-6" />
           </div>
-          <p className="text-3xl font-bold">{towers.length}</p>
+          <p className="text-3xl font-bold">{(towers || []).length}</p>
         </div>
 
         <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-lg p-5">
@@ -158,7 +158,7 @@ export default function ConstructionInventoryPage() {
             <p className="text-sm font-medium">Total Units</p>
             <Home className="w-6 h-6" />
           </div>
-          <p className="text-3xl font-bold">{flats.length}</p>
+          <p className="text-3xl font-bold">{(flats || []).length}</p>
         </div>
       </div>
 
@@ -168,14 +168,14 @@ export default function ConstructionInventoryPage() {
           Construction Hierarchy
         </h2>
 
-        {properties.length === 0 ? (
+        {(properties || []).length === 0 ? (
           <div className="text-center py-12">
             <p className="text-4xl mb-3">🏗️</p>
             <p className="text-gray-600">No properties found</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {properties.map((property) => {
+            {((properties || [])).map((property) => {
               const propertyTowers = getTowersByProperty(property.id);
               const isExpanded = expandedProperties.has(property.id);
 
@@ -197,7 +197,7 @@ export default function ConstructionInventoryPage() {
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">{property.name}</h3>
                           <p className="text-sm text-gray-600">
-                            {property.propertyCode} • {property.location} • {propertyTowers.length} Tower(s)
+                            {property.propertyCode} • {property.location} • {(propertyTowers || []).length} Tower(s)
                           </p>
                         </div>
                       </div>
@@ -219,13 +219,13 @@ export default function ConstructionInventoryPage() {
                   {/* Towers */}
                   {isExpanded && (
                     <div className="bg-white">
-                      {propertyTowers.length === 0 ? (
+                      {(propertyTowers || []).length === 0 ? (
                         <div className="p-4 text-center text-gray-500">
                           No towers defined for this property
                         </div>
                       ) : (
                         <div className="space-y-2 p-2">
-                          {propertyTowers.map((tower) => {
+                          {((propertyTowers || [])).map((tower) => {
                             const towerFlats = getFlatsByTower(tower.id);
                             const isTowerExpanded = expandedTowers.has(tower.id);
 
@@ -247,7 +247,7 @@ export default function ConstructionInventoryPage() {
                                       <div>
                                         <h4 className="font-bold text-gray-900">{tower.name}</h4>
                                         <p className="text-xs text-gray-600">
-                                          Tower {tower.towerNumber} • {towerFlats.length} Unit(s)
+                                          Tower {tower.towerNumber} • {(towerFlats || []).length} Unit(s)
                                         </p>
                                       </div>
                                     </div>
@@ -280,13 +280,13 @@ export default function ConstructionInventoryPage() {
                                 {/* Flats */}
                                 {isTowerExpanded && (
                                   <div className="bg-white p-2">
-                                    {towerFlats.length === 0 ? (
+                                    {(towerFlats || []).length === 0 ? (
                                       <div className="p-3 text-center text-gray-500 text-sm">
                                         No units defined for this tower
                                       </div>
                                     ) : (
                                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                                        {towerFlats.map((flat) => (
+                                        {((towerFlats || [])).map((flat) => (
                                           <div
                                             key={flat.id}
                                             className="border border-gray-200 rounded-lg p-3 hover:border-green-500 hover:bg-green-50 transition-all"

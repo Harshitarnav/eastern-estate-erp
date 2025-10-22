@@ -32,6 +32,12 @@ export declare class Booking {
     paidAmount: number;
     balanceAmount: number;
     tokenPaymentMode: string;
+    rtgsNumber: string;
+    utrNumber: string;
+    chequeNumber: string;
+    chequeDate: Date;
+    paymentBank: string;
+    paymentBranch: string;
     agreementNumber: string;
     agreementDate: Date;
     agreementSignedDate: Date;

@@ -130,7 +130,7 @@ export default function EditPropertyPage() {
       return projects;
     }
 
-    const exists = projects.some((project) => project.id === property.projectId);
+    const exists = ((projects || [])).some((project) => project.id === property.projectId);
     if (exists) {
       return projects;
     }

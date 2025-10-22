@@ -26,6 +26,11 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
         this.leadRepository = leadRepository;
         this.logger = new common_1.Logger(FollowUpService_1.name);
     }
+    ensureDate(date) {
+        if (!date)
+            return undefined;
+        return typeof date === 'string' ? new Date(date) : date;
+    }
     async create(createFollowUpDto) {
         this.logger.log(`Creating followup for lead ${createFollowUpDto.leadId}`);
         const lead = await this.leadRepository.findOne({
@@ -41,17 +46,17 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
     }
     async updateLeadAfterFollowUp(lead, followUpDto) {
         const updateData = {
-            lastContactedAt: followUpDto.followUpDate,
+            lastContactedAt: this.ensureDate(followUpDto.followUpDate),
             lastFollowUpFeedback: followUpDto.feedback,
             totalFollowUps: (lead.totalFollowUps || 0) + 1,
             reminderSent: false,
         };
         if (followUpDto.nextFollowUpDate) {
-            updateData.nextFollowUpDate = followUpDto.nextFollowUpDate;
+            updateData.nextFollowUpDate = this.ensureDate(followUpDto.nextFollowUpDate);
         }
         if (followUpDto.isSiteVisit) {
             updateData.hasSiteVisit = true;
-            updateData.lastSiteVisitDate = followUpDto.followUpDate;
+            updateData.lastSiteVisitDate = this.ensureDate(followUpDto.followUpDate);
             updateData.totalSiteVisits = (lead.totalSiteVisits || 0) + 1;
             updateData.siteVisitFeedback = followUpDto.siteVisitFeedback;
         }

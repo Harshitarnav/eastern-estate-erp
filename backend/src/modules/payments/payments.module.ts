@@ -1,15 +1,37 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PaymentsController } from './payments.controller';
-import { PaymentsService } from './payments.service';
-import { PaymentScheduleService } from './payment-schedule.service';
 import { Payment } from './entities/payment.entity';
-import { PaymentSchedule } from './entities/payment-schedule.entity';
+import { PaymentInstallment } from './entities/payment-installment.entity';
+import { PaymentRefund } from './entities/payment-refund.entity';
+import { PaymentsService } from './payments.service';
+import { InstallmentsService } from './installments.service';
+import { RefundsService } from './refunds.service';
+import { PaymentsController } from './payments.controller';
+import { InstallmentsController } from './installments.controller';
+import { RefundsController } from './refunds.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Payment, PaymentSchedule])],
-  controllers: [PaymentsController],
-  providers: [PaymentsService, PaymentScheduleService],
-  exports: [PaymentsService, PaymentScheduleService],
+  imports: [
+    TypeOrmModule.forFeature([
+      Payment,
+      PaymentInstallment,
+      PaymentRefund,
+    ]),
+  ],
+  controllers: [
+    PaymentsController,
+    InstallmentsController,
+    RefundsController,
+  ],
+  providers: [
+    PaymentsService,
+    InstallmentsService,
+    RefundsService,
+  ],
+  exports: [
+    PaymentsService,
+    InstallmentsService,
+    RefundsService,
+  ],
 })
 export class PaymentsModule {}

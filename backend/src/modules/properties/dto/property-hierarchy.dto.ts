@@ -84,8 +84,8 @@ export class PropertyHierarchyDto {
   expectedRevenue?: number;
   bhkTypes?: string[] | null;
   amenities?: any;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
   towers: TowerHierarchyDto[];
   stats: PropertyHierarchyStatsDto;
 }

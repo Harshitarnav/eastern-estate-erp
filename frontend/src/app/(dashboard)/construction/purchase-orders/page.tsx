@@ -95,30 +95,30 @@ export default function PurchaseOrdersPage() {
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600 mb-1">Total POs</p>
-          <p className="text-2xl font-bold text-gray-900">{orders.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{(orders || []).length}</p>
         </div>
         <div className="bg-yellow-50 rounded-lg shadow p-4">
           <p className="text-sm text-yellow-600 mb-1">Pending</p>
           <p className="text-2xl font-bold text-yellow-700">
-            {orders.filter(po => po.status === 'PENDING_APPROVAL').length}
+            {((orders || [])).filter(po => po.status === 'PENDING_APPROVAL').length}
           </p>
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Approved</p>
           <p className="text-2xl font-bold text-blue-700">
-            {orders.filter(po => po.status === 'APPROVED' || po.status === 'SENT').length}
+            {((orders || [])).filter(po => po.status === 'APPROVED' || po.status === 'SENT').length}
           </p>
         </div>
         <div className="bg-green-50 rounded-lg shadow p-4">
           <p className="text-sm text-green-600 mb-1">Received</p>
           <p className="text-2xl font-bold text-green-700">
-            {orders.filter(po => po.status === 'RECEIVED').length}
+            {((orders || [])).filter(po => po.status === 'RECEIVED').length}
           </p>
         </div>
         <div className="bg-purple-50 rounded-lg shadow p-4">
           <p className="text-sm text-purple-600 mb-1">Total Value</p>
           <p className="text-2xl font-bold text-purple-700">
-            {formatCurrency(orders.reduce((sum, po) => sum + (po.grandTotal || 0), 0))}
+            {formatCurrency(o((rders || [])).reduce((sum, po) => sum + (po.grandTotal || 0), 0))}
           </p>
         </div>
       </div>
@@ -172,7 +172,7 @@ export default function PurchaseOrdersPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading purchase orders...</p>
           </div>
-        ) : orders.length === 0 ? (
+        ) : (orders || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">🛒</p>
             <p className="text-gray-600 mb-4">No purchase orders found. Create your first PO!</p>
@@ -199,7 +199,7 @@ export default function PurchaseOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {orders.map((po) => (
+                {((orders || [])).map((po) => (
                   <tr key={po.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{po.poNumber}</div>

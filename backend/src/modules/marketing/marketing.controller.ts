@@ -1,51 +1,37 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { MarketingService } from './marketing.service';
-import { CreateCampaignDto, UpdateCampaignDto, QueryCampaignDto } from './dto';
+import { CreateCampaignDto } from './dto/create-campaign.dto';
 
-@Controller('marketing/campaigns')
+@Controller('marketing')
 export class MarketingController {
   constructor(private readonly marketingService: MarketingService) {}
 
-  @Post()
-  create(@Body() createCampaignDto: CreateCampaignDto) {
-    return this.marketingService.create(createCampaignDto);
+  @Get('campaigns')
+  findAll(@Query('page') page: string = '1', @Query('limit') limit: string = '12') {
+    return this.marketingService.findAll(+page, +limit);
   }
 
-  @Get()
-  findAll(@Query() query: QueryCampaignDto) {
-    return this.marketingService.findAll(query);
-  }
-
-  @Get('statistics')
-  getStatistics() {
-    return this.marketingService.getStatistics();
-  }
-
-  @Get(':id')
+  @Get('campaigns/:id')
   findOne(@Param('id') id: string) {
     return this.marketingService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCampaignDto: UpdateCampaignDto) {
-    return this.marketingService.update(id, updateCampaignDto);
+  @Post('campaigns')
+  create(@Body() createCampaignDto: CreateCampaignDto) {
+    return this.marketingService.create(createCampaignDto);
   }
 
-  @Patch(':id/metrics')
-  updateMetrics(@Param('id') id: string, @Body() metrics: any) {
-    return this.marketingService.updateMetrics(id, metrics);
+  @Put('campaigns/:id')
+  update(@Param('id') id: string, @Body() updateData: Partial<CreateCampaignDto>) {
+    return this.marketingService.update(id, updateData);
   }
 
-  @Delete(':id')
+  @Patch('campaigns/:id')
+  partialUpdate(@Param('id') id: string, @Body() updateData: Partial<CreateCampaignDto>) {
+    return this.marketingService.update(id, updateData);
+  }
+
+  @Delete('campaigns/:id')
   remove(@Param('id') id: string) {
     return this.marketingService.remove(id);
   }

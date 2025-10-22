@@ -8,13 +8,13 @@ export declare class EmployeeResponseDto {
     designation: string;
     employmentType: string;
     employmentStatus: string;
-    joiningDate: Date;
+    joiningDate: string | Date;
     basicSalary: number;
     grossSalary: number;
     netSalary: number;
     isActive: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string | Date;
+    updatedAt: string | Date;
 }
 export declare class PaginatedEmployeeResponseDto {
     data: EmployeeResponseDto[];

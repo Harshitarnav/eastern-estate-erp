@@ -36,7 +36,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
     try {
       const response = await api.get('/vendors');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setVendors(data.filter((v: any) => v.isActive));
+      setVendors(d((ata || [])).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load vendors:', error);
       alert('Failed to load vendors');
@@ -104,7 +104,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
             required
           >
             <option value="">Select Vendor</option>
-            {vendors.map((vendor) => (
+            {((vendors || [])).map((vendor) => (
               <option key={vendor.id} value={vendor.id}>
                 {vendor.vendorName} ({vendor.vendorCode})
               </option>
@@ -145,7 +145,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             >
-              {PAYMENT_METHODS.map((method) => (
+              {((PAYMENT_METHODS || [])).map((method) => (
                 <option key={method} value={method}>
                   {method.replace('_', ' ')}
                 </option>
@@ -192,7 +192,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             >
-              {PAYMENT_STATUS.map((status) => (
+              {((PAYMENT_STATUS || [])).map((status) => (
                 <option key={status} value={status}>
                   {status}
                 </option>

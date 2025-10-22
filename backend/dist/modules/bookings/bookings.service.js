@@ -24,18 +24,16 @@ const property_entity_1 = require("../properties/entities/property.entity");
 const tower_entity_1 = require("../towers/entities/tower.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
 const payments_service_1 = require("../payments/payments.service");
-const payment_schedule_service_1 = require("../payments/payment-schedule.service");
 const email_service_1 = require("../notifications/email.service");
 const payment_entity_1 = require("../payments/entities/payment.entity");
 let BookingsService = BookingsService_1 = class BookingsService {
-    constructor(bookingsRepository, flatsRepository, propertiesRepository, towersRepository, customersRepository, paymentsService, paymentScheduleService, emailService, dataSource) {
+    constructor(bookingsRepository, flatsRepository, propertiesRepository, towersRepository, customersRepository, paymentsService, emailService, dataSource) {
         this.bookingsRepository = bookingsRepository;
         this.flatsRepository = flatsRepository;
         this.propertiesRepository = propertiesRepository;
         this.towersRepository = towersRepository;
         this.customersRepository = customersRepository;
         this.paymentsService = paymentsService;
-        this.paymentScheduleService = paymentScheduleService;
         this.emailService = emailService;
         this.dataSource = dataSource;
         this.logger = new common_1.Logger(BookingsService_1.name);
@@ -95,18 +93,15 @@ let BookingsService = BookingsService_1 = class BookingsService {
                     receiptNumber: createBookingDto.tokenReceiptNumber || `REC-${createBookingDto.bookingNumber}-TOKEN`,
                     bookingId: savedBooking.id,
                     customerId: customer.id,
-                    paymentType: payment_entity_1.PaymentType.TOKEN,
                     amount: createBookingDto.tokenAmount,
                     paymentDate: createBookingDto.tokenPaidDate || createBookingDto.bookingDate,
-                    paymentMode: createBookingDto.tokenPaymentMode || payment_entity_1.PaymentMode.CASH,
+                    paymentMode: createBookingDto.tokenPaymentMode || payment_entity_1.PaymentMethod.CASH,
                     status: 'RECEIVED',
                     remarks: 'Token amount paid at booking',
                 };
                 await queryRunner.manager.save('Payment', tokenPayment);
                 this.logger.log(`Token payment record created: ${tokenPayment.paymentNumber}`);
             }
-            const paymentPlan = createBookingDto.paymentPlan || 'TIME_LINKED';
-            const schedulePromise = this.paymentScheduleService.generateScheduleForBooking(savedBooking.id, savedBooking.bookingNumber, savedBooking.totalAmount, savedBooking.tokenAmount, paymentPlan, new Date(savedBooking.bookingDate));
             await queryRunner.manager.query(`
         UPDATE properties 
         SET number_of_units = COALESCE(number_of_units, 0) + 1
@@ -126,13 +121,6 @@ let BookingsService = BookingsService_1 = class BookingsService {
             this.logger.log(`Customer ${customer.id} last booking date updated`);
             await queryRunner.commitTransaction();
             this.logger.log(`Transaction committed for booking ${savedBooking.bookingNumber}`);
-            try {
-                await schedulePromise;
-                this.logger.log(`Payment schedule generated for booking ${savedBooking.bookingNumber}`);
-            }
-            catch (error) {
-                this.logger.error(`Failed to generate payment schedule:`, error);
-            }
             this.sendBookingNotifications(savedBooking, customer, flat, property)
                 .catch(error => {
                 this.logger.error('Error sending booking notifications:', error);
@@ -319,7 +307,6 @@ exports.BookingsService = BookingsService = BookingsService_1 = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         payments_service_1.PaymentsService,
-        payment_schedule_service_1.PaymentScheduleService,
         email_service_1.EmailService,
         typeorm_2.DataSource])
 ], BookingsService);

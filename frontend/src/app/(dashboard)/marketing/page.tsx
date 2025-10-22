@@ -75,7 +75,7 @@ export default function MarketingPage() {
   };
 
   const formatStatus = (status: string) => {
-    return status.replace(/_/g, ' ');
+    return status ? status.replace(/_/g, ' ') : '';
   };
 
   return (
@@ -169,7 +169,7 @@ export default function MarketingPage() {
             <p className="text-gray-600">Loading campaigns...</p>
           </div>
         </div>
-      ) : campaigns.length === 0 ? (
+      ) : (campaigns || []).length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <Megaphone className="h-16 w-16 mx-auto mb-4" style={{ color: '#A8211B', opacity: 0.5 }} />
           <h3 className="text-xl font-semibold mb-2" style={{ color: '#7B1E12' }}>
@@ -192,7 +192,7 @@ export default function MarketingPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            {campaigns.map((campaign) => (
+            {((campaigns || [])).map((campaign) => (
               <div
                 key={campaign.id}
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
@@ -203,7 +203,7 @@ export default function MarketingPage() {
                       <h3 className="text-lg font-bold mb-1" style={{ color: '#7B1E12' }}>
                         {campaign.name}
                       </h3>
-                      <p className="text-sm text-gray-600">{campaign.campaignCode}</p>
+                      <p className="text-sm text-gray-600">{campaign.type || ''}</p>
                     </div>
                     <div
                       className="px-3 py-1 rounded-full text-xs font-medium"
@@ -228,9 +228,6 @@ export default function MarketingPage() {
                     >
                       {formatStatus(campaign.type)}
                     </div>
-                    <div className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium">
-                      {formatStatus(campaign.channel)}
-                    </div>
                   </div>
 
                   {campaign.description && (
@@ -244,66 +241,15 @@ export default function MarketingPage() {
                     <div className="flex items-center justify-between text-sm mb-2">
                       <span className="text-gray-600">Budget</span>
                       <span className="font-bold text-gray-800">
-                        {formatCurrency(campaign.totalBudget)}
+                        {formatCurrency(campaign.budget || 0)}
                       </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(campaign.budgetUtilization, 100)}%`,
-                          backgroundColor: campaign.budgetUtilization > 90 ? '#EF4444' : campaign.budgetUtilization > 75 ? '#F59E0B' : '#10B981',
-                        }}
-                      ></div>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                      <span>Spent: {formatCurrency(campaign.amountSpent)}</span>
-                      <span>{campaign.budgetUtilization.toFixed(1)}%</span>
-                    </div>
-                  </div>
-
-                  {/* Performance Metrics */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="text-center p-2 bg-blue-50 rounded-lg">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <Target className="h-4 w-4" style={{ color: '#3B82F6' }} />
-                        <p className="text-xs text-gray-600">Impressions</p>
-                      </div>
-                      <p className="text-lg font-bold" style={{ color: '#3B82F6' }}>
-                        {campaign.totalImpressions.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="text-center p-2 bg-green-50 rounded-lg">
-                      <div className="flex items-center justify-center gap-1 mb-1">
-                        <UsersIcon className="h-4 w-4" style={{ color: '#10B981' }} />
-                        <p className="text-xs text-gray-600">Leads</p>
-                      </div>
-                      <p className="text-lg font-bold" style={{ color: '#10B981' }}>
-                        {campaign.totalLeads}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* ROI & CTR */}
-                  <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
-                    <div className="p-2 bg-purple-50 rounded">
-                      <p className="text-gray-600">ROI</p>
-                      <p className="font-bold" style={{ color: campaign.roi >= 0 ? '#10B981' : '#EF4444' }}>
-                        {campaign.roi.toFixed(1)}%
-                      </p>
-                    </div>
-                    <div className="p-2 bg-orange-50 rounded">
-                      <p className="text-gray-600">CTR</p>
-                      <p className="font-bold" style={{ color: '#F59E0B' }}>
-                        {campaign.clickThroughRate.toFixed(2)}%
-                      </p>
                     </div>
                   </div>
 
                   {/* Dates */}
                   <div className="text-xs text-gray-500 mb-4">
-                    <p>Start: {new Date(campaign.startDate).toLocaleDateString()}</p>
-                    <p>End: {new Date(campaign.endDate).toLocaleDateString()}</p>
+                    {campaign.startDate && <p>Start: {new Date(campaign.startDate).toLocaleDateString()}</p>}
+                    {campaign.endDate && <p>End: {new Date(campaign.endDate).toLocaleDateString()}</p>}
                   </div>
 
                   <div className="flex gap-2">

@@ -117,7 +117,7 @@ export default function TasksPage() {
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = ((tasks || [])).filter(task => {
     const taskDate = new Date(task.dueDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -135,10 +135,10 @@ export default function TasksPage() {
   });
 
   const stats = {
-    total: tasks.length,
-    today: tasks.filter(t => new Date(t.dueDate).toDateString() === new Date().toDateString()).length,
-    pending: tasks.filter(t => t.status === TaskStatus.PENDING).length,
-    completed: tasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+    total: (tasks || []).length,
+    today: ((tasks || [])).filter(t => new Date(t.dueDate).toDateString() === new Date().toDateString()).length,
+    pending: ((tasks || [])).filter(t => t.status === TaskStatus.PENDING).length,
+    completed: ((tasks || [])).filter(t => t.status === TaskStatus.COMPLETED).length,
   };
 
   if (loading) {
@@ -276,7 +276,7 @@ export default function TasksPage() {
 
       {/* Tasks List */}
       <div className="space-y-4">
-        {filteredTasks.length === 0 ? (
+        {(filteredTasks || []).length === 0 ? (
           <Card>
             <CardContent className="pt-12 pb-12 text-center">
               <ListTodo className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -287,7 +287,7 @@ export default function TasksPage() {
             </CardContent>
           </Card>
         ) : (
-          filteredTasks.map((task) => (
+          ((filteredTasks || [])).map((task) => (
             <Card key={task.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between">

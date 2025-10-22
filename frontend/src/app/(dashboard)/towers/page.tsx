@@ -173,7 +173,7 @@ export default function TowersInventoryPage() {
     return (
       <div className="space-y-2">
         <div className="flex h-2 w-full overflow-hidden rounded-full bg-gray-200">
-          {SALES_ORDER.map((key) => {
+          {((SALES_ORDER || [])).map((key) => {
             const value = breakdown[key] ?? 0;
             if (!value) return null;
             const width = Math.max((value / breakdown.total) * 100, 2);
@@ -188,7 +188,7 @@ export default function TowersInventoryPage() {
           })}
         </div>
         <div className="flex flex-wrap gap-3 text-xs">
-          {SALES_ORDER.map((key) => {
+          {((SALES_ORDER || [])).map((key) => {
             const value = breakdown[key] ?? 0;
             if (!value) return null;
             return (
@@ -331,9 +331,9 @@ export default function TowersInventoryPage() {
               className="w-full rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition focus:border-gray-300 focus:outline-none sm:w-72"
               value={selectedPropertyId ?? ''}
               onChange={handlePropertyChange}
-              disabled={loadingProperties || properties.length === 0}
+              disabled={loadingProperties || (properties || []).length === 0}
             >
-              {properties.map((property) => (
+              {((properties || [])).map((property) => (
                 <option key={property.id} value={property.id}>
                   {property.name}
                 </option>
@@ -386,9 +386,9 @@ export default function TowersInventoryPage() {
             <div key={index} className="h-72 animate-pulse rounded-3xl border border-gray-200 bg-white/60" />
           ))}
         </div>
-      ) : summary && summary.towers.length > 0 ? (
+      ) : summary && (summary.towers || []).length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {summary.towers.map(renderTowerCard)}
+          {(summary.towers || []).map(renderTowerCard)}
           {summary.missingTowers > 0 && renderMissingCard(summary.missingTowers)}
         </div>
       ) : (
@@ -414,7 +414,7 @@ export default function TowersInventoryPage() {
         <BulkImportModal
           onClose={() => setShowBulkModal(false)}
           propertyId={selectedPropertyId}
-          propertyName={properties.find((p) => p.id === selectedPropertyId)?.name}
+          propertyName={((properties || [])).find((p) => p.id === selectedPropertyId)?.name}
           onImported={() => refreshSummary()}
         />
       )}
@@ -612,13 +612,13 @@ function BulkImportModal({
             <p>
               Processed {result.totalRows} row{result.totalRows === 1 ? '' : 's'}. Created {result.created}, skipped {result.skipped}.
             </p>
-            {result.errors.length > 0 ? (
+            {(result.errors || []).length > 0 ? (
               <div className="space-y-2">
                 <p className="font-medium text-red-600">
-                  {result.errors.length} row{result.errors.length === 1 ? '' : 's'} need attention:
+                  {(result.errors || []).length} row{(result.errors || []).length === 1 ? '' : 's'} need attention:
                 </p>
                 <ul className="max-h-48 space-y-2 overflow-auto text-xs">
-                  {result.errors.map((error) => (
+                  {(result.errors || []).map((error) => (
                     <li
                       key={`${error.rowNumber}-${error.towerNumber ?? 'row'}`}
                       className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-red-700"
@@ -628,7 +628,7 @@ function BulkImportModal({
                         {error.towerNumber ? ` – ${error.towerNumber}` : ''}
                       </div>
                       <ul className="mt-1 list-disc pl-4">
-                        {error.issues.map((issue, index) => (
+                        {(error.issues || []).map((issue, index) => (
                           <li key={index}>{issue}</li>
                         ))}
                       </ul>
@@ -642,7 +642,7 @@ function BulkImportModal({
           </div>
         )}
 
-        {importedSuccessfully && (
+        {result && result.created > 0 && (result.errors || []).length === 0 && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             You can safely close this dialog and continue reviewing tower readiness.
           </div>

@@ -8,19 +8,14 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { Property } from '../../properties/entities/property.entity';
-
-export enum JournalEntryType {
-  MANUAL = 'Manual',
-  AUTOMATIC = 'Automatic',
-  ADJUSTMENT = 'Adjustment',
-  CLOSING = 'Closing',
-}
+import { User } from '../../users/entities/user.entity';
+import { JournalEntryLine } from './journal-entry-line.entity';
 
 export enum JournalEntryStatus {
-  DRAFT = 'Draft',
-  POSTED = 'Posted',
-  REVERSED = 'Reversed',
+  DRAFT = 'DRAFT',
+  POSTED = 'POSTED',
+  APPROVED = 'APPROVED',
+  VOID = 'VOID',
 }
 
 @Entity('journal_entries')
@@ -28,45 +23,25 @@ export class JournalEntry {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'entry_number', unique: true })
+  @Column({ unique: true, length: 50 })
   entryNumber: string;
 
-  @Column({ name: 'entry_date', type: 'date' })
+  @Column({ type: 'date' })
   entryDate: Date;
 
-  @Column({
-    type: 'enum',
-    enum: JournalEntryType,
-    name: 'entry_type',
-    default: JournalEntryType.MANUAL,
-  })
-  entryType: JournalEntryType;
+  @Column({ length: 50, nullable: true })
+  referenceType: string; // PAYMENT, BOOKING, SALARY, EXPENSE, ADJUSTMENT, etc.
 
-  @Column({ name: 'reference_type', nullable: true })
-  referenceType: string;
-
-  @Column({ name: 'reference_id', nullable: true })
+  @Column({ nullable: true })
   referenceId: string;
 
   @Column({ type: 'text' })
-  narration: string;
+  description: string;
 
-  @Column({
-    type: 'decimal',
-    precision: 15,
-    scale: 2,
-    name: 'total_debit',
-    default: 0,
-  })
+  @Column('decimal', { precision: 15, scale: 2, default: 0 })
   totalDebit: number;
 
-  @Column({
-    type: 'decimal',
-    precision: 15,
-    scale: 2,
-    name: 'total_credit',
-    default: 0,
-  })
+  @Column('decimal', { precision: 15, scale: 2, default: 0 })
   totalCredit: number;
 
   @Column({
@@ -76,34 +51,42 @@ export class JournalEntry {
   })
   status: JournalEntryStatus;
 
-  @Column({ name: 'created_by', nullable: true })
+  @Column({ nullable: true })
   createdBy: string;
 
-  @Column({ name: 'approved_by', nullable: true })
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'createdBy' })
+  creator: User;
+
+  @Column({ nullable: true })
   approvedBy: string;
 
-  @Column({ name: 'approved_at', type: 'timestamp', nullable: true })
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'approvedBy' })
+  approver: User;
+
+  @Column({ type: 'timestamp', nullable: true })
   approvedAt: Date;
 
-  @Column({ name: 'property_id', nullable: true })
-  propertyId: string;
+  @Column({ nullable: true })
+  voidedBy: string;
 
-  @ManyToOne(() => Property, { nullable: true })
-  @JoinColumn({ name: 'property_id' })
-  property: Property;
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'voidedBy' })
+  voider: User;
 
-  @Column({ name: 'financial_year' })
-  financialYear: string;
+  @Column({ type: 'timestamp', nullable: true })
+  voidedAt: Date;
 
-  @Column()
-  period: string;
+  @Column({ type: 'text', nullable: true })
+  voidReason: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  attachments: any;
+  @OneToMany(() => JournalEntryLine, (line) => line.journalEntry, { cascade: true })
+  lines: JournalEntryLine[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn()
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn()
   updatedAt: Date;
 }

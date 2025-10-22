@@ -40,8 +40,8 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
       const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
       const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
       
-      setMaterials(materialsData.filter((m: any) => m.isActive));
-      setVendors(vendorsData.filter((v: any) => v.isActive));
+      setMaterials(m((aterialsData || [])).filter((m: any) => m.isActive));
+      setVendors(v((endorsData || [])).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load materials and vendors');
@@ -114,7 +114,7 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
               required
             >
               <option value="">Select Material</option>
-              {materials.map((material) => (
+              {((materials || [])).map((material) => (
                 <option key={material.id} value={material.id}>
                   {material.materialName} ({material.materialCode})
                 </option>
@@ -138,7 +138,7 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="">Select Vendor</option>
-              {vendors.map((vendor) => (
+              {((vendors || [])).map((vendor) => (
                 <option key={vendor.id} value={vendor.id}>
                   {vendor.vendorName}
                 </option>

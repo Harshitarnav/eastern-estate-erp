@@ -69,7 +69,7 @@ export default function NewTaskPage() {
         setLoadingLeads(true);
         const data = await leadsService.getMyLeads(user.id);
         setLeads(data ?? []);
-        if (data && data.length > 0) {
+        if (data && (data || []).length > 0) {
           setForm((prev) => ({ ...prev, leadId: prev.leadId || data[0].id }));
         }
       } catch (err) {
@@ -284,7 +284,7 @@ export default function NewTaskPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">No lead</SelectItem>
-                    {leads.map((lead) => (
+                    {((leads || [])).map((lead) => (
                       <SelectItem key={lead.id} value={lead.id}>
                         <span className="flex flex-col">
                           <span className="font-medium">

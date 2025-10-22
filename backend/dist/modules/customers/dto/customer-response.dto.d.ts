@@ -6,7 +6,7 @@ export declare class CustomerResponseDto {
     email: string;
     phone: string;
     alternatePhone: string;
-    dateOfBirth: Date;
+    dateOfBirth: string | Date;
     gender: string;
     address: string;
     city: string;
@@ -28,14 +28,14 @@ export declare class CustomerResponseDto {
     totalBookings: number;
     totalPurchases: number;
     totalSpent: number;
-    lastPurchaseDate: Date;
+    lastPurchaseDate: string | Date;
     notes: string;
     tags: string[];
     isActive: boolean;
     isVIP: boolean;
     isBlacklisted: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string | Date;
+    updatedAt: string | Date;
     static fromEntity(customer: Customer): CustomerResponseDto;
     static fromEntities(customers: Customer[]): CustomerResponseDto[];
 }

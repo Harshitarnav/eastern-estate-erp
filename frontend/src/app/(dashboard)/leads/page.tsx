@@ -107,7 +107,7 @@ function EditableCell({
     );
   }
 
-  if (type === 'select' && options.length > 0) {
+  if (type === 'select' && (options || []).length > 0) {
     return (
       <div className="flex flex-col gap-2 w-full">
         {label && <span className="text-xs text-gray-500">{label}</span>}
@@ -117,7 +117,7 @@ function EditableCell({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {options.map((opt) => (
+              {((options || [])).map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -394,7 +394,7 @@ function LeadCard({
               type="select"
               options={[
                 { label: 'Unassigned', value: 'unassigned' },
-                ...users.map((u) => ({ label: `${u.firstName} ${u.lastName}`, value: u.id })),
+                ...((users || [])).map((u) => ({ label: `${u.firstName} ${u.lastName}`, value: u.id })),
               ]}
               onSave={(value) => onAssign(lead.id, value === 'unassigned' ? '' : value)}
               fullWidth
@@ -515,12 +515,12 @@ function LeadHistoryModal({ lead, onClose }: LeadHistoryModalProps) {
 
               {/* Follow-up History */}
               <div>
-                <h3 className="font-semibold mb-3">Follow-up History ({followups.length})</h3>
-                {followups.length === 0 ? (
+                <h3 className="font-semibold mb-3">Follow-up History ({(followups || []).length})</h3>
+                {(followups || []).length === 0 ? (
                   <p className="text-center text-gray-500 py-8">No follow-ups recorded yet</p>
                 ) : (
                   <div className="space-y-3">
-                    {followups.map((followup) => (
+                    {((followups || [])).map((followup) => (
                       <div key={followup.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -670,7 +670,7 @@ export default function LeadsListPage() {
 
   const getAssignedUserName = (assignedTo?: string) => {
     if (!assignedTo) return 'Unassigned';
-    const foundUser = users.find(u => u.id === assignedTo);
+    const foundUser = ((users || [])).find(u => u.id === assignedTo);
     return foundUser ? `${foundUser.firstName} ${foundUser.lastName}` : 'Unknown User';
   };
 
@@ -682,7 +682,7 @@ export default function LeadsListPage() {
       : lead.assignedTo ? [lead.assignedTo] : [];
     
     assigneeIds.forEach(id => {
-      const foundUser = users.find(u => u.id === id);
+      const foundUser = ((users || [])).find(u => u.id === id);
       if (foundUser) {
         assignments.push({
           name: `${foundUser.firstName} ${foundUser.lastName}`,
@@ -699,13 +699,13 @@ export default function LeadsListPage() {
       const task = match[1].trim();
       const userName = match[2].trim();
       
-      const matchedUser = users.find(u => 
+      const matchedUser = ((users || [])).find(u => 
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(userName.toLowerCase()) ||
         u.firstName.toLowerCase() === userName.toLowerCase() ||
         u.lastName.toLowerCase() === userName.toLowerCase()
       );
       
-      if (matchedUser && !assignments.find(a => a.name === `${matchedUser.firstName} ${matchedUser.lastName}` && a.task === task)) {
+      if (matchedUser && !((assignments || [])).find(a => a.name === `${matchedUser.firstName} ${matchedUser.lastName}` && a.task === task)) {
         assignments.push({
           name: `${matchedUser.firstName} ${matchedUser.lastName}`,
           task: task.charAt(0).toUpperCase() + task.slice(1)
@@ -770,7 +770,7 @@ export default function LeadsListPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  {statusOptions.map((opt) => (
+                  {((statusOptions || [])).map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -789,7 +789,7 @@ export default function LeadsListPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Priorities</SelectItem>
-                  {priorityOptions.map((opt) => (
+                  {((priorityOptions || [])).map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -809,7 +809,7 @@ export default function LeadsListPage() {
                 <SelectContent>
                   <SelectItem value="all">All Assignees</SelectItem>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {users.map((u) => (
+                  {((users || [])).map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.firstName} {u.lastName}
                     </SelectItem>
@@ -831,7 +831,7 @@ export default function LeadsListPage() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           </div>
-        ) : leads.length === 0 ? (
+        ) : (leads || []).length === 0 ? (
           <Card className="p-12 text-center">
             <p className="text-gray-500">No leads found. Try adjusting your filters or add a new lead.</p>
             <Button asChild className="mt-4">
@@ -845,7 +845,7 @@ export default function LeadsListPage() {
           <>
             {/* Mobile Card View */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {leads.map((lead) => (
+              {((leads || [])).map((lead) => (
                 <LeadCard
                   key={lead.id}
                   lead={lead}

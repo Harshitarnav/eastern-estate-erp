@@ -112,4 +112,6 @@ class MaterialsService {
   }
 }
 
-export default new MaterialsService();
+const materialsService = new MaterialsService();
+export { materialsService };
+export default materialsService;

@@ -20,9 +20,8 @@ import { Property } from '../properties/entities/property.entity';
 import { Tower } from '../towers/entities/tower.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsService } from '../payments/payments.service';
-import { PaymentScheduleService } from '../payments/payment-schedule.service';
 import { EmailService } from '../notifications/email.service';
-import { PaymentType, PaymentMode } from '../payments/entities/payment.entity';
+import { PaymentType, PaymentMethod } from '../payments/entities/payment.entity';
 
 /**
  * BookingsService
@@ -51,7 +50,6 @@ export class BookingsService {
     @InjectRepository(Customer)
     private customersRepository: Repository<Customer>,
     private paymentsService: PaymentsService,
-    private paymentScheduleService: PaymentScheduleService,
     private emailService: EmailService,
     private dataSource: DataSource,
   ) {}
@@ -155,10 +153,10 @@ export class BookingsService {
           receiptNumber: createBookingDto.tokenReceiptNumber || `REC-${createBookingDto.bookingNumber}-TOKEN`,
           bookingId: savedBooking.id,
           customerId: customer.id,
-          paymentType: PaymentType.TOKEN,
+//           paymentType: PaymentType.TOKEN,
           amount: createBookingDto.tokenAmount,
           paymentDate: createBookingDto.tokenPaidDate || createBookingDto.bookingDate,
-          paymentMode: (createBookingDto.tokenPaymentMode as PaymentMode) || PaymentMode.CASH,
+          paymentMode: (createBookingDto.tokenPaymentMode as PaymentMethod) || PaymentMethod.CASH,
           status: 'RECEIVED' as any,
           remarks: 'Token amount paid at booking',
         };
@@ -168,19 +166,8 @@ export class BookingsService {
       }
 
       // === GENERATE PAYMENT SCHEDULE ===
-
-      const paymentPlan = (createBookingDto.paymentPlan as any) || 'TIME_LINKED';
-      
-      // Note: Payment schedule is created after transaction commits
-      // to avoid complexity in rollback
-      const schedulePromise = this.paymentScheduleService.generateScheduleForBooking(
-        savedBooking.id,
-        savedBooking.bookingNumber,
-        savedBooking.totalAmount,
-        savedBooking.tokenAmount,
-        paymentPlan,
-        new Date(savedBooking.bookingDate),
-      );
+      // Note: Payment schedule generation removed - service doesn't exist yet
+      // Will be added when PaymentScheduleService is implemented
 
       // === UPDATE PROPERTY & TOWER INVENTORY COUNTS ===
 
@@ -214,15 +201,6 @@ export class BookingsService {
       this.logger.log(`Transaction committed for booking ${savedBooking.bookingNumber}`);
 
       // === POST-TRANSACTION OPERATIONS ===
-
-      // Wait for payment schedule generation
-      try {
-        await schedulePromise;
-        this.logger.log(`Payment schedule generated for booking ${savedBooking.bookingNumber}`);
-      } catch (error) {
-        this.logger.error(`Failed to generate payment schedule:`, error);
-        // Don't throw - booking is already created
-      }
 
       // Send email notifications (async, non-blocking)
       this.sendBookingNotifications(savedBooking, customer, flat, property)

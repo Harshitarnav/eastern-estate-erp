@@ -58,17 +58,17 @@ export default function PaymentsPage() {
   }, [filters]);
 
   const stats = useMemo(() => {
-    const total = meta.total || payments.length;
-    const verified = payments.filter((payment) => payment.isVerified).length;
-    const pending = payments.filter((payment) => payment.status === 'PENDING').length;
-    const totalAmount = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-    const outstandingAmount = payments.reduce(
+    const total = meta.total || (payments || []).length;
+    const verified = ((payments || [])).filter((payment) => payment.isVerified).length;
+    const pending = ((payments || [])).filter((payment) => payment.status === 'PENDING').length;
+    const totalAmount = ((payments || [])).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const outstandingAmount = ((payments || [])).reduce(
       (sum, payment: any) => sum + Number(payment?.balanceAmount ?? 0),
       0,
     );
     const averageAmount =
-      payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) /
-      (payments.length || 1);
+      ((payments || [])).reduce((sum, payment) => sum + Number(payment.amount || 0), 0) /
+      ((payments || []).length || 1);
     return {
       total,
       verified,
@@ -299,7 +299,7 @@ export default function PaymentsPage() {
             <p className="text-gray-600 text-sm">Loading payments...</p>
           </div>
         </div>
-      ) : payments.length === 0 ? (
+      ) : (payments || []).length === 0 ? (
         <div className="bg-white/90 rounded-3xl border p-12 text-center shadow-sm">
           <IndianRupee className="h-16 w-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.55 }} />
           <h3 className="text-xl font-semibold mb-2" style={{ color: brandPalette.secondary }}>
@@ -318,7 +318,7 @@ export default function PaymentsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {payments.map((payment) => (
+            {((payments || [])).map((payment) => (
               <div
                 key={payment.id}
                 className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
@@ -333,7 +333,7 @@ export default function PaymentsPage() {
                       {payment.paymentNumber}
                     </h3>
                     <p className="text-xs uppercase tracking-wide text-gray-600">
-                      {payment.paymentMode.replace(/_/g, ' ')} {getPaymentModeIcon(payment.paymentMode)}
+                      {payment.paymentMode?.replace(/_/g, ' ') || 'N/A'} {payment.paymentMode && getPaymentModeIcon(payment.paymentMode)}
                     </p>
                   </div>
                   <span

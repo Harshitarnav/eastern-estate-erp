@@ -116,7 +116,7 @@ export default function UsersPage() {
       lastName: user.lastName,
       phone: user.phone || '',
       gender: user.gender || '',
-      roleIds: user.roles.map(r => r.id),
+      roleIds: user.((roles || [])).map(r => r.id),
     });
     setIsDialogOpen(true);
   };
@@ -178,14 +178,14 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {((users || [])).map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.firstName} {user.lastName}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.phone || '-'}</TableCell>
                 <TableCell>
-                  {user.roles.map(role => (
+                  {user.((roles || [])).map(role => (
                     <Badge key={role.id} variant="secondary" className="mr-1">
                       {role.name}
                     </Badge>
@@ -299,7 +299,7 @@ export default function UsersPage() {
             <div>
               <Label>Assign Roles</Label>
               <div className="grid grid-cols-2 gap-2 mt-2">
-                {roles.map((role) => (
+                {((roles || [])).map((role) => (
                   <div key={role.id} className="flex items-center space-x-2">
                     <Checkbox
                       checked={formData.roleIds.includes(role.id)}
@@ -308,7 +308,7 @@ export default function UsersPage() {
                           ...formData,
                           roleIds: checked
                             ? [...formData.roleIds, role.id]
-                            : formData.roleIds.filter(id => id !== role.id)
+                            : formData.((roleIds || [])).filter(id => id !== role.id)
                         });
                       }}
                     />

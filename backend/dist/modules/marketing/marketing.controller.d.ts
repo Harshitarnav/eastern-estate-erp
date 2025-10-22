@@ -1,23 +1,20 @@
 import { MarketingService } from './marketing.service';
-import { CreateCampaignDto, UpdateCampaignDto, QueryCampaignDto } from './dto';
+import { CreateCampaignDto } from './dto/create-campaign.dto';
 export declare class MarketingController {
     private readonly marketingService;
     constructor(marketingService: MarketingService);
-    create(createCampaignDto: CreateCampaignDto): Promise<import("./entities/campaign.entity").Campaign>;
-    findAll(query: QueryCampaignDto): Promise<import("./dto").PaginatedCampaignResponseDto>;
-    getStatistics(): Promise<{
-        total: number;
-        active: number;
-        completed: number;
-        totalBudget: number;
-        totalSpent: number;
-        totalLeads: number;
-        totalRevenue: number;
-        channelPerformance: any[];
-        overallROI: number;
+    findAll(page?: string, limit?: string): Promise<{
+        data: import("./entities/campaign.entity").Campaign[];
+        meta: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
     }>;
     findOne(id: string): Promise<import("./entities/campaign.entity").Campaign>;
-    update(id: string, updateCampaignDto: UpdateCampaignDto): Promise<import("./entities/campaign.entity").Campaign>;
-    updateMetrics(id: string, metrics: any): Promise<import("./entities/campaign.entity").Campaign>;
+    create(createCampaignDto: CreateCampaignDto): Promise<import("./entities/campaign.entity").Campaign>;
+    update(id: string, updateData: Partial<CreateCampaignDto>): Promise<import("./entities/campaign.entity").Campaign>;
+    partialUpdate(id: string, updateData: Partial<CreateCampaignDto>): Promise<import("./entities/campaign.entity").Campaign>;
     remove(id: string): Promise<void>;
 }

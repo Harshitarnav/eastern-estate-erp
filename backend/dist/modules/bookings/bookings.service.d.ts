@@ -6,7 +6,6 @@ import { Property } from '../properties/entities/property.entity';
 import { Tower } from '../towers/entities/tower.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsService } from '../payments/payments.service';
-import { PaymentScheduleService } from '../payments/payment-schedule.service';
 import { EmailService } from '../notifications/email.service';
 export declare class BookingsService {
     private bookingsRepository;
@@ -15,11 +14,10 @@ export declare class BookingsService {
     private towersRepository;
     private customersRepository;
     private paymentsService;
-    private paymentScheduleService;
     private emailService;
     private dataSource;
     private readonly logger;
-    constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, paymentScheduleService: PaymentScheduleService, emailService: EmailService, dataSource: DataSource);
+    constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, emailService: EmailService, dataSource: DataSource);
     create(createBookingDto: CreateBookingDto): Promise<BookingResponseDto>;
     private sendBookingNotifications;
     findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse>;

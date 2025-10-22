@@ -235,7 +235,7 @@ export default function FlatDetailPage() {
                 <DetailItem
                   label="Amenities"
                   value={
-                    flat.amenities && flat.amenities.length > 0
+                    flat.amenities && flat.(amenities || []).length > 0
                       ? flat.amenities.join(', ')
                       : 'List amenities to give prospects a feel for the home.'
                   }
@@ -298,12 +298,12 @@ export default function FlatDetailPage() {
               <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Completion score</h2>
                 <p className="mt-1 text-sm text-gray-600">
-                  {Math.round(flat.dataCompletionPct ?? 0)}% complete · {issues.length} warning{issues.length === 1 ? '' : 's'}
+                  {Math.round(flat.dataCompletionPct ?? 0)}% complete · {(issues || []).length} warning{(issues || []).length === 1 ? '' : 's'}
                 </p>
               </header>
 
               <ul className="mt-4 space-y-3 text-sm">
-                {checklistEntries.map(({ key, label, complete }) => (
+                {((checklistEntries || [])).map(({ key, label, complete }) => (
                   <li
                     key={key}
                     className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
@@ -316,7 +316,7 @@ export default function FlatDetailPage() {
                     </span>
                   </li>
                 ))}
-                {checklistEntries.length === 0 && (
+                {(checklistEntries || []).length === 0 && (
                   <li className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
                     Checklist will appear once the unit has baseline data.
                   </li>
@@ -330,8 +330,8 @@ export default function FlatDetailPage() {
                 <h2 className="text-lg font-semibold text-orange-800">Needs attention</h2>
               </header>
               <ul className="mt-4 space-y-2 text-sm text-orange-800">
-                {issues.length > 0 ? (
-                  issues.map((item, index) => (
+                {(issues || []).length > 0 ? (
+                  ((issues || [])).map((item, index) => (
                     <li key={`${item}-${index}`} className="rounded-xl border border-orange-200 bg-white/70 px-4 py-3">
                       {item}
                     </li>
@@ -376,7 +376,7 @@ function FlatFinancialSnapshot({
 
   return (
     <div className="mt-4 grid gap-4 sm:grid-cols-3">
-      {rows.map(({ label, amount, tone }) => (
+      {((rows || [])).map(({ label, amount, tone }) => (
         <div key={label} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
           <p className={`mt-2 text-base font-semibold ${tone}`}>

@@ -52,8 +52,8 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
       const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
       const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
       
-      setVendors(vendorsData.filter((v: any) => v.isActive));
-      setMaterials(materialsData.filter((m: any) => m.isActive));
+      setVendors(v((endorsData || [])).filter((v: any) => v.isActive));
+      setMaterials(m((aterialsData || [])).filter((m: any) => m.isActive));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load vendors and materials');
@@ -72,12 +72,12 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
 
   const removeItem = (id: string) => {
     if (items.length > 1) {
-      setItems(items.filter(item => item.id !== id));
+      setItems(i((tems || [])).filter(item => item.id !== id));
     }
   };
 
   const updateItem = (id: string, field: keyof OrderItem, value: any) => {
-    setItems(items.map(item => {
+    setItems(i((tems || [])).map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
         
@@ -101,7 +101,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
   };
 
   const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+    const subtotal = ((items || [])).reduce((sum, item) => sum + item.subtotal, 0);
     const discountAmount = (subtotal * parseFloat(formData.discount || '0')) / 100;
     const taxableAmount = subtotal - discountAmount;
     const taxAmount = (taxableAmount * parseFloat(formData.taxRate || '0')) / 100;
@@ -139,7 +139,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
         paymentTerms: formData.paymentTerms || null,
         status: 'PENDING',
         remarks: formData.remarks || null,
-        items: items.map(item => ({
+        items: ((items || [])).map(item => ({
           materialId: item.materialId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -194,7 +194,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
                 required
               >
                 <option value="">Select Vendor</option>
-                {vendors.map((vendor) => (
+                {((vendors || [])).map((vendor) => (
                   <option key={vendor.id} value={vendor.id}>
                     {vendor.vendorName}
                   </option>
@@ -259,7 +259,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
           </div>
           
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {items.map((item, index) => (
+            {((items || [])).map((item, index) => (
               <div key={item.id} className="border rounded-lg p-4 bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-gray-700">Item {index + 1}</span>
@@ -285,7 +285,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
                       required
                     >
                       <option value="">Select Material</option>
-                      {materials.map((material) => (
+                      {((materials || [])).map((material) => (
                         <option key={material.id} value={material.id}>
                           {material.materialName} - ₹{material.unitPrice}/{material.unitOfMeasurement}
                         </option>

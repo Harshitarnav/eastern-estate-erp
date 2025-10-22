@@ -225,7 +225,7 @@ export default function EditFlatPage() {
       // Handle images array
       if (data.images) {
         const imageArray = data.images.split(',').map((img: string) => img.trim()).filter(Boolean);
-        if (imageArray.length > 0) flatData.images = imageArray;
+        if ((imageArray || []).length > 0) flatData.images = imageArray;
       }
 
       if (resolvedCustomerId) {

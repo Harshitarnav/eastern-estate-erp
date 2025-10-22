@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MarketingService } from './marketing.service';
 import { MarketingController } from './marketing.controller';
+import { MarketingService } from './marketing.service';
 import { Campaign } from './entities/campaign.entity';
 
 @Module({

@@ -34,9 +34,7 @@ export class CreateSalesTaskDto {
   @IsUUID()
   assignedBy?: string;
 
-  @Type(() => Date)
-  @IsDate()
-  dueDate: Date;
+  dueDate: string | Date;
 
   @IsOptional()
   @IsString()

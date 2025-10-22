@@ -1,7 +1,7 @@
 import { FollowUpType, FollowUpOutcome } from '../entities/followup.entity';
 export declare class CreateFollowUpDto {
     leadId: string;
-    followUpDate: Date;
+    followUpDate: string | Date;
     followUpType: FollowUpType;
     durationMinutes?: number;
     performedBy: string;
@@ -11,7 +11,7 @@ export declare class CreateFollowUpDto {
     actionsTaken?: string;
     leadStatusBefore?: string;
     leadStatusAfter?: string;
-    nextFollowUpDate?: Date;
+    nextFollowUpDate?: string | Date;
     nextFollowUpPlan?: string;
     isSiteVisit?: boolean;
     siteVisitProperty?: string;

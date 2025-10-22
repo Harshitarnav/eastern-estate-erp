@@ -172,7 +172,7 @@ export default function NewPropertyPage() {
     );
   }
 
-  if (projects.length === 0) {
+  if ((projects || []).length === 0) {
     return (
       <div className="max-w-2xl mx-auto py-12 px-4 space-y-8">
         <div className="text-center space-y-3">

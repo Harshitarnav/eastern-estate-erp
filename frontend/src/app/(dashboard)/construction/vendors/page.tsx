@@ -29,7 +29,7 @@ export default function VendorsPage() {
     try {
       const response = await api.get('/vendors');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setVendors(data.filter((v: any) => v.isActive));
+      setVendors(d((ata || [])).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load vendors:', error);
     } finally {
@@ -90,23 +90,23 @@ export default function VendorsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600 mb-1">Total Vendors</p>
-          <p className="text-2xl font-bold text-gray-900">{vendors.length}</p>
+          <p className="text-2xl font-bold text-gray-900">{(vendors || []).length}</p>
         </div>
         <div className="bg-green-50 rounded-lg shadow p-4">
           <p className="text-sm text-green-600 mb-1">Active Vendors</p>
-          <p className="text-2xl font-bold text-green-700">{vendors.length}</p>
+          <p className="text-2xl font-bold text-green-700">{(vendors || []).length}</p>
         </div>
         <div className="bg-red-50 rounded-lg shadow p-4">
           <p className="text-sm text-red-600 mb-1">Total Outstanding</p>
           <p className="text-2xl font-bold text-red-700">
-            {formatCurrency(vendors.reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
+            {formatCurrency(v((endors || [])).reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
           </p>
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Avg Rating</p>
           <p className="text-2xl font-bold text-blue-700">
-            {vendors.length > 0 
-              ? (vendors.reduce((sum, v) => sum + (v.rating || 0), 0) / vendors.length).toFixed(1)
+            {(vendors || []).length > 0 
+              ? (v((endors || [])).reduce((sum, v) => sum + (v.rating || 0), 0) / (vendors || []).length).toFixed(1)
               : '0.0'
             }⭐
           </p>
@@ -149,7 +149,7 @@ export default function VendorsPage() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading vendors...</p>
           </div>
-        ) : vendors.length === 0 ? (
+        ) : (vendors || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">🤝</p>
             <p className="text-gray-600 mb-4">No vendors found. Contact admin to add vendors.</p>
@@ -168,7 +168,7 @@ export default function VendorsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {vendors.map((vendor) => (
+                {((vendors || [])).map((vendor) => (
                   <tr key={vendor.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div>
@@ -186,7 +186,7 @@ export default function VendorsPage() {
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
                         {vendor.materialsSupplied && Array.isArray(vendor.materialsSupplied) 
-                          ? vendor.materialsSupplied.length + ' types'
+                          ? vendor.(materialsSupplied || []).length + ' types'
                           : 'N/A'}
                       </div>
                     </td>

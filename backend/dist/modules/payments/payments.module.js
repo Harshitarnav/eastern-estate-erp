@@ -9,20 +9,42 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const payments_controller_1 = require("./payments.controller");
-const payments_service_1 = require("./payments.service");
-const payment_schedule_service_1 = require("./payment-schedule.service");
 const payment_entity_1 = require("./entities/payment.entity");
-const payment_schedule_entity_1 = require("./entities/payment-schedule.entity");
+const payment_installment_entity_1 = require("./entities/payment-installment.entity");
+const payment_refund_entity_1 = require("./entities/payment-refund.entity");
+const payments_service_1 = require("./payments.service");
+const installments_service_1 = require("./installments.service");
+const refunds_service_1 = require("./refunds.service");
+const payments_controller_1 = require("./payments.controller");
+const installments_controller_1 = require("./installments.controller");
+const refunds_controller_1 = require("./refunds.controller");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
 exports.PaymentsModule = PaymentsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([payment_entity_1.Payment, payment_schedule_entity_1.PaymentSchedule])],
-        controllers: [payments_controller_1.PaymentsController],
-        providers: [payments_service_1.PaymentsService, payment_schedule_service_1.PaymentScheduleService],
-        exports: [payments_service_1.PaymentsService, payment_schedule_service_1.PaymentScheduleService],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                payment_entity_1.Payment,
+                payment_installment_entity_1.PaymentInstallment,
+                payment_refund_entity_1.PaymentRefund,
+            ]),
+        ],
+        controllers: [
+            payments_controller_1.PaymentsController,
+            installments_controller_1.InstallmentsController,
+            refunds_controller_1.RefundsController,
+        ],
+        providers: [
+            payments_service_1.PaymentsService,
+            installments_service_1.InstallmentsService,
+            refunds_service_1.RefundsService,
+        ],
+        exports: [
+            payments_service_1.PaymentsService,
+            installments_service_1.InstallmentsService,
+            refunds_service_1.RefundsService,
+        ],
     })
 ], PaymentsModule);
 //# sourceMappingURL=payments.module.js.map

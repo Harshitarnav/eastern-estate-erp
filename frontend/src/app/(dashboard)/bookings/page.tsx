@@ -327,7 +327,7 @@ export default function BookingsPage() {
             <p className="text-gray-600 text-sm">Loading bookings...</p>
           </div>
         </div>
-      ) : bookings.length === 0 ? (
+      ) : (bookings || []).length === 0 ? (
         <div className="bg-white/90 rounded-3xl border p-12 text-center shadow-sm">
           <FileText className="h-16 w-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.55 }} />
           <h3 className="text-xl font-semibold mb-2" style={{ color: brandPalette.secondary }}>
@@ -346,7 +346,7 @@ export default function BookingsPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4">
-            {bookings.map((booking) => (
+            {((bookings || [])).map((booking) => (
               <div
                 key={booking.id}
                 className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"

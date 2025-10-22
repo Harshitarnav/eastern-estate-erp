@@ -197,7 +197,7 @@ export default function EmployeesPage() {
             <p className="text-gray-600">Loading employees...</p>
           </div>
         </div>
-      ) : employees.length === 0 ? (
+      ) : (employees || []).length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <Users className="h-16 w-16 mx-auto mb-4" style={{ color: '#A8211B', opacity: 0.5 }} />
           <h3 className="text-xl font-semibold mb-2" style={{ color: '#7B1E12' }}>
@@ -220,7 +220,7 @@ export default function EmployeesPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-            {employees.map((employee) => (
+            {((employees || [])).map((employee) => (
               <div
                 key={employee.id}
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"

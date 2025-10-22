@@ -60,13 +60,13 @@ export default function CustomersPage() {
   }, [filters]);
 
   const stats = useMemo(() => {
-    const total = meta.total || customers.length;
-    const verified = customers.filter((customer) => customer.kycStatus === 'VERIFIED').length;
-    const vip = customers.filter((customer) => customer.isVIP).length;
-    const totalSpent = customers.reduce((sum, customer) => sum + Number(customer.totalSpent || 0), 0);
+    const total = meta.total || (customers || []).length;
+    const verified = ((customers || [])).filter((customer) => customer.kycStatus === 'VERIFIED').length;
+    const vip = ((customers || [])).filter((customer) => customer.isVIP).length;
+    const totalSpent = ((customers || [])).reduce((sum, customer) => sum + Number(customer.totalSpent || 0), 0);
     const avgValue =
-      customers.reduce((sum, customer) => sum + Number(customer.totalSpent || 0), 0) /
-      (customers.length || 1);
+      ((customers || [])).reduce((sum, customer) => sum + Number(customer.totalSpent || 0), 0) /
+      ((customers || []).length || 1);
 
     return {
       total,
@@ -331,7 +331,7 @@ export default function CustomersPage() {
             <p className="text-gray-600 text-sm">Loading customers...</p>
           </div>
         </div>
-      ) : customers.length === 0 ? (
+      ) : (customers || []).length === 0 ? (
         <div className="bg-white/90 rounded-3xl border p-12 text-center shadow-sm">
           <UserCheck className="h-16 w-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.55 }} />
           <h3 className="text-xl font-semibold mb-2" style={{ color: brandPalette.secondary }}>
@@ -350,7 +350,7 @@ export default function CustomersPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {customers.map((customer) => (
+            {((customers || [])).map((customer) => (
               <div
                 key={customer.id}
                 className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"

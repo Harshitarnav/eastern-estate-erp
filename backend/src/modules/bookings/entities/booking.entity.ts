@@ -118,6 +118,25 @@ export class Booking {
   @Column({ name: 'token_payment_mode', length: 100, nullable: true })
   tokenPaymentMode: string;
 
+  // Payment Tracking Details
+  @Column({ length: 100, nullable: true })
+  rtgsNumber: string;
+
+  @Column({ length: 100, nullable: true })
+  utrNumber: string;
+
+  @Column({ length: 100, nullable: true })
+  chequeNumber: string;
+
+  @Column({ type: 'date', nullable: true })
+  chequeDate: Date;
+
+  @Column({ length: 200, nullable: true })
+  paymentBank: string;
+
+  @Column({ length: 200, nullable: true })
+  paymentBranch: string;
+
   // Agreement Details
   @Column({ length: 100, nullable: true })
   agreementNumber: string;

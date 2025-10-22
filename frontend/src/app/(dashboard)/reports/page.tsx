@@ -55,7 +55,7 @@ export default function ReportsPage() {
   const handleGenerateReport = (reportId: string) => {
     setSelectedReport(reportId);
     // In a real implementation, this would fetch and generate the report
-    alert(`Generating ${reports.find(r => r.id === reportId)?.title}...\n\nDate Range: ${dateRange.from || 'All'} to ${dateRange.to || 'All'}\n\nThis feature would generate a comprehensive PDF/Excel report with all relevant data.`);
+    alert(`Generating ${((reports || [])).find(r => r.id === reportId)?.title}...\n\nDate Range: ${dateRange.from || 'All'} to ${dateRange.to || 'All'}\n\nThis feature would generate a comprehensive PDF/Excel report with all relevant data.`);
   };
 
   const handleExport = (format: 'pdf' | 'excel') => {
@@ -112,7 +112,7 @@ export default function ReportsPage() {
 
       {/* Report Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        {reports.map((report) => {
+        {((reports || [])).map((report) => {
           const Icon = report.icon;
           const isSelected = selectedReport === report.id;
           

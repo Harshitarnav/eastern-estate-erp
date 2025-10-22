@@ -24,6 +24,14 @@ export class FollowUpService {
   ) {}
 
   /**
+   * Helper to ensure date is Date object
+   */
+  private ensureDate(date: string | Date | undefined): Date | undefined {
+    if (!date) return undefined;
+    return typeof date === 'string' ? new Date(date) : date;
+  }
+
+  /**
    * Create a new followup record
    */
   async create(createFollowUpDto: CreateFollowUpDto): Promise<FollowUp> {
@@ -53,7 +61,7 @@ export class FollowUpService {
    */
   private async updateLeadAfterFollowUp(lead: Lead, followUpDto: CreateFollowUpDto): Promise<void> {
     const updateData: Partial<Lead> = {
-      lastContactedAt: followUpDto.followUpDate,
+      lastContactedAt: this.ensureDate(followUpDto.followUpDate),
       lastFollowUpFeedback: followUpDto.feedback,
       totalFollowUps: (lead.totalFollowUps || 0) + 1,
       reminderSent: false, // Reset reminder flag
@@ -61,13 +69,13 @@ export class FollowUpService {
 
     // Update next followup date if provided
     if (followUpDto.nextFollowUpDate) {
-      updateData.nextFollowUpDate = followUpDto.nextFollowUpDate;
+      updateData.nextFollowUpDate = this.ensureDate(followUpDto.nextFollowUpDate);
     }
 
     // Update site visit information if applicable
     if (followUpDto.isSiteVisit) {
       updateData.hasSiteVisit = true;
-      updateData.lastSiteVisitDate = followUpDto.followUpDate;
+      updateData.lastSiteVisitDate = this.ensureDate(followUpDto.followUpDate);
       updateData.totalSiteVisits = (lead.totalSiteVisits || 0) + 1;
       updateData.siteVisitFeedback = followUpDto.siteVisitFeedback;
     }
@@ -258,6 +266,3 @@ export class FollowUpService {
     await this.followUpRepository.update(id, { isActive: false });
   }
 }
-
-
-

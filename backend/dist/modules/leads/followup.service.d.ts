@@ -7,6 +7,7 @@ export declare class FollowUpService {
     private leadRepository;
     private readonly logger;
     constructor(followUpRepository: Repository<FollowUp>, leadRepository: Repository<Lead>);
+    private ensureDate;
     create(createFollowUpDto: CreateFollowUpDto): Promise<FollowUp>;
     private updateLeadAfterFollowUp;
     findByLead(leadId: string): Promise<FollowUp[]>;

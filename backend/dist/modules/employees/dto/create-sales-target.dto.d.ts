@@ -2,8 +2,8 @@ import { TargetPeriod } from '../entities/sales-target.entity';
 export declare class CreateSalesTargetDto {
     salesPersonId: string;
     targetPeriod: TargetPeriod;
-    startDate: Date;
-    endDate: Date;
+    startDate: string | Date;
+    endDate: string | Date;
     targetLeads?: number;
     targetSiteVisits?: number;
     targetConversions?: number;

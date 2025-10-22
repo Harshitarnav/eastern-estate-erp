@@ -1,34 +1,31 @@
-import { Property } from '../../properties/entities/property.entity';
-export declare enum JournalEntryType {
-    MANUAL = "Manual",
-    AUTOMATIC = "Automatic",
-    ADJUSTMENT = "Adjustment",
-    CLOSING = "Closing"
-}
+import { User } from '../../users/entities/user.entity';
+import { JournalEntryLine } from './journal-entry-line.entity';
 export declare enum JournalEntryStatus {
-    DRAFT = "Draft",
-    POSTED = "Posted",
-    REVERSED = "Reversed"
+    DRAFT = "DRAFT",
+    POSTED = "POSTED",
+    APPROVED = "APPROVED",
+    VOID = "VOID"
 }
 export declare class JournalEntry {
     id: string;
     entryNumber: string;
     entryDate: Date;
-    entryType: JournalEntryType;
     referenceType: string;
     referenceId: string;
-    narration: string;
+    description: string;
     totalDebit: number;
     totalCredit: number;
     status: JournalEntryStatus;
     createdBy: string;
+    creator: User;
     approvedBy: string;
+    approver: User;
     approvedAt: Date;
-    propertyId: string;
-    property: Property;
-    financialYear: string;
-    period: string;
-    attachments: any;
+    voidedBy: string;
+    voider: User;
+    voidedAt: Date;
+    voidReason: string;
+    lines: JournalEntryLine[];
     createdAt: Date;
     updatedAt: Date;
 }

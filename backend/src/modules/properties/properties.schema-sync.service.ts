@@ -62,74 +62,71 @@ export class PropertiesSchemaSyncService implements OnModuleInit {
         await queryRunner.query(query);
       }
 
+      // Create materialized view without nested dollar quotes
       await queryRunner.query(`
-        DO $$
+        DO $body$
         BEGIN
           IF NOT EXISTS (
             SELECT 1 FROM pg_matviews WHERE matviewname = 'vw_property_inventory_summary'
           ) THEN
-            EXECUTE $$
-              CREATE MATERIALIZED VIEW vw_property_inventory_summary AS
-              SELECT
-                p.id AS property_id,
-                COALESCE(p.total_towers_planned, p.number_of_towers, 0) AS towers_planned,
-                COUNT(DISTINCT t.id) FILTER (WHERE t.is_active = true) AS towers_defined,
-                COALESCE(p.total_units_planned, p.number_of_units, 0) AS units_planned,
-                COUNT(DISTINCT f.id) FILTER (WHERE f.is_active = true) AS units_defined,
-                COALESCE(p.data_completion_pct, 0) AS data_completion_pct,
-                COALESCE(p.data_completeness_status::text, 'NOT_STARTED') AS data_completeness_status,
-                GREATEST(COALESCE(p.total_towers_planned, p.number_of_towers, 0) - COUNT(DISTINCT t.id) FILTER (WHERE t.is_active = true), 0) AS missing_towers,
-                GREATEST(COALESCE(p.total_units_planned, p.number_of_units, 0) - COUNT(DISTINCT f.id) FILTER (WHERE f.is_active = true), 0) AS missing_units
-              FROM properties p
-              LEFT JOIN towers t ON t.property_id = p.id
-              LEFT JOIN flats f ON f.tower_id = t.id
-              GROUP BY p.id;
-            $$;
+            CREATE MATERIALIZED VIEW vw_property_inventory_summary AS
+            SELECT
+              p.id AS property_id,
+              COALESCE(p.total_towers_planned, p.number_of_towers, 0) AS towers_planned,
+              COUNT(DISTINCT t.id) FILTER (WHERE t.is_active = true) AS towers_defined,
+              COALESCE(p.total_units_planned, p.number_of_units, 0) AS units_planned,
+              COUNT(DISTINCT f.id) FILTER (WHERE f.is_active = true) AS units_defined,
+              COALESCE(p.data_completion_pct, 0) AS data_completion_pct,
+              COALESCE(p.data_completeness_status::text, 'NOT_STARTED') AS data_completeness_status,
+              GREATEST(COALESCE(p.total_towers_planned, p.number_of_towers, 0) - COUNT(DISTINCT t.id) FILTER (WHERE t.is_active = true), 0) AS missing_towers,
+              GREATEST(COALESCE(p.total_units_planned, p.number_of_units, 0) - COUNT(DISTINCT f.id) FILTER (WHERE f.is_active = true), 0) AS missing_units
+            FROM properties p
+            LEFT JOIN towers t ON t.property_id = p.id
+            LEFT JOIN flats f ON f.tower_id = t.id
+            GROUP BY p.id;
           END IF;
-        END $$;
+        END $body$;
       `);
 
       await queryRunner.query(`
-        DO $$
+        DO $body$
         BEGIN
           IF NOT EXISTS (
             SELECT 1 FROM pg_matviews WHERE matviewname = 'vw_tower_inventory_summary'
           ) THEN
-            EXECUTE $$
-              CREATE MATERIALIZED VIEW vw_tower_inventory_summary AS
-              WITH flat_counts AS (
-                SELECT tower_id, COUNT(*) AS units_defined
+            CREATE MATERIALIZED VIEW vw_tower_inventory_summary AS
+            WITH flat_counts AS (
+              SELECT tower_id, COUNT(*) AS units_defined
+              FROM flats
+              WHERE is_active = true
+              GROUP BY tower_id
+            ),
+            flat_status_breakdown AS (
+              SELECT tower_id,
+                jsonb_object_agg(status, cnt ORDER BY status) AS units_by_status
+              FROM (
+                SELECT tower_id, status, COUNT(*) AS cnt
                 FROM flats
                 WHERE is_active = true
-                GROUP BY tower_id
-              ),
-              flat_status_breakdown AS (
-                SELECT tower_id,
-                  jsonb_object_agg(status, cnt ORDER BY status) AS units_by_status
-                FROM (
-                  SELECT tower_id, status, COUNT(*) AS cnt
-                  FROM flats
-                  WHERE is_active = true
-                  GROUP BY tower_id, status
-                ) breakdown
-                GROUP BY tower_id
-              )
-              SELECT
-                t.id AS tower_id,
-                t.property_id,
-                COALESCE(t.units_planned, 0) AS units_planned,
-                COALESCE(t.total_units, 0) AS units_total,
-                COALESCE(fc.units_defined, 0) AS units_defined,
-                COALESCE(t.data_completion_pct, 0) AS data_completion_pct,
-                COALESCE(t.data_completeness_status::text, 'NOT_STARTED') AS data_completeness_status,
-                COALESCE(t.issues_count, 0) AS issues_count,
-                COALESCE(fs.units_by_status, '{}'::jsonb) AS units_by_status
-              FROM towers t
-              LEFT JOIN flat_counts fc ON fc.tower_id = t.id
-              LEFT JOIN flat_status_breakdown fs ON fs.tower_id = t.id;
-            $$;
+                GROUP BY tower_id, status
+              ) breakdown
+              GROUP BY tower_id
+            )
+            SELECT
+              t.id AS tower_id,
+              t.property_id,
+              COALESCE(t.units_planned, 0) AS units_planned,
+              COALESCE(t.total_units, 0) AS units_total,
+              COALESCE(fc.units_defined, 0) AS units_defined,
+              COALESCE(t.data_completion_pct, 0) AS data_completion_pct,
+              COALESCE(t.data_completeness_status::text, 'NOT_STARTED') AS data_completeness_status,
+              COALESCE(t.issues_count, 0) AS issues_count,
+              COALESCE(fs.units_by_status, '{}'::jsonb) AS units_by_status
+            FROM towers t
+            LEFT JOIN flat_counts fc ON fc.tower_id = t.id
+            LEFT JOIN flat_status_breakdown fs ON fs.tower_id = t.id;
           END IF;
-        END $$;
+        END $body$;
       `);
 
       await queryRunner.query(

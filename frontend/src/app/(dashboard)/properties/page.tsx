@@ -97,7 +97,7 @@ const mapPropertyToRow = (property: ApiProperty): PropertyRow => {
         .map((item) => item.trim())
         .filter(Boolean)
     : [];
-  const bhkTypes = bhkTypesList.length > 0 ? bhkTypesList.join(', ') : undefined;
+  const bhkTypes = (bhkTypesList || []).length > 0 ? bhkTypesList.join(', ') : undefined;
 
   const priceMin = toNumber(property.priceMin);
   const priceMax = toNumber(property.priceMax);
@@ -236,20 +236,20 @@ export default function PropertiesPage() {
   }, [showDetails, selectedProperty]);
 
   const stats = useMemo(() => {
-    const totalProjects = properties.length;
-    const totalUnits = properties.reduce((sum, p) => sum + (p.totalUnits ?? 0), 0);
-    const soldUnits = properties.reduce((sum, p) => sum + (p.soldUnits ?? 0), 0);
-    const availableUnits = properties.reduce(
+    const totalProjects = (properties || []).length;
+    const totalUnits = ((properties || [])).reduce((sum, p) => sum + (p.totalUnits ?? 0), 0);
+    const soldUnits = ((properties || [])).reduce((sum, p) => sum + (p.soldUnits ?? 0), 0);
+    const availableUnits = ((properties || [])).reduce(
       (sum, p) => sum + (p.availableUnits ?? Math.max((p.totalUnits ?? 0) - (p.soldUnits ?? 0), 0)),
       0,
     );
     const absorptionRate = totalUnits > 0 ? (soldUnits / totalUnits) * 100 : 0;
-    const fundsTarget = properties.reduce(
+    const fundsTarget = ((properties || [])).reduce(
       (sum, p) => sum + (p.fundsTarget ?? p.revenue ?? 0),
       0,
     );
-    const fundsRealized = properties.reduce((sum, p) => sum + (p.fundsRealized ?? 0), 0);
-    const fundsOutstanding = properties.reduce((sum, p) => {
+    const fundsRealized = ((properties || [])).reduce((sum, p) => sum + (p.fundsRealized ?? 0), 0);
+    const fundsOutstanding = ((properties || [])).reduce((sum, p) => {
       if (p.fundsOutstanding !== undefined) {
         return sum + p.fundsOutstanding;
       }
@@ -276,7 +276,7 @@ export default function PropertiesPage() {
     setDeleteLoading(true);
     try {
       await propertiesService.deleteProperty(selectedProperty.id);
-      setProperties((prev) => prev.filter((property) => property.id !== selectedProperty.id));
+      setProperties((prev) => ((prev || [])).filter((property) => property.id !== selectedProperty.id));
       setShowDelete(false);
       setSuccessMessage('Property archived successfully');
       setShowSuccess(true);
@@ -289,13 +289,13 @@ export default function PropertiesPage() {
   };
 
   const handleBulkDelete = async (rows: PropertyRow[]) => {
-    if (!confirm(`Delete ${rows.length} properties?`)) return;
+    if (!confirm(`Delete ${(rows || []).length} properties?`)) return;
 
     try {
-      await Promise.all(rows.map((row) => propertiesService.deleteProperty(row.id)));
-      const deletedIds = rows.map((row) => row.id);
-      setProperties((prev) => prev.filter((property) => !deletedIds.includes(property.id)));
-      setSuccessMessage(`${rows.length} properties archived`);
+      await Promise.all((rows || []).map((row) => propertiesService.deleteProperty(row.id)));
+      const deletedIds = ((rows || [])).map((row) => row.id);
+      setProperties((prev) => ((prev || [])).filter((property) => !deletedIds.includes(property.id)));
+      setSuccessMessage(`${(rows || []).length} properties archived`);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error bulk deleting properties:', error);
@@ -304,7 +304,7 @@ export default function PropertiesPage() {
   };
 
   const handleExport = (rows: PropertyRow[]) => {
-    if (rows.length === 0) {
+    if ((rows || []).length === 0) {
       alert('No properties to export yet.');
       return;
     }
@@ -444,7 +444,7 @@ export default function PropertiesPage() {
       <AlertTriangle className="w-4 h-4" />
       {error}
     </span>
-  ) : !loading && properties.length === 0 ? (
+  ) : !loading && (properties || []).length === 0 ? (
     <span
       className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-full"
       style={{ backgroundColor: 'rgba(242, 201, 76, 0.18)', color: brandPalette.accent }}
@@ -707,7 +707,7 @@ function FinancialSnapshot({
         Financial Snapshot
       </h3>
       <div className="mt-4 grid gap-4 sm:grid-cols-3">
-        {items.map(({ label, amount, tone, suffix }) => (
+        {((items || [])).map(({ label, amount, tone, suffix }) => (
           <div key={label} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
             <p className={`mt-2 text-lg font-semibold ${tone}`}>{displayValue(amount)}</p>
@@ -761,9 +761,9 @@ function TowerStageSection({
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700">
           {error}
         </div>
-      ) : summary && summary.towers.length > 0 ? (
+      ) : summary && (summary.towers || []).length > 0 ? (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          {summary.towers.map((tower) => (
+          {(summary.towers || []).map((tower) => (
             <TowerStageCard key={tower.id} tower={tower} />
           ))}
         </div>
@@ -820,11 +820,11 @@ function TowerStageCard({ tower }: { tower: TowerInventorySummary }) {
           <p className="mt-1 text-sm font-semibold text-orange-600">{formatCurrency(tower.fundsOutstanding ?? 0)}</p>
         </div>
       </div>
-      {unitPreviews.length > 0 ? (
+      {(unitPreviews || []).length > 0 ? (
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Unit Snapshots</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            {unitPreviews.map((unit) => (
+            {((unitPreviews || [])).map((unit) => (
               <div key={unit.id} className="flex gap-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
                 <div className="h-12 w-12 overflow-hidden rounded-lg bg-white shadow-inner">
                   {unit.images?.[0] ? (
@@ -848,7 +848,7 @@ function TowerStageCard({ tower }: { tower: TowerInventorySummary }) {
           Add unit imagery to highlight readiness.
         </div>
       )}
-      {paymentStages.length > 0 ? (
+      {(paymentStages || []).length > 0 ? (
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment Schedule</p>
           <div className="overflow-hidden rounded-xl border border-gray-100">
@@ -862,7 +862,7 @@ function TowerStageCard({ tower }: { tower: TowerInventorySummary }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {paymentStages.map((stage) => (
+                {((paymentStages || [])).map((stage) => (
                   <tr key={stage.floorNumber}>
                     <td className="px-3 py-2 font-medium text-gray-900">{stage.stageLabel}</td>
                     <td className="px-3 py-2 text-gray-700">{formatCurrency(stage.paymentDue ?? 0)}</td>
@@ -942,7 +942,7 @@ function convertToCSV(data: PropertyRow[]): string {
     'Status',
     'Revenue',
   ];
-  const rows = data.map((p) => [
+  const rows = ((data || [])).map((p) => [
     p.code ?? '',
     p.name ?? '',
     p.location ?? '',

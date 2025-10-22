@@ -76,17 +76,17 @@ export default function TeamsPage() {
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-600 mb-1">Active Projects</p>
           <p className="text-2xl font-bold text-gray-900">
-            {projects.filter(p => p.status === 'IN_PROGRESS').length}
+            {((projects || [])).filter(p => p.status === 'IN_PROGRESS').length}
           </p>
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Total Employees</p>
-          <p className="text-2xl font-bold text-blue-700">{employees.length}</p>
+          <p className="text-2xl font-bold text-blue-700">{(employees || []).length}</p>
         </div>
         <div className="bg-green-50 rounded-lg shadow p-4">
           <p className="text-sm text-green-600 mb-1">Project Managers</p>
           <p className="text-2xl font-bold text-green-700">
-            {projects.filter(p => p.projectManagerId).length}
+            {((projects || [])).filter(p => p.projectManagerId).length}
           </p>
         </div>
         <div className="bg-purple-50 rounded-lg shadow p-4">
@@ -138,13 +138,13 @@ export default function TeamsPage() {
       </div>
 
       {/* Active Projects with Teams */}
-      {projects.length > 0 && (
+      {(projects || []).length > 0 && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-bold mb-4" style={{ color: '#A8211B' }}>
             Project Teams
           </h2>
           <div className="space-y-4">
-            {projects.map((project) => (
+            {((projects || [])).map((project) => (
               <div key={project.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-red-500 transition-all">
                 <div className="flex justify-between items-start mb-3">
                   <div>
@@ -219,7 +219,7 @@ export default function TeamsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading team data...</p>
         </div>
-      ) : projects.length === 0 ? (
+      ) : (projects || []).length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center mb-6">
           <p className="text-4xl mb-4">👥</p>
           <p className="text-gray-600 mb-2">No construction projects found for this property</p>

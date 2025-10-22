@@ -252,18 +252,6 @@ __decorate([
     __metadata("design:type", String)
 ], Property.prototype, "dataCompletenessStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true, name: 'project_id' }),
-    __metadata("design:type", String)
-], Property.prototype, "projectId", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => require('../../projects/entities/project.entity').Project, (project) => project.properties, {
-        nullable: true,
-        onDelete: 'SET NULL',
-    }),
-    (0, typeorm_1.JoinColumn)({ name: 'project_id' }),
-    __metadata("design:type", Function)
-], Property.prototype, "project", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: 'uuid', nullable: true, name: 'created_by' }),
     __metadata("design:type", String)
 ], Property.prototype, "createdBy", void 0);

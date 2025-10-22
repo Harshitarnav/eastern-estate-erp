@@ -69,7 +69,7 @@ export default function NewFollowUpPage() {
         setLoadingLeads(true);
         const data = await leadsService.getMyLeads(user.id);
         setLeads(data ?? []);
-        if (data && data.length > 0) {
+        if (data && (data || []).length > 0) {
           setForm((prev) => ({ ...prev, leadId: prev.leadId || data[0].id }));
         }
       } catch (err) {
@@ -191,7 +191,7 @@ export default function NewFollowUpPage() {
               </div>
             )}
 
-            {leads.length === 0 ? (
+            {(leads || []).length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[#A8211B]/20 bg-white px-6 py-10 text-center">
                 <p className="text-lg font-semibold text-[#7B1E12]">
                   No leads assigned yet
@@ -230,7 +230,7 @@ export default function NewFollowUpPage() {
                         <SelectValue placeholder="Select lead" />
                       </SelectTrigger>
                       <SelectContent>
-                        {leads.map((lead) => (
+                        {((leads || [])).map((lead) => (
                           <SelectItem key={lead.id} value={lead.id}>
                             <span className="flex flex-col">
                               <span className="font-medium">

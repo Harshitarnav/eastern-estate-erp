@@ -99,14 +99,14 @@ __decorate([
         description: 'Construction start date',
         example: '2024-01-15',
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], TowerResponseDto.prototype, "constructionStartDate", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Completion date',
         example: '2025-12-31',
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], TowerResponseDto.prototype, "completionDate", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
@@ -209,14 +209,14 @@ __decorate([
         description: 'Creation timestamp',
         example: '2024-01-15T10:30:00Z',
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], TowerResponseDto.prototype, "createdAt", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Last update timestamp',
         example: '2024-01-20T15:45:00Z',
     }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], TowerResponseDto.prototype, "updatedAt", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({

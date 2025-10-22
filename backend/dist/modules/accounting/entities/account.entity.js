@@ -13,11 +13,11 @@ exports.Account = exports.AccountType = void 0;
 const typeorm_1 = require("typeorm");
 var AccountType;
 (function (AccountType) {
-    AccountType["ASSET"] = "Asset";
-    AccountType["LIABILITY"] = "Liability";
-    AccountType["EQUITY"] = "Equity";
-    AccountType["INCOME"] = "Income";
-    AccountType["EXPENSE"] = "Expense";
+    AccountType["ASSET"] = "ASSET";
+    AccountType["LIABILITY"] = "LIABILITY";
+    AccountType["EQUITY"] = "EQUITY";
+    AccountType["INCOME"] = "INCOME";
+    AccountType["EXPENSE"] = "EXPENSE";
 })(AccountType || (exports.AccountType = AccountType = {}));
 let Account = class Account {
 };
@@ -27,21 +27,25 @@ __decorate([
     __metadata("design:type", String)
 ], Account.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'account_code', unique: true }),
+    (0, typeorm_1.Column)({ name: 'account_code', unique: true, length: 50 }),
     __metadata("design:type", String)
 ], Account.prototype, "accountCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'account_name' }),
+    (0, typeorm_1.Column)({ name: 'account_name', length: 200 }),
     __metadata("design:type", String)
 ], Account.prototype, "accountName", void 0);
 __decorate([
     (0, typeorm_1.Column)({
+        name: 'account_type',
         type: 'enum',
         enum: AccountType,
-        name: 'account_type',
     }),
     __metadata("design:type", String)
 ], Account.prototype, "accountType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'account_category', length: 100 }),
+    __metadata("design:type", String)
+], Account.prototype, "accountCategory", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'parent_account_id', nullable: true }),
     __metadata("design:type", String)
@@ -56,47 +60,19 @@ __decorate([
     __metadata("design:type", Array)
 ], Account.prototype, "childAccounts", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: 1 }),
-    __metadata("design:type", Number)
-], Account.prototype, "level", void 0);
-__decorate([
     (0, typeorm_1.Column)({ name: 'is_active', default: true }),
     __metadata("design:type", Boolean)
 ], Account.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 15,
-        scale: 2,
-        name: 'opening_balance',
-        default: 0,
-    }),
+    (0, typeorm_1.Column)('decimal', { name: 'opening_balance', precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Account.prototype, "openingBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 15,
-        scale: 2,
-        name: 'current_balance',
-        default: 0,
-    }),
+    (0, typeorm_1.Column)('decimal', { name: 'current_balance', precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Account.prototype, "currentBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'gst_applicable', default: false }),
-    __metadata("design:type", Boolean)
-], Account.prototype, "gstApplicable", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'hsn_code', nullable: true }),
-    __metadata("design:type", String)
-], Account.prototype, "hsnCode", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'tax_category', nullable: true }),
-    __metadata("design:type", String)
-], Account.prototype, "taxCategory", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Account.prototype, "description", void 0);
 __decorate([

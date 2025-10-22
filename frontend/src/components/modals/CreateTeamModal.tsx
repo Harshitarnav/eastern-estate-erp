@@ -56,8 +56,8 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
       const employeesData = Array.isArray(employeesRes.data) ? employeesRes.data : (employeesRes.data?.data || []);
       const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
       
-      setEmployees(employeesData.filter((e: any) => e.status === 'ACTIVE'));
-      setProjects(projectsData.filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setEmployees(e((mployeesData || [])).filter((e: any) => e.status === 'ACTIVE'));
+      setProjects(p((rojectsData || [])).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load employees and projects');
@@ -67,7 +67,7 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
   const toggleMember = (employeeId: string) => {
     setSelectedMembers(prev =>
       prev.includes(employeeId)
-        ? prev.filter(id => id !== employeeId)
+        ? ((prev || [])).filter(id => id !== employeeId)
         : [...prev, employeeId]
     );
   };
@@ -130,7 +130,7 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
     onClose();
   };
 
-  const availableMembers = employees.filter(e => e.id !== formData.teamLeaderId);
+  const availableMembers = ((employees || [])).filter(e => e.id !== formData.teamLeaderId);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Create Construction Team" size="xl">
@@ -179,7 +179,7 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
                 required
               >
                 <option value="">Select Team Leader</option>
-                {employees.map((employee) => (
+                {((employees || [])).map((employee) => (
                   <option key={employee.id} value={employee.id}>
                     {employee.firstName} {employee.lastName} - {employee.designation}
                   </option>
@@ -196,7 +196,7 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
                 onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
-                {SPECIALIZATIONS.map((spec) => (
+                {((SPECIALIZATIONS || [])).map((spec) => (
                   <option key={spec} value={spec}>
                     {spec.replace('_', ' ')}
                   </option>
@@ -214,7 +214,7 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               >
                 <option value="">No Project (Available)</option>
-                {projects.map((project) => (
+                {((projects || [])).map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.projectName}
                   </option>
@@ -289,7 +289,7 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
                   No available employees. Please select a team leader first or add employees.
                 </p>
               ) : (
-                availableMembers.map((employee) => (
+                ((availableMembers || [])).map((employee) => (
                   <label
                     key={employee.id}
                     className="flex items-center space-x-3 p-3 bg-white rounded border hover:bg-gray-50 cursor-pointer"

@@ -10,11 +10,11 @@ import {
 } from 'typeorm';
 
 export enum AccountType {
-  ASSET = 'Asset',
-  LIABILITY = 'Liability',
-  EQUITY = 'Equity',
-  INCOME = 'Income',
-  EXPENSE = 'Expense',
+  ASSET = 'ASSET',
+  LIABILITY = 'LIABILITY',
+  EQUITY = 'EQUITY',
+  INCOME = 'INCOME',
+  EXPENSE = 'EXPENSE',
 }
 
 @Entity('accounts')
@@ -22,18 +22,21 @@ export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'account_code', unique: true })
+  @Column({ name: 'account_code', unique: true, length: 50 })
   accountCode: string;
 
-  @Column({ name: 'account_name' })
+  @Column({ name: 'account_name', length: 200 })
   accountName: string;
 
   @Column({
+    name: 'account_type',
     type: 'enum',
     enum: AccountType,
-    name: 'account_type',
   })
   accountType: AccountType;
+
+  @Column({ name: 'account_category', length: 100 })
+  accountCategory: string;
 
   @Column({ name: 'parent_account_id', nullable: true })
   parentAccountId: string;
@@ -45,40 +48,16 @@ export class Account {
   @OneToMany(() => Account, (account) => account.parentAccount)
   childAccounts: Account[];
 
-  @Column({ default: 1 })
-  level: number;
-
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column({
-    type: 'decimal',
-    precision: 15,
-    scale: 2,
-    name: 'opening_balance',
-    default: 0,
-  })
+  @Column('decimal', { name: 'opening_balance', precision: 15, scale: 2, default: 0 })
   openingBalance: number;
 
-  @Column({
-    type: 'decimal',
-    precision: 15,
-    scale: 2,
-    name: 'current_balance',
-    default: 0,
-  })
+  @Column('decimal', { name: 'current_balance', precision: 15, scale: 2, default: 0 })
   currentBalance: number;
 
-  @Column({ name: 'gst_applicable', default: false })
-  gstApplicable: boolean;
-
-  @Column({ name: 'hsn_code', nullable: true })
-  hsnCode: string;
-
-  @Column({ name: 'tax_category', nullable: true })
-  taxCategory: string;
-
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   description: string;
 
   @CreateDateColumn({ name: 'created_at' })

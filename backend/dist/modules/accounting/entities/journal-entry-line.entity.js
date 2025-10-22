@@ -21,53 +21,29 @@ __decorate([
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'journal_entry_id' }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "journalEntryId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => journal_entry_entity_1.JournalEntry),
-    (0, typeorm_1.JoinColumn)({ name: 'journal_entry_id' }),
+    (0, typeorm_1.ManyToOne)(() => journal_entry_entity_1.JournalEntry, (entry) => entry.lines, { onDelete: 'CASCADE' }),
+    (0, typeorm_1.JoinColumn)({ name: 'journalEntryId' }),
     __metadata("design:type", journal_entry_entity_1.JournalEntry)
 ], JournalEntryLine.prototype, "journalEntry", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'line_number' }),
-    __metadata("design:type", Number)
-], JournalEntryLine.prototype, "lineNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'account_id' }),
+    (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "accountId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => account_entity_1.Account),
-    (0, typeorm_1.JoinColumn)({ name: 'account_id' }),
+    (0, typeorm_1.JoinColumn)({ name: 'accountId' }),
     __metadata("design:type", account_entity_1.Account)
 ], JournalEntryLine.prototype, "account", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'account_code' }),
-    __metadata("design:type", String)
-], JournalEntryLine.prototype, "accountCode", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'account_name' }),
-    __metadata("design:type", String)
-], JournalEntryLine.prototype, "accountName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 15,
-        scale: 2,
-        name: 'debit_amount',
-        default: 0,
-    }),
+    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], JournalEntryLine.prototype, "debitAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 15,
-        scale: 2,
-        name: 'credit_amount',
-        default: 0,
-    }),
+    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], JournalEntryLine.prototype, "creditAmount", void 0);
 __decorate([
@@ -75,35 +51,7 @@ __decorate([
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'cost_center', nullable: true }),
-    __metadata("design:type", String)
-], JournalEntryLine.prototype, "costCenter", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'project_id', nullable: true }),
-    __metadata("design:type", String)
-], JournalEntryLine.prototype, "projectId", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 15,
-        scale: 2,
-        name: 'gst_amount',
-        default: 0,
-    }),
-    __metadata("design:type", Number)
-], JournalEntryLine.prototype, "gstAmount", void 0);
-__decorate([
-    (0, typeorm_1.Column)({
-        type: 'decimal',
-        precision: 15,
-        scale: 2,
-        name: 'tds_amount',
-        default: 0,
-    }),
-    __metadata("design:type", Number)
-], JournalEntryLine.prototype, "tdsAmount", void 0);
-__decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
+    (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
 ], JournalEntryLine.prototype, "createdAt", void 0);
 exports.JournalEntryLine = JournalEntryLine = __decorate([

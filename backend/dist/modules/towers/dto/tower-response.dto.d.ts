@@ -11,8 +11,8 @@ export declare class TowerResponseDto {
     unitsPerFloor?: string;
     amenities?: string[];
     constructionStatus: string;
-    constructionStartDate?: Date;
-    completionDate?: Date;
+    constructionStartDate?: string | Date;
+    completionDate?: string | Date;
     reraNumber?: string;
     builtUpArea?: number;
     carpetArea?: number;
@@ -33,8 +33,8 @@ export declare class TowerResponseDto {
         city: string;
         state: string;
     };
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string | Date;
+    updatedAt: string | Date;
     flatsCount?: number;
     availableUnits?: number;
     soldUnits?: number;

@@ -1,25 +1,22 @@
 export declare enum AccountType {
-    ASSET = "Asset",
-    LIABILITY = "Liability",
-    EQUITY = "Equity",
-    INCOME = "Income",
-    EXPENSE = "Expense"
+    ASSET = "ASSET",
+    LIABILITY = "LIABILITY",
+    EQUITY = "EQUITY",
+    INCOME = "INCOME",
+    EXPENSE = "EXPENSE"
 }
 export declare class Account {
     id: string;
     accountCode: string;
     accountName: string;
     accountType: AccountType;
+    accountCategory: string;
     parentAccountId: string;
     parentAccount: Account;
     childAccounts: Account[];
-    level: number;
     isActive: boolean;
     openingBalance: number;
     currentBalance: number;
-    gstApplicable: boolean;
-    hsnCode: string;
-    taxCategory: string;
     description: string;
     createdAt: Date;
     updatedAt: Date;

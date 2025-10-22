@@ -1,51 +1,70 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsUUID,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-  IsBoolean,
-  IsDateString,
-  IsArray,
-  Min,
-  IsInt,
-} from 'class-validator';
-import { PaymentType, PaymentMode, PaymentStatus } from '../entities/payment.entity';
+import { IsString, IsNumber, IsEnum, IsOptional, IsDate, IsUUID, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PaymentType, PaymentMethod, PaymentStatus } from '../entities/payment.entity';
 
 export class CreatePaymentDto {
-  @IsNotEmpty()
-  @IsString()
-  paymentNumber: string;
-
   @IsOptional()
   @IsString()
-  receiptNumber?: string;
-
-  @IsNotEmpty()
-  @IsUUID()
-  bookingId: string;
-
-  @IsNotEmpty()
-  @IsUUID()
-  customerId: string;
+  paymentCode?: string; // Auto-generated if not provided
 
   @IsOptional()
+  @IsUUID()
+  bookingId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  vendorId?: string;
+
   @IsEnum(PaymentType)
-  paymentType?: PaymentType;
+  paymentType: PaymentType;
 
-  @IsNotEmpty()
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
+
+  @IsString()
+  paymentCategory: string;
+
   @IsNumber()
-  @Min(0)
+  @Min(0.01)
   amount: number;
 
-  @IsNotEmpty()
-  @IsDateString()
-  paymentDate: string;
+  @Type(() => Date)
+  @IsDate()
+  paymentDate: Date;
 
-  @IsNotEmpty()
-  @IsEnum(PaymentMode)
-  paymentMode: PaymentMode;
+  // Bank Details
+  @IsOptional()
+  @IsString()
+  bankName?: string;
+
+  @IsOptional()
+  @IsString()
+  accountNumber?: string;
+
+  @IsOptional()
+  @IsString()
+  transactionReference?: string;
+
+  @IsOptional()
+  @IsString()
+  chequeNumber?: string;
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  chequeDate?: Date;
+
+  @IsOptional()
+  @IsString()
+  upiId?: string;
 
   @IsOptional()
   @IsEnum(PaymentStatus)
@@ -53,94 +72,11 @@ export class CreatePaymentDto {
 
   @IsOptional()
   @IsString()
-  bankName?: string;
-
-  @IsOptional()
-  @IsString()
-  branchName?: string;
-
-  @IsOptional()
-  @IsString()
-  chequeNumber?: string;
-
-  @IsOptional()
-  @IsDateString()
-  chequeDate?: string;
-
-  @IsOptional()
-  @IsString()
-  transactionId?: string;
-
-  @IsOptional()
-  @IsDateString()
-  clearanceDate?: string;
-
-  @IsOptional()
-  @IsString()
-  upiId?: string;
-
-  @IsOptional()
-  @IsString()
-  onlinePaymentId?: string;
-
-  @IsOptional()
-  @IsInt()
-  installmentNumber?: number;
-
-  @IsOptional()
-  @IsDateString()
-  dueDate?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  lateFee?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tdsAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  tdsPercentage?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  gstAmount?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  gstPercentage?: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
-  netAmount: number;
+  receiptNumber?: string;
 
   @IsOptional()
   @IsString()
   receiptUrl?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  receiptGenerated?: boolean;
-
-  @IsOptional()
-  @IsDateString()
-  receiptDate?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  isVerified?: boolean;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  documents?: string[];
 
   @IsOptional()
   @IsString()
@@ -148,14 +84,5 @@ export class CreatePaymentDto {
 
   @IsOptional()
   @IsString()
-  internalNotes?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
-
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  remarks?: string;
 }

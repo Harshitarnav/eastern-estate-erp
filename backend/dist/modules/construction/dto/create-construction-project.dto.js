@@ -24,16 +24,16 @@ __decorate([
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "projectName", void 0);
 __decorate([
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsISO8601)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "startDate", void 0);
 __decorate([
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsISO8601)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "expectedCompletionDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsISO8601)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "actualCompletionDate", void 0);
 __decorate([

@@ -615,13 +615,13 @@ export default function SalesDashboard() {
                 </div>
               )}
 
-              {!focusLoading && !focusError && focusLeads.length === 0 && (
+              {!focusLoading && !focusError && (focusLeads || []).length === 0 && (
                 <div className="rounded-2xl bg-[rgba(168,33,27,0.05)] p-6 text-center text-sm text-gray-600">
                   All caught up. No pending follow-ups for the next 48 hours.
                 </div>
               )}
 
-              {focusLeads.map((lead) => {
+              {((focusLeads || [])).map((lead) => {
                 const requirement =
                   lead.requirements?.[0] ??
                   lead.interestedPropertyTypes?.[0] ??
@@ -705,13 +705,13 @@ export default function SalesDashboard() {
                 </div>
               )}
 
-              {!assignedLoading && !assignedError && assignedLeads.length === 0 && (
+              {!assignedLoading && !assignedError && (assignedLeads || []).length === 0 && (
                 <div className="rounded-2xl border border-dashed border-[#A8211B]/20 bg-white/80 px-4 py-6 text-center text-sm text-gray-500">
                   Leads are yet to be assigned to you. Speak to your Sales GM for allocations.
                 </div>
               )}
 
-              {assignedLeads.map((lead) => (
+              {((assignedLeads || [])).map((lead) => (
                 <div
                   key={lead.id}
                   className="rounded-xl border border-[rgba(168,33,27,0.12)] bg-white px-4 py-3 shadow-sm"
@@ -801,7 +801,7 @@ export default function SalesDashboard() {
                       </Badge>
                     </div>
                   ))}
-                  {metrics.upcomingEvents.tasks.length === 0 && (
+                  {(metrics.upcomingEvents.tasks || []).length === 0 && (
                     <p className="text-center text-gray-500 py-4">No tasks for today</p>
                   )}
                 </div>
@@ -823,7 +823,7 @@ export default function SalesDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {metrics.upcomingEvents.siteVisits.map((visit, idx) => (
+                  {(metrics.upcomingEvents.siteVisits || []).map((visit, idx) => (
                     <div
                       key={idx}
                       className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
@@ -841,7 +841,7 @@ export default function SalesDashboard() {
                       </div>
                     </div>
                   ))}
-                  {metrics.upcomingEvents.siteVisits.length === 0 && (
+                  {(metrics.upcomingEvents.siteVisits || []).length === 0 && (
                     <p className="text-center text-gray-500 py-4">No upcoming site visits</p>
                   )}
                 </div>

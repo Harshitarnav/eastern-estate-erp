@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource, EntityManager } from 'typeorm';
 import { Property } from './entities/property.entity';
-import { Project } from '../projects/entities/project.entity';
 import { Tower } from '../towers/entities/tower.entity';
 import { Flat, FlatStatus } from '../flats/entities/flat.entity';
 import { Customer } from '../customers/entities/customer.entity';
@@ -36,8 +35,6 @@ export class PropertiesService {
   constructor(
     @InjectRepository(Property)
     private propertiesRepository: Repository<Property>,
-    @InjectRepository(Project)
-    private projectsRepository: Repository<Project>,
     @InjectRepository(Tower)
     private towersRepository: Repository<Tower>,
     @InjectRepository(Flat)
@@ -60,18 +57,6 @@ export class PropertiesService {
       throw new BadRequestException(`Property with code ${createPropertyDto.propertyCode} already exists`);
     }
 
-    if (!createPropertyDto.projectId) {
-      throw new BadRequestException('projectId is required to create a property');
-    }
-
-    const project = await this.projectsRepository.findOne({
-      where: { id: createPropertyDto.projectId },
-    });
-
-    if (!project) {
-      throw new NotFoundException(`Project with ID ${createPropertyDto.projectId} not found`);
-    }
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -85,7 +70,6 @@ export class PropertiesService {
 
       const property = propertyRepository.create({
         ...normalizedPayload,
-        projectId: project.id,
         status: normalizedPayload.status ?? 'Active',
         isActive: normalizedPayload.isActive ?? true,
         isFeatured: normalizedPayload.isFeatured ?? false,
@@ -110,7 +94,6 @@ export class PropertiesService {
 
       const hydratedProperty = await this.propertiesRepository.findOne({
         where: { id: savedProperty.id },
-        relations: ['project'],
       });
 
       return this.mapToResponseDto(hydratedProperty ?? savedProperty);
@@ -141,13 +124,12 @@ export class PropertiesService {
 
     const queryBuilder = this.propertiesRepository
       .createQueryBuilder('property')
-      .leftJoinAndSelect('property.project', 'project')
       .where('property.isActive = :isActive', { isActive: activeFilter });
 
     // Search across multiple fields
     if (search) {
       queryBuilder.andWhere(
-        '(property.name ILIKE :search OR property.propertyCode ILIKE :search OR property.address ILIKE :search OR property.reraNumber ILIKE :search OR project.projectCode ILIKE :search)',
+        '(property.name ILIKE :search OR property.propertyCode ILIKE :search OR property.address ILIKE :search OR property.reraNumber ILIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -429,7 +411,7 @@ export class PropertiesService {
   async findOne(id: string): Promise<PropertyResponseDto> {
     const property = await this.propertiesRepository.findOne({
       where: { id, isActive: true },
-      relations: ['towers', 'project'],
+      relations: ['towers'],
     });
 
     if (!property) {
@@ -442,7 +424,6 @@ export class PropertiesService {
   async findByCode(code: string): Promise<PropertyResponseDto> {
     const property = await this.propertiesRepository.findOne({
       where: { propertyCode: code, isActive: true },
-      relations: ['project'],
     });
 
     if (!property) {
@@ -455,7 +436,6 @@ export class PropertiesService {
   async getHierarchy(id: string): Promise<PropertyHierarchyDto> {
     const property = await this.propertiesRepository.findOne({
       where: { id, isActive: true },
-      relations: ['project'],
     });
 
     if (!property) {
@@ -531,9 +511,6 @@ export class PropertiesService {
       city: property.city,
       state: property.state,
       pincode: property.pincode,
-      projectId: property.projectId ?? undefined,
-      projectCode: property.project?.projectCode,
-      projectName: property.project?.name,
       totalArea: property.totalArea ?? undefined,
       builtUpArea: property.builtUpArea ?? undefined,
       expectedRevenue: property.expectedRevenue ?? undefined,
@@ -566,16 +543,6 @@ export class PropertiesService {
       }
     }
 
-    if (updatePropertyDto.projectId) {
-      const project = await this.projectsRepository.findOne({
-        where: { id: updatePropertyDto.projectId },
-      });
-
-      if (!project) {
-        throw new NotFoundException(`Project with ID ${updatePropertyDto.projectId} not found`);
-      }
-    }
-
     const normalizedUpdate = this.normalizePropertyPayload(updatePropertyDto);
     Object.assign(property, normalizedUpdate);
     if (userId) {
@@ -583,12 +550,8 @@ export class PropertiesService {
     }
 
     const updatedProperty = await this.propertiesRepository.save(property);
-    const hydratedProperty = await this.propertiesRepository.findOne({
-      where: { id: updatedProperty.id },
-      relations: ['project'],
-    });
 
-    return this.mapToResponseDto(hydratedProperty ?? updatedProperty);
+    return this.mapToResponseDto(updatedProperty);
   }
 
   async remove(id: string): Promise<{ message: string }> {
@@ -631,12 +594,7 @@ export class PropertiesService {
       { isActive: updatedProperty.isActive },
     );
 
-    const hydratedProperty = await this.propertiesRepository.findOne({
-      where: { id: updatedProperty.id },
-      relations: ['project'],
-    });
-
-    return this.mapToResponseDto(hydratedProperty ?? updatedProperty);
+    return this.mapToResponseDto(updatedProperty);
   }
 
   async getStats(): Promise<any> {
@@ -665,10 +623,6 @@ export class PropertiesService {
   }
 
   private async mapToResponseDto(property: Property): Promise<PropertyResponseDto> {
-    const project = property.project ?? (property.projectId
-      ? await this.projectsRepository.findOne({ where: { id: property.projectId } })
-      : null);
-
     const towersCountResult = await this.propertiesRepository.query(
       'SELECT COUNT(*) as count FROM towers WHERE property_id = $1',
       [property.id]
@@ -733,9 +687,6 @@ export class PropertiesService {
       updatedBy: property.updatedBy,
       createdAt: property.createdAt,
       updatedAt: property.updatedAt,
-      projectId: property.projectId ?? project?.id,
-      projectCode: project?.projectCode,
-      projectName: project?.name,
       // Calculated from relationships
       towers: towersCount,
       totalFlats,

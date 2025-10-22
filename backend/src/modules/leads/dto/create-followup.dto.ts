@@ -12,9 +12,7 @@ export class CreateFollowUpDto {
   @IsUUID()
   leadId: string;
 
-  @Type(() => Date)
-  @IsDate()
-  followUpDate: Date;
+  followUpDate: string | Date;
 
   @IsEnum(FollowUpType)
   followUpType: FollowUpType;
@@ -50,9 +48,7 @@ export class CreateFollowUpDto {
   leadStatusAfter?: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  nextFollowUpDate?: Date;
+  nextFollowUpDate?: string | Date;
 
   @IsOptional()
   @IsString()

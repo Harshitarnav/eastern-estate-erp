@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateSalesTargetDto = void 0;
 const class_validator_1 = require("class-validator");
-const class_transformer_1 = require("class-transformer");
 const sales_target_entity_1 = require("../entities/sales-target.entity");
 class CreateSalesTargetDto {
 }
@@ -24,16 +23,6 @@ __decorate([
     (0, class_validator_1.IsEnum)(sales_target_entity_1.TargetPeriod),
     __metadata("design:type", String)
 ], CreateSalesTargetDto.prototype, "targetPeriod", void 0);
-__decorate([
-    (0, class_transformer_1.Type)(() => Date),
-    (0, class_validator_1.IsDate)(),
-    __metadata("design:type", Date)
-], CreateSalesTargetDto.prototype, "startDate", void 0);
-__decorate([
-    (0, class_transformer_1.Type)(() => Date),
-    (0, class_validator_1.IsDate)(),
-    __metadata("design:type", Date)
-], CreateSalesTargetDto.prototype, "endDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
