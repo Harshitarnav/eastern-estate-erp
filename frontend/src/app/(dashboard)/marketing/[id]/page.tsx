@@ -223,7 +223,7 @@ export default function CampaignDetailPage() {
                 Attachments
               </h2>
             </div>
-            {campaign.attachments && campaign.(attachments || []).length > 0 ? (
+            {campaign.attachments && (campaign.attachments || []).length > 0 ? (
               <div className="space-y-2">
                 {(campaign.attachments || []).map((file: any, index: number) => (
                   <div
