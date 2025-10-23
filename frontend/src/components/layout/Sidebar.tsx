@@ -7,7 +7,7 @@ import {
   X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
-  Settings, ChevronDown, Target
+  Settings, ChevronDown, Target, Bell
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -39,6 +39,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { id: 'notifications', label: 'Notifications', icon: Bell, href: '/notifications' },
     { 
       id: 'property-inventory', 
       label: 'Property Inventory', 

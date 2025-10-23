@@ -942,3 +942,18 @@ Register in `app.module.ts`
 Create files:
 - `services/new-service.service.ts`
 - `app/(dashboard)/new-module/page
+
+2. Import the NotificationsService in any backend service to send notifications:
+
+```typescript
+await this.notificationsService.create({
+  targetRoles: 'Admin,Manager',
+  title: 'New Booking',
+  message: 'A new booking has been created',
+  type: 'SUCCESS',
+  category: 'BOOKING',
+  actionUrl: '/bookings/123',
+  shouldSendEmail: true
+});
+```
+Email notifications will be automatically sent once we configure your SMTP settings in the .env file!

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { Menu, Bell, LogOut } from 'lucide-react';
+import { NotificationBell } from '@/components/layout/NotificationBell';
+import { Menu, LogOut } from 'lucide-react';
 
 export default function DashboardLayout({
   children,
@@ -66,10 +67,7 @@ export default function DashboardLayout({
           <div className="flex-1" />
 
           <div className="flex items-center gap-2">
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBell />
             
             <button
               onClick={handleLogout}

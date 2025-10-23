@@ -11,6 +11,10 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const email_service_1 = require("./email.service");
 const reminder_service_1 = require("./reminder.service");
+const notifications_service_1 = require("./notifications.service");
+const notifications_controller_1 = require("./notifications.controller");
+const notification_entity_1 = require("./entities/notification.entity");
+const user_entity_1 = require("../users/entities/user.entity");
 const lead_entity_1 = require("../leads/entities/lead.entity");
 const sales_task_entity_1 = require("../leads/entities/sales-task.entity");
 let NotificationsModule = class NotificationsModule {
@@ -18,9 +22,10 @@ let NotificationsModule = class NotificationsModule {
 exports.NotificationsModule = NotificationsModule;
 exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([lead_entity_1.Lead, sales_task_entity_1.SalesTask])],
-        providers: [email_service_1.EmailService, reminder_service_1.ReminderService],
-        exports: [email_service_1.EmailService, reminder_service_1.ReminderService],
+        imports: [typeorm_1.TypeOrmModule.forFeature([notification_entity_1.Notification, user_entity_1.User, lead_entity_1.Lead, sales_task_entity_1.SalesTask])],
+        controllers: [notifications_controller_1.NotificationsController],
+        providers: [email_service_1.EmailService, reminder_service_1.ReminderService, notifications_service_1.NotificationsService],
+        exports: [email_service_1.EmailService, reminder_service_1.ReminderService, notifications_service_1.NotificationsService],
     })
 ], NotificationsModule);
 //# sourceMappingURL=notifications.module.js.map
