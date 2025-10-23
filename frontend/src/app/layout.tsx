@@ -7,19 +7,19 @@ import { Toaster } from '@/components/ui/Toaster';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Eastern Estate ERP",
-  description: "Complete Real Estate Management System",
+  title: "Eastern Estate ERP - Building Homes, Nurturing Bonds",
+  description: "Complete Real Estate Management System - Luxury at Affordable Prices. Track properties, manage leads, bookings, construction, and more.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "EE-ERP",
+    title: "Eastern Estate",
   },
 };
 
-// ✅ Move themeColor here
+// ✅ Brand theme color
 export const viewport: Viewport = {
-  themeColor: "#3B82F6",
+  themeColor: "#A8211B",
   width: "device-width",
   initialScale: 1,
 };

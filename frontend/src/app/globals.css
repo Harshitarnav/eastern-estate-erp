@@ -44,72 +44,81 @@
 }
 
 :root {
+  /* Eastern Estate Brand Colors */
+  --eastern-red: #A8211B;
+  --maroon-luxe: #7B1E12;
+  --gold-accent: #F2C94C;
+  --beige-cream: #F3E3C1;
+  --charcoal: #333333;
+  --emerald-green: #3DA35D;
+  
+  /* Design System - Aligned with Brand */
   --radius: 0.625rem;
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --background: #FFFFFF;
+  --foreground: #333333;
+  --card: #FFFFFF;
+  --card-foreground: #333333;
+  --popover: #FFFFFF;
+  --popover-foreground: #333333;
+  --primary: #A8211B; /* Eastern Red */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F3E3C1; /* Beige Cream */
+  --secondary-foreground: #333333;
+  --muted: #F3E3C1;
+  --muted-foreground: #7B1E12;
+  --accent: #F2C94C; /* Gold Accent */
+  --accent-foreground: #333333;
+  --destructive: #A8211B;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #A8211B;
+  --chart-1: #A8211B;
+  --chart-2: #3DA35D;
+  --chart-3: #F2C94C;
+  --chart-4: #7B1E12;
+  --chart-5: #F3E3C1;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #333333;
+  --sidebar-primary: #A8211B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F3E3C1;
+  --sidebar-accent-foreground: #333333;
+  --sidebar-border: #E5E7EB;
+  --sidebar-ring: #A8211B;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: #1a1a1a;
+  --foreground: #FFFFFF;
+  --card: #262626;
+  --card-foreground: #FFFFFF;
+  --popover: #262626;
+  --popover-foreground: #FFFFFF;
+  --primary: #A8211B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #3f3f3f;
+  --secondary-foreground: #FFFFFF;
+  --muted: #3f3f3f;
+  --muted-foreground: #d4d4d4;
+  --accent: #F2C94C;
+  --accent-foreground: #333333;
+  --destructive: #ef4444;
+  --border: #3f3f3f;
+  --input: #3f3f3f;
+  --ring: #A8211B;
+  --chart-1: #A8211B;
+  --chart-2: #3DA35D;
+  --chart-3: #F2C94C;
+  --chart-4: #7B1E12;
+  --chart-5: #F3E3C1;
+  --sidebar: #262626;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #A8211B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #3f3f3f;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #3f3f3f;
+  --sidebar-ring: #A8211B;
 }
 
 @layer base {
@@ -118,10 +127,84 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 700;
   }
 }
 
 @layer utilities {
+  /* Premium Button Styles - Eastern Estate Brand */
+  .btn-premium {
+    @apply bg-[#A8211B] text-white hover:bg-[#8a1b16] transition-all duration-200 shadow-md hover:shadow-lg hover:scale-105 active:scale-95;
+  }
+  .btn-secondary-premium {
+    @apply bg-[#F3E3C1] text-[#333333] hover:bg-[#e9d9b1] transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+  .btn-accent {
+    @apply bg-[#F2C94C] text-[#333333] hover:bg-[#dab43d] transition-all duration-200 hover:scale-105 active:scale-95;
+  }
+  
+  /* Card Styles - Premium Feel */
+  .card-premium {
+    @apply bg-white shadow-sm hover:shadow-md transition-all duration-300 rounded-lg border border-gray-100 hover:scale-[1.01];
+  }
+  
+  /* Smooth Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Interactive Elements */
+  .interactive-card {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer;
+  }
+  
+  .brand-link {
+    @apply text-[#A8211B] hover:text-[#8a1b16] transition-colors duration-200 underline-offset-4 hover:underline;
+  }
+  
   /* Mobile Responsive Utilities */
   .responsive-table {
     @apply w-full overflow-x-auto;
@@ -131,32 +214,26 @@
     @apply min-w-full;
   }
   
-  /* Hide elements on mobile */
   .hide-mobile {
     @apply hidden md:block;
   }
   
-  /* Show only on mobile */
   .show-mobile {
     @apply block md:hidden;
   }
   
-  /* Mobile-friendly padding */
   .mobile-padding {
     @apply px-4 py-2 md:px-6 md:py-4;
   }
   
-  /* Responsive grid */
   .responsive-grid {
     @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
   }
   
-  /* Full-width on mobile, constrained on desktop */
   .mobile-full {
     @apply w-full md:w-auto;
   }
   
-  /* Responsive text sizes */
   .text-responsive-xs {
     @apply text-xs md:text-sm;
   }
@@ -177,42 +254,34 @@
     @apply text-xl md:text-2xl;
   }
   
-  /* Mobile-friendly buttons */
   .btn-mobile {
     @apply w-full md:w-auto px-4 py-2 text-sm md:text-base;
   }
   
-  /* Responsive spacing */
   .space-mobile {
     @apply space-y-2 md:space-y-4;
   }
   
-  /* Mobile modal - full screen on mobile, centered on desktop */
   .modal-mobile {
     @apply fixed inset-0 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl md:rounded-lg;
   }
   
-  /* Touch-friendly tap targets (min 44x44px for mobile) */
   .tap-target {
     @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
   }
   
-  /* Scrollable container with proper mobile handling */
   .scroll-container {
     @apply overflow-auto -mx-4 px-4 md:mx-0 md:px-0;
   }
   
-  /* Responsive card */
   .card-responsive {
     @apply p-4 md:p-6 rounded-lg shadow-sm;
   }
   
-  /* Stack on mobile, row on desktop */
   .stack-mobile {
     @apply flex flex-col md:flex-row gap-2 md:gap-4;
   }
   
-  /* Mobile-safe z-index */
   .z-mobile-safe {
     @apply relative z-10;
   }

@@ -234,7 +234,7 @@ export default function EditFlatPage() {
 
       await flatsService.updateFlat(flatId, flatData);
       alert('Flat updated successfully!');
-      router.push(`/flats/${flatId}`);
+      window.location.href = '/flats';
     } catch (error: any) {
       console.error('Error updating flat:', error);
       alert(error.response?.data?.message || 'Failed to update flat');

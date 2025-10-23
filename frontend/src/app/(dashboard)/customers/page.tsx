@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { usePropertyStore } from '@/store/propertyStore';
 import {
   UserCheck,
   Plus,
@@ -25,6 +26,7 @@ import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
 
 export default function CustomersPage() {
   const router = useRouter();
+  const { selectedProperties } = usePropertyStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,7 +45,10 @@ export default function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await customersService.getCustomers(filters);
+      const response = await customersService.getCustomers({
+        ...filters,
+        propertyId: selectedProperties.length > 0 ? selectedProperties[0] : undefined,
+      } as any);
       setCustomers(response.data);
       setMeta(response.meta);
       setError('');
@@ -57,7 +62,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     fetchCustomers();
-  }, [filters]);
+  }, [filters, selectedProperties]);
 
   const stats = useMemo(() => {
     const total = meta.total || (customers || []).length;

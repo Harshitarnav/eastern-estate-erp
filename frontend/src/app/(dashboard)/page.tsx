@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Building2, Home, Users, TrendingUp, DollarSign, ShoppingCart, Package, Briefcase, AlertTriangle, CheckCircle, Clock, Target } from 'lucide-react';
 import { propertiesService } from '@/services/properties.service';
 import { flatsService } from '@/services/flats.service';
@@ -365,38 +366,38 @@ export default function DashboardPage() {
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-lg font-bold mb-4" style={{ color: '#7B1E12' }}>Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <a
-            href="/dashboard/properties/new"
-            className="p-4 border-2 border-dashed rounded-lg text-center hover:border-solid transition-all"
+          <Link
+            href="/properties"
+            className="p-4 border-2 border-dashed rounded-lg text-center hover:border-solid hover:bg-red-50 transition-all cursor-pointer"
             style={{ borderColor: '#A8211B' }}
           >
             <Building2 className="h-8 w-8 mx-auto mb-2" style={{ color: '#A8211B' }} />
-            <p className="text-sm font-medium" style={{ color: '#7B1E12' }}>Add Property</p>
-          </a>
+            <p className="text-sm font-medium" style={{ color: '#7B1E12' }}>Manage Properties</p>
+          </Link>
           
-          <a
-            href="/dashboard/leads/new"
-            className="p-4 border-2 border-dashed border-yellow-400 rounded-lg text-center hover:border-solid transition-all"
+          <Link
+            href="/leads"
+            className="p-4 border-2 border-dashed border-yellow-400 rounded-lg text-center hover:border-solid hover:bg-yellow-50 transition-all cursor-pointer"
           >
             <Target className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-yellow-900">Add Lead</p>
-          </a>
+            <p className="text-sm font-medium text-yellow-900">Manage Leads</p>
+          </Link>
           
-          <a
-            href="/dashboard/customers/new"
-            className="p-4 border-2 border-dashed border-green-400 rounded-lg text-center hover:border-solid transition-all"
+          <Link
+            href="/customers"
+            className="p-4 border-2 border-dashed border-green-400 rounded-lg text-center hover:border-solid hover:bg-green-50 transition-all cursor-pointer"
           >
             <Users className="h-8 w-8 text-green-600 mx-auto mb-2" />
-            <p className="text-sm font-medium text-green-900">Add Customer</p>
-          </a>
+            <p className="text-sm font-medium text-green-900">Manage Customers</p>
+          </Link>
           
-          <a
-            href="/dashboard/inventory"
-            className="p-4 border-2 border-dashed border-blue-400 rounded-lg text-center hover:border-solid transition-all"
+          <Link
+            href="/construction/inventory"
+            className="p-4 border-2 border-dashed border-blue-400 rounded-lg text-center hover:border-solid hover:bg-blue-50 transition-all cursor-pointer"
           >
             <Package className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <p className="text-sm font-medium text-blue-900">Manage Inventory</p>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

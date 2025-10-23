@@ -1,11 +1,11 @@
 {
   "name": "Eastern Estate ERP",
-  "short_name": "EE-ERP",
-  "description": "Complete Real Estate Management System",
+  "short_name": "Eastern Estate",
+  "description": "Complete Real Estate Management System - Building Homes, Nurturing Bonds",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3B82F6",
+  "background_color": "#F9F7F3",
+  "theme_color": "#A8211B",
   "orientation": "portrait-primary",
   "icons": [
     {

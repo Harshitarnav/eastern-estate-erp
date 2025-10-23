@@ -40,7 +40,7 @@ export default function NewCustomerPage() {
 
       await customersService.createCustomer(customerData);
       alert('Customer created successfully!');
-      router.push('/customers');
+      window.location.href = '/customers';
     } catch (error: any) {
       console.error('Error creating customer:', error);
       alert(error.response?.data?.message || 'Failed to create customer');

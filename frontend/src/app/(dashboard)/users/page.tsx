@@ -116,7 +116,7 @@ export default function UsersPage() {
       lastName: user.lastName,
       phone: user.phone || '',
       gender: user.gender || '',
-      roleIds: user.((roles || [])).map(r => r.id),
+      roleIds: (user.roles || []).map(r => r.id),
     });
     setIsDialogOpen(true);
   };
@@ -185,7 +185,7 @@ export default function UsersPage() {
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.phone || '-'}</TableCell>
                 <TableCell>
-                  {user.((roles || [])).map(role => (
+                  {(user.roles || []).map(role => (
                     <Badge key={role.id} variant="secondary" className="mr-1">
                       {role.name}
                     </Badge>
@@ -308,7 +308,7 @@ export default function UsersPage() {
                           ...formData,
                           roleIds: checked
                             ? [...formData.roleIds, role.id]
-                            : formData.((roleIds || [])).filter(id => id !== role.id)
+                            : (formData.roleIds || []).filter(id => id !== role.id)
                         });
                       }}
                     />

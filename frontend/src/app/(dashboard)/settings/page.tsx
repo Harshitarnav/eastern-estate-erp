@@ -479,7 +479,7 @@ Master these shortcuts to work like a pro!`
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center px-4 py-2 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-[#A8211B] text-[#A8211B]'
                   : 'border-transparent text-gray-600 hover:text-gray-800'
               }`}
             >
@@ -743,10 +743,10 @@ Master these shortcuts to work like a pro!`
       {activeTab === 'help' && (
         <div className="space-y-6">
           {/* Header */}
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <Card className="bg-gradient-to-r from-[#FEF3E2] to-[#F3E3C1] border-[#F2C94C]">
             <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <BookOpen className="h-6 w-6 text-blue-600" />
+              <CardTitle className="text-2xl flex items-center gap-2" style={{ color: '#7B1E12' }}>
+                <BookOpen className="h-6 w-6" style={{ color: '#A8211B' }} />
                 Help & User Guides
               </CardTitle>
               <CardDescription className="text-base">
@@ -763,7 +763,7 @@ Master these shortcuts to work like a pro!`
               placeholder="Search guides... (e.g., 'sales', 'how to', 'booking')"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
             />
           </div>
 

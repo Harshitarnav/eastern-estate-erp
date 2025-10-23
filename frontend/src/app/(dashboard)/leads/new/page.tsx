@@ -50,7 +50,7 @@ export default function NewLeadPage() {
 
       await leadsService.createLead(leadData);
       alert('Lead created successfully!');
-      router.push('/leads');
+      window.location.href = '/leads';
     } catch (error: any) {
       console.error('Error creating lead:', error);
       alert(error.response?.data?.message || 'Failed to create lead');

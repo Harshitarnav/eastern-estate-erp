@@ -63,7 +63,7 @@ export default function NewBookingPage() {
             
             await bookingsService.createBooking(bookingData);
             alert('Booking created successfully!');
-            router.push('/bookings');
+            window.location.href = '/bookings';
         } catch (error: any) {
             console.error('Error creating booking:', error);
             console.error('Error response:', error.response?.data);

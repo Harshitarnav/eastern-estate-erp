@@ -266,3 +266,4 @@ export class FollowUpService {
     await this.followUpRepository.update(id, { isActive: false });
   }
 }
+

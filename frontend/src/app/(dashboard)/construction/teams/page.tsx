@@ -18,18 +18,18 @@ export default function TeamsPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   useEffect(() => {
-    if (!propertyId) {
-      router.push('/construction');
-      return;
-    }
     loadData();
   }, [propertyId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      const projectsUrl = propertyId 
+        ? `/construction-projects?propertyId=${propertyId}` 
+        : '/construction-projects';
+      
       const [projectsRes, employeesRes] = await Promise.all([
-        api.get(`/construction-projects?propertyId=${propertyId}`),
+        api.get(projectsUrl),
         api.get('/employees')
       ]);
       
@@ -44,8 +44,6 @@ export default function TeamsPage() {
       setLoading(false);
     }
   };
-
-  if (!propertyId) return null;
 
   return (
     <div className="p-6">

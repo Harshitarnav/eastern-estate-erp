@@ -17,19 +17,15 @@ export default function VendorsPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
-    if (!propertyId) {
-      router.push('/construction');
-      return;
-    }
     loadVendors();
-  }, [propertyId]);
+  }, []);
 
   const loadVendors = async () => {
     setLoading(true);
     try {
       const response = await api.get('/vendors');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setVendors(d((ata || [])).filter((v: any) => v.isActive));
+      setVendors((data || []).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load vendors:', error);
     } finally {
@@ -59,8 +55,6 @@ export default function VendorsPage() {
       </div>
     );
   };
-
-  if (!propertyId) return null;
 
   return (
     <div className="p-6">
@@ -99,14 +93,14 @@ export default function VendorsPage() {
         <div className="bg-red-50 rounded-lg shadow p-4">
           <p className="text-sm text-red-600 mb-1">Total Outstanding</p>
           <p className="text-2xl font-bold text-red-700">
-            {formatCurrency(v((endors || [])).reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
+            {formatCurrency((vendors || []).reduce((sum: number, v: any) => sum + (v.outstandingAmount || 0), 0))}
           </p>
         </div>
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Avg Rating</p>
           <p className="text-2xl font-bold text-blue-700">
             {(vendors || []).length > 0 
-              ? (v((endors || [])).reduce((sum, v) => sum + (v.rating || 0), 0) / (vendors || []).length).toFixed(1)
+              ? ((vendors || []).reduce((sum: number, v: any) => sum + (v.rating || 0), 0) / (vendors || []).length).toFixed(1)
               : '0.0'
             }⭐
           </p>
@@ -185,8 +179,8 @@ export default function VendorsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {vendor.materialsSupplied && Array.isArray(vendor.materialsSupplied) 
-                          ? vendor.(materialsSupplied || []).length + ' types'
+                        {vendor.materialsSupplied && Array.isArray(vendor.materialsSupplied)
+                          ? (vendor.materialsSupplied || []).length + ' types'
                           : 'N/A'}
                       </div>
                     </td>

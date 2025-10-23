@@ -12,7 +12,7 @@ export default function NewPaymentPage() {
         try {
             await paymentsService.createPayment(data);
             alert('Payment recorded successfully!');
-            router.push('/payments');
+            window.location.href = '/payments';
         } catch (error: any) {
             console.error('Error recording payment:', error);
             alert(error.response?.data?.message || 'Failed to record payment');

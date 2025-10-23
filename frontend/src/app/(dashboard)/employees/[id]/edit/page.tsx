@@ -89,7 +89,7 @@ export default function EditEmployeePage() {
     try {
       await employeesService.updateEmployee(employeeId, formData);
       alert('Employee updated successfully!');
-      router.push(`/employees/${employeeId}`);
+      window.location.href = '/employees';
     } catch (error: any) {
       console.error('Error updating employee:', error);
       alert(error.response?.data?.message || 'Failed to update employee');

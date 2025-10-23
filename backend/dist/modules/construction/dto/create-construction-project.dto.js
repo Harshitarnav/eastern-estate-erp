@@ -16,24 +16,37 @@ class CreateConstructionProjectDto {
 }
 exports.CreateConstructionProjectDto = CreateConstructionProjectDto;
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], CreateConstructionProjectDto.prototype, "towerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], CreateConstructionProjectDto.prototype, "flatId", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "projectName", void 0);
 __decorate([
-    (0, class_validator_1.IsISO8601)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "startDate", void 0);
 __decorate([
-    (0, class_validator_1.IsISO8601)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "expectedCompletionDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsISO8601)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "actualCompletionDate", void 0);
 __decorate([
@@ -65,4 +78,14 @@ __decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateConstructionProjectDto.prototype, "projectManagerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateConstructionProjectDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateConstructionProjectDto.prototype, "location", void 0);
 //# sourceMappingURL=create-construction-project.dto.js.map

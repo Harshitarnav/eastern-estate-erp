@@ -12,7 +12,7 @@ export default function NewMarketingPage() {
         try {
             await marketingService.createCampaign(data);
             alert('Marketing campaign created successfully!');
-            router.push('/marketing');
+            window.location.href = '/marketing';
         } catch (error: any) {
             console.error('Error creating campaign:', error);
             alert(error.response?.data?.message || 'Failed to create marketing campaign');

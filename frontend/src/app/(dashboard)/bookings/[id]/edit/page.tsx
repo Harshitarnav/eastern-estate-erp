@@ -97,7 +97,7 @@ export default function BookingEditPage() {
       
       await bookingsService.updateBooking(bookingId, formData);
       alert('Booking updated successfully!');
-      router.push(`/bookings/${bookingId}`);
+      window.location.href = '/bookings';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update booking');
       alert('Failed to update booking. Please try again.');

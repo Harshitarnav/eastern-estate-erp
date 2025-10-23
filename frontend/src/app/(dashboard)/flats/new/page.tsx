@@ -156,7 +156,7 @@ export default function NewFlatPage() {
 
       await flatsService.createFlat(flatData);
       alert('Flat created successfully!');
-      router.push('/flats');
+      window.location.href = '/flats';
     } catch (error: any) {
       console.error('Error creating flat:', error);
       alert(error.response?.data?.message || 'Failed to create flat');

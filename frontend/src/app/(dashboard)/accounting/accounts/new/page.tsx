@@ -27,7 +27,12 @@ export default function NewAccountPage() {
 
     try {
       await accountsService.create(formData);
-      window.location.href = '/accounting/accounts';
+      // Use router.replace to trigger a full page refresh and data reload
+      router.replace('/accounting/accounts');
+      // Force a hard reload to ensure data is refreshed
+      setTimeout(() => {
+        window.location.href = '/accounting/accounts';
+      }, 100);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create account');
       setLoading(false);

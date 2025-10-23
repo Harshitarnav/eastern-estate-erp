@@ -207,10 +207,11 @@ export default function ChatButton() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
         aria-label="Chat"
+        style={{ color: '#7B1E12' }}
       >
-        <MessageCircle className="w-5 h-5 text-gray-600" />
+        <MessageCircle className="w-5 h-5" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" style={{ backgroundColor: '#A8211B' }}>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -232,14 +233,17 @@ export default function ChatButton() {
             {view === 'groups' && (
               <>
                 {/* Header */}
-                <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+                <div className="text-white p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #A8211B 0%, #7B1E12 100%)' }}>
                   <div className="flex items-center space-x-3">
                     <MessageCircle className="w-6 h-6" />
                     <h2 className="text-lg font-semibold">Messages</h2>
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-1 hover:bg-blue-700 rounded"
+                    className="p-1 rounded transition-colors"
+                    style={{ ':hover': { backgroundColor: '#8a1b16' } }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8a1b16'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -254,7 +258,10 @@ export default function ChatButton() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search conversations..."
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                      style={{ '--tw-ring-color': '#A8211B' } as any}
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#A8211B'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#D1D5DB'}
                     />
                   </div>
                 </div>
@@ -263,14 +270,20 @@ export default function ChatButton() {
                 <div className="p-4 border-b flex space-x-2">
                   <button
                     onClick={() => setView('newGroup')}
-                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-white rounded-lg transition-all hover:scale-105 active:scale-95"
+                    style={{ backgroundColor: '#A8211B' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8a1b16'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#A8211B'}
                   >
                     <Users className="w-4 h-4" />
                     <span>New Group</span>
                   </button>
                   <button
                     onClick={() => setView('newMessage')}
-                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 text-white rounded-lg transition-all hover:scale-105 active:scale-95"
+                    style={{ backgroundColor: '#F2C94C', color: '#333333' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dab43d'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F2C94C'}
                   >
                     <User className="w-4 h-4" />
                     <span>New Message</span>
@@ -294,11 +307,11 @@ export default function ChatButton() {
                           className="w-full p-4 hover:bg-gray-50 transition-colors text-left flex items-start space-x-3"
                         >
                           {/* Avatar */}
-                          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                          <div className="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FEF3E2' }}>
                             {group.groupType === 'DIRECT' ? (
-                              <User className="w-6 h-6 text-blue-600" />
+                              <User className="w-6 h-6" style={{ color: '#A8211B' }} />
                             ) : (
-                              <Users className="w-6 h-6 text-blue-600" />
+                              <Users className="w-6 h-6" style={{ color: '#A8211B' }} />
                             )}
                           </div>
 
@@ -320,7 +333,7 @@ export default function ChatButton() {
                               {group.lastMessage ? group.lastMessage.messageText : 'No messages yet'}
                             </p>
                             {group.unreadCount > 0 && (
-                              <span className="inline-block mt-1 px-2 py-0.5 bg-blue-600 text-white text-xs font-semibold rounded-full">
+                              <span className="inline-block mt-1 px-2 py-0.5 text-white text-xs font-semibold rounded-full" style={{ backgroundColor: '#A8211B' }}>
                                 {group.unreadCount}
                               </span>
                             )}
@@ -336,9 +349,14 @@ export default function ChatButton() {
             {/* New Group View */}
             {view === 'newGroup' && (
               <>
-                <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+                <div className="text-white p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #A8211B 0%, #7B1E12 100%)' }}>
                   <div className="flex items-center space-x-3">
-                    <button onClick={handleBack} className="p-1 hover:bg-blue-700 rounded">
+                    <button 
+                      onClick={handleBack} 
+                      className="p-1 rounded transition-colors"
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8a1b16'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <h2 className="text-lg font-semibold">New Group</h2>
@@ -417,7 +435,10 @@ export default function ChatButton() {
                   <button
                     onClick={handleCreateGroup}
                     disabled={!groupName.trim() || selectedEmployees.length === 0 || loading}
-                    className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                    className="w-full py-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium hover:scale-105 active:scale-95"
+                    style={{ backgroundColor: '#A8211B' }}
+                    onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#8a1b16')}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#A8211B'}
                   >
                     {loading ? 'Creating...' : `Create Group (${selectedEmployees.length} members)`}
                   </button>
@@ -428,9 +449,14 @@ export default function ChatButton() {
             {/* New Message View */}
             {view === 'newMessage' && (
               <>
-                <div className="bg-green-600 text-white p-4 flex items-center justify-between">
+                <div className="text-white p-4 flex items-center justify-between" style={{ backgroundColor: '#F2C94C', color: '#333333' }}>
                   <div className="flex items-center space-x-3">
-                    <button onClick={handleBack} className="p-1 hover:bg-green-700 rounded">
+                    <button 
+                      onClick={handleBack} 
+                      className="p-1 rounded transition-colors"
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dab43d'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <h2 className="text-lg font-semibold">New Message</h2>
@@ -446,14 +472,16 @@ export default function ChatButton() {
                       loadEmployees(e.target.value);
                     }}
                     placeholder="Search employees..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
+                    onFocus={(e) => e.currentTarget.style.borderColor = '#F2C94C'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = '#D1D5DB'}
                   />
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
                   {loading ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderBottomColor: '#F2C94C' }} />
                     </div>
                   ) : filteredEmployees.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8">
@@ -467,8 +495,8 @@ export default function ChatButton() {
                         onClick={() => handleStartDirectChat(emp.id)}
                         className="w-full p-4 hover:bg-gray-50 transition-colors text-left flex items-center space-x-3 border-b"
                       >
-                        <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                          <User className="w-6 h-6 text-green-600" />
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#FEF3E2' }}>
+                          <User className="w-6 h-6" style={{ color: '#F2C94C' }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-900">{emp.fullName}</p>
@@ -485,15 +513,17 @@ export default function ChatButton() {
             {view === 'chat' && selectedGroup && (
               <>
                 {/* Header */}
-                <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
+                <div className="text-white p-4 flex items-center justify-between" style={{ background: 'linear-gradient(135deg, #A8211B 0%, #7B1E12 100%)' }}>
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <button
                       onClick={handleBack}
-                      className="p-1 hover:bg-blue-700 rounded"
+                      className="p-1 rounded transition-colors"
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8a1b16'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8a1b16' }}>
                       {selectedGroup.groupType === 'DIRECT' ? (
                         <User className="w-5 h-5" />
                       ) : (
@@ -504,13 +534,17 @@ export default function ChatButton() {
                       <h2 className="text-lg font-semibold truncate">
                         {getGroupDisplayName(selectedGroup)}
                       </h2>
-                      <p className="text-sm text-blue-100">
+                      <p className="text-sm" style={{ color: '#F3E3C1' }}>
                         {(selectedGroup.participants || []).length} participant
                         {(selectedGroup.participants || []).length !== 1 ? 's' : ''}
                       </p>
                     </div>
                   </div>
-                  <button className="p-1 hover:bg-blue-700 rounded">
+                  <button 
+                    className="p-1 rounded transition-colors"
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8a1b16'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
                     <MoreVertical className="w-5 h-5" />
                   </button>
                 </div>
@@ -519,7 +553,7 @@ export default function ChatButton() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
                   {loading ? (
                     <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderBottomColor: '#A8211B' }} />
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -536,11 +570,8 @@ export default function ChatButton() {
                           className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[75%] ${
-                              isOwnMessage
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white text-gray-900'
-                            } rounded-lg p-3 shadow`}
+                            className={`max-w-[75%] rounded-lg p-3 shadow`}
+                            style={isOwnMessage ? { backgroundColor: '#A8211B', color: 'white' } : { backgroundColor: 'white', color: '#333333' }}
                           >
                             {!isOwnMessage && message.sender && (
                               <p className="text-xs font-medium mb-1 opacity-75">
@@ -551,9 +582,8 @@ export default function ChatButton() {
                               {message.messageText}
                             </p>
                             <p
-                              className={`text-xs mt-1 ${
-                                isOwnMessage ? 'text-blue-100' : 'text-gray-500'
-                              }`}
+                              className="text-xs mt-1"
+                              style={{ color: isOwnMessage ? '#F3E3C1' : '#6B7280' }}
                             >
                               {formatDistanceToNow(new Date(message.createdAt), {
                                 addSuffix: true,
@@ -588,13 +618,18 @@ export default function ChatButton() {
                       }}
                       placeholder="Type a message..."
                       rows={1}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent resize-none"
+                      onFocus={(e) => e.currentTarget.style.borderColor = '#A8211B'}
+                      onBlur={(e) => e.currentTarget.style.borderColor = '#D1D5DB'}
                       style={{ minHeight: '40px', maxHeight: '120px' }}
                     />
                     <button
                       type="submit"
                       disabled={!messageText.trim()}
-                      className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-110 active:scale-95"
+                      style={{ backgroundColor: '#A8211B' }}
+                      onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#8a1b16')}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#A8211B'}
                     >
                       <Send className="w-5 h-5" />
                     </button>

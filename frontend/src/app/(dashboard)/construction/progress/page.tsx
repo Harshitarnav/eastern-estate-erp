@@ -16,18 +16,18 @@ export default function ProgressLogsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    if (!propertyId) {
-      router.push('/construction');
-      return;
-    }
     loadData();
   }, [propertyId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      const projectsUrl = propertyId 
+        ? `/construction-projects?propertyId=${propertyId}` 
+        : '/construction-projects';
+      
       const [projectsRes] = await Promise.all([
-        api.get(`/construction-projects?propertyId=${propertyId}`)
+        api.get(projectsUrl)
       ]);
       
       const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
@@ -39,8 +39,6 @@ export default function ProgressLogsPage() {
       setLoading(false);
     }
   };
-
-  if (!propertyId) return null;
 
   return (
     <div className="p-6">

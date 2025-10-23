@@ -12,7 +12,7 @@ export default function NewEmployeePage() {
         try {
             await employeesService.createEmployee(data);
             alert('Employee added successfully!');
-            router.push('/employees');
+            window.location.href = '/employees';
         } catch (error: any) {
             console.error('Error adding employee:', error);
             alert(error.response?.data?.message || 'Failed to add employee');

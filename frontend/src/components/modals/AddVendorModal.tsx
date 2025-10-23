@@ -109,7 +109,7 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
     setFormData(prev => ({
       ...prev,
       materialsSupplied: prev.materialsSupplied.includes(material)
-        ? prev.((materialsSupplied || [])).filter(m => m !== material)
+        ? prev.materialsSupplied.filter(m => m !== material)
         : [...prev.materialsSupplied, material]
     }));
   };

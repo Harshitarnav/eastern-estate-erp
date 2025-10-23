@@ -116,7 +116,7 @@ export default function EditPropertyPage() {
 
       await propertiesService.updateProperty(propertyId, updatePayload);
       alert('Property updated successfully!');
-      router.push('/properties');
+      window.location.href = '/properties';
     } catch (err: any) {
       console.error('Error updating property:', err);
       alert(err.response?.data?.message || 'Failed to update property');

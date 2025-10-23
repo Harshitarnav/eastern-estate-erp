@@ -108,7 +108,8 @@ export default function DashboardPage() {
           </h2>
           <div className="space-y-3">
             <button 
-              className="w-full text-left px-4 py-3 rounded-lg transition-colors hover:shadow-md"
+              onClick={() => window.location.href = '/properties/new'}
+              className="w-full text-left px-4 py-3 rounded-lg transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
               style={{ backgroundColor: '#FEF3E2' }}
             >
               <div className="flex items-center gap-3">
@@ -117,7 +118,8 @@ export default function DashboardPage() {
               </div>
             </button>
             <button 
-              className="w-full text-left px-4 py-3 rounded-lg transition-colors hover:shadow-md"
+              onClick={() => window.location.href = '/customers/new'}
+              className="w-full text-left px-4 py-3 rounded-lg transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
               style={{ backgroundColor: '#FEF3E2' }}
             >
               <div className="flex items-center gap-3">
@@ -126,7 +128,8 @@ export default function DashboardPage() {
               </div>
             </button>
             <button 
-              className="w-full text-left px-4 py-3 rounded-lg transition-colors hover:shadow-md"
+              onClick={() => window.location.href = '/leads/new'}
+              className="w-full text-left px-4 py-3 rounded-lg transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
               style={{ backgroundColor: '#FEF3E2' }}
             >
               <div className="flex items-center gap-3">

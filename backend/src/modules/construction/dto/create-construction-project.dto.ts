@@ -1,21 +1,32 @@
-import { IsString, IsUUID, IsOptional, IsNumber, IsISO8601, Min } from 'class-validator';
+import { IsString, IsUUID, IsOptional, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateConstructionProjectDto {
+  @IsOptional()
   @IsUUID()
-  propertyId: string;
+  propertyId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  towerId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  flatId?: string;
 
   @IsString()
   projectName: string;
 
-  @IsISO8601()
-  startDate: string;
-
-  @IsISO8601()
-  expectedCompletionDate: string;
+  @IsOptional()
+  @IsString()
+  startDate?: string;
 
   @IsOptional()
-  @IsISO8601()
+  @IsString()
+  expectedCompletionDate?: string;
+
+  @IsOptional()
+  @IsString()
   actualCompletionDate?: string;
 
   @IsOptional()
@@ -41,4 +52,12 @@ export class CreateConstructionProjectDto {
   @IsOptional()
   @IsUUID()
   projectManagerId?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }

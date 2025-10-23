@@ -39,7 +39,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, href: '/notifications' },
     { 
       id: 'property-inventory', 
       label: 'Property Inventory', 

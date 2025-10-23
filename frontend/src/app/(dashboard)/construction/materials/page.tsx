@@ -17,19 +17,15 @@ export default function MaterialsPage() {
   const [showExitModal, setShowExitModal] = useState(false);
 
   useEffect(() => {
-    if (!propertyId) {
-      router.push('/construction');
-      return;
-    }
     loadMaterials();
-  }, [propertyId]);
+  }, []);
 
   const loadMaterials = async () => {
     setLoading(true);
     try {
       const response = await api.get('/materials');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setMaterials(d((ata || [])).filter((m: any) => m.isActive));
+      setMaterials((data || []).filter((m: any) => m.isActive));
     } catch (error) {
       console.error('Failed to load materials:', error);
     } finally {
@@ -71,8 +67,6 @@ export default function MaterialsPage() {
       maximumFractionDigits: 0,
     }).format(amount);
   };
-
-  if (!propertyId) return null;
 
   return (
     <div className="p-6">
@@ -117,7 +111,7 @@ export default function MaterialsPage() {
         <div className="bg-blue-50 rounded-lg shadow p-4">
           <p className="text-sm text-blue-600 mb-1">Total Value</p>
           <p className="text-2xl font-bold text-blue-700">
-            {formatCurrency(m((aterials || [])).reduce((sum, m) => sum + (m.currentStock * m.unitPrice), 0))}
+            {formatCurrency((materials || []).reduce((sum, m) => sum + (m.currentStock * m.unitPrice), 0))}
           </p>
         </div>
       </div>

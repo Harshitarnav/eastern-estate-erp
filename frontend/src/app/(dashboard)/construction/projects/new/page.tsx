@@ -90,13 +90,20 @@ export default function NewConstructionProjectPage() {
         projectManagerId: formData.projectManagerId || null,
       };
 
-      await api.post('/construction-projects', submitData);
+      console.log('Submitting construction project:', submitData);
+      const response = await api.post('/construction-projects', submitData);
+      console.log('Project created successfully:', response.data);
       alert('Construction project created successfully!');
-      router.push('/construction/projects');
+      // Force a hard reload to ensure data is refreshed
+      window.location.href = '/construction/projects';
     } catch (error: any) {
       console.error('Failed to create project:', error);
-      alert(error.response?.data?.message || 'Failed to create project');
-    } finally {
+      console.error('Error details:', error.response?.data);
+      const errorMessage = error.response?.data?.message 
+        || (Array.isArray(error.response?.data?.message) 
+          ? error.response.data.message.join(', ') 
+          : 'Failed to create project');
+      alert(`Error: ${errorMessage}`);
       setLoading(false);
     }
   };

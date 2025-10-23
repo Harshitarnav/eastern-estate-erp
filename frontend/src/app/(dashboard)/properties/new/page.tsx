@@ -106,7 +106,7 @@ export default function NewPropertyPage() {
 
       await propertiesService.createProperty(propertyData);
       alert('Property created successfully!');
-      router.push('/properties');
+      window.location.href = '/properties';
     } catch (error: any) {
       console.error('Error creating property:', error);
       alert(error.response?.data?.message || 'Failed to create property');

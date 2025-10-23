@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { usePropertyStore } from '@/store/propertyStore';
 import { leadsService, Lead, LeadFilters } from '@/services/leads.service';
 import { usersService } from '@/services/users.service';
 import { propertiesService } from '@/services/properties.service';
@@ -423,6 +424,7 @@ function LeadRow({
 
 export default function LeadsListPage() {
   const { user } = useAuth();
+  const { selectedProperties } = usePropertyStore();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
@@ -464,7 +466,7 @@ export default function LeadsListPage() {
     loadLeads();
     loadUsers();
     loadProperties();
-  }, [filters]);
+  }, [filters, selectedProperties]);
 
   // Debounced search
   useEffect(() => {
@@ -479,7 +481,10 @@ export default function LeadsListPage() {
   const loadLeads = async () => {
     try {
       setLoading(true);
-      const response = await leadsService.getLeads(filters);
+      const response = await leadsService.getLeads({
+        ...filters,
+        propertyId: selectedProperties.length > 0 ? selectedProperties[0] : undefined,
+      } as any);
       setLeads(response.data);
       setTotal(response.meta.total);
       setTotalPages(response.meta.totalPages);

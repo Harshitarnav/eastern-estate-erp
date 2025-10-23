@@ -12,10 +12,11 @@ export default function ConstructionProjectsPage() {
   const [filterProperty, setFilterProperty] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [refreshKey]);
 
   const loadData = async () => {
     try {
@@ -23,8 +24,18 @@ export default function ConstructionProjectsPage() {
         api.get('/construction-projects'),
         api.get('/properties')
       ]);
-      setProjects(projectsRes.data || []);
-      setProperties(propertiesRes.data || []);
+      
+      // Handle different response formats
+      const projectsData = Array.isArray(projectsRes.data) 
+        ? projectsRes.data 
+        : (projectsRes.data?.data || []);
+      const propertiesData = Array.isArray(propertiesRes.data) 
+        ? propertiesRes.data 
+        : (propertiesRes.data?.data || []);
+      
+      console.log('Loaded construction projects:', projectsData);
+      setProjects(projectsData);
+      setProperties(propertiesData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {

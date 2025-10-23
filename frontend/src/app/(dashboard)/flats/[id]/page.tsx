@@ -235,7 +235,7 @@ export default function FlatDetailPage() {
                 <DetailItem
                   label="Amenities"
                   value={
-                    flat.amenities && flat.(amenities || []).length > 0
+                    flat.amenities && (flat.amenities || []).length > 0
                       ? flat.amenities.join(', ')
                       : 'List amenities to give prospects a feel for the home.'
                   }

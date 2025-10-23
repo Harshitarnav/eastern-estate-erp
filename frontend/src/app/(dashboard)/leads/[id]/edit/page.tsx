@@ -113,7 +113,7 @@ export default function LeadEditPage() {
       if (!leadId) return;
       await leadsService.updateLead(leadId, updateData);
       alert('Lead updated successfully!');
-      router.push(`/leads`);
+      window.location.href = '/leads';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update lead');
       alert('Failed to update lead. Please try again.');

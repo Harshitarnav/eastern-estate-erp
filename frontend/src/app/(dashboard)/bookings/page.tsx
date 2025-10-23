@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { usePropertyStore } from '@/store/propertyStore';
 import {
   FileText,
   Plus,
@@ -30,6 +31,7 @@ export default function BookingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get('customerId');
+  const { selectedProperties } = usePropertyStore();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,12 +53,15 @@ export default function BookingsPage() {
   useEffect(() => {
     fetchBookings();
     fetchStatistics();
-  }, [filters]);
+  }, [filters, selectedProperties]);
 
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await bookingsService.getBookings(filters);
+      const response = await bookingsService.getBookings({
+        ...filters,
+        propertyId: selectedProperties.length > 0 ? selectedProperties[0] : undefined,
+      } as any);
       setBookings(response.data);
       setMeta(response.meta);
       setError('');

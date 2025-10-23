@@ -912,4 +912,25 @@ export default function HelpGuidesPage() {
       id: 'accountant-guide',
       title: '💰 Accountant / Finance Team Guide',
       category: 'Role-Based',
-      description:
+      description: 'Track payments, expenses, and financial reports',
+    },
+  ];
+
+  return (
+    <div className="p-6">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Help & Guides</h1>
+        <div className="grid gap-4">
+          {userGuides.map((guide) => (
+            <Card key={guide.id} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setSelectedGuide(guide.id)}>
+              <CardHeader>
+                <CardTitle>{guide.title}</CardTitle>
+                <CardDescription>{guide.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

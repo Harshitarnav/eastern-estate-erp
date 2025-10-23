@@ -18,6 +18,14 @@ const config: Config = {
     },
     extend: {
       colors: {
+        // Eastern Estate Brand Colors
+        'eastern-red': '#A8211B',
+        'maroon-luxe': '#7B1E12',
+        'gold-accent': '#F2C94C',
+        'beige-cream': '#F3E3C1',
+        'charcoal': '#333333',
+        'emerald-green': '#3DA35D',
+        // Design system colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

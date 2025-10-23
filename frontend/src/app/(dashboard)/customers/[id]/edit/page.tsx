@@ -85,7 +85,7 @@ export default function CustomerEditPage() {
       
       await customersService.updateCustomer(customerId, formData);
       alert('Customer updated successfully!');
-      router.push(`/customers/${customerId}`);
+      window.location.href = '/customers';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update customer');
       alert('Failed to update customer. Please try again.');
