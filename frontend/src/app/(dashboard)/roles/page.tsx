@@ -129,9 +129,9 @@ export default function RolesPage() {
                   {role.description && (
                     <p className="text-gray-600 mb-3">{role.description}</p>
                   )}
-                  {role.permissions && role.(permissions || []).length > 0 && (
+                  {role.permissions && (role.permissions || []).length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {role.((permissions || [])).map(permission => (
+                      {(role.permissions || []).map(permission => (
                         <Badge key={permission.id} variant="secondary" className="text-xs">
                           {permission.name}
                         </Badge>

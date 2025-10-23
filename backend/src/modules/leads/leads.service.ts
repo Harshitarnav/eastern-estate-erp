@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, Between } from 'typeorm';
 import { Lead } from './entities/lead.entity';
 import { User } from '../users/entities/user.entity';
 import {
@@ -14,13 +14,27 @@ import {
   QueryLeadDto,
   LeadResponseDto,
   PaginatedLeadsResponse,
+  BulkAssignLeadsDto,
+  CheckDuplicateLeadDto,
+  DuplicateLeadResponseDto,
+  AgentDashboardStatsDto,
+  AdminDashboardStatsDto,
+  TeamDashboardStatsDto,
+  GetDashboardStatsDto,
+  ExportLeadsDto,
+  ImportLeadsDto,
+  ImportLeadsResultDto,
+  ImportLeadRowDto,
 } from './dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationCategory } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class LeadsService {
   constructor(
     @InjectRepository(Lead)
     private leadsRepository: Repository<Lead>,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -398,5 +412,313 @@ export class LeadsService {
 
     const leads = await queryBuilder.getMany();
     return LeadResponseDto.fromEntities(leads);
+  }
+
+  /**
+   * Bulk assign leads to a user
+   */
+  async bulkAssignLeads(bulkAssignDto: BulkAssignLeadsDto): Promise<{ assigned: number }> {
+    const { leadIds, assignedTo } = bulkAssignDto;
+
+    // Verify leads exist
+    const leads = await this.leadsRepository.find({
+      where: { id: In(leadIds) },
+    });
+
+    if (leads.length !== leadIds.length) {
+      throw new NotFoundException('Some leads not found');
+    }
+
+    // Update all leads
+    await this.leadsRepository.update(
+      { id: In(leadIds) },
+      { assignedTo, assignedAt: new Date() },
+    );
+
+    // Create notification for the assigned user
+    await this.notificationsService.create({
+      userId: assignedTo,
+      type: NotificationType.INFO,
+      category: NotificationCategory.LEAD,
+      title: 'New Leads Assigned',
+      message: `You have been assigned ${leadIds.length} new lead(s)`,
+      metadata: { leadIds },
+    });
+
+    return { assigned: leadIds.length };
+  }
+
+  /**
+   * Check for duplicate lead
+   */
+  async checkDuplicateLead(checkDto: CheckDuplicateLeadDto): Promise<DuplicateLeadResponseDto> {
+    const { email, phone } = checkDto;
+
+    if (!email && !phone) {
+      throw new BadRequestException('Either email or phone must be provided');
+    }
+
+    const conditions = [];
+    if (phone) conditions.push({ phoneNumber: phone });
+    if (email) conditions.push({ email });
+
+    const existingLead = await this.leadsRepository.findOne({
+      where: conditions,
+      relations: ['assignedUser'],
+    });
+
+    if (existingLead) {
+      return {
+        isDuplicate: true,
+        existingLead: {
+          id: existingLead.id,
+          fullName: existingLead.fullName,
+          email: existingLead.email,
+          phoneNumber: existingLead.phoneNumber,
+          status: existingLead.status,
+          source: existingLead.source,
+          assignedTo: existingLead.assignedTo,
+          createdAt: existingLead.createdAt,
+        },
+      };
+    }
+
+    return { isDuplicate: false };
+  }
+
+  /**
+   * Get agent dashboard statistics
+   */
+  async getAgentDashboardStats(agentId: string, query: GetDashboardStatsDto): Promise<AgentDashboardStatsDto> {
+    const { startDate, endDate } = query;
+
+    const baseQuery = this.leadsRepository
+      .createQueryBuilder('lead')
+      .where('lead.assignedTo = :agentId', { agentId })
+      .andWhere('lead.isActive = true');
+
+    if (startDate) {
+      baseQuery.andWhere('lead.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      baseQuery.andWhere('lead.createdAt <= :endDate', { endDate });
+    }
+
+    const leads = await baseQuery.getMany();
+
+    const totalLeads = leads.length;
+    const newLeads = leads.filter(l => l.status === 'NEW').length;
+    const inProgress = leads.filter(l => ['CONTACTED', 'QUALIFIED', 'NEGOTIATION'].includes(l.status)).length;
+    const converted = leads.filter(l => l.status === 'WON').length;
+    const conversionRate = totalLeads > 0 ? (converted / totalLeads) * 100 : 0;
+
+    // Get due follow-ups
+    const dueFollowUps = leads.filter(l => 
+      l.nextFollowUpDate && new Date(l.nextFollowUpDate) <= new Date()
+    ).length;
+
+    // Group by status
+    const leadsByStatus = Object.entries(
+      leads.reduce((acc, lead) => {
+        acc[lead.status] = (acc[lead.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([status, count]) => ({ status, count }));
+
+    // Group by source
+    const leadsBySource = Object.entries(
+      leads.reduce((acc, lead) => {
+        acc[lead.source] = (acc[lead.source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([source, count]) => ({ source, count }));
+
+    return {
+      totalLeads,
+      newLeads,
+      inProgress,
+      converted,
+      conversionRate: Math.round(conversionRate * 100) / 100,
+      dueFollowUps,
+      scheduledTasks: 0, // Placeholder - would integrate with tasks system
+      monthlyAchievement: {
+        target: 10,
+        achieved: converted,
+        percentage: (converted / 10) * 100,
+      },
+      weeklyAchievement: {
+        target: 3,
+        achieved: Math.floor(converted / 4),
+        percentage: (Math.floor(converted / 4) / 3) * 100,
+      },
+      leadsByStatus,
+      leadsBySource,
+    };
+  }
+
+  /**
+   * Get admin dashboard statistics
+   */
+  async getAdminDashboardStats(query: GetDashboardStatsDto): Promise<AdminDashboardStatsDto> {
+    const { startDate, endDate } = query;
+
+    const baseQuery = this.leadsRepository
+      .createQueryBuilder('lead')
+      .leftJoinAndSelect('lead.assignedUser', 'assignedUser')
+      .where('lead.isActive = true');
+
+    if (startDate) {
+      baseQuery.andWhere('lead.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      baseQuery.andWhere('lead.createdAt <= :endDate', { endDate });
+    }
+
+    const leads = await baseQuery.getMany();
+
+    const totalLeads = leads.length;
+    const converted = leads.filter(l => l.status === 'WON').length;
+    const averageConversionRate = totalLeads > 0 ? (converted / totalLeads) * 100 : 0;
+
+    // Get unique agents
+    const uniqueAgents = new Set(leads.map(l => l.assignedTo).filter(Boolean));
+    const totalAgents = uniqueAgents.size;
+
+    // Group by status
+    const leadsByStatus = Object.entries(
+      leads.reduce((acc, lead) => {
+        acc[lead.status] = (acc[lead.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([status, count]) => ({ status, count }));
+
+    // Group by source
+    const leadsBySource = Object.entries(
+      leads.reduce((acc, lead) => {
+        acc[lead.source] = (acc[lead.source] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    ).map(([source, count]) => ({ source, count }));
+
+    // Property-wise breakdown (placeholder)
+    const propertyWiseBreakdown = [];
+
+    // Top performers
+    const agentStats = Array.from(uniqueAgents).map(agentId => {
+      const agentLeads = leads.filter(l => l.assignedTo === agentId);
+      const agentConversions = agentLeads.filter(l => l.status === 'WON').length;
+      const agentConversionRate = agentLeads.length > 0 ? (agentConversions / agentLeads.length) * 100 : 0;
+      
+      const user = agentLeads[0]?.assignedUser;
+      const agentName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Unknown';
+      
+      return {
+        agentId: agentId as string,
+        agentName,
+        totalLeads: agentLeads.length,
+        conversions: agentConversions,
+        conversionRate: Math.round(agentConversionRate * 100) / 100,
+      };
+    });
+
+    const topPerformers = agentStats
+      .sort((a, b) => b.conversions - a.conversions)
+      .slice(0, 5);
+
+    return {
+      totalLeads,
+      totalAgents,
+      averageConversionRate: Math.round(averageConversionRate * 100) / 100,
+      totalRevenue: 0, // Placeholder - would integrate with bookings
+      leadsByStatus,
+      leadsBySource,
+      propertyWiseBreakdown,
+      topPerformers,
+      recentActivity: [],
+    };
+  }
+
+  /**
+   * Get team dashboard statistics
+   */
+  async getTeamDashboardStats(gmId: string, query: GetDashboardStatsDto): Promise<TeamDashboardStatsDto> {
+    // This would require a team structure in the database
+    // For now, returning placeholder data
+    const agentStats = await this.getAdminDashboardStats(query);
+
+    return {
+      teamLeads: agentStats.totalLeads,
+      teamConversions: agentStats.topPerformers.reduce((sum, p) => sum + p.conversions, 0),
+      teamConversionRate: agentStats.averageConversionRate,
+      agentPerformance: agentStats.topPerformers.map(p => ({
+        ...p,
+        dueFollowUps: 0,
+      })),
+      propertyMetrics: [],
+      taskOverview: {
+        pending: 0,
+        completed: 0,
+        overdue: 0,
+      },
+    };
+  }
+
+  /**
+   * Import leads from Excel data
+   */
+  async importLeads(importDto: ImportLeadsDto): Promise<ImportLeadsResultDto> {
+    const { leads } = importDto;
+    const result: ImportLeadsResultDto = {
+      totalRows: leads.length,
+      successCount: 0,
+      errorCount: 0,
+      errors: [],
+      createdLeads: [],
+    };
+
+    for (let i = 0; i < leads.length; i++) {
+      const row = leads[i];
+      try {
+        // Check for duplicates
+        const duplicate = await this.checkDuplicateLead({
+          email: row.email,
+          phone: row.phone,
+        });
+
+        if (duplicate.isDuplicate) {
+          result.errorCount++;
+          result.errors.push({
+            row: i + 1,
+            data: row,
+            error: 'Duplicate lead found',
+          });
+          continue;
+        }
+
+        // Create lead
+        const createDto: CreateLeadDto = {
+          firstName: row.firstName,
+          lastName: row.lastName,
+          phone: row.phone,
+          email: row.email,
+          source: row.source as any,
+          status: (row.status as any) || 'NEW',
+          notes: row.notes,
+        };
+
+        const created = await this.create(createDto);
+        result.successCount++;
+        result.createdLeads.push(created.id);
+      } catch (error) {
+        result.errorCount++;
+        result.errors.push({
+          row: i + 1,
+          data: row,
+          error: error.message || 'Failed to create lead',
+        });
+      }
+    }
+
+    return result;
   }
 }

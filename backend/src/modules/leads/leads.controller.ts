@@ -13,6 +13,7 @@ import {
   Patch,
 } from '@nestjs/common';
 import { LeadsService } from './leads.service';
+import { PriorityService } from './priority.service';
 import {
   CreateLeadDto,
   UpdateLeadDto,
@@ -25,7 +26,10 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 @Controller('leads')
 @UseGuards(JwtAuthGuard)
 export class LeadsController {
-  constructor(private readonly leadsService: LeadsService) {}
+  constructor(
+    private readonly leadsService: LeadsService,
+    private readonly priorityService: PriorityService,
+  ) {}
 
   /**
    * Create a new lead
@@ -53,6 +57,45 @@ export class LeadsController {
   @Get('statistics')
   async getStatistics() {
     return this.leadsService.getStatistics();
+  }
+
+  /**
+   * Get prioritized leads for current user
+   * GET /leads/prioritized
+   */
+  @Get('prioritized')
+  async getPrioritizedLeads(@Query('userId') userId: string) {
+    const leads = await this.leadsService.getMyLeads(userId);
+    const prioritized = this.priorityService.prioritizeLeads(leads as any[]);
+    
+    // Add priority info to each lead
+    return prioritized.map(lead => ({
+      ...lead,
+      priorityInfo: this.priorityService.calculateLeadPriority(lead),
+    }));
+  }
+
+  /**
+   * Get today's prioritized tasks
+   * GET /leads/today-tasks
+   */
+  @Get('today-tasks')
+  async getTodaysTasks(@Query('userId') userId: string) {
+    const leads = await this.leadsService.getMyLeads(userId);
+    return this.priorityService.getTodaysPrioritizedTasks(leads as any[]);
+  }
+
+  /**
+   * Get smart tips for current user
+   * GET /leads/smart-tips
+   */
+  @Get('smart-tips')
+  async getSmartTips(@Query('userId') userId: string) {
+    const leads = await this.leadsService.getMyLeads(userId);
+    return {
+      tips: this.priorityService.getSmartTips(leads as any[]),
+      timestamp: new Date(),
+    };
   }
 
   /**
@@ -127,5 +170,65 @@ export class LeadsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
     return this.leadsService.remove(id);
+  }
+
+  /**
+   * Bulk assign leads
+   * POST /leads/bulk-assign
+   */
+  @Post('bulk-assign')
+  async bulkAssignLeads(@Body() bulkAssignDto: any): Promise<{ assigned: number }> {
+    return this.leadsService.bulkAssignLeads(bulkAssignDto);
+  }
+
+  /**
+   * Check for duplicate lead
+   * POST /leads/check-duplicate
+   */
+  @Post('check-duplicate')
+  async checkDuplicateLead(@Body() checkDto: any) {
+    return this.leadsService.checkDuplicateLead(checkDto);
+  }
+
+  /**
+   * Get agent dashboard statistics
+   * GET /leads/dashboard/agent/:agentId
+   */
+  @Get('dashboard/agent/:agentId')
+  async getAgentDashboardStats(
+    @Param('agentId') agentId: string,
+    @Query() query: any,
+  ) {
+    return this.leadsService.getAgentDashboardStats(agentId, query);
+  }
+
+  /**
+   * Get admin dashboard statistics
+   * GET /leads/dashboard/admin
+   */
+  @Get('dashboard/admin')
+  async getAdminDashboardStats(@Query() query: any) {
+    return this.leadsService.getAdminDashboardStats(query);
+  }
+
+  /**
+   * Get team dashboard statistics
+   * GET /leads/dashboard/team/:gmId
+   */
+  @Get('dashboard/team/:gmId')
+  async getTeamDashboardStats(
+    @Param('gmId') gmId: string,
+    @Query() query: any,
+  ) {
+    return this.leadsService.getTeamDashboardStats(gmId, query);
+  }
+
+  /**
+   * Import leads from Excel data
+   * POST /leads/import
+   */
+  @Post('import')
+  async importLeads(@Body() importDto: any) {
+    return this.leadsService.importLeads(importDto);
   }
 }

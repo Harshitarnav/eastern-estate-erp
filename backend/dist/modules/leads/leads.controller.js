@@ -15,11 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LeadsController = void 0;
 const common_1 = require("@nestjs/common");
 const leads_service_1 = require("./leads.service");
+const priority_service_1 = require("./priority.service");
 const dto_1 = require("./dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 let LeadsController = class LeadsController {
-    constructor(leadsService) {
+    constructor(leadsService, priorityService) {
         this.leadsService = leadsService;
+        this.priorityService = priorityService;
     }
     async create(createLeadDto) {
         return this.leadsService.create(createLeadDto);
@@ -29,6 +31,25 @@ let LeadsController = class LeadsController {
     }
     async getStatistics() {
         return this.leadsService.getStatistics();
+    }
+    async getPrioritizedLeads(userId) {
+        const leads = await this.leadsService.getMyLeads(userId);
+        const prioritized = this.priorityService.prioritizeLeads(leads);
+        return prioritized.map(lead => ({
+            ...lead,
+            priorityInfo: this.priorityService.calculateLeadPriority(lead),
+        }));
+    }
+    async getTodaysTasks(userId) {
+        const leads = await this.leadsService.getMyLeads(userId);
+        return this.priorityService.getTodaysPrioritizedTasks(leads);
+    }
+    async getSmartTips(userId) {
+        const leads = await this.leadsService.getMyLeads(userId);
+        return {
+            tips: this.priorityService.getSmartTips(leads),
+            timestamp: new Date(),
+        };
     }
     async getMyLeads(userId) {
         return this.leadsService.getMyLeads(userId);
@@ -50,6 +71,24 @@ let LeadsController = class LeadsController {
     }
     async remove(id) {
         return this.leadsService.remove(id);
+    }
+    async bulkAssignLeads(bulkAssignDto) {
+        return this.leadsService.bulkAssignLeads(bulkAssignDto);
+    }
+    async checkDuplicateLead(checkDto) {
+        return this.leadsService.checkDuplicateLead(checkDto);
+    }
+    async getAgentDashboardStats(agentId, query) {
+        return this.leadsService.getAgentDashboardStats(agentId, query);
+    }
+    async getAdminDashboardStats(query) {
+        return this.leadsService.getAdminDashboardStats(query);
+    }
+    async getTeamDashboardStats(gmId, query) {
+        return this.leadsService.getTeamDashboardStats(gmId, query);
+    }
+    async importLeads(importDto) {
+        return this.leadsService.importLeads(importDto);
     }
 };
 exports.LeadsController = LeadsController;
@@ -74,6 +113,27 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getStatistics", null);
+__decorate([
+    (0, common_1.Get)('prioritized'),
+    __param(0, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "getPrioritizedLeads", null);
+__decorate([
+    (0, common_1.Get)('today-tasks'),
+    __param(0, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "getTodaysTasks", null);
+__decorate([
+    (0, common_1.Get)('smart-tips'),
+    __param(0, (0, common_1.Query)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "getSmartTips", null);
 __decorate([
     (0, common_1.Get)('my-leads/:userId'),
     __param(0, (0, common_1.Param)('userId')),
@@ -128,9 +188,54 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)('bulk-assign'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "bulkAssignLeads", null);
+__decorate([
+    (0, common_1.Post)('check-duplicate'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "checkDuplicateLead", null);
+__decorate([
+    (0, common_1.Get)('dashboard/agent/:agentId'),
+    __param(0, (0, common_1.Param)('agentId')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "getAgentDashboardStats", null);
+__decorate([
+    (0, common_1.Get)('dashboard/admin'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "getAdminDashboardStats", null);
+__decorate([
+    (0, common_1.Get)('dashboard/team/:gmId'),
+    __param(0, (0, common_1.Param)('gmId')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "getTeamDashboardStats", null);
+__decorate([
+    (0, common_1.Post)('import'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "importLeads", null);
 exports.LeadsController = LeadsController = __decorate([
     (0, common_1.Controller)('leads'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [leads_service_1.LeadsService])
+    __metadata("design:paramtypes", [leads_service_1.LeadsService,
+        priority_service_1.PriorityService])
 ], LeadsController);
 //# sourceMappingURL=leads.controller.js.map

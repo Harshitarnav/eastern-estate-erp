@@ -15,6 +15,7 @@ const chat_group_entity_1 = require("./entities/chat-group.entity");
 const chat_participant_entity_1 = require("./entities/chat-participant.entity");
 const chat_message_entity_1 = require("./entities/chat-message.entity");
 const chat_attachment_entity_1 = require("./entities/chat-attachment.entity");
+const notifications_module_1 = require("../notifications/notifications.module");
 let ChatModule = class ChatModule {
 };
 exports.ChatModule = ChatModule;
@@ -27,6 +28,7 @@ exports.ChatModule = ChatModule = __decorate([
                 chat_message_entity_1.ChatMessage,
                 chat_attachment_entity_1.ChatAttachment,
             ]),
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [chat_controller_1.ChatController],
         providers: [chat_service_1.ChatService],

@@ -20,12 +20,15 @@ const chat_group_entity_1 = require("./entities/chat-group.entity");
 const chat_participant_entity_1 = require("./entities/chat-participant.entity");
 const chat_message_entity_1 = require("./entities/chat-message.entity");
 const chat_attachment_entity_1 = require("./entities/chat-attachment.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
+const notification_entity_1 = require("../notifications/entities/notification.entity");
 let ChatService = class ChatService {
-    constructor(chatGroupRepository, chatParticipantRepository, chatMessageRepository, chatAttachmentRepository) {
+    constructor(chatGroupRepository, chatParticipantRepository, chatMessageRepository, chatAttachmentRepository, notificationsService) {
         this.chatGroupRepository = chatGroupRepository;
         this.chatParticipantRepository = chatParticipantRepository;
         this.chatMessageRepository = chatMessageRepository;
         this.chatAttachmentRepository = chatAttachmentRepository;
+        this.notificationsService = notificationsService;
     }
     async createGroup(employeeId, createGroupDto) {
         const { participantIds, ...groupData } = createGroupDto;
@@ -182,6 +185,9 @@ let ChatService = class ChatService {
         if (!participant) {
             throw new common_1.ForbiddenException('You are not a member of this group');
         }
+        const group = await this.chatGroupRepository.findOne({
+            where: { id: chatGroupId },
+        });
         const message = this.chatMessageRepository.create({
             chatGroupId,
             senderEmployeeId: employeeId,
@@ -193,6 +199,36 @@ let ChatService = class ChatService {
         await this.chatGroupRepository.update(chatGroupId, {
             updatedAt: new Date(),
         });
+        const allParticipants = await this.chatParticipantRepository.find({
+            where: {
+                chatGroupId,
+                isActive: true,
+            },
+        });
+        const recipientIds = allParticipants
+            .filter(p => p.employeeId !== employeeId)
+            .map(p => p.employeeId);
+        if (recipientIds.length > 0) {
+            const priority = (mentionedEmployeeIds && mentionedEmployeeIds.length > 0) ? 5 : 3;
+            for (const recipientId of recipientIds) {
+                try {
+                    await this.notificationsService.create({
+                        userId: recipientId,
+                        type: notification_entity_1.NotificationType.INFO,
+                        category: notification_entity_1.NotificationCategory.TASK,
+                        title: `New message in ${group?.name || 'Chat'}`,
+                        message: messageText.length > 100 ? `${messageText.substring(0, 100)}...` : messageText,
+                        priority,
+                        relatedEntityType: 'CHAT_MESSAGE',
+                        relatedEntityId: message.id,
+                        actionUrl: `/chat/${chatGroupId}`,
+                    });
+                }
+                catch (error) {
+                    console.error(`Failed to send notification to ${recipientId}:`, error);
+                }
+            }
+        }
         return this.getMessageById(message.id);
     }
     async getMessages(groupId, employeeId, limit = 50, before) {
@@ -403,6 +439,7 @@ exports.ChatService = ChatService = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], ChatService);
 //# sourceMappingURL=chat.service.js.map

@@ -158,6 +158,101 @@ class LeadsService {
   async deleteLead(id: string): Promise<void> {
     await api.delete(`${this.baseUrl}/${id}`);
   }
+
+  // Bulk Operations
+  async bulkAssignLeads(leadIds: string[], assignedTo: string): Promise<{ assigned: number }> {
+    const response = await api.post(`${this.baseUrl}/bulk-assign`, { leadIds, assignedTo });
+    return response;
+  }
+
+  async checkDuplicateLead(email?: string, phone?: string): Promise<{
+    isDuplicate: boolean;
+    existingLead?: any;
+  }> {
+    const response = await api.post(`${this.baseUrl}/check-duplicate`, { email, phone });
+    return response;
+  }
+
+  // Dashboard Statistics
+  async getAgentDashboardStats(agentId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await api.get(
+      `${this.baseUrl}/dashboard/agent/${agentId}?${params.toString()}`
+    );
+    return response;
+  }
+
+  async getAdminDashboardStats(filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await api.get(
+      `${this.baseUrl}/dashboard/admin?${params.toString()}`
+    );
+    return response;
+  }
+
+  async getTeamDashboardStats(gmId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    
+    const response = await api.get(
+      `${this.baseUrl}/dashboard/team/${gmId}?${params.toString()}`
+    );
+    return response;
+  }
+
+  // Import/Export
+  async importLeads(data: {
+    leads: Array<{
+      firstName: string;
+      lastName: string;
+      phone: string;
+      email: string;
+      source: string;
+      status?: string;
+      notes?: string;
+    }>;
+  }): Promise<{
+    totalRows: number;
+    successCount: number;
+    errorCount: number;
+    errors: any[];
+    createdLeads: string[];
+  }> {
+    const response = await api.post(`${this.baseUrl}/import`, data);
+    return response;
+  }
+
+  // Priority & Smart Features
+  async getPrioritizedLeads(userId: string): Promise<any[]> {
+    const response = await api.get(`${this.baseUrl}/prioritized?userId=${userId}`);
+    return response;
+  }
+
+  async getTodaysTasks(userId: string): Promise<any[]> {
+    const response = await api.get(`${this.baseUrl}/today-tasks?userId=${userId}`);
+    return response;
+  }
+
+  async getSmartTips(userId: string): Promise<{ tips: string[]; timestamp: string }> {
+    const response = await api.get(`${this.baseUrl}/smart-tips?userId=${userId}`);
+    return response;
+  }
 }
 
 export const leadsService = new LeadsService();

@@ -20,17 +20,22 @@ const followup_controller_1 = require("./followup.controller");
 const sales_task_controller_1 = require("./sales-task.controller");
 const sales_dashboard_service_1 = require("./sales-dashboard.service");
 const sales_dashboard_controller_1 = require("./sales-dashboard.controller");
+const priority_service_1 = require("./priority.service");
 const sales_target_entity_1 = require("../employees/entities/sales-target.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
+const notifications_module_1 = require("../notifications/notifications.module");
 let LeadsModule = class LeadsModule {
 };
 exports.LeadsModule = LeadsModule;
 exports.LeadsModule = LeadsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([lead_entity_1.Lead, followup_entity_1.FollowUp, sales_task_entity_1.SalesTask, sales_target_entity_1.SalesTarget, booking_entity_1.Booking])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([lead_entity_1.Lead, followup_entity_1.FollowUp, sales_task_entity_1.SalesTask, sales_target_entity_1.SalesTarget, booking_entity_1.Booking]),
+            notifications_module_1.NotificationsModule,
+        ],
         controllers: [leads_controller_1.LeadsController, followup_controller_1.FollowUpController, sales_task_controller_1.SalesTaskController, sales_dashboard_controller_1.SalesDashboardController],
-        providers: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService],
-        exports: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService],
+        providers: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService, priority_service_1.PriorityService],
+        exports: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService, priority_service_1.PriorityService],
     })
 ], LeadsModule);
 //# sourceMappingURL=leads.module.js.map

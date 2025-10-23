@@ -21,6 +21,7 @@ import { ConstructionModule } from './modules/construction/construction.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { RolesModule } from './modules/roles/roles.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -93,6 +94,7 @@ import { validationSchema } from './config/validation';
     MaterialsModule,
     VendorsModule,
     MarketingModule,
+    RolesModule,
     UploadModule,
   ],
   providers: [

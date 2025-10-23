@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { leadsService, Lead, LeadFilters } from '@/services/leads.service';
-import { followupsService } from '@/services/followups.service';
 import { usersService } from '@/services/users.service';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { propertiesService } from '@/services/properties.service';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,542 +19,404 @@ import {
 import {
   Search,
   Plus,
-  RefreshCw,
-  History,
-  X,
-  Save,
-  Edit2,
   Phone,
   Mail,
+  MessageCircle,
   User,
-  ChevronLeft,
-  ChevronRight,
-  Loader2,
   Calendar,
-  MapPin,
-  DollarSign,
-  Home,
-  Building,
+  Clock,
+  Filter,
+  Download,
+  Upload,
+  Zap,
+  TrendingUp,
+  CheckCircle2,
+  Circle,
+  AlertCircle,
+  Loader2,
+  ChevronDown,
+  X,
+  Check,
+  ArrowUpDown,
+  MoreVertical,
+  Eye,
+  Edit,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 
-// Excel-like editable cell component - enhanced for mobile
-interface EditableCellProps {
-  value: any;
-  onSave: (value: any) => Promise<void>;
-  type?: 'text' | 'select' | 'date' | 'number' | 'textarea';
-  options?: { label: string; value: string }[];
-  disabled?: boolean;
-  label?: string;
-  fullWidth?: boolean;
-}
+const PRIORITY_COLORS = {
+  URGENT: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500' },
+  HIGH: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', dot: 'bg-orange-500' },
+  MEDIUM: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', dot: 'bg-blue-500' },
+  LOW: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600', dot: 'bg-gray-400' },
+};
 
-function EditableCell({ 
-  value, 
-  onSave, 
-  type = 'text', 
-  options = [], 
-  disabled = false,
-  label,
-  fullWidth = false 
-}: EditableCellProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
-  const [isSaving, setIsSaving] = useState(false);
+const STATUS_CONFIG = {
+  NEW: { icon: Circle, color: 'text-blue-600', bg: 'bg-blue-50', label: 'New' },
+  CONTACTED: { icon: Phone, color: 'text-purple-600', bg: 'bg-purple-50', label: 'Contacted' },
+  QUALIFIED: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', label: 'Qualified' },
+  NEGOTIATION: { icon: TrendingUp, color: 'text-yellow-600', bg: 'bg-yellow-50', label: 'Negotiation' },
+  WON: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50', label: 'Won' },
+  LOST: { icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50', label: 'Lost' },
+  ON_HOLD: { icon: Clock, color: 'text-gray-600', bg: 'bg-gray-50', label: 'On Hold' },
+};
 
-  const handleSave = async () => {
-    if (editValue === value) {
-      setIsEditing(false);
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await onSave(editValue);
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to save:', error);
-      setEditValue(value);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditValue(value);
-    setIsEditing(false);
-  };
-
-  if (disabled) {
-    return <span className="text-sm text-gray-700">{value || '—'}</span>;
-  }
-
-  if (!isEditing) {
-    return (
-      <div className={`flex items-center justify-between gap-2 ${fullWidth ? 'w-full' : ''}`}>
-        <div className="flex-1 min-w-0">
-          {label && <span className="text-xs text-gray-500 block mb-1">{label}</span>}
-          <span className="text-sm text-gray-900 block truncate">{value || 'Not set'}</span>
-        </div>
-        <button
-          onClick={() => setIsEditing(true)}
-          className="flex-shrink-0 p-2 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Edit"
-        >
-          <Edit2 className="h-4 w-4 text-blue-600" />
-        </button>
-      </div>
-    );
-  }
-
-  if (type === 'select' && (options || []).length > 0) {
-    return (
-      <div className="flex flex-col gap-2 w-full">
-        {label && <span className="text-xs text-gray-500">{label}</span>}
-        <div className="flex items-center gap-2">
-          <Select value={editValue} onValueChange={setEditValue}>
-            <SelectTrigger className="h-10">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {((options || [])).map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-10">
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleCancel} className="h-10">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (type === 'textarea') {
-    return (
-      <div className="flex flex-col gap-2 w-full">
-        {label && <span className="text-xs text-gray-500">{label}</span>}
-        <textarea
-          value={editValue || ''}
-          onChange={(e) => setEditValue(e.target.value)}
-          className="text-sm border rounded-lg px-3 py-2 w-full min-h-[80px] focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          autoFocus
-          placeholder="Enter notes..."
-        />
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSave} disabled={isSaving} className="flex-1">
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleCancel} className="flex-1">
-            Cancel
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-2 w-full">
-      {label && <span className="text-xs text-gray-500">{label}</span>}
-      <div className="flex items-center gap-2">
-        <Input
-          type={type}
-          value={editValue || ''}
-          onChange={(e) => setEditValue(e.target.value)}
-          className="h-10"
-          autoFocus
-          placeholder={label || ''}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSave();
-            if (e.key === 'Escape') handleCancel();
-          }}
-        />
-        <Button size="sm" onClick={handleSave} disabled={isSaving} className="h-10">
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        </Button>
-        <Button size="sm" variant="outline" onClick={handleCancel} className="h-10">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// Mobile Lead Card Component
-interface LeadCardProps {
-  lead: Lead;
-  users: any[];
-  onUpdate: (leadId: string, field: string, value: any) => Promise<void>;
-  onAssign: (leadId: string, userId: string) => Promise<void>;
-  onViewHistory: (lead: Lead) => void;
-  isAdmin: boolean;
-  statusOptions: { label: string; value: string }[];
-  priorityOptions: { label: string; value: string }[];
-  getStatusColor: (status: string) => string;
-  getPriorityColor: (priority: string) => string;
-  getAssignedUserName: (assignedTo?: string) => string;
-  getTeamAssignmentsWithTasks: (lead: Lead) => Array<{ name: string; task: string }>;
-}
-
-function LeadCard({
+// Compact Lead Row Component - Optimized for speed
+function LeadRow({
   lead,
-  users,
-  onUpdate,
-  onAssign,
-  onViewHistory,
+  isSelected,
+  onToggleSelect,
+  onQuickAction,
   isAdmin,
-  statusOptions,
-  priorityOptions,
-  getStatusColor,
-  getPriorityColor,
-  getAssignedUserName,
-  getTeamAssignmentsWithTasks,
-}: LeadCardProps) {
-  const priorityColors = {
-    URGENT: 'from-red-500 to-red-600',
-    HIGH: 'from-orange-500 to-orange-600',
-    MEDIUM: 'from-blue-500 to-blue-600',
-    LOW: 'from-gray-400 to-gray-500',
-  };
+  users,
+  properties,
+}: {
+  lead: Lead;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onQuickAction: (action: string, leadId: string, value?: any) => void;
+  isAdmin: boolean;
+  users: any[];
+  properties: any[];
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [phoneValue, setPhoneValue] = useState(lead.phone);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState(lead.followUpNotes || '');
+  const priority = PRIORITY_COLORS[lead.priority as keyof typeof PRIORITY_COLORS] || PRIORITY_COLORS.MEDIUM;
+  const statusConfig = STATUS_CONFIG[lead.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.NEW;
+  const StatusIcon = statusConfig.icon;
+
+  const isOverdue = lead.nextFollowUpDate && new Date(lead.nextFollowUpDate) < new Date();
+  const isDueToday = lead.nextFollowUpDate && 
+    new Date(lead.nextFollowUpDate).toDateString() === new Date().toDateString();
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-l-4" 
-      style={{ borderLeftColor: lead.priority === 'URGENT' ? '#ef4444' : lead.priority === 'HIGH' ? '#f97316' : '#3b82f6' }}>
-      {/* Card Header with Gradient */}
-      <div className={`bg-gradient-to-r ${priorityColors[lead.priority as keyof typeof priorityColors] || priorityColors.MEDIUM} p-4 text-white`}>
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h3 className="font-bold text-lg">{lead.firstName} {lead.lastName}</h3>
-            <p className="text-sm opacity-90">{lead.source.replace(/_/g, ' ')}</p>
+    <div
+      className={`group relative border-l-4 ${priority.border} ${isSelected ? 'bg-blue-50 ring-2 ring-blue-300' : 'bg-white hover:bg-gray-50'} transition-all duration-150 rounded-r-lg mb-2 shadow-sm hover:shadow-md`}
+    >
+      <div className="flex items-center gap-3 p-3">
+        {/* Checkbox */}
+        {isAdmin && (
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={onToggleSelect}
+            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+          />
+        )}
+
+        {/* Priority Dot */}
+        <div className={`w-3 h-3 rounded-full ${priority.dot} flex-shrink-0`} />
+
+        {/* Lead Info - Main Content */}
+        <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          {/* Name & Contact */}
+          <div className="md:col-span-3">
+            <div className="font-semibold text-gray-900 truncate">
+              {lead.firstName} {lead.lastName}
+            </div>
+            <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+              {editingPhone ? (
+                <input
+                  type="tel"
+                  value={phoneValue}
+                  onChange={(e) => setPhoneValue(e.target.value)}
+                  onBlur={() => {
+                    setEditingPhone(false);
+                    if (phoneValue !== lead.phone) {
+                      onQuickAction('phone', lead.id, phoneValue);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setEditingPhone(false);
+                      if (phoneValue !== lead.phone) {
+                        onQuickAction('phone', lead.id, phoneValue);
+                      }
+                    }
+                    if (e.key === 'Escape') {
+                      setPhoneValue(lead.phone);
+                      setEditingPhone(false);
+                    }
+                  }}
+                  autoFocus
+                  className="w-32 px-2 py-0.5 border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              ) : (
+                <span
+                  className="truncate cursor-pointer hover:bg-blue-50 px-1 rounded"
+                  onClick={() => setEditingPhone(true)}
+                  title="Click to edit phone"
+                >
+                  {lead.phone}
+                </span>
+              )}
+              {lead.email && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="truncate">{lead.email}</span>
+                </>
+              )}
+            </div>
           </div>
-          <Badge className="bg-white/20 text-white border-white/30">
-            {lead.priority}
-          </Badge>
+
+          {/* Status */}
+          <div className="md:col-span-2">
+            <div className="relative">
+              <button
+                onClick={() => setShowStatusMenu(!showStatusMenu)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${statusConfig.bg} ${statusConfig.color} text-sm font-medium hover:opacity-80 transition-opacity`}
+              >
+                <StatusIcon className="h-3.5 w-3.5" />
+                {statusConfig.label}
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </button>
+              
+              {/* Status Dropdown */}
+              {showStatusMenu && (
+                <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[160px]">
+                  {Object.entries(STATUS_CONFIG).map(([key, config]) => {
+                    const Icon = config.icon;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          onQuickAction('status', lead.id, key);
+                          setShowStatusMenu(false);
+                        }}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 ${config.color}`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {config.label}
+                        {lead.status === key && <Check className="h-4 w-4 ml-auto" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Property & Source */}
+          <div className="md:col-span-2">
+            {isAdmin ? (
+              <Select
+                value={lead.propertyId || 'none'}
+                onValueChange={(value) => onQuickAction('property', lead.id, value === 'none' ? null : value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-0 bg-transparent hover:bg-gray-100">
+                  <SelectValue>
+                    {lead.propertyId ? (
+                      <span className="flex items-center gap-1.5">
+                        🏢 {properties.find((p: any) => p.id === lead.propertyId)?.name || 'Unknown'}
+                      </span>
+                    ) : lead.interestedPropertyTypes ? (
+                      <span className="text-gray-700">{lead.interestedPropertyTypes}</span>
+                    ) : (
+                      <span className="text-gray-400 italic">No property</span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-gray-500">No specific property</span>
+                  </SelectItem>
+                  {properties.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      🏢 {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <>
+                {lead.propertyId ? (
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    🏢 {properties.find((p: any) => p.id === lead.propertyId)?.name || 'Unknown Property'}
+                  </div>
+                ) : lead.interestedPropertyTypes ? (
+                  <div className="text-sm font-medium text-gray-700 truncate">
+                    {lead.interestedPropertyTypes}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400 italic">No property specified</div>
+                )}
+              </>
+            )}
+            <div className="text-xs text-gray-500 mt-0.5">{lead.source.replace(/_/g, ' ')}</div>
+          </div>
+
+          {/* Assigned To */}
+          <div className="md:col-span-2">
+            {isAdmin ? (
+              <Select
+                value={lead.assignedTo || 'unassigned'}
+                onValueChange={(value) => onQuickAction('assign', lead.id, value === 'unassigned' ? '' : value)}
+              >
+                <SelectTrigger className="h-8 text-sm border-0 bg-transparent hover:bg-gray-100">
+                  <SelectValue>
+                    {lead.assignedTo ? (
+                      <span className="flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        {users.find(u => u.id === lead.assignedTo)?.firstName || 'Unknown'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 flex items-center gap-1.5">
+                        <User className="h-3.5 w-3.5" />
+                        Unassigned
+                      </span>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">
+                    <span className="text-gray-500">Unassigned</span>
+                  </SelectItem>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.firstName} {u.lastName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="text-sm text-gray-600 flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                {lead.assignedTo ? users.find(u => u.id === lead.assignedTo)?.firstName || 'Unknown' : 'Unassigned'}
+              </div>
+            )}
+          </div>
+
+          {/* Next Follow-up */}
+          <div className="md:col-span-2">
+            {lead.nextFollowUpDate ? (
+              <div className={`text-sm flex items-center gap-1.5 ${isOverdue ? 'text-red-600 font-medium' : isDueToday ? 'text-orange-600 font-medium' : 'text-gray-600'}`}>
+                <Calendar className="h-3.5 w-3.5" />
+                {new Date(lead.nextFollowUpDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                {isOverdue && <AlertCircle className="h-3.5 w-3.5" />}
+              </div>
+            ) : (
+              <span className="text-xs text-gray-400 italic">No follow-up</span>
+            )}
+          </div>
+
+          {/* Created */}
+          <div className="md:col-span-1 hidden lg:block">
+            <div className="text-xs text-gray-500">
+              {new Date(lead.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+            </div>
+          </div>
         </div>
-        
-        {/* Contact Info */}
-        <div className="flex flex-wrap gap-3 mt-3">
-          <a href={`tel:${lead.phone}`} className="flex items-center gap-1.5 text-sm bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 transition-colors">
-            <Phone className="h-3.5 w-3.5" />
-            {lead.phone}
-          </a>
-          <a href={`mailto:${lead.email}`} className="flex items-center gap-1.5 text-sm bg-white/20 hover:bg-white/30 rounded-full px-3 py-1.5 transition-colors">
-            <Mail className="h-3.5 w-3.5" />
-            Email
-          </a>
+
+        {/* Quick Actions */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => window.location.href = `tel:${lead.phone}`}
+            className="p-2 hover:bg-green-50 rounded-lg transition-colors group"
+            title="Call"
+          >
+            <Phone className="h-4 w-4 text-gray-400 group-hover:text-green-600" />
+          </button>
+          <button
+            onClick={() => window.location.href = `https://wa.me/${lead.phone.replace(/[^0-9]/g, '')}`}
+            className="p-2 hover:bg-green-50 rounded-lg transition-colors group"
+            title="WhatsApp"
+          >
+            <MessageCircle className="h-4 w-4 text-gray-400 group-hover:text-green-600" />
+          </button>
+          <button
+            onClick={() => window.location.href = `mailto:${lead.email}`}
+            className="p-2 hover:bg-blue-50 rounded-lg transition-colors group"
+            title="Email"
+          >
+            <Mail className="h-4 w-4 text-gray-400 group-hover:text-blue-600" />
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Details"
+          >
+            <Eye className="h-4 w-4 text-gray-400" />
+          </button>
         </div>
       </div>
 
-      <CardContent className="p-4 space-y-4">
-        {/* Status Badge */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">Status</span>
-          <Badge className={`${getStatusColor(lead.status)} border`}>
-            {lead.status}
-          </Badge>
-        </div>
-
-        {/* Contact Details - Editable */}
-        <div className="bg-amber-50 rounded-lg p-3 space-y-2">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-900">Contact Information</span>
-          </div>
-          
-          <EditableCell
-            label="Full Name"
-            value={`${lead.firstName} ${lead.lastName}`.trim()}
-            type="text"
-            onSave={(value) => onUpdate(lead.id, 'fullName', value)}
-            fullWidth
-          />
-          
-          <EditableCell
-            label="Email"
-            value={lead.email}
-            type="text"
-            onSave={(value) => onUpdate(lead.id, 'email', value)}
-            fullWidth
-          />
-          
-          <div className="grid grid-cols-2 gap-2">
-            <EditableCell
-              label="Phone"
-              value={lead.phone}
-              type="text"
-              onSave={(value) => onUpdate(lead.id, 'phone', value)}
-              fullWidth
-            />
-            <EditableCell
-              label="Alt. Phone"
-              value={lead.alternatePhone || ''}
-              type="text"
-              onSave={(value) => onUpdate(lead.id, 'alternatePhone', value)}
-              fullWidth
-            />
-          </div>
-
-          <EditableCell
-            label="Address"
-            value={lead.address || ''}
-            type="text"
-            onSave={(value) => onUpdate(lead.id, 'address', value)}
-            fullWidth
-          />
-
-          <div className="grid grid-cols-2 gap-2">
-            <EditableCell
-              label="City"
-              value={lead.city || ''}
-              type="text"
-              onSave={(value) => onUpdate(lead.id, 'city', value)}
-              fullWidth
-            />
-            <EditableCell
-              label="State"
-              value={lead.state || ''}
-              type="text"
-              onSave={(value) => onUpdate(lead.id, 'state', value)}
-              fullWidth
-            />
-          </div>
-        </div>
-
-        {/* Property Interest */}
-        <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-          <div className="flex items-center gap-2 mb-2">
-            <Home className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-semibold text-gray-700">Property Interest</span>
-          </div>
-          
-          <EditableCell
-            label="Property Type"
-            value={lead.interestedPropertyTypes || 'Not specified'}
-            type="text"
-            onSave={(value) => onUpdate(lead.id, 'interestedPropertyTypes', value)}
-            fullWidth
-          />
-          
-          <div className="grid grid-cols-2 gap-2">
-            <EditableCell
-              label="Min Budget (₹)"
-              value={lead.budgetMin || ''}
-              type="number"
-              onSave={(value) => onUpdate(lead.id, 'budgetMin', parseFloat(value) || 0)}
-              fullWidth
-            />
-            <EditableCell
-              label="Max Budget (₹)"
-              value={lead.budgetMax || ''}
-              type="number"
-              onSave={(value) => onUpdate(lead.id, 'budgetMax', parseFloat(value) || 0)}
-              fullWidth
-            />
-          </div>
-
-          {lead.preferredLocation && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-              <MapPin className="h-4 w-4" />
-              <span>{lead.preferredLocation}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Assignment Section */}
-        <div className="space-y-2">
-          {isAdmin ? (
-            <div className="bg-blue-50 rounded-lg p-3 space-y-2">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-900">Team Assignments</span>
-              </div>
-              {getTeamAssignmentsWithTasks(lead).length > 0 ? (
-                <div className="space-y-1.5">
-                  {getTeamAssignmentsWithTasks(lead).map((assignment, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-white rounded px-3 py-2">
-                      <span className="text-xs font-medium text-blue-900">{assignment.task}:</span>
-                      <span className="text-xs text-gray-700 font-semibold">{assignment.name}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500 italic">No team assigned</p>
-              )}
-              <p className="text-[10px] text-gray-500 italic">💡 Add tasks in notes: "call - Name, site visit - Name"</p>
-            </div>
-          ) : (
-            <EditableCell
-              label="Assigned To"
-              value={lead.assignedTo || 'unassigned'}
-              type="select"
-              options={[
-                { label: 'Unassigned', value: 'unassigned' },
-                ...((users || [])).map((u) => ({ label: `${u.firstName} ${u.lastName}`, value: u.id })),
-              ]}
-              onSave={(value) => onAssign(lead.id, value === 'unassigned' ? '' : value)}
-              fullWidth
-            />
-          )}
-        </div>
-
-        {/* Next Follow-up */}
-        <EditableCell
-          label="Next Follow-up"
-          value={lead.nextFollowUpDate || ''}
-          type="date"
-          onSave={(value) => onUpdate(lead.id, 'nextFollowUpDate', value)}
-          fullWidth
-        />
-
-        {/* Notes */}
-        <EditableCell
-          label="Feedback / Notes"
-          value={lead.followUpNotes || lead.notes || ''}
-          type="textarea"
-          onSave={(value) => onUpdate(lead.id, 'followUpNotes', value)}
-          fullWidth
-        />
-
-        {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onViewHistory(lead)}
-            className="flex-1"
-          >
-            <History className="h-4 w-4 mr-2" />
-            View History
-          </Button>
-          <EditableCell
-            value={lead.status}
-            type="select"
-            options={statusOptions}
-            onSave={(value) => onUpdate(lead.id, 'status', value)}
-          />
-          <EditableCell
-            value={lead.priority}
-            type="select"
-            options={priorityOptions}
-            onSave={(value) => onUpdate(lead.id, 'priority', value)}
-          />
-        </div>
-
-        {/* Footer Info */}
-        <div className="text-xs text-gray-500 pt-2 border-t flex justify-between">
-          <span>Created: {new Date(lead.createdAt).toLocaleDateString()}</span>
-          <span>ID: {lead.id.slice(0, 8)}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// History Modal Component (same as before)
-interface LeadHistoryModalProps {
-  lead: Lead;
-  onClose: () => void;
-}
-
-function LeadHistoryModal({ lead, onClose }: LeadHistoryModalProps) {
-  const [followups, setFollowups] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadHistory();
-  }, [lead.id]);
-
-  const loadHistory = async () => {
-    try {
-      setLoading(true);
-      const data = await followupsService.getFollowupsByLead(lead.id);
-      setFollowups(data || []);
-    } catch (error) {
-      console.error('Failed to load history:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between border-b">
-          <CardTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Lead History: {lead.firstName} {lead.lastName}
-          </CardTitle>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Lead Basic Info */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Lead Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div><span className="text-gray-500">Status:</span> <Badge>{lead.status}</Badge></div>
-                  <div><span className="text-gray-500">Priority:</span> <Badge variant="outline">{lead.priority}</Badge></div>
-                  <div><span className="text-gray-500">Source:</span> {lead.source}</div>
-                  <div><span className="text-gray-500">Total Interactions:</span> {lead.totalCalls + lead.totalEmails + lead.totalMeetings}</div>
-                  <div><span className="text-gray-500">Site Visits:</span> {lead.totalSiteVisits}</div>
-                  <div><span className="text-gray-500">Created:</span> {new Date(lead.createdAt).toLocaleDateString()}</div>
-                </div>
-              </div>
-
-              {/* Follow-up History */}
-              <div>
-                <h3 className="font-semibold mb-3">Follow-up History ({(followups || []).length})</h3>
-                {(followups || []).length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No follow-ups recorded yet</p>
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="border-t border-gray-100 bg-gray-50 p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="text-gray-500 font-medium">Budget:</span>
+              <div className="mt-1">
+                {lead.budgetMin && lead.budgetMax ? (
+                  `₹${lead.budgetMin.toLocaleString()} - ₹${lead.budgetMax.toLocaleString()}`
                 ) : (
-                  <div className="space-y-3">
-                    {((followups || [])).map((followup) => (
-                      <div key={followup.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline">{followup.followUpType}</Badge>
-                            <Badge>{followup.outcome}</Badge>
-                            <span className="text-xs text-gray-500">
-                              {new Date(followup.followUpDate).toLocaleString()}
-                            </span>
-                          </div>
-                          {followup.durationMinutes > 0 && (
-                            <span className="text-xs text-gray-500">{followup.durationMinutes} mins</span>
-                          )}
-                        </div>
-                        {followup.feedback && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium text-gray-700">Feedback:</p>
-                            <p className="text-sm text-gray-600">{followup.feedback}</p>
-                          </div>
-                        )}
-                        {followup.customerResponse && (
-                          <div className="mb-2">
-                            <p className="text-sm font-medium text-gray-700">Customer Response:</p>
-                            <p className="text-sm text-gray-600">{followup.customerResponse}</p>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <span className="text-gray-400 italic">Not specified</span>
                 )}
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <span className="text-gray-500 font-medium">Location Preference:</span>
+              <div className="mt-1">{lead.preferredLocation || <span className="text-gray-400 italic">None</span>}</div>
+            </div>
+            <div>
+              <span className="text-gray-500 font-medium">Last Contact:</span>
+              <div className="mt-1">
+                {lead.lastContactedAt ? (
+                  new Date(lead.lastContactedAt).toLocaleDateString('en-IN')
+                ) : (
+                  <span className="text-gray-400 italic">Never contacted</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <span className="text-gray-500 font-medium text-sm">Follow-up Notes:</span>
+            {editingNotes ? (
+              <textarea
+                value={notesValue}
+                onChange={(e) => setNotesValue(e.target.value)}
+                onBlur={() => {
+                  setEditingNotes(false);
+                  if (notesValue !== (lead.followUpNotes || '')) {
+                    onQuickAction('notes', lead.id, notesValue);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setNotesValue(lead.followUpNotes || '');
+                    setEditingNotes(false);
+                  }
+                }}
+                autoFocus
+                rows={3}
+                className="mt-1 w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                placeholder="Add follow-up notes..."
+              />
+            ) : (
+              <div
+                onClick={() => setEditingNotes(true)}
+                className="mt-1 text-sm text-gray-700 min-h-[60px] p-2 hover:bg-blue-50 rounded cursor-pointer border border-transparent hover:border-blue-200"
+                title="Click to edit notes"
+              >
+                {lead.followUpNotes || <span className="text-gray-400 italic">Click to add notes...</span>}
+              </div>
+            )}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/leads/${lead.id}/edit`}>
+                <Edit className="h-3.5 w-3.5 mr-1.5" />
+                Edit Full Details
+              </Link>
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -564,21 +426,55 @@ export default function LeadsListPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
+  const [properties, setProperties] = useState<any[]>([]);
   const [filters, setFilters] = useState<LeadFilters>({
     page: 1,
-    limit: 50,
+    limit: 100,
     sortBy: 'createdAt',
     sortOrder: 'DESC',
   });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<string>('');
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+
+  // Enhanced role check - handles roles array
+  const isAdmin = useMemo(() => {
+    if (!user?.roles || !Array.isArray(user.roles)) return false;
+    
+    // Check if user has any admin role
+    return user.roles.some((role: any) => {
+      const roleName = (role.name || role).toUpperCase().replace(/[-_\s]/g, '');
+      return roleName === 'ADMIN' || roleName === 'SUPERADMIN' || roleName === 'SALESGM';
+    });
+  }, [user?.roles]);
+
+  // Debug: Log user roles and admin status
+  useEffect(() => {
+    console.log('🔍 User Role Debug:', {
+      roles: user?.roles,
+      isAdmin,
+      userName: user?.firstName + ' ' + user?.lastName,
+    });
+  }, [user, isAdmin]);
 
   useEffect(() => {
     loadLeads();
     loadUsers();
+    loadProperties();
   }, [filters]);
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchTerm !== filters.search) {
+        setFilters({ ...filters, search: searchTerm, page: 1 });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const loadLeads = async () => {
     try {
@@ -603,213 +499,199 @@ export default function LeadsListPage() {
     }
   };
 
-  const handleUpdateLead = async (leadId: string, field: string, value: any) => {
+  const loadProperties = async () => {
     try {
-      await leadsService.updateLead(leadId, { [field]: value });
+      const data = await propertiesService.getProperties();
+      setProperties(Array.isArray(data) ? data : data.data || []);
+    } catch (error) {
+      console.error('Failed to load properties:', error);
+    }
+  };
+
+  const handleQuickAction = async (action: string, leadId: string, value?: any) => {
+    try {
+      if (action === 'status') {
+        await leadsService.updateLead(leadId, { status: value as any });
+      } else if (action === 'assign') {
+        await leadsService.assignLead(leadId, value);
+      } else if (action === 'property') {
+        await leadsService.updateLead(leadId, { propertyId: value });
+      } else if (action === 'phone') {
+        await leadsService.updateLead(leadId, { phone: value });
+      } else if (action === 'notes') {
+        await leadsService.updateLead(leadId, { followUpNotes: value });
+      }
       await loadLeads();
     } catch (error) {
-      console.error('Failed to update lead:', error);
-      throw error;
+      console.error('Quick action failed:', error);
     }
   };
 
-  const handleAssignLead = async (leadId: string, userId: string) => {
+  const handleBulkAction = async () => {
+    if (!bulkAction || selectedLeads.size === 0) return;
+
     try {
-      await leadsService.assignLead(leadId, userId);
+      const leadIds = Array.from(selectedLeads);
+      
+      if (bulkAction.startsWith('assign:')) {
+        const userId = bulkAction.split(':')[1];
+        await leadsService.bulkAssignLeads(leadIds, userId);
+      } else if (bulkAction.startsWith('status:')) {
+        const status = bulkAction.split(':')[1];
+        await Promise.all(leadIds.map(id => leadsService.updateLead(id, { status: status as any })));
+      }
+      
       await loadLeads();
+      setSelectedLeads(new Set());
+      setBulkAction('');
     } catch (error) {
-      console.error('Failed to assign lead:', error);
-      throw error;
+      console.error('Bulk action failed:', error);
     }
   };
 
-  const handleViewHistory = (lead: Lead) => {
-    setSelectedLead(lead);
-    setShowHistory(true);
-  };
-
-  const statusOptions = [
-    { label: 'New', value: 'NEW' },
-    { label: 'Contacted', value: 'CONTACTED' },
-    { label: 'Qualified', value: 'QUALIFIED' },
-    { label: 'Negotiation', value: 'NEGOTIATION' },
-    { label: 'Won', value: 'WON' },
-    { label: 'Lost', value: 'LOST' },
-    { label: 'On Hold', value: 'ON_HOLD' },
-  ];
-
-  const priorityOptions = [
-    { label: 'Low', value: 'LOW' },
-    { label: 'Medium', value: 'MEDIUM' },
-    { label: 'High', value: 'HIGH' },
-    { label: 'Urgent', value: 'URGENT' },
-  ];
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      NEW: 'bg-blue-100 text-blue-800 border-blue-200',
-      CONTACTED: 'bg-purple-100 text-purple-800 border-purple-200',
-      QUALIFIED: 'bg-green-100 text-green-800 border-green-200',
-      NEGOTIATION: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      WON: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      LOST: 'bg-red-100 text-red-800 border-red-200',
-      ON_HOLD: 'bg-gray-100 text-gray-800 border-gray-200',
-    };
-    return colors[status as keyof typeof colors] || colors.NEW;
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      URGENT: 'bg-red-100 text-red-800 border-red-300',
-      HIGH: 'bg-orange-100 text-orange-800 border-orange-300',
-      MEDIUM: 'bg-blue-100 text-blue-800 border-blue-300',
-      LOW: 'bg-gray-100 text-gray-700 border-gray-300',
-    };
-    return colors[priority as keyof typeof colors] || colors.MEDIUM;
-  };
-
-  const getAssignedUserName = (assignedTo?: string) => {
-    if (!assignedTo) return 'Unassigned';
-    const foundUser = ((users || [])).find(u => u.id === assignedTo);
-    return foundUser ? `${foundUser.firstName} ${foundUser.lastName}` : 'Unknown User';
-  };
-
-  const getTeamAssignmentsWithTasks = (lead: Lead) => {
-    const assignments: Array<{ name: string; task: string }> = [];
-    
-    const assigneeIds = lead.assignedTo?.includes(',') 
-      ? lead.assignedTo.split(',').map(id => id.trim())
-      : lead.assignedTo ? [lead.assignedTo] : [];
-    
-    assigneeIds.forEach(id => {
-      const foundUser = ((users || [])).find(u => u.id === id);
-      if (foundUser) {
-        assignments.push({
-          name: `${foundUser.firstName} ${foundUser.lastName}`,
-          task: 'Primary Contact'
-        });
-      }
-    });
-
-    const notesText = lead.followUpNotes || lead.notes || '';
-    const taskPattern = /(\w+[\s\w]*)\s*-\s*([A-Za-z\s]+?)(?:,|$)/g;
-    let match;
-    
-    while ((match = taskPattern.exec(notesText)) !== null) {
-      const task = match[1].trim();
-      const userName = match[2].trim();
-      
-      const matchedUser = ((users || [])).find(u => 
-        `${u.firstName} ${u.lastName}`.toLowerCase().includes(userName.toLowerCase()) ||
-        u.firstName.toLowerCase() === userName.toLowerCase() ||
-        u.lastName.toLowerCase() === userName.toLowerCase()
-      );
-      
-      if (matchedUser && !((assignments || [])).find(a => a.name === `${matchedUser.firstName} ${matchedUser.lastName}` && a.task === task)) {
-        assignments.push({
-          name: `${matchedUser.firstName} ${matchedUser.lastName}`,
-          task: task.charAt(0).toUpperCase() + task.slice(1)
-        });
-      }
+  const handleSelectAll = () => {
+    if (selectedLeads.size === leads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(leads.map(l => l.id)));
     }
-
-    return assignments;
   };
 
-  const isAdminUser = () => {
-    return user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
-  };
+  // Stats for quick view
+  const stats = useMemo(() => ({
+    total: leads.length,
+    urgent: leads.filter(l => l.priority === 'URGENT').length,
+    overdue: leads.filter(l => l.nextFollowUpDate && new Date(l.nextFollowUpDate) < new Date()).length,
+    unassigned: leads.filter(l => !l.assignedTo).length,
+    new: leads.filter(l => l.status === 'NEW').length,
+  }), [leads]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile-optimized header */}
-      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
-        <div className="p-4 md:p-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-[1800px] mx-auto px-4 py-4">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Leads Management</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {total} total leads
+              <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
+              <p className="text-sm text-gray-600 mt-0.5">
+                {total} total • {stats.urgent} urgent • {stats.overdue} overdue
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={loadLeads} size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={loadLeads}>
+                <Zap className="h-4 w-4 mr-1.5" />
                 Refresh
               </Button>
-              <Button asChild size="sm">
+              <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
                 <Link href="/leads/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Lead
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  New Lead
                 </Link>
               </Button>
             </div>
           </div>
 
-          {/* Mobile-optimized filters */}
-          <div className="mt-4 space-y-3">
-            <div className="relative">
+          {/* Search & Filters */}
+          <div className="flex flex-col lg:flex-row gap-3">
+            {/* Search */}
+            <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search leads..."
-                className="pl-10"
-                value={filters.search || ''}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                placeholder="Search leads by name, phone, email..."
+                className="pl-10 h-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {/* Quick Filters */}
+            <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
+              <Button
+                variant={!filters.status ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters({ ...filters, status: undefined, page: 1 })}
+              >
+                All ({total})
+              </Button>
+              <Button
+                variant={filters.status === 'NEW' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters({ ...filters, status: 'NEW', page: 1 })}
+              >
+                New ({stats.new})
+              </Button>
+              <Button
+                variant={filters.priority === 'URGENT' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters({ ...filters, priority: filters.priority === 'URGENT' ? undefined : 'URGENT', page: 1 })}
+              >
+                🔴 Urgent ({stats.urgent})
+              </Button>
+              <Button
+                variant={filters.assignedTo === 'unassigned' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilters({ ...filters, assignedTo: filters.assignedTo === 'unassigned' ? undefined : 'unassigned', page: 1 })}
+              >
+                Unassigned ({stats.unassigned})
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-1.5" />
+                {showFilters ? 'Hide' : 'More'} Filters
+              </Button>
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-3">
               <Select
                 value={filters.status || 'all'}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, status: value === 'all' ? undefined : value, page: 1 })
-                }
+                onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : v, page: 1 })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  {((statusOptions || [])).map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
+                  {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>{config.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
               <Select
                 value={filters.priority || 'all'}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, priority: value === 'all' ? undefined : value, page: 1 })
-                }
+                onValueChange={(v) => setFilters({ ...filters, priority: v === 'all' ? undefined : v, page: 1 })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Priorities</SelectItem>
-                  {((priorityOptions || [])).map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="URGENT">Urgent</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="LOW">Low</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select
                 value={filters.assignedTo || 'all'}
-                onValueChange={(value) =>
-                  setFilters({ ...filters, assignedTo: value === 'all' ? undefined : value, page: 1 })
-                }
+                onValueChange={(v) => setFilters({ ...filters, assignedTo: v === 'all' ? undefined : v, page: 1 })}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9">
                   <SelectValue placeholder="Assignee" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Assignees</SelectItem>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {((users || [])).map((u) => (
+                  {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.firstName} {u.lastName}
                     </SelectItem>
@@ -817,24 +699,71 @@ export default function LeadsListPage() {
                 </SelectContent>
               </Select>
 
-              <Button variant="outline" size="sm" onClick={() => setFilters({ page: 1, limit: 50 })}>
-                Clear
+              <Button variant="outline" size="sm" onClick={() => {
+                setFilters({ page: 1, limit: 100 });
+                setSearchTerm('');
+              }}>
+                Clear All
               </Button>
             </div>
-          </div>
+          )}
+
+          {/* Bulk Actions Bar */}
+          {isAdmin && selectedLeads.size > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-200 bg-blue-50 rounded-lg p-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedLeads.size} selected
+                </span>
+                <Select value={bulkAction} onValueChange={setBulkAction}>
+                  <SelectTrigger className="h-9 w-[200px] bg-white">
+                    <SelectValue placeholder="Bulk action..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="px-2 py-1.5 text-xs font-semibold text-gray-500">Assign to Agent</div>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={`assign:${u.id}`}>
+                        Assign to {u.firstName} {u.lastName}
+                      </SelectItem>
+                    ))}
+                    <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 mt-2">Change Status</div>
+                    {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                      <SelectItem key={key} value={`status:${key}`}>
+                        Set to {config.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={handleBulkAction} disabled={!bulkAction} size="sm">
+                  Apply to {selectedLeads.size} leads
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setSelectedLeads(new Set())}>
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="p-4 md:p-6">
+      {/* Main Content */}
+      <div className="max-w-[1800px] mx-auto px-4 py-6">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
           </div>
-        ) : (leads || []).length === 0 ? (
+        ) : leads.length === 0 ? (
           <Card className="p-12 text-center">
-            <p className="text-gray-500">No leads found. Try adjusting your filters or add a new lead.</p>
-            <Button asChild className="mt-4">
+            <div className="text-gray-400 mb-4">
+              <Search className="h-16 w-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No leads found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || filters.status || filters.priority
+                ? 'Try adjusting your filters or search term'
+                : 'Get started by adding your first lead'}
+            </p>
+            <Button asChild>
               <Link href="/leads/new">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Lead
@@ -843,32 +772,55 @@ export default function LeadsListPage() {
           </Card>
         ) : (
           <>
-            {/* Mobile Card View */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {((leads || [])).map((lead) => (
-                <LeadCard
+            {/* Select All Checkbox */}
+            {isAdmin && (
+              <div className="flex items-center gap-3 mb-4 p-3 bg-white rounded-lg border border-gray-200">
+                <input
+                  type="checkbox"
+                  checked={selectedLeads.size === leads.length && leads.length > 0}
+                  onChange={handleSelectAll}
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedLeads.size === leads.length && leads.length > 0
+                    ? 'Deselect all'
+                    : 'Select all on this page'}
+                </span>
+                <span className="text-sm text-gray-500">
+                  ({leads.length} leads)
+                </span>
+              </div>
+            )}
+
+            {/* Leads List */}
+            <div className="space-y-0">
+              {leads.map((lead) => (
+                <LeadRow
                   key={lead.id}
                   lead={lead}
+                  isSelected={selectedLeads.has(lead.id)}
+                  onToggleSelect={() => {
+                    const newSelected = new Set(selectedLeads);
+                    if (newSelected.has(lead.id)) {
+                      newSelected.delete(lead.id);
+                    } else {
+                      newSelected.add(lead.id);
+                    }
+                    setSelectedLeads(newSelected);
+                  }}
+                  onQuickAction={handleQuickAction}
+                  isAdmin={isAdmin}
                   users={users}
-                  onUpdate={handleUpdateLead}
-                  onAssign={handleAssignLead}
-                  onViewHistory={handleViewHistory}
-                  isAdmin={isAdminUser()}
-                  statusOptions={statusOptions}
-                  priorityOptions={priorityOptions}
-                  getStatusColor={getStatusColor}
-                  getPriorityColor={getPriorityColor}
-                  getAssignedUserName={getAssignedUserName}
-                  getTeamAssignmentsWithTasks={getTeamAssignmentsWithTasks}
+                  properties={properties}
                 />
               ))}
             </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">
                 <div className="text-sm text-gray-700">
-                  Page {filters.page} of {totalPages}
+                  Page {filters.page} of {totalPages} • Showing {leads.length} of {total} leads
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -877,7 +829,6 @@ export default function LeadsListPage() {
                     onClick={() => setFilters({ ...filters, page: filters.page! - 1 })}
                     disabled={filters.page === 1}
                   >
-                    <ChevronLeft className="h-4 w-4" />
                     Previous
                   </Button>
                   <Button
@@ -887,7 +838,6 @@ export default function LeadsListPage() {
                     disabled={filters.page === totalPages}
                   >
                     Next
-                    <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -895,11 +845,6 @@ export default function LeadsListPage() {
           </>
         )}
       </div>
-
-      {/* History Modal */}
-      {showHistory && selectedLead && (
-        <LeadHistoryModal lead={selectedLead} onClose={() => setShowHistory(false)} />
-      )}
     </div>
   );
 }

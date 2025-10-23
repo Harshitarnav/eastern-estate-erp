@@ -30,6 +30,7 @@ const construction_module_1 = require("./modules/construction/construction.modul
 const materials_module_1 = require("./modules/materials/materials.module");
 const vendors_module_1 = require("./modules/vendors/vendors.module");
 const marketing_module_1 = require("./modules/marketing/marketing.module");
+const roles_module_1 = require("./modules/roles/roles.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
 const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
@@ -101,6 +102,7 @@ exports.AppModule = AppModule = __decorate([
             materials_module_1.MaterialsModule,
             vendors_module_1.VendorsModule,
             marketing_module_1.MarketingModule,
+            roles_module_1.RolesModule,
             upload_module_1.UploadModule,
         ],
         providers: [

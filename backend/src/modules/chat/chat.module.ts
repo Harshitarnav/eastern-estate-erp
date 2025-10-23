@@ -6,6 +6,7 @@ import { ChatGroup } from './entities/chat-group.entity';
 import { ChatParticipant } from './entities/chat-participant.entity';
 import { ChatMessage } from './entities/chat-message.entity';
 import { ChatAttachment } from './entities/chat-attachment.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ChatAttachment } from './entities/chat-attachment.entity';
       ChatMessage,
       ChatAttachment,
     ]),
+    NotificationsModule,
   ],
   controllers: [ChatController],
   providers: [ChatService],

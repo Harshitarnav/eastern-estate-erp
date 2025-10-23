@@ -18,6 +18,8 @@ export declare enum LeadSource {
     ADVERTISEMENT = "ADVERTISEMENT",
     BROKER = "BROKER",
     EXHIBITION = "EXHIBITION",
+    NINETY_NINE_ACRES = "99ACRES",
+    MAGICBRICKS = "MAGICBRICKS",
     OTHER = "OTHER"
 }
 export declare enum LeadPriority {

@@ -8,6 +8,8 @@ import { ChatAttachment } from './entities/chat-attachment.entity';
 import { CreateChatGroupDto } from './dto/create-chat-group.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AddParticipantsDto } from './dto/add-participants.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationCategory } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class ChatService {
@@ -20,6 +22,7 @@ export class ChatService {
     private chatMessageRepository: Repository<ChatMessage>,
     @InjectRepository(ChatAttachment)
     private chatAttachmentRepository: Repository<ChatAttachment>,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -247,6 +250,11 @@ export class ChatService {
       throw new ForbiddenException('You are not a member of this group');
     }
 
+    // Get group details
+    const group = await this.chatGroupRepository.findOne({
+      where: { id: chatGroupId },
+    });
+
     // Create the message - ensure mentionedEmployeeIds is always an array
     const message = this.chatMessageRepository.create({
       chatGroupId,
@@ -262,6 +270,43 @@ export class ChatService {
     await this.chatGroupRepository.update(chatGroupId, {
       updatedAt: new Date(),
     });
+
+    // Send notifications to all participants except the sender
+    const allParticipants = await this.chatParticipantRepository.find({
+      where: {
+        chatGroupId,
+        isActive: true,
+      },
+    });
+
+    const recipientIds = allParticipants
+      .filter(p => p.employeeId !== employeeId)
+      .map(p => p.employeeId);
+
+    if (recipientIds.length > 0) {
+      // Determine priority based on mentions (higher number = higher priority)
+      const priority = (mentionedEmployeeIds && mentionedEmployeeIds.length > 0) ? 5 : 3;
+
+      // Create notification for each recipient
+      for (const recipientId of recipientIds) {
+        try {
+          await this.notificationsService.create({
+            userId: recipientId,
+            type: NotificationType.INFO,
+            category: NotificationCategory.TASK,
+            title: `New message in ${group?.name || 'Chat'}`,
+            message: messageText.length > 100 ? `${messageText.substring(0, 100)}...` : messageText,
+            priority,
+            relatedEntityType: 'CHAT_MESSAGE',
+            relatedEntityId: message.id,
+            actionUrl: `/chat/${chatGroupId}`,
+          });
+        } catch (error) {
+          // Log error but don't fail the message send
+          console.error(`Failed to send notification to ${recipientId}:`, error);
+        }
+      }
+    }
 
     return this.getMessageById(message.id);
   }

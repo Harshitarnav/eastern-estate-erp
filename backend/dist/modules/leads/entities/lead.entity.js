@@ -33,6 +33,8 @@ var LeadSource;
     LeadSource["ADVERTISEMENT"] = "ADVERTISEMENT";
     LeadSource["BROKER"] = "BROKER";
     LeadSource["EXHIBITION"] = "EXHIBITION";
+    LeadSource["NINETY_NINE_ACRES"] = "99ACRES";
+    LeadSource["MAGICBRICKS"] = "MAGICBRICKS";
     LeadSource["OTHER"] = "OTHER";
 })(LeadSource || (exports.LeadSource = LeadSource = {}));
 var LeadPriority;

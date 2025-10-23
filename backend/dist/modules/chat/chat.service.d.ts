@@ -6,12 +6,14 @@ import { ChatAttachment } from './entities/chat-attachment.entity';
 import { CreateChatGroupDto } from './dto/create-chat-group.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { AddParticipantsDto } from './dto/add-participants.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class ChatService {
     private chatGroupRepository;
     private chatParticipantRepository;
     private chatMessageRepository;
     private chatAttachmentRepository;
-    constructor(chatGroupRepository: Repository<ChatGroup>, chatParticipantRepository: Repository<ChatParticipant>, chatMessageRepository: Repository<ChatMessage>, chatAttachmentRepository: Repository<ChatAttachment>);
+    private notificationsService;
+    constructor(chatGroupRepository: Repository<ChatGroup>, chatParticipantRepository: Repository<ChatParticipant>, chatMessageRepository: Repository<ChatMessage>, chatAttachmentRepository: Repository<ChatAttachment>, notificationsService: NotificationsService);
     createGroup(employeeId: string, createGroupDto: CreateChatGroupDto): Promise<{
         participants: {
             id: string;

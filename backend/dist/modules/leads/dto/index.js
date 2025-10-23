@@ -18,4 +18,8 @@ __exportStar(require("./create-lead.dto"), exports);
 __exportStar(require("./update-lead.dto"), exports);
 __exportStar(require("./query-lead.dto"), exports);
 __exportStar(require("./lead-response.dto"), exports);
+__exportStar(require("./bulk-assign-leads.dto"), exports);
+__exportStar(require("./check-duplicate-lead.dto"), exports);
+__exportStar(require("./dashboard-stats.dto"), exports);
+__exportStar(require("./export-import-leads.dto"), exports);
 //# sourceMappingURL=index.js.map

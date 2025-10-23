@@ -11,13 +11,18 @@ import { FollowUpController } from './followup.controller';
 import { SalesTaskController } from './sales-task.controller';
 import { SalesDashboardService } from './sales-dashboard.service';
 import { SalesDashboardController } from './sales-dashboard.controller';
+import { PriorityService } from './priority.service';
 import { SalesTarget } from '../employees/entities/sales-target.entity';
 import { Booking } from '../bookings/entities/booking.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Lead, FollowUp, SalesTask, SalesTarget, Booking])],
+  imports: [
+    TypeOrmModule.forFeature([Lead, FollowUp, SalesTask, SalesTarget, Booking]),
+    NotificationsModule,
+  ],
   controllers: [LeadsController, FollowUpController, SalesTaskController, SalesDashboardController],
-  providers: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService],
-  exports: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService],
+  providers: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService, PriorityService],
+  exports: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService, PriorityService],
 })
 export class LeadsModule {}

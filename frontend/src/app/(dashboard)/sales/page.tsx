@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { salesDashboardService } from '@/services/sales-dashboard.service';
 import { leadsService, Lead } from '@/services/leads.service';
+import { MobileFAB } from '@/components/mobile/FloatingActionButton';
 import { DashboardMetrics } from '@/types/sales-crm.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -54,6 +55,9 @@ export default function SalesDashboard() {
   const [focusError, setFocusError] = useState<string | null>(null);
   const [assignedLoading, setAssignedLoading] = useState(false);
   const [assignedError, setAssignedError] = useState<string | null>(null);
+  const [priorityTasks, setPriorityTasks] = useState<any[]>([]);
+  const [smartTips, setSmartTips] = useState<string[]>([]);
+  const [priorityLoading, setPriorityLoading] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
@@ -119,8 +123,40 @@ export default function SalesDashboard() {
     if (user?.id) {
       loadFocusLeads();
       loadAssignedLeads();
+      loadPriorityData();
     }
   }, [user?.id]);
+
+  const loadPriorityData = async () => {
+    if (!user?.id) return;
+
+    try {
+      setPriorityLoading(true);
+      const [tasks, tips] = await Promise.all([
+        leadsService.getTodaysTasks(user.id),
+        leadsService.getSmartTips(user.id),
+      ]);
+      
+      setPriorityTasks(Array.isArray(tasks) ? tasks : []);
+      setSmartTips(Array.isArray(tips.tips) ? tips.tips : []);
+    } catch (err) {
+      console.error('Priority data error:', err);
+    } finally {
+      setPriorityLoading(false);
+    }
+  };
+
+  const handleQuickAction = (action: any) => {
+    if (action.action.startsWith('tel:')) {
+      window.location.href = action.action;
+    } else if (action.action === 'complete') {
+      // Mark as complete - refresh data
+      loadPriorityData();
+    } else if (action.action === 'reschedule') {
+      // Open reschedule modal
+      router.push('/sales/follow-ups');
+    }
+  };
 
   if (loading) {
     return (
@@ -315,6 +351,157 @@ export default function SalesDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Smart Tips Section */}
+      {smartTips.length > 0 && (
+        <div className="relative overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 shadow-sm">
+          <div className="absolute right-0 top-0 h-32 w-32 opacity-10">
+            <div className="h-full w-full rounded-full bg-blue-400" />
+          </div>
+          <div className="relative z-10">
+            <h3 className="mb-3 flex items-center gap-2 text-lg font-bold text-blue-900">
+              💡 Smart Tips for You
+            </h3>
+            <ul className="space-y-2">
+              {smartTips.map((tip, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-blue-800">
+                  <span className="mt-1 font-bold">•</span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Priority Tasks Section */}
+      {priorityTasks.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
+              <Clock className="h-6 w-6 text-red-600" />
+              Today's Priority Tasks ({priorityTasks.length})
+            </h2>
+            {priorityLoading && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Refreshing
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-3">
+            {priorityTasks.map((task) => (
+              <div
+                key={task.id}
+                className="transform rounded-2xl border-l-4 bg-white p-5 shadow-md transition-all hover:scale-[1.01] hover:shadow-lg"
+                style={{ borderColor: task.priority.color }}
+              >
+                {/* Header */}
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{task.priority.emoji}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-sm"
+                          style={{ backgroundColor: task.priority.color }}
+                        >
+                          {task.priority.urgency}
+                        </span>
+                        <span className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                          {task.type.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <h3 className="mt-1 text-lg font-bold text-gray-900">{task.action}</h3>
+                    </div>
+                  </div>
+                  
+                  <div className="text-right text-sm">
+                    <div className="font-semibold text-gray-700">
+                      {new Date(task.dueDate).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                    <div className="text-xs text-gray-500">Due time</div>
+                  </div>
+                </div>
+
+                {/* Lead Info Card */}
+                <div className="mb-3 rounded-xl bg-gray-50 p-3">
+                  <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
+                    <div>
+                      <span className="font-semibold text-gray-700">Lead:</span>
+                      <span className="ml-2 text-gray-900">
+                        {task.lead.firstName} {task.lead.lastName}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700">Phone:</span>
+                      <a
+                        href={`tel:${task.lead.phone}`}
+                        className="ml-2 font-medium text-blue-600 hover:underline"
+                      >
+                        {task.lead.phone}
+                      </a>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700">Status:</span>
+                      <span className="ml-2 text-gray-900">{task.lead.status}</span>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-gray-700">Priority:</span>
+                      <span className="ml-2 text-gray-900">{task.lead.priority}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority Reasons */}
+                {task.priority.reasons && task.priority.reasons.length > 0 && (
+                  <div className="mb-4 rounded-lg bg-yellow-50 p-3">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-yellow-900">
+                      Why this is priority:
+                    </p>
+                    <ul className="space-y-1 text-sm text-yellow-800">
+                      {task.priority.reasons.map((reason: string, i: number) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="mt-0.5">⚠️</span>
+                          <span>{reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                <div className="flex flex-wrap gap-2">
+                  {task.quickActions.map((action: any, i: number) => (
+                    <button
+                      key={i}
+                      onClick={() => handleQuickAction(action)}
+                      className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md active:scale-95"
+                    >
+                      <span className="text-base">{action.icon}</span>
+                      <span>{action.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {priorityTasks.length === 0 && !priorityLoading && (
+        <div className="rounded-2xl border-2 border-dashed border-green-200 bg-green-50 p-8 text-center">
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle className="h-8 w-8 text-green-600" />
+          </div>
+          <h3 className="mb-2 text-xl font-bold text-green-900">All Caught Up!</h3>
+          <p className="text-green-700">No urgent tasks for today. Great work!</p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <p className="text-sm text-gray-600">
@@ -991,6 +1178,9 @@ export default function SalesDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Mobile Floating Action Button */}
+      <MobileFAB />
     </div>
   );
 }
