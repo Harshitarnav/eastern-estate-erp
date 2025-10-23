@@ -23,6 +23,7 @@ const bookings_module_1 = require("./modules/bookings/bookings.module");
 const payments_module_1 = require("./modules/payments/payments.module");
 const employees_module_1 = require("./modules/employees/employees.module");
 const notifications_module_1 = require("./modules/notifications/notifications.module");
+const chat_module_1 = require("./modules/chat/chat.module");
 const accounting_module_1 = require("./modules/accounting/accounting.module");
 const purchase_orders_module_1 = require("./modules/purchase-orders/purchase-orders.module");
 const construction_module_1 = require("./modules/construction/construction.module");
@@ -93,6 +94,7 @@ exports.AppModule = AppModule = __decorate([
             payments_module_1.PaymentsModule,
             employees_module_1.EmployeesModule,
             notifications_module_1.NotificationsModule,
+            chat_module_1.ChatModule,
             accounting_module_1.AccountingModule,
             purchase_orders_module_1.PurchaseOrdersModule,
             construction_module_1.ConstructionModule,

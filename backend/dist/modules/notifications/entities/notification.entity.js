@@ -41,12 +41,12 @@ __decorate([
     __metadata("design:type", String)
 ], Notification.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'uuid', nullable: true, name: 'user_id' }),
     __metadata("design:type", String)
 ], Notification.prototype, "userId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { eager: false }),
-    (0, typeorm_1.JoinColumn)({ name: 'userId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Notification.prototype, "user", void 0);
 __decorate([

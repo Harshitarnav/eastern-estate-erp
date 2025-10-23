@@ -46,8 +46,8 @@ export function NotificationBell() {
     try {
       setLoading(true);
       const data = await notificationsService.getAll(true);
-      // Show only the 5 most recent
-      setNotifications(data.slice(0, 5));
+      // Show only the 5 most recent - handle if data is undefined
+      setNotifications(Array.isArray(data) ? data.slice(0, 5) : []);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {

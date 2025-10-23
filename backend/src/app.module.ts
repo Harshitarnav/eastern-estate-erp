@@ -14,6 +14,7 @@ import { BookingsModule } from './modules/bookings/bookings.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { EmployeesModule } from './modules/employees/employees.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { AccountingModule } from './modules/accounting/accounting.module';
 import { PurchaseOrdersModule } from './modules/purchase-orders/purchase-orders.module';
 import { ConstructionModule } from './modules/construction/construction.module';
@@ -85,6 +86,7 @@ import { validationSchema } from './config/validation';
     PaymentsModule,
     EmployeesModule,
     NotificationsModule,
+    ChatModule,
     AccountingModule,
     PurchaseOrdersModule,
     ConstructionModule,

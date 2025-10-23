@@ -28,6 +28,9 @@ export class NotificationsController {
   @Get()
   async findAll(@Req() req: any, @Query('includeRead') includeRead?: string) {
     const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return [];
+    }
     const include = includeRead === 'true';
     return this.notificationsService.findAllForUser(userId, include);
   }
@@ -35,6 +38,9 @@ export class NotificationsController {
   @Get('unread-count')
   async getUnreadCount(@Req() req: any) {
     const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return { count: 0 };
+    }
     const count = await this.notificationsService.getUnreadCount(userId);
     return { count };
   }

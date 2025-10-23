@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { NotificationBell } from '@/components/layout/NotificationBell';
+import ChatButton from '@/components/layout/ChatButton';
 import { Menu, LogOut } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -68,6 +69,7 @@ export default function DashboardLayout({
 
           <div className="flex items-center gap-2">
             <NotificationBell />
+            <ChatButton />
             
             <button
               onClick={handleLogout}

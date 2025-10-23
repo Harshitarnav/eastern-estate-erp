@@ -48,11 +48,11 @@ export class Notification {
   id: string;
 
   // Target User (specific user or null for role/department-based)
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'uuid', nullable: true, name: 'user_id' })
   userId: string;
 
   @ManyToOne(() => User, { eager: false })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   // Role-Based Targeting (comma-separated role names)

@@ -27,11 +27,17 @@ let NotificationsController = class NotificationsController {
     }
     async findAll(req, includeRead) {
         const userId = req.user?.userId || req.user?.id;
+        if (!userId) {
+            return [];
+        }
         const include = includeRead === 'true';
         return this.notificationsService.findAllForUser(userId, include);
     }
     async getUnreadCount(req) {
         const userId = req.user?.userId || req.user?.id;
+        if (!userId) {
+            return { count: 0 };
+        }
         const count = await this.notificationsService.getUnreadCount(userId);
         return { count };
     }

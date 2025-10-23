@@ -2,80 +2,51 @@ import api from './api';
 
 export interface Employee {
   id: string;
-  employeeCode: string;
   fullName: string;
-  email?: string;
-  phoneNumber: string;
-  department: string;
-  designation: string;
-  employmentType: string;
-  employmentStatus: string;
-  joiningDate: Date;
-  basicSalary: number;
-  grossSalary: number;
-  netSalary: number;
-  casualLeaveBalance?: number;
-  sickLeaveBalance?: number;
-  earnedLeaveBalance?: number;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface EmployeeFilters {
-  search?: string;
+  email: string;
+  phone?: string;
+  position?: string;
   department?: string;
-  employmentStatus?: string;
+  avatar?: string;
+  employeeId?: string;
   isActive?: boolean;
-  page?: number;
-  limit?: number;
 }
 
-export interface PaginatedEmployeeResponse {
-  data: Employee[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+class EmployeesService {
+  /**
+   * Get all employees
+   */
+  async getAll(): Promise<Employee[]> {
+    const response = await api.get<Employee[]>('/employees');
+    return response.data || [];
+  }
 
-export const employeesService = {
-  async getEmployees(filters: EmployeeFilters = {}): Promise<PaginatedEmployeeResponse> {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, String(value));
-        }
-      });
+  /**
+   * Search employees by name, email, or position
+   */
+  async search(query: string): Promise<Employee[]> {
+    if (!query.trim()) {
+      return this.getAll();
     }
-    const response = await api.get(`/employees?${params.toString()}`);
-    return response;
-  },
+    const response = await api.get<Employee[]>(`/employees/search?q=${encodeURIComponent(query)}`);
+    return response.data || [];
+  }
 
-  async getEmployee(id: string): Promise<Employee> {
-    const response = await api.get(`/employees/${id}`);
-    return response;
-  },
+  /**
+   * Get employee by ID
+   */
+  async getById(id: string): Promise<Employee> {
+    const response = await api.get<Employee>(`/employees/${id}`);
+    return response.data;
+  }
 
-  async createEmployee(data: any): Promise<Employee> {
-    const response = await api.post('/employees', data);
-    return response;
-  },
+  /**
+   * Get active employees only
+   */
+  async getActive(): Promise<Employee[]> {
+    const response = await api.get<Employee[]>('/employees?isActive=true');
+    return response.data || [];
+  }
+}
 
-  async updateEmployee(id: string, data: any): Promise<Employee> {
-    const response = await api.patch(`/employees/${id}`, data);
-    return response;
-  },
-
-  async deleteEmployee(id: string): Promise<void> {
-    await api.delete(`/employees/${id}`);
-  },
-
-  async getStatistics(): Promise<any> {
-    const response = await api.get('/employees/statistics');
-    return response;
-  },
-};
+export default new EmployeesService();
