@@ -28,13 +28,15 @@ A comprehensive Enterprise Resource Planning (ERP) system specifically designed 
 Eastern Estate ERP is a full-stack enterprise solution that streamlines all aspects of real estate business operations - from lead generation and property management to financial tracking and employee administration.
 
 ### Key Statistics
-- **14 Complete Modules**
-- **205+ Files**
-- **40,000+ Lines of Code**
-- **130+ API Endpoints**
-- **14 Database Tables**
-- **600+ Database Fields**
+- **16 Complete Modules** (Including Notifications & Chat)
+- **230+ Files**
+- **45,000+ Lines of Code**
+- **150+ API Endpoints**
+- **19 Database Tables**
+- **700+ Database Fields**
 - **11 Role-Based Access Levels**
+- **Real-time Team Communication**
+- **Smart Notification System**
 
 ---
 
@@ -352,7 +354,64 @@ eastern-estate-erp/
 - Secure storage
 - File preview support
 
-### 14. 🔔 System Features
+### 14. 🔔 Notifications System
+**Purpose:** Real-time team notifications and alerts
+
+**Key Features:**
+- Role-based notifications (e.g., notify all "Sales Managers")
+- Department-based notifications (e.g., notify "SALES" department)
+- Individual user notifications
+- 5 notification types: INFO, SUCCESS, WARNING, ERROR, ALERT
+- 10 categories: BOOKING, PAYMENT, LEAD, CONSTRUCTION, EMPLOYEE, CUSTOMER, ACCOUNTING, SYSTEM, TASK, REMINDER
+- Notification bell in top bar with unread count badge
+- Dropdown showing 5 most recent notifications
+- Full notifications page with filtering
+- Mark as read/unread functionality
+- Bulk operations (mark all as read, clear read)
+- Action links in notifications (navigate to relevant page)
+- Priority system (1-10)
+- Email integration ready (SMTP configuration needed)
+- Auto-refresh every 30 seconds
+
+**Database Table:** `notifications`
+
+**API Endpoints:** 7 endpoints (create, get all, get unread count, mark as read, mark all as read, delete, clear read)
+
+### 15. 💬 Chat System
+**Purpose:** Internal team communication and collaboration
+
+**Key Features:**
+- **Direct Messaging:** One-on-one conversations with any employee
+- **Group Chats:** Multi-person conversations with custom groups
+- **Employee Search:** Find anyone in the company to start a chat
+- **Message History:** Full conversation tracking and persistence
+- **Real-time Updates:** Messages refresh every 10 seconds
+- **Unread Counts:** Badge showing unread message count
+- **Modern UI:** Beautiful slide-in panel with smooth animations
+- **Message Features:**
+  - Send text messages
+  - @Mention support (backend ready)
+  - Reply to messages (backend ready)
+  - Edit/delete messages (backend ready)
+  - File attachments (backend ready)
+- **Group Management:**
+  - Create groups with multiple members
+  - Add/remove participants
+  - Admin/member roles
+  - Group descriptions
+- **Chat UI:**
+  - Chat button in top bar next to notifications
+  - Search conversations
+  - Visual message distinction (own vs others)
+  - Message timestamps
+  - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
+  - Auto-scroll to latest message
+
+**Database Tables:** `chat_groups`, `chat_participants`, `chat_messages`, `chat_attachments`
+
+**API Endpoints:** 16 endpoints covering all chat operations
+
+### 16. 🔧 System Features
 **Purpose:** Core platform capabilities
 
 **Features:**
@@ -366,6 +425,8 @@ eastern-estate-erp/
 - Error handling
 - Loading states
 - Empty states
+- Real-time notifications
+- Team chat & collaboration
 
 ---
 
@@ -956,4 +1017,4 @@ await this.notificationsService.create({
   shouldSendEmail: true
 });
 ```
-Email notifications will be automatically sent once we configure your SMTP settings in the .env file!
+Email notifications will be automatically sent once we configure our SMTP settings in the .env file!
