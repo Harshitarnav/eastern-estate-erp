@@ -1,0 +1,30 @@
+import { Employee } from '../../employees/entities/employee.entity';
+import { Property } from '../../properties/entities/property.entity';
+export declare class AgentAvailability {
+    id: string;
+    employeeId: string;
+    employee: Employee;
+    propertyId: string;
+    property: Property;
+    isAvailable: boolean;
+    status: 'AVAILABLE' | 'ON_CALL' | 'BREAK' | 'OFFLINE';
+    phoneNumber: string;
+    alternateNumber: string;
+    extension: string;
+    exotelAgentId: string;
+    maxConcurrentCalls: number;
+    currentCalls: number;
+    totalCallsToday: number;
+    totalDurationToday: number;
+    successfulCallsToday: number;
+    missedCallsToday: number;
+    lastCallAssignedAt: Date;
+    lastCallCompletedAt: Date;
+    priorityScore: number;
+    breakStartTime: Date;
+    breakDuration: number;
+    notes: string;
+    settings: any;
+    createdAt: Date;
+    updatedAt: Date;
+}

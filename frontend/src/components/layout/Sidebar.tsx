@@ -7,7 +7,7 @@ import {
   X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
-  Settings, ChevronDown, Target, Bell
+  Settings, ChevronDown, Target, Bell, Phone
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -61,6 +61,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     { id: 'payments', label: 'Payments', icon: DollarSign, href: '/payments' },
+    { 
+      id: 'telephony', 
+      label: 'Telephony & IVR', 
+      icon: Phone,
+      children: [
+        { id: 'telephony-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/telephony/dashboard' },
+        { id: 'calls', label: 'Call History', icon: Phone, href: '/telephony/calls' },
+        { id: 'agents', label: 'Agents', icon: Users, href: '/telephony/agents' },
+        { id: 'insights', label: 'AI Insights', icon: TrendingUp, href: '/telephony/insights' },
+      ]
+    },
     { 
       id: 'accounting', 
       label: 'Accounting', 

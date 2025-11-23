@@ -1,0 +1,31 @@
+# Add these to your backend/.env file:
+
+```bash
+# EXOTEL CONFIGURATION
+EXOTEL_API_KEY=your_exotel_api_key
+EXOTEL_API_TOKEN=your_exotel_api_token
+EXOTEL_SID=your_exotel_sid
+EXOTEL_SUBDOMAIN=api.exotel.com
+EXOTEL_PHONE_NUMBER=+918041XXXXXX
+EXOTEL_WEBHOOK_BASE_URL=https://your-domain.com
+
+# OPENAI CONFIGURATION
+OPENAI_API_KEY=sk-your_key_here
+OPENAI_MODEL=gpt-4-turbo-preview
+WHISPER_MODEL=whisper-1
+
+# AWS S3 CONFIGURATION
+AWS_ACCESS_KEY_ID=your_aws_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret
+AWS_S3_BUCKET=eastern-estate-recordings
+AWS_REGION=ap-south-1
+RECORDING_STORAGE=s3
+
+# TELEPHONY SETTINGS
+MAX_CONCURRENT_CALLS_PER_AGENT=2
+MAX_QUEUE_WAIT_TIME=300
+AUTO_TRANSCRIBE_CALLS=true
+AUTO_ANALYZE_CALLS=true
+AUTO_CREATE_LEADS=true
+```
+
