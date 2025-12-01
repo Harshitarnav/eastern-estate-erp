@@ -93,3 +93,14 @@ docker compose -f docker-compose.prod.yml exec postgres psql -U eastern_estate -
 - Point a domain at the server.
 - Put Caddy/NGINX/Traefik in front of ports 3000/3001 to terminate TLS.
 - Update `NEXT_PUBLIC_API_URL` and `CORS_ORIGINS` to use `https://<your-domain>`, then rerun the compose command with `--build`.
+
+
+(base) arnav@Arnav-2 eastern-estate-erp % ssh -i ../../../Downloads/ERP.pem ubuntu@3.238.49.77
+The authenticity of host '3.238.49.77 (3.238.49.77)' can't be established.
+ED25519 key fingerprint is SHA256:h45R18+ExLNTwEc7UE1MecMnjPjCY+NHU8pdefOEVc0.
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? 
+
+<!-- ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
+
+JWT_SECRET=6da8009d14f4138fb04cce03ee401217b2f00fcbfe093c4c8118e1519d3b9de9 -->
