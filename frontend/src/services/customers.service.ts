@@ -2,6 +2,7 @@ import api from './api';
 
 export interface Customer {
   id: string;
+  customerCode?: string;
   firstName: string;
   lastName: string;
   email: string;

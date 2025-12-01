@@ -7,12 +7,12 @@ export interface Campaign {
   type: string;
   status: string;
   budget: number;
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: string | Date;
+  endDate?: string | Date;
   notes?: string;
   attachments?: any[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface CampaignFilters {

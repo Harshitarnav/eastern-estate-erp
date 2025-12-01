@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { expensesService, accountsService } from '@/services/accounting.service';
+import { expensesService, accountsService, Expense } from '@/services/accounting.service';
 
 export default function EditExpensePage() {
   const router = useRouter();
@@ -15,7 +15,18 @@ export default function EditExpensePage() {
   const [error, setError] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   
-  const [formData, setFormData] = useState({
+  type ExpenseForm = {
+    expenseDate: string;
+    category: string;
+    amount: number;
+    accountId: string;
+    vendor: string;
+    description: string;
+    paymentMethod: string;
+    status: Expense['status'];
+  };
+
+  const [formData, setFormData] = useState<ExpenseForm>({
     expenseDate: '',
     category: '',
     amount: 0,
@@ -208,7 +219,12 @@ export default function EditExpensePage() {
               <select
                 required
                 value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    status: e.target.value as Expense['status'],
+                  })
+                }
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
               >
                 <option value="PENDING">Pending</option>

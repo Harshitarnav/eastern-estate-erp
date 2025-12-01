@@ -50,6 +50,9 @@ export default function LeadEditPage() {
     try {
       setLoading(true);
       const lead = await leadsService.getLead(leadId);
+      const propertyTypes = Array.isArray(lead.interestedPropertyTypes)
+        ? lead.interestedPropertyTypes.join(', ')
+        : lead.interestedPropertyTypes || '';
       setFormData({
         firstName: lead.firstName || '',
         lastName: lead.lastName || '',
@@ -59,7 +62,7 @@ export default function LeadEditPage() {
         status: lead.status || 'NEW',
         priority: lead.priority || 'MEDIUM',
         propertyId: lead.propertyId || '',
-        interestedPropertyTypes: lead.interestedPropertyTypes || '',
+        interestedPropertyTypes: propertyTypes,
         budgetMin: lead.budgetMin?.toString() || '',
         budgetMax: lead.budgetMax?.toString() || '',
         preferredLocation: lead.preferredLocation || '',

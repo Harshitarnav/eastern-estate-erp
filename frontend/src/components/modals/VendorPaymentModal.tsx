@@ -36,7 +36,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
     try {
       const response = await api.get('/vendors');
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setVendors(d((ata || [])).filter((v: any) => v.isActive));
+      setVendors((data || []).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load vendors:', error);
       alert('Failed to load vendors');

@@ -491,4 +491,6 @@ class ConstructionService {
   }
 }
 
-export default new ConstructionService();
+// Expose both default and named exports for convenience
+export const constructionService = new ConstructionService();
+export default constructionService;

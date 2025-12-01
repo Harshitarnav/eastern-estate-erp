@@ -10,6 +10,7 @@ interface FlatFormProps {
   properties?: any[];
   towers?: any[];
   customers?: any[];
+  isEdit?: boolean;
 }
 
 export default function FlatForm({ 
@@ -19,7 +20,8 @@ export default function FlatForm({
   loading = false,
   properties = [],
   towers = [],
-  customers = []
+  customers = [],
+  isEdit = false,
 }: FlatFormProps) {
   
   const sections: FormSection[] = [

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { customersService } from '@/services/customers.service';
+import { customersService, Customer } from '@/services/customers.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette } from '@/utils/brand';
 
@@ -15,7 +15,29 @@ export default function CustomerEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
+  type CustomerForm = {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    alternatePhone: string;
+    dateOfBirth: string;
+    gender: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+    type: Customer['type'];
+    occupation: string;
+    company: string;
+    panNumber: string;
+    aadharNumber: string;
+    kycStatus: Customer['kycStatus'];
+    isVIP: boolean;
+    notes: string;
+  };
+
+  const [formData, setFormData] = useState<CustomerForm>({
     firstName: '',
     lastName: '',
     email: '',
@@ -98,8 +120,8 @@ export default function CustomerEditPage() {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
+    } as CustomerForm));
   };
 
   if (loading) {

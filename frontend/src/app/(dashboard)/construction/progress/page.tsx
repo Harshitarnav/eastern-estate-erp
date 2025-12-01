@@ -8,7 +8,7 @@ import AddProgressLogModal from '@/components/modals/AddProgressLogModal';
 export default function ProgressLogsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const propertyId = searchParams.get('propertyId');
+  const propertyId = searchParams.get('propertyId') ?? '';
 
   const [progressLogs, setProgressLogs] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);

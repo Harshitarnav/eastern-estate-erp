@@ -52,8 +52,8 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
       const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
       const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
       
-      setVendors(v((endorsData || [])).filter((v: any) => v.isActive));
-      setMaterials(m((aterialsData || [])).filter((m: any) => m.isActive));
+      setVendors((vendorsData || []).filter((v: any) => v.isActive));
+      setMaterials((materialsData || []).filter((m: any) => m.isActive));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load vendors and materials');
@@ -72,12 +72,12 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
 
   const removeItem = (id: string) => {
     if (items.length > 1) {
-      setItems(i((tems || [])).filter(item => item.id !== id));
+      setItems((items || []).filter(item => item.id !== id));
     }
   };
 
   const updateItem = (id: string, field: keyof OrderItem, value: any) => {
-    setItems(i((tems || [])).map(item => {
+    setItems((items || []).map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
         

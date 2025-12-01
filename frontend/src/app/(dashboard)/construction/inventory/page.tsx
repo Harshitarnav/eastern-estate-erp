@@ -104,6 +104,18 @@ export default function ConstructionInventoryPage() {
     return ((flats || [])).filter(f => f.tower?.id === towerId);
   };
 
+  const getSelectedPropertyId = () => {
+    if (!selectedContext) return '';
+    if (selectedContext.type === 'tower') {
+      return towers.find((t) => t.id === selectedContext.id)?.property?.id ?? '';
+    }
+    if (selectedContext.type === 'flat') {
+      const flat = flats.find((f) => f.id === selectedContext.id);
+      return flat?.tower?.property?.id ?? '';
+    }
+    return '';
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center min-h-screen">
@@ -389,6 +401,7 @@ export default function ConstructionInventoryPage() {
       {showMaterialExit && selectedContext && (
         <MaterialExitModal
           isOpen={showMaterialExit}
+          propertyId={getSelectedPropertyId()}
           onClose={() => {
             setShowMaterialExit(false);
             setSelectedContext(null);

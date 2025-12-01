@@ -41,8 +41,8 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
       const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
       const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
       
-      setMaterials(m((aterialsData || [])).filter((m: any) => m.isActive && m.currentStock > 0));
-      setProjects(p((rojectsData || [])).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setMaterials((materialsData || []).filter((m: any) => m.isActive && m.currentStock > 0));
+      setProjects((projectsData || []).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load materials and projects');

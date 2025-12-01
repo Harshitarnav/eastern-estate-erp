@@ -22,6 +22,7 @@ export interface Payment {
   receiptGenerated: boolean;
   isVerified: boolean;
   notes?: string;
+  remarks?: string;
   tags?: string[];
   isActive: boolean;
   createdAt: string;
@@ -78,6 +79,10 @@ class PaymentsService {
   async getPayment(id: string): Promise<Payment> {
     const response = await api.get(`${this.baseUrl}/${id}`);
     return response;
+  }
+
+  async getById(id: string): Promise<Payment> {
+    return this.getPayment(id);
   }
 
   async getStatistics(): Promise<any> {

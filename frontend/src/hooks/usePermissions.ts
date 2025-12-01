@@ -16,14 +16,17 @@ export function usePermissions() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.employee?.roleId) {
+    const roleId = (user as any)?.employee?.roleId;
+    if (roleId) {
       loadPermissions();
     }
   }, [user]);
 
   const loadPermissions = async () => {
     try {
-      const response = await api.get(`/roles/${user.employee.roleId}/permissions`);
+      const roleId = (user as any)?.employee?.roleId;
+      if (!roleId) return;
+      const response = await api.get(`/roles/${roleId}/permissions`);
       setPermissions(response.data);
     } catch (error) {
       console.error('Error loading permissions:', error);

@@ -8,9 +8,10 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  description?: string;
 }
 
-export default function Modal({ isOpen, onClose, title, children, size = 'md', footer }: ModalProps & { footer?: ReactNode }) {
+export default function Modal({ isOpen, onClose, title, description, children, size = 'md', footer }: ModalProps & { footer?: ReactNode }) {
   if (!isOpen) return null;
 
   const sizeClasses = {
@@ -36,9 +37,12 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
         >
           {/* Header */}
           <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-            <h2 className="text-xl font-bold" style={{ color: '#A8211B' }}>
-              {title}
-            </h2>
+            <div>
+              <h2 className="text-xl font-bold" style={{ color: '#A8211B' }}>
+                {title}
+              </h2>
+              {description && <p className="text-sm text-gray-600 mt-1">{description}</p>}
+            </div>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -58,6 +62,76 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
               {footer}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  description,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  confirmLabel,
+  cancelLabel,
+  variant = 'info',
+  loading = false,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  description: string;
+  confirmText?: string;
+  cancelText?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'info' | 'success' | 'warning' | 'danger';
+  loading?: boolean;
+}) {
+  if (!isOpen) return null;
+
+  const primaryLabel = confirmLabel || confirmText;
+  const secondaryLabel = cancelLabel || cancelText;
+  const primaryColor =
+    variant === 'success'
+      ? '#16a34a'
+      : variant === 'warning'
+      ? '#d97706'
+      : variant === 'danger'
+      ? '#dc2626'
+      : '#A8211B';
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" onClick={onClose} />
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+          <div className="p-6 space-y-4">
+            <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+            <p className="text-gray-600">{description}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={onClose}
+                disabled={loading}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {secondaryLabel}
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={loading}
+                className="px-4 py-2 rounded-lg text-white disabled:opacity-50"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {loading ? 'Please wait...' : primaryLabel}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -125,12 +199,14 @@ export function AlertDialog({
   title,
   description,
   type = 'info',
+  closeLabel = 'OK',
 }: {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   description: string;
   type?: 'success' | 'error' | 'warning' | 'info';
+  closeLabel?: string;
 }) {
   if (!isOpen) return null;
 
@@ -165,7 +241,7 @@ export function AlertDialog({
               className="w-full px-4 py-2 rounded-lg text-white"
               style={{ backgroundColor: '#A8211B' }}
             >
-              OK
+              {closeLabel}
             </button>
           </div>
         </div>

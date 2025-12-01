@@ -148,11 +148,8 @@ export default function NewFlatPage() {
         remarks: data.remarks,
         isActive: data.isActive !== false,
         displayOrder: data.displayOrder || 0,
+        customerId: resolvedCustomerId || data.customerId || undefined,
       };
-
-      if (resolvedCustomerId) {
-        flatData.customerId = resolvedCustomerId;
-      }
 
       await flatsService.createFlat(flatData);
       alert('Flat created successfully!');

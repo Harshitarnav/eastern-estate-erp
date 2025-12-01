@@ -564,7 +564,7 @@ export default function PropertiesPage() {
       <Modal
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
-        title={selectedProperty?.name}
+        title={selectedProperty?.name ?? ''}
         size="lg"
         footer={
           <div className="flex justify-end gap-3">

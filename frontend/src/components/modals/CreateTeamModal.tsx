@@ -56,8 +56,8 @@ export default function CreateTeamModal({ isOpen, onClose, onSuccess, propertyId
       const employeesData = Array.isArray(employeesRes.data) ? employeesRes.data : (employeesRes.data?.data || []);
       const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
       
-      setEmployees(e((mployeesData || [])).filter((e: any) => e.status === 'ACTIVE'));
-      setProjects(p((rojectsData || [])).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setEmployees((employeesData || []).filter((e: any) => e.status === 'ACTIVE'));
+      setProjects((projectsData || []).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load employees and projects');

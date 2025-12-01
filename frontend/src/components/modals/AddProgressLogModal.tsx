@@ -43,7 +43,7 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
     try {
       const response = await api.get(`/construction-projects?propertyId=${propertyId}`);
       const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
-      setProjects(d((ata || [])).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setProjects((data || []).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load projects:', error);
       alert('Failed to load projects');

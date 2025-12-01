@@ -3,14 +3,24 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { accountsService } from '@/services/accounting.service';
+import { accountsService, Account } from '@/services/accounting.service';
 
 export default function NewAccountPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const [formData, setFormData] = useState({
+  type AccountForm = {
+    accountCode: string;
+    accountName: string;
+    accountType: Account['accountType'];
+    accountCategory: string;
+    description: string;
+    openingBalance: number;
+    isActive: boolean;
+  };
+
+  const [formData, setFormData] = useState<AccountForm>({
     accountCode: '',
     accountName: '',
     accountType: 'ASSET',
@@ -97,7 +107,12 @@ export default function NewAccountPage() {
               <select
                 required
                 value={formData.accountType}
-                onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    accountType: e.target.value as Account['accountType'],
+                  })
+                }
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
               >
                 <option value="ASSET">Asset</option>

@@ -9,7 +9,7 @@ import MaterialExitModal from '@/components/modals/MaterialExitModal';
 export default function MaterialsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const propertyId = searchParams.get('propertyId');
+  const propertyId = searchParams.get('propertyId') ?? '';
 
   const [materials, setMaterials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

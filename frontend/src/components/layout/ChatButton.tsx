@@ -24,6 +24,7 @@ export default function ChatButton() {
   const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+  const currentEmployeeId = (user as any)?.employeeId || user?.id;
 
   // Load groups and unread count
   useEffect(() => {
@@ -94,7 +95,8 @@ export default function ChatButton() {
         ? await employeesService.search(query)
         : await employeesService.getAll();
       // Filter out current user
-      setEmployees(data.filter(emp => emp.id !== user?.employeeId && emp.isActive !== false));
+      const currentEmployeeId = (user as any)?.employeeId || user?.id;
+      setEmployees(data.filter(emp => emp.id !== currentEmployeeId && emp.isActive !== false));
     } catch (error) {
       console.error('Failed to load employees:', error);
       setEmployees([]);
@@ -183,7 +185,7 @@ export default function ChatButton() {
   const getGroupDisplayName = (group: ChatGroup) => {
     if (group.groupType === 'DIRECT') {
       const otherParticipant = (group.participants || []).find(
-        (p) => p.employeeId !== user?.employeeId
+        (p) => p.employeeId !== currentEmployeeId
       );
       return otherParticipant?.employeeName || 'Direct Message';
     }
@@ -241,7 +243,6 @@ export default function ChatButton() {
                   <button
                     onClick={() => setIsOpen(false)}
                     className="p-1 rounded transition-colors"
-                    style={{ ':hover': { backgroundColor: '#8a1b16' } }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#8a1b16'}
                     onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                   >
@@ -563,7 +564,7 @@ export default function ChatButton() {
                     </div>
                   ) : (
                     messages.map((message) => {
-                      const isOwnMessage = message.sender?.id === user?.employeeId;
+                      const isOwnMessage = message.sender?.id === currentEmployeeId;
                       return (
                         <div
                           key={message.id}

@@ -9,7 +9,7 @@ import AddWorkScheduleModal from '@/components/modals/AddWorkScheduleModal';
 export default function TeamsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const propertyId = searchParams.get('propertyId');
+  const propertyId = searchParams.get('propertyId') ?? '';
 
   const [projects, setProjects] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);

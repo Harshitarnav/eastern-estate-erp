@@ -37,17 +37,15 @@ export function BrandHero({ eyebrow, title, description, actions, badge }: Brand
   );
 }
 
-export function BrandPrimaryButton({
-  children,
-  onClick,
-}: {
+type BrandButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children: React.ReactNode;
-  onClick?: () => void;
-}) {
+};
+
+export function BrandPrimaryButton({ children, className, ...props }: BrandButtonProps) {
   return (
     <button
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5"
+      {...props}
+      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-lg transition-transform hover:-translate-y-0.5 ${className ?? ''}`}
       style={{ backgroundColor: brandPalette.accent, color: brandPalette.secondary }}
     >
       {children}
@@ -55,18 +53,16 @@ export function BrandPrimaryButton({
   );
 }
 
-export function BrandSecondaryButton({
-  children,
-  onClick,
-}: {
-  children: React.ReactNode;
-  onClick?: () => void;
-}) {
+export function BrandSecondaryButton({ children, className, ...props }: BrandButtonProps) {
   return (
     <button
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold border transition-transform hover:-translate-y-0.5"
-      style={{ borderColor: 'rgba(255,255,255,0.35)', color: brandPalette.surface }}
+      {...props}
+      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold border transition-transform hover:-translate-y-0.5 ${className ?? ''}`}
+      style={{
+        backgroundColor: 'transparent',
+        borderColor: 'rgba(255,255,255,0.35)',
+        color: brandPalette.surface,
+      }}
     >
       {children}
     </button>

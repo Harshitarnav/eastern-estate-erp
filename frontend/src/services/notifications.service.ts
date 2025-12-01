@@ -50,7 +50,7 @@ class NotificationsService {
    */
   async getAll(includeRead: boolean = true): Promise<Notification[]> {
     const response = await api.get<Notification[]>(`/notifications?includeRead=${includeRead}`);
-    return response.data;
+    return response || [];
   }
 
   /**
@@ -58,7 +58,7 @@ class NotificationsService {
    */
   async getUnreadCount(): Promise<number> {
     const response = await api.get<{ count: number }>('/notifications/unread-count');
-    return response.data?.count || 0;
+    return response?.count || 0;
   }
 
   /**
@@ -66,7 +66,7 @@ class NotificationsService {
    */
   async create(data: CreateNotificationDto): Promise<Notification[]> {
     const response = await api.post<Notification[]>('/notifications', data);
-    return response.data;
+    return response || [];
   }
 
   /**
@@ -74,7 +74,7 @@ class NotificationsService {
    */
   async markAsRead(id: string): Promise<Notification> {
     const response = await api.patch<Notification>(`/notifications/${id}/read`);
-    return response.data;
+    return response;
   }
 
   /**

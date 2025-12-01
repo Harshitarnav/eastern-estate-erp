@@ -118,7 +118,7 @@ export default function PurchaseOrdersPage() {
         <div className="bg-purple-50 rounded-lg shadow p-4">
           <p className="text-sm text-purple-600 mb-1">Total Value</p>
           <p className="text-2xl font-bold text-purple-700">
-            {formatCurrency(o((rders || [])).reduce((sum, po) => sum + (po.grandTotal || 0), 0))}
+            {formatCurrency(((orders || [])).reduce((sum, po) => sum + (po.grandTotal || 0), 0))}
           </p>
         </div>
       </div>

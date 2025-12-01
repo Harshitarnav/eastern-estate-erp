@@ -258,7 +258,6 @@ export default function EditCampaignPage() {
                     onChange={handleInputChange}
                     required
                     className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
-                    style={{ focusRing: '#A8211B' }}
                   />
                 </div>
 

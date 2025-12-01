@@ -174,6 +174,13 @@ class LeadsService {
   }
 
   // Dashboard Statistics
+  async getAgentDashboard(agentId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    return this.getAgentDashboardStats(agentId, filters);
+  }
+
   async getAgentDashboardStats(agentId: string, filters?: {
     startDate?: string;
     endDate?: string;
@@ -214,6 +221,13 @@ class LeadsService {
       `${this.baseUrl}/dashboard/team/${gmId}?${params.toString()}`
     );
     return response;
+  }
+
+  async getTeamDashboard(gmId: string, filters?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    return this.getTeamDashboardStats(gmId, filters);
   }
 
   // Import/Export

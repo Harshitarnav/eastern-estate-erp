@@ -24,6 +24,7 @@ export interface EmployeeFilters {
   search?: string;
   department?: string;
   employmentStatus?: string;
+   isActive?: boolean;
 }
 
 interface EmployeesResponse {
@@ -47,9 +48,10 @@ class EmployeesService {
     if (filters.search) params.append('search', filters.search);
     if (filters.department) params.append('department', filters.department);
     if (filters.employmentStatus) params.append('status', filters.employmentStatus);
+    if (filters.isActive !== undefined) params.append('isActive', String(filters.isActive));
 
     const response = await api.get<EmployeesResponse>(`/employees?${params.toString()}`);
-    return response.data;
+    return response;
   }
 
   /**
@@ -57,7 +59,7 @@ class EmployeesService {
    */
   async getAll(): Promise<Employee[]> {
     const response = await api.get<Employee[]>('/employees');
-    return response.data || [];
+    return response || [];
   }
 
   /**
@@ -68,7 +70,7 @@ class EmployeesService {
       return this.getAll();
     }
     const response = await api.get<Employee[]>(`/employees/search?q=${encodeURIComponent(query)}`);
-    return response.data || [];
+    return response || [];
   }
 
   /**
@@ -80,11 +82,34 @@ class EmployeesService {
   }
 
   /**
+   * Alias for getById (backward compatibility)
+   */
+  async getEmployee(id: string): Promise<Employee> {
+    return this.getById(id);
+  }
+
+  /**
+   * Create a new employee
+   */
+  async createEmployee(data: Partial<Employee>): Promise<Employee> {
+    const response = await api.post<Employee>('/employees', data);
+    return response.data;
+  }
+
+  /**
+   * Update employee by ID
+   */
+  async updateEmployee(id: string, data: Partial<Employee>): Promise<Employee> {
+    const response = await api.put<Employee>(`/employees/${id}`, data);
+    return response.data;
+  }
+
+  /**
    * Get active employees only
    */
   async getActive(): Promise<Employee[]> {
     const response = await api.get<Employee[]>('/employees?isActive=true');
-    return response.data || [];
+    return response || [];
   }
 }
 

@@ -74,6 +74,11 @@ export const accountsService = {
     return response.data;
   },
 
+  getById: async (id: string) => {
+    const response = await api.get(`/accounting/accounts/${id}`);
+    return response.data;
+  },
+
   getOne: async (id: string) => {
     const response = await api.get(`/accounting/accounts/${id}`);
     return response.data;
@@ -122,6 +127,11 @@ export const expensesService = {
     return response.data;
   },
 
+  getById: async (id: string) => {
+    const response = await api.get(`/accounting/expenses/${id}`);
+    return response.data;
+  },
+
   getOne: async (id: string) => {
     const response = await api.get(`/accounting/expenses/${id}`);
     return response.data;
@@ -167,6 +177,11 @@ export const expensesService = {
 export const budgetsService = {
   getAll: async (params?: { fiscalYear?: number; status?: string }) => {
     const response = await api.get('/accounting/budgets', { params });
+    return response.data;
+  },
+
+  getById: async (id: string) => {
+    const response = await api.get(`/accounting/budgets/${id}`);
     return response.data;
   },
 

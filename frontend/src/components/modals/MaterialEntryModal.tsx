@@ -40,8 +40,8 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
       const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
       const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
       
-      setMaterials(m((aterialsData || [])).filter((m: any) => m.isActive));
-      setVendors(v((endorsData || [])).filter((v: any) => v.isActive));
+      setMaterials((materialsData || []).filter((m: any) => m.isActive));
+      setVendors((vendorsData || []).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load data:', error);
       alert('Failed to load materials and vendors');
