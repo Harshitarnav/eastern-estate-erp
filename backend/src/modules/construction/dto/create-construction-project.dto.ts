@@ -2,9 +2,32 @@ import { IsString, IsUUID, IsOptional, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateConstructionProjectDto {
+  // Common property metadata coming from UI (optional but allowed to avoid whitelist errors)
   @IsOptional()
+  @IsString()
+  projectCode?: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  isActive?: boolean;
+
   @IsUUID()
-  propertyId?: string;
+  propertyId: string;
 
   @IsOptional()
   @IsUUID()
@@ -14,8 +37,9 @@ export class CreateConstructionProjectDto {
   @IsUUID()
   flatId?: string;
 
+  @IsOptional()
   @IsString()
-  projectName: string;
+  projectName?: string;
 
   @IsOptional()
   @IsString()

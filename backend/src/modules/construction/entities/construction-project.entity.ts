@@ -32,7 +32,8 @@ export class ConstructionProject {
   @Column({ name: 'expected_completion_date', type: 'date' })
   expectedCompletionDate: Date;
 
-  @Column({ name: 'actual_end_date', type: 'date', nullable: true })
+  // Align column name with existing DB schema
+  @Column({ name: 'actual_completion_date', type: 'date', nullable: true })
   actualCompletionDate: Date | null;
 
   @Column({ 

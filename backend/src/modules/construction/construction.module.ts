@@ -21,6 +21,7 @@ import { FlatProgressService } from './flat-progress.service';
 import { FlatProgressController } from './flat-progress.controller';
 import { DevelopmentUpdatesService } from './development-updates.service';
 import { DevelopmentUpdatesController } from './development-updates.controller';
+import { ProjectsAliasController } from './projects-alias.controller';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { DevelopmentUpdatesController } from './development-updates.controller';
   ],
   controllers: [
     ConstructionProjectsController,
+    ProjectsAliasController,
     ConstructionTeamsController,
     ConstructionProgressLogsController,
     ProjectAssignmentsController,

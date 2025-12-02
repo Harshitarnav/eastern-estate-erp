@@ -30,6 +30,7 @@ const flat_progress_service_1 = require("./flat-progress.service");
 const flat_progress_controller_1 = require("./flat-progress.controller");
 const development_updates_service_1 = require("./development-updates.service");
 const development_updates_controller_1 = require("./development-updates.controller");
+const projects_alias_controller_1 = require("./projects-alias.controller");
 let ConstructionModule = class ConstructionModule {
 };
 exports.ConstructionModule = ConstructionModule;
@@ -48,6 +49,7 @@ exports.ConstructionModule = ConstructionModule = __decorate([
         ],
         controllers: [
             construction_projects_controller_1.ConstructionProjectsController,
+            projects_alias_controller_1.ProjectsAliasController,
             construction_teams_controller_1.ConstructionTeamsController,
             construction_progress_logs_controller_1.ConstructionProgressLogsController,
             project_assignments_controller_1.ProjectAssignmentsController,
