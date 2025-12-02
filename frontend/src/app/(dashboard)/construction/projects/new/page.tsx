@@ -84,10 +84,11 @@ export default function NewConstructionProjectPage() {
     try {
       const submitData = {
         ...formData,
-        budgetAllocated: parseFloat(formData.budgetAllocated) || 0,
+        propertyId: formData.propertyId || undefined,
         towerId: formData.towerId || null,
         flatId: formData.flatId || null,
         projectManagerId: formData.projectManagerId || null,
+        budgetAllocated: parseFloat(formData.budgetAllocated) || 0,
       };
 
       console.log('Submitting construction project:', submitData);
@@ -127,16 +128,15 @@ export default function NewConstructionProjectPage() {
           {/* Property Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Property <span className="text-red-500">*</span>
+              Property (optional)
             </label>
             <select
               name="propertyId"
               value={formData.propertyId}
               onChange={handleChange}
-              required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              <option value="">Select Property</option>
+              <option value="">No property yet</option>
               {((properties || [])).map(property => (
                 <option key={property.id} value={property.id}>
                   {property.name}
