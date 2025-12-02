@@ -11,7 +11,7 @@ interface ProjectOption {
 
 interface PropertyFormProps {
   initialData?: any;
-  projects: ProjectOption[];
+  projects?: ProjectOption[];
   onSubmit: (data: any) => Promise<void>;
   onCancel?: () => void;
   loading?: boolean;
@@ -57,7 +57,7 @@ export default function PropertyForm({
 }: PropertyFormProps) {
   const projectOptions = useMemo(
     () =>
-      projects.map((project) => ({
+      (projects ?? []).map((project) => ({
         value: project.id,
         label: `${project.name} (${project.projectCode})`,
       })),
@@ -67,7 +67,6 @@ export default function PropertyForm({
   const initialValues = useMemo(() => {
     if (!initialData) {
       return {
-        projectId: '',
         propertyCode: '',
         name: '',
         status: 'Active',
@@ -80,7 +79,6 @@ export default function PropertyForm({
     }
 
     return {
-      projectId: initialData.projectId ?? '',
       propertyCode: initialData.propertyCode ?? '',
       name: initialData.name ?? '',
       status: initialData.status ?? 'Active',
@@ -119,16 +117,20 @@ export default function PropertyForm({
 
   const sections: FormSection[] = [
     {
-      title: 'Project Association',
-      description: 'Link this property to a project.',
+      title: 'Property Identity',
+      description: 'Define the basic details for this project/property.',
       fields: [
-        {
-          name: 'projectId',
-          label: 'Project',
-          type: 'select',
-          required: true,
-          options: projectOptions,
-        },
+        ...(projectOptions.length
+          ? [
+              {
+                name: 'projectId',
+                label: 'Project (optional)',
+                type: 'select',
+                required: false,
+                options: projectOptions,
+              },
+            ]
+          : []),
         {
           name: 'propertyCode',
           label: 'Property Code',

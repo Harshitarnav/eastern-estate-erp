@@ -211,12 +211,12 @@ export class Property {
   })
   dataCompletenessStatus: DataCompletenessStatus;
 
-  @Column({ name: 'project_id', type: 'uuid' })
-  projectId: string;
+  @Column({ name: 'project_id', type: 'uuid', nullable: true })
+  projectId: string | null;
 
-  @ManyToOne(() => ConstructionProject, { nullable: false })
+  @ManyToOne(() => ConstructionProject, { nullable: true })
   @JoinColumn({ name: 'project_id' })
-  project: ConstructionProject;
+  project?: ConstructionProject | null;
 
   @Column({ type: 'uuid', nullable: true, name: 'created_by' })
   createdBy: string;
