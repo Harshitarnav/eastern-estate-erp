@@ -125,7 +125,7 @@ export default function PropertyForm({
               {
                 name: 'projectId',
                 label: 'Project (optional)',
-                type: 'select',
+                type: 'select' as const,
                 required: false,
                 options: projectOptions,
               },
@@ -134,7 +134,7 @@ export default function PropertyForm({
         {
           name: 'propertyCode',
           label: 'Property Code',
-          type: 'text',
+          type: 'text' as const,
           placeholder: 'EECD-PRJ-001',
           required: true,
           icon: <Building2 className="w-5 h-5" />,
@@ -142,7 +142,7 @@ export default function PropertyForm({
         {
           name: 'name',
           label: 'Property Name',
-          type: 'text',
+          type: 'text' as const,
           placeholder: 'Diamond City',
           required: true,
           icon: <Building2 className="w-5 h-5" />,
