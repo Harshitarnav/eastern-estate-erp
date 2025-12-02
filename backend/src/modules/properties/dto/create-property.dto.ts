@@ -173,4 +173,7 @@ export class CreatePropertyDto {
   @IsString()
   @IsOptional()
   nearbyLandmarks?: string;
+
+  @IsUUID('4')
+  projectId: string;
 }

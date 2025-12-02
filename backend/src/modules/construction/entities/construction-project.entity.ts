@@ -16,8 +16,8 @@ export class ConstructionProject {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'property_id', type: 'uuid' })
-  propertyId: string;
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
+  propertyId: string | null;
 
   @ManyToOne(() => Property)
   @JoinColumn({ name: 'property_id' })

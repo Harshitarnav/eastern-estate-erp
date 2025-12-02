@@ -22,6 +22,7 @@ import { FlatProgressController } from './flat-progress.controller';
 import { DevelopmentUpdatesService } from './development-updates.service';
 import { DevelopmentUpdatesController } from './development-updates.controller';
 import { ProjectsAliasController } from './projects-alias.controller';
+import { ConstructionSchemaSyncService } from './construction.schema-sync.service';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ProjectsAliasController } from './projects-alias.controller';
   ],
   providers: [
     ConstructionProjectsService,
+    ConstructionSchemaSyncService,
     ConstructionTeamsService,
     ConstructionProgressLogsService,
     ProjectAssignmentsService,

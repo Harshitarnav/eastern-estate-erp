@@ -120,19 +120,15 @@ export default function PropertyForm({
   const sections: FormSection[] = [
     {
       title: 'Project Association',
-      description: 'Optionally link this property to a project.',
+      description: 'Link this property to a project.',
       fields: [
-        ...(projectOptions.length
-          ? [
-              {
-                name: 'projectId',
-                label: 'Project (optional)',
-                type: 'select',
-                required: false,
-                options: projectOptions,
-              },
-            ]
-          : []),
+        {
+          name: 'projectId',
+          label: 'Project',
+          type: 'select',
+          required: true,
+          options: projectOptions,
+        },
         {
           name: 'propertyCode',
           label: 'Property Code',

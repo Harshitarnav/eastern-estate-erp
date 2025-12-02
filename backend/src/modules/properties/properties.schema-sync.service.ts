@@ -145,7 +145,7 @@ export class PropertiesSchemaSyncService implements OnModuleInit {
             ALTER TABLE properties
               ADD CONSTRAINT fk_properties_project
               FOREIGN KEY (project_id)
-              REFERENCES projects(id)
+              REFERENCES construction_projects(id)
               ON DELETE SET NULL;
           END IF;
         END

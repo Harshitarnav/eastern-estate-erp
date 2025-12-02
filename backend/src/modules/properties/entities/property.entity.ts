@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import type { Tower } from '../../towers/entities/tower.entity';
 import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
+import { ConstructionProject } from '../../construction/entities/construction-project.entity';
 
 const decimalTransformer = {
   to: (value?: number | null) => (value ?? null),
@@ -209,6 +210,13 @@ export class Property {
     default: DataCompletenessStatus.NOT_STARTED,
   })
   dataCompletenessStatus: DataCompletenessStatus;
+
+  @Column({ name: 'project_id', type: 'uuid' })
+  projectId: string;
+
+  @ManyToOne(() => ConstructionProject, { nullable: false })
+  @JoinColumn({ name: 'project_id' })
+  project: ConstructionProject;
 
   @Column({ type: 'uuid', nullable: true, name: 'created_by' })
   createdBy: string;

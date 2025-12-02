@@ -26,8 +26,9 @@ export class CreateConstructionProjectDto {
   @IsOptional()
   isActive?: boolean;
 
+  @IsOptional()
   @IsUUID()
-  propertyId: string;
+  propertyId?: string;
 
   @IsOptional()
   @IsUUID()

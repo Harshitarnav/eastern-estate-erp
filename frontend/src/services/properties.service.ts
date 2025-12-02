@@ -54,7 +54,7 @@ export interface Property {
 }
 
 export interface CreatePropertyDto {
-  projectId?: string;
+  projectId: string;
   propertyCode: string;
   name: string;
   description?: string;

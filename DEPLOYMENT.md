@@ -104,3 +104,12 @@ Are you sure you want to continue connecting (yes/no/[fingerprint])?
 <!-- ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
 
 JWT_SECRET=6da8009d14f4138fb04cce03ee401217b2f00fcbfe093c4c8118e1519d3b9de9 -->
+
+<!-- ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
+cd ~/eastern-estate-erp
+PULL CHANGES FROM GIT
+docker compose -f docker-compose.prod.yml build backend frontend
+docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend -->
+<!-- 
+admin@eastern-estate.com
+Admin@123 -->
