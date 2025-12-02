@@ -88,6 +88,10 @@ export class Flat {
   @JoinColumn({ name: 'tower_id' })
   tower: Tower;
 
+  @Column({ name: 'flat_code', length: 50 })
+  @Index()
+  flatCode: string; // Internal code (kept in sync with flatNumber for defaults)
+
   // Basic Information
   @Column({ length: 50 })
   @Index()

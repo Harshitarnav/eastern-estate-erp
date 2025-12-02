@@ -86,6 +86,7 @@ export function buildDefaultFlatPayloads(input: FlatGenerationInput): Partial<Fl
       flats.push({
         propertyId,
         towerId,
+        flatCode: flatNumber,
         flatNumber,
         name: `Unit ${flatNumber}`,
         description: null,
