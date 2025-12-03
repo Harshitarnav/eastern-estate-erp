@@ -1,8 +1,14 @@
 export declare class CreateConstructionProjectDto {
+    projectCode?: string;
+    name?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    isActive?: boolean;
     propertyId?: string;
     towerId?: string;
     flatId?: string;
-    projectName: string;
+    projectName?: string;
     startDate?: string;
     expectedCompletionDate?: string;
     actualCompletionDate?: string;

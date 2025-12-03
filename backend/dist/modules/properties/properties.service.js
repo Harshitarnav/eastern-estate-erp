@@ -828,6 +828,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             const towerEntity = towersRepository.create({
                 name: `${property.name} Tower ${index + 1}`,
                 towerNumber,
+                towerCode: towerNumber,
                 description: 'Auto-generated tower. Please update with accurate specifications.',
                 propertyId: property.id,
                 totalFloors,

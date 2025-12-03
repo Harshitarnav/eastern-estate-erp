@@ -78,6 +78,8 @@ let FlatsSchemaSyncService = FlatsSchemaSyncService_1 = class FlatsSchemaSyncSer
             `ALTER TABLE flats ADD COLUMN IF NOT EXISTS completeness_status data_completeness_status_enum DEFAULT 'NOT_STARTED';`,
             `ALTER TABLE flats ADD COLUMN IF NOT EXISTS issues JSONB;`,
             `ALTER TABLE flats ADD COLUMN IF NOT EXISTS issues_count INT DEFAULT 0;`,
+            `ALTER TABLE flats ADD COLUMN IF NOT EXISTS flat_code VARCHAR(50);`,
+            `ALTER TABLE flats ADD COLUMN IF NOT EXISTS base_rate_per_sqft DECIMAL(15,2) DEFAULT 0;`,
         ];
         try {
             await queryRunner.startTransaction();
@@ -150,6 +152,57 @@ let FlatsSchemaSyncService = FlatsSchemaSyncService_1 = class FlatsSchemaSyncSer
         BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'flat_type_enum') THEN
             CREATE TYPE flat_type_enum AS ENUM ('STUDIO', '1BHK', '2BHK', '3BHK', '4BHK', 'PENTHOUSE', 'DUPLEX', 'VILLA');
+          END IF;
+        END $$;
+      `);
+            await queryRunner.query(`
+        UPDATE flats
+        SET flat_type = COALESCE(flat_type, type, '2BHK')
+        WHERE flat_type IS NULL OR flat_type = '';
+      `);
+            await queryRunner.query(`
+        UPDATE flats
+        SET base_rate_per_sqft = COALESCE(base_rate_per_sqft, 0)
+        WHERE base_rate_per_sqft IS NULL;
+      `);
+            await queryRunner.query(`
+        UPDATE flats
+        SET flat_code = COALESCE(flat_code, flat_number, name, 'FLAT')
+        WHERE flat_code IS NULL OR flat_code = '';
+      `);
+            await queryRunner.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes
+            WHERE schemaname = current_schema()
+              AND indexname = 'idx_flats_flat_code'
+          ) THEN
+            CREATE INDEX idx_flats_flat_code ON flats (flat_code);
+          END IF;
+        END $$;
+      `);
+            await queryRunner.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'flats'
+              AND column_name = 'flat_type'
+          ) THEN
+            EXECUTE 'ALTER TABLE flats ALTER COLUMN flat_type DROP NOT NULL';
+            EXECUTE 'ALTER TABLE flats ALTER COLUMN flat_type SET DEFAULT ''2BHK''';
+          END IF;
+
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = 'flats'
+              AND column_name = 'base_rate_per_sqft'
+          ) THEN
+            EXECUTE 'ALTER TABLE flats ALTER COLUMN base_rate_per_sqft DROP NOT NULL';
+            EXECUTE 'ALTER TABLE flats ALTER COLUMN base_rate_per_sqft SET DEFAULT 0';
           END IF;
         END $$;
       `);

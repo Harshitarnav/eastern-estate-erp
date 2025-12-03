@@ -24,6 +24,7 @@ let ConstructionProjectsService = class ConstructionProjectsService {
     async create(createDto) {
         const project = this.constructionProjectRepository.create({
             ...createDto,
+            propertyId: createDto.propertyId ?? null,
             startDate: createDto.startDate ? new Date(createDto.startDate) : null,
             expectedCompletionDate: createDto.expectedCompletionDate
                 ? new Date(createDto.expectedCompletionDate)
@@ -55,6 +56,9 @@ let ConstructionProjectsService = class ConstructionProjectsService {
     async update(id, updateDto) {
         const project = await this.findOne(id);
         Object.assign(project, updateDto);
+        if (updateDto.propertyId !== undefined) {
+            project.propertyId = updateDto.propertyId ?? null;
+        }
         if (updateDto.startDate) {
             project.startDate = new Date(updateDto.startDate);
         }

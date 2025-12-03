@@ -14,6 +14,7 @@ export class PropertiesSchemaSyncService implements OnModuleInit {
     const queries = [
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS country VARCHAR(100);`,
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS location TEXT;`,
+      `ALTER TABLE properties ALTER COLUMN location DROP NOT NULL;`,
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS nearby_landmarks TEXT;`,
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS latitude DECIMAL(10,8);`,
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS longitude DECIMAL(11,8);`,

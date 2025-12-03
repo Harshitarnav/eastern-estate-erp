@@ -113,3 +113,28 @@ docker compose -f docker-compose.prod.yml up -d --force-recreate backend fronten
 <!-- 
 admin@eastern-estate.com
 Admin@123 -->
+
+<!-- Here’s a simple local dev loop so you can edit and see changes live:
+
+Set envs (one-time per shell):
+export NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+export CORS_ORIGINS=http://localhost:3000
+Start the dependencies (DB/Redis/MinIO) via Docker:
+docker compose -f docker-compose.prod.yml up -d postgres redis minio
+Run the backend in watch mode (hot reload):
+cd backend
+npm install        # first time only
+npm run start:dev  # NestJS auto-reloads on save
+Run the frontend in dev mode (hot reload):
+cd ../frontend
+npm install        # first time only
+npm run dev        # Next.js auto-reloads on save
+Then open http://localhost:3000.
+
+Change code, hit Save, and refresh the browser; both backend and frontend will rebuild automatically.
+
+If you need a clean DB locally, stop services and reset volumes (destructive):
+
+docker compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml up -d postgres redis minio
+Use npm run dev + npm run start:dev for rapid feedback; only use docker compose build when you need a production image. -->

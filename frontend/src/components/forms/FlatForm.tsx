@@ -23,7 +23,49 @@ export default function FlatForm({
   customers = [],
   isEdit = false,
 }: FlatFormProps) {
-  
+  const handleSubmit = async (values: any) => {
+    const num = (val: any) => (val === '' || val === undefined || val === null ? undefined : Number(val));
+
+    const payload = {
+      ...values,
+      type: values.type || '2BHK',
+      status: values.status || 'UNDER_CONSTRUCTION',
+      isAvailable: values.isAvailable !== false,
+      servantRoom: values.servantRoom ?? false,
+      studyRoom: values.studyRoom ?? false,
+      poojaRoom: values.poojaRoom ?? false,
+      vastuCompliant: values.vastuCompliant ?? true,
+      cornerUnit: values.cornerUnit ?? false,
+      roadFacing: values.roadFacing ?? false,
+      parkFacing: values.parkFacing ?? false,
+      coveredParking: values.coveredParking ?? false,
+      parkingSlots: num(values.parkingSlots) ?? 0,
+      floor: num(values.floor) ?? 0,
+      bedrooms: num(values.bedrooms) ?? 0,
+      bathrooms: num(values.bathrooms) ?? 0,
+      balconies: num(values.balconies) ?? 0,
+      superBuiltUpArea: num(values.superBuiltUpArea) ?? 0,
+      builtUpArea: num(values.builtUpArea) ?? 0,
+      carpetArea: num(values.carpetArea) ?? 0,
+      balconyArea: num(values.balconyArea),
+      basePrice: num(values.basePrice) ?? 0,
+      pricePerSqft: num(values.pricePerSqft),
+      registrationCharges: num(values.registrationCharges),
+      maintenanceCharges: num(values.maintenanceCharges),
+      parkingCharges: num(values.parkingCharges),
+      totalPrice: num(values.totalPrice) ?? 0,
+      discountAmount: num(values.discountAmount),
+      finalPrice: num(values.finalPrice) ?? 0,
+      tokenAmount: num(values.tokenAmount),
+      displayOrder: num(values.displayOrder) ?? 1,
+      amenities: typeof values.amenities === 'string'
+        ? values.amenities.split(',').map((a: string) => a.trim()).filter(Boolean)
+        : values.amenities,
+    };
+
+    await onSubmit(payload);
+  };
+
   const sections: FormSection[] = [
     {
       title: 'Basic Information',
@@ -457,7 +499,7 @@ export default function FlatForm({
       description={initialData ? 'Update flat details' : 'Add a new flat/unit to the tower'}
       sections={sections}
       initialValues={initialData}
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
       onCancel={onCancel}
       submitLabel={initialData ? 'Update Flat' : 'Create Flat'}
       cancelLabel="Cancel"

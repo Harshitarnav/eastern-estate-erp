@@ -77,6 +77,11 @@ __decorate([
     __metadata("design:type", tower_entity_1.Tower)
 ], Flat.prototype, "tower", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'flat_code', length: 50 }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], Flat.prototype, "flatCode", void 0);
+__decorate([
     (0, typeorm_1.Column)({ length: 50 }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)

@@ -150,8 +150,21 @@ export default function TowersInventoryPage() {
       throw new Error('Please select a property before creating a tower.');
     }
 
+     // Ensure towerCode defaults to towerNumber
+    const towerNumber = (payload.towerNumber ?? '').trim();
+    const towerCode = (payload.towerCode ?? towerNumber).trim();
+    const totalFloors = Math.max(payload.totalFloors ?? 1, 1);
+    const totalUnits = Math.max(payload.totalUnits ?? 1, 1);
+
     try {
-      await towersService.createTower({ ...payload, propertyId });
+      await towersService.createTower({
+        ...payload,
+        propertyId,
+        towerNumber,
+        towerCode,
+        totalFloors,
+        totalUnits,
+      });
       setShowCreateForm(false);
       await refreshSummary(propertyId);
     } catch (error) {

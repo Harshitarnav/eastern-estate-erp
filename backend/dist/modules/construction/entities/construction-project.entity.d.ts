@@ -3,7 +3,7 @@ import { Employee } from '../../employees/entities/employee.entity';
 import { User } from '../../users/entities/user.entity';
 export declare class ConstructionProject {
     id: string;
-    propertyId: string;
+    propertyId: string | null;
     property: Property;
     projectName: string;
     startDate: Date;

@@ -35,6 +35,7 @@ export declare class Flat {
     property: Property;
     towerId: string;
     tower: Tower;
+    flatCode: string;
     flatNumber: string;
     name: string;
     description: string;

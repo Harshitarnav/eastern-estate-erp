@@ -40,6 +40,8 @@ let TowersSchemaSyncService = TowersSchemaSyncService_1 = class TowersSchemaSync
         END $$;
       `);
             const alterQueries = [
+                `ALTER TABLE towers ADD COLUMN IF NOT EXISTS tower_number VARCHAR(50);`,
+                `ALTER TABLE towers ADD COLUMN IF NOT EXISTS tower_code VARCHAR(50);`,
                 `ALTER TABLE towers ADD COLUMN IF NOT EXISTS total_floors INTEGER;`,
                 `ALTER TABLE towers ADD COLUMN IF NOT EXISTS total_units INTEGER;`,
                 `ALTER TABLE towers ADD COLUMN IF NOT EXISTS units_planned INTEGER DEFAULT 0;`,
@@ -70,6 +72,28 @@ let TowersSchemaSyncService = TowersSchemaSyncService_1 = class TowersSchemaSync
             for (const query of alterQueries) {
                 await queryRunner.query(query);
             }
+            await queryRunner.query(`
+        UPDATE towers
+        SET tower_number = COALESCE(tower_number, name, 'T1')
+        WHERE tower_number IS NULL OR tower_number = '';
+      `);
+            await queryRunner.query(`
+        UPDATE towers
+        SET tower_code = COALESCE(tower_code, tower_number, name, 'T1')
+        WHERE tower_code IS NULL OR tower_code = '';
+      `);
+            await queryRunner.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes
+            WHERE schemaname = current_schema()
+              AND indexname = 'idx_towers_tower_code'
+          ) THEN
+            CREATE INDEX idx_towers_tower_code ON towers (tower_code);
+          END IF;
+        END $$;
+      `);
             const jsonColumns = ['amenities', 'images', 'floor_plans'];
             for (const column of jsonColumns) {
                 const columnInfo = await queryRunner.query(`SELECT udt_name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'towers' AND column_name = $1`, [column]);

@@ -34,5 +34,5 @@ export declare class CreatePropertyDto {
     isActive?: boolean;
     isFeatured?: boolean;
     nearbyLandmarks?: string;
-    projectId: string;
+    projectId?: string;
 }

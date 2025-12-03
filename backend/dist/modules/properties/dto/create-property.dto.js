@@ -212,6 +212,7 @@ __decorate([
 ], CreatePropertyDto.prototype, "nearbyLandmarks", void 0);
 __decorate([
     (0, class_validator_1.IsUUID)('4'),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreatePropertyDto.prototype, "projectId", void 0);
 //# sourceMappingURL=create-property.dto.js.map

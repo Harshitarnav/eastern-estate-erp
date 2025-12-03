@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Property = void 0;
 const typeorm_1 = require("typeorm");
 const data_completeness_status_enum_1 = require("../../../common/enums/data-completeness-status.enum");
+const construction_project_entity_1 = require("../../construction/entities/construction-project.entity");
 const decimalTransformer = {
     to: (value) => (value ?? null),
     from: (value) => value === null || value === undefined ? null : Number(value),
@@ -251,6 +252,15 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], Property.prototype, "dataCompletenessStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'project_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Property.prototype, "projectId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => construction_project_entity_1.ConstructionProject, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'project_id' }),
+    __metadata("design:type", construction_project_entity_1.ConstructionProject)
+], Property.prototype, "project", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'uuid', nullable: true, name: 'created_by' }),
     __metadata("design:type", String)

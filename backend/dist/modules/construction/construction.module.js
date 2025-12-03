@@ -31,6 +31,7 @@ const flat_progress_controller_1 = require("./flat-progress.controller");
 const development_updates_service_1 = require("./development-updates.service");
 const development_updates_controller_1 = require("./development-updates.controller");
 const projects_alias_controller_1 = require("./projects-alias.controller");
+const construction_schema_sync_service_1 = require("./construction.schema-sync.service");
 let ConstructionModule = class ConstructionModule {
 };
 exports.ConstructionModule = ConstructionModule;
@@ -59,6 +60,7 @@ exports.ConstructionModule = ConstructionModule = __decorate([
         ],
         providers: [
             construction_projects_service_1.ConstructionProjectsService,
+            construction_schema_sync_service_1.ConstructionSchemaSyncService,
             construction_teams_service_1.ConstructionTeamsService,
             construction_progress_logs_service_1.ConstructionProgressLogsService,
             project_assignments_service_1.ProjectAssignmentsService,

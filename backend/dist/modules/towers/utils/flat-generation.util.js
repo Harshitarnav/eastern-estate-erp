@@ -50,6 +50,7 @@ function buildDefaultFlatPayloads(input) {
             flats.push({
                 propertyId,
                 towerId,
+                flatCode: flatNumber,
                 flatNumber,
                 name: `Unit ${flatNumber}`,
                 description: null,

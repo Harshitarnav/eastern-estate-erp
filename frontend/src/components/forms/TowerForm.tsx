@@ -29,15 +29,17 @@ interface TowerFormProps {
 export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [properties, setProperties] = useState<any[]>([]);
   const [formData, setFormData] = useState<Partial<Tower>>({
     name: tower?.name || '',
     towerNumber: tower?.towerNumber || '',
+    towerCode: tower?.towerCode || '',
     description: tower?.description || '',
     propertyId: tower?.propertyId || '',
-    totalFloors: tower?.totalFloors || 0,
-    totalUnits: tower?.totalUnits || 0,
-    basementLevels: tower?.basementLevels || 0,
+    totalFloors: tower?.totalFloors || 1,
+    totalUnits: tower?.totalUnits || 1,
+    basementLevels: tower?.basementLevels ?? 0,
     unitsPerFloor: tower?.unitsPerFloor || '',
     constructionStatus: tower?.constructionStatus || 'PLANNED',
     constructionStartDate: tower?.constructionStartDate?.split('T')[0] || '',
@@ -68,27 +70,33 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
-    if (!formData.name || !formData.towerNumber || !formData.propertyId) {
-      setError('Please fill in all required fields');
-      return;
-    }
 
-    if (!formData.totalFloors || formData.totalFloors < 1) {
-      setError('Total floors must be at least 1');
-      return;
-    }
+    const newErrors: Record<string, string> = {};
+    if (!formData.propertyId) newErrors.propertyId = 'Property is required';
+    if (!formData.name) newErrors.name = 'Tower name is required';
+    if (!formData.towerNumber) newErrors.towerNumber = 'Tower number/code is required';
+    if (!formData.totalFloors || formData.totalFloors < 1) newErrors.totalFloors = 'Total floors must be at least 1';
+    if (!formData.totalUnits || formData.totalUnits < 1) newErrors.totalUnits = 'Total units must be at least 1';
 
-    if (!formData.totalUnits || formData.totalUnits < 1) {
-      setError('Total units must be at least 1');
+    if (Object.keys(newErrors).length) {
+      setFieldErrors(newErrors);
+      setError('Please fix the highlighted fields.');
       return;
     }
+    setFieldErrors({});
 
     try {
       setLoading(true);
       setError('');
-      await onSubmit(formData);
+      const towerNumber = (formData.towerNumber ?? '').trim();
+      await onSubmit({
+        ...formData,
+        towerNumber,
+        towerCode: (formData.towerCode ?? towerNumber).trim(),
+        totalFloors: Math.max(formData.totalFloors ?? 1, 1),
+        totalUnits: Math.max(formData.totalUnits ?? 1, 1),
+        numberOfLifts: Math.max(formData.numberOfLifts ?? 1, 1),
+      });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save tower');
     } finally {
@@ -116,6 +124,11 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
       });
     }
   };
+
+  const inputClass = (field: string) =>
+    `w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+      fieldErrors[field] ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-200'
+    }`;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -159,9 +172,10 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                className={inputClass('name')}
                 placeholder="Diamond Tower A"
               />
+              {fieldErrors.name && <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>}
             </div>
 
             <div>
@@ -174,9 +188,10 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 value={formData.towerNumber}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                className={inputClass('towerNumber')}
                 placeholder="T1"
               />
+              {fieldErrors.towerNumber && <p className="mt-1 text-sm text-red-600">{fieldErrors.towerNumber}</p>}
             </div>
 
             <div className="md:col-span-2">
@@ -189,7 +204,7 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 onChange={handleChange}
                 required
                 disabled={!!tower}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 disabled:bg-gray-100"
+                className={`${inputClass('propertyId')} disabled:bg-gray-100`}
               >
                 <option value="">Select Property</option>
                 {properties.map((property) => (
@@ -198,6 +213,7 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                   </option>
                 ))}
               </select>
+              {fieldErrors.propertyId && <p className="mt-1 text-sm text-red-600">{fieldErrors.propertyId}</p>}
               {tower && (
                 <p className="text-sm text-gray-500 mt-1">
                   Property cannot be changed after tower creation
@@ -235,8 +251,9 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 onChange={handleChange}
                 required
                 min="1"
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                className={inputClass('totalFloors')}
               />
+              {fieldErrors.totalFloors && <p className="mt-1 text-sm text-red-600">{fieldErrors.totalFloors}</p>}
             </div>
 
             <div>
@@ -250,8 +267,9 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 onChange={handleChange}
                 required
                 min="1"
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                className={inputClass('totalUnits')}
               />
+              {fieldErrors.totalUnits && <p className="mt-1 text-sm text-red-600">{fieldErrors.totalUnits}</p>}
             </div>
 
             <div>
