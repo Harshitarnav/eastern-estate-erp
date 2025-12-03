@@ -316,6 +316,145 @@ __decorate([
     __metadata("design:type", String)
 ], Flat.prototype, "remarks", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'sale_agreement_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "saleAgreementUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'allotment_letter_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "allotmentLetterUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'possession_letter_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "possessionLetterUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'payment_plan_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "paymentPlanUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'registration_receipt_urls', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Flat.prototype, "registrationReceiptUrls", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'payment_receipt_urls', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Flat.prototype, "paymentReceiptUrls", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'demand_letter_urls', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Flat.prototype, "demandLetterUrls", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'noc_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "nocUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'rera_certificate_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "reraCertificateUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'kyc_docs_urls', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Flat.prototype, "kycDocsUrls", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'snag_list_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "snagListUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'handover_checklist_url', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "handoverChecklistUrl", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'other_documents', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Flat.prototype, "otherDocuments", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'agreement_date', type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Flat.prototype, "agreementDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'registration_date', type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Flat.prototype, "registrationDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'handover_date', type: 'date', nullable: true }),
+    __metadata("design:type", Date)
+], Flat.prototype, "handoverDate", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'loan_status',
+        type: 'varchar',
+        length: 20,
+        default: 'NONE',
+    }),
+    __metadata("design:type", String)
+], Flat.prototype, "loanStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'handover_status',
+        type: 'varchar',
+        length: 20,
+        default: 'PENDING',
+    }),
+    __metadata("design:type", String)
+], Flat.prototype, "handoverStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'verification_status',
+        type: 'varchar',
+        length: 20,
+        default: 'PENDING',
+    }),
+    __metadata("design:type", String)
+], Flat.prototype, "verificationStatus", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'verified_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Flat.prototype, "verifiedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'verified_by', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "verifiedBy", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'salesperson_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "salespersonId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'service_contact_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "serviceContactId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'co_buyer_name', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "coBuyerName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'co_buyer_email', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "coBuyerEmail", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'co_buyer_phone', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "coBuyerPhone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'parking_number', type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "parkingNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'parking_type', type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "parkingType", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'storage_id', type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "storageId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'furnishing_pack', type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "furnishingPack", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'appliance_pack', type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], Flat.prototype, "appliancePack", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: true }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", Boolean)

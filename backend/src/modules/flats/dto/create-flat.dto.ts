@@ -228,6 +228,135 @@ export class CreateFlatDto {
   @IsOptional()
   remarks?: string;
 
+  @IsString()
+  @IsOptional()
+  saleAgreementUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  allotmentLetterUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  possessionLetterUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  paymentPlanUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  registrationReceiptUrls?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  paymentReceiptUrls?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  demandLetterUrls?: string[];
+
+  @IsString()
+  @IsOptional()
+  nocUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  reraCertificateUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  kycDocsUrls?: string[];
+
+  @IsString()
+  @IsOptional()
+  snagListUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  handoverChecklistUrl?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  otherDocuments?: string[];
+
+  @IsDateString()
+  @IsOptional()
+  agreementDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  registrationDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  handoverDate?: string;
+
+  @IsString()
+  @IsOptional()
+  loanStatus?: 'NONE' | 'APPLIED' | 'SANCTIONED' | 'DISBURSED';
+
+  @IsString()
+  @IsOptional()
+  handoverStatus?: 'PENDING' | 'READY' | 'HANDED_OVER';
+
+  @IsString()
+  @IsOptional()
+  verificationStatus?: 'PENDING' | 'VERIFIED';
+
+  @IsDateString()
+  @IsOptional()
+  verifiedAt?: string;
+
+  @IsUUID()
+  @IsOptional()
+  verifiedBy?: string;
+
+  @IsUUID()
+  @IsOptional()
+  salespersonId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  serviceContactId?: string;
+
+  @IsString()
+  @IsOptional()
+  coBuyerName?: string;
+
+  @IsString()
+  @IsOptional()
+  coBuyerEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  coBuyerPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  parkingNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  parkingType?: string;
+
+  @IsString()
+  @IsOptional()
+  storageId?: string;
+
+  @IsString()
+  @IsOptional()
+  furnishingPack?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  appliancePack?: boolean;
+
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;

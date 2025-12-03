@@ -204,7 +204,11 @@ export default function EditFlatPage() {
         parkingSlots: data.parkingSlots || 0,
         coveredParking: data.coveredParking || false,
         furnishingStatus: data.furnishingStatus,
-        amenities: data.amenities ? data.amenities.split(',').map((a: string) => a.trim()).filter(Boolean) : [],
+        amenities: Array.isArray(data.amenities)
+          ? data.amenities
+          : data.amenities
+          ? String(data.amenities).split(',').map((a: string) => a.trim()).filter(Boolean)
+          : [],
         specialFeatures: data.specialFeatures,
         remarks: data.remarks,
         isActive: data.isActive !== false,
@@ -221,11 +225,34 @@ export default function EditFlatPage() {
       if (data.soldDate) flatData.soldDate = data.soldDate;
       if (data.tokenAmount) flatData.tokenAmount = data.tokenAmount;
       if (data.paymentPlan) flatData.paymentPlan = data.paymentPlan;
-      
-      // Handle images array
-      if (data.images) {
-        const imageArray = data.images.split(',').map((img: string) => img.trim()).filter(Boolean);
-        if ((imageArray || []).length > 0) flatData.images = imageArray;
+      const toList = (val: any) =>
+        Array.isArray(val)
+          ? val
+          : val
+          ? String(val)
+              .split(',')
+              .map((x: string) => x.trim())
+              .filter(Boolean)
+          : undefined;
+
+      // Handle list-like fields
+      const imagesList = toList(data.images);
+      if (imagesList && imagesList.length > 0) flatData.images = imagesList;
+      const registrationReceipts = toList(data.registrationReceiptUrls);
+      if (registrationReceipts) flatData.registrationReceiptUrls = registrationReceipts;
+      const paymentReceipts = toList(data.paymentReceiptUrls);
+      if (paymentReceipts) flatData.paymentReceiptUrls = paymentReceipts;
+      const demandLetters = toList(data.demandLetterUrls);
+      if (demandLetters) flatData.demandLetterUrls = demandLetters;
+      const kycDocs = toList(data.kycDocsUrls);
+      if (kycDocs) flatData.kycDocsUrls = kycDocs;
+      const otherDocs = toList(data.otherDocuments);
+      if (otherDocs) flatData.otherDocuments = otherDocs;
+
+      // Issues jsonb
+      if (data.issues) {
+        flatData.issues =
+          Array.isArray(data.issues) ? data.issues : [String(data.issues)];
       }
 
       if (resolvedCustomerId) {

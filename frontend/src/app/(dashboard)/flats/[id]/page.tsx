@@ -119,6 +119,15 @@ export default function FlatDetailPage() {
   }, [flat]);
 
   const issues = flat?.issues ?? [];
+  const list = (val?: string[] | string | null) =>
+    Array.isArray(val)
+      ? val
+      : val
+      ? String(val)
+          .split(',')
+          .map((x) => x.trim())
+          .filter(Boolean)
+      : [];
 
   return (
     <div className="space-y-6 p-6 md:p-8" style={{ backgroundColor: brandPalette.background, borderRadius: '24px' }}>
@@ -210,7 +219,62 @@ export default function FlatDetailPage() {
                   }
                 />
               </dl>
-            </section>
+          </section>
+
+          <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+            <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Documents & Compliance</h2>
+            </header>
+            <div className="mt-4 grid gap-3">
+              <DetailItem label="Sale Agreement" value={flat.saleAgreementUrl} isLink />
+              <DetailItem label="Allotment Letter" value={flat.allotmentLetterUrl} isLink />
+              <DetailItem label="Possession Letter" value={flat.possessionLetterUrl} isLink />
+              <DetailItem label="Payment Plan" value={flat.paymentPlanUrl} isLink />
+              <DetailList label="Registration Receipts" values={list(flat.registrationReceiptUrls)} />
+              <DetailList label="Payment Receipts" values={list(flat.paymentReceiptUrls)} />
+              <DetailList label="Demand Letters" values={list(flat.demandLetterUrls)} />
+              <DetailItem label="NOC / No Dues" value={flat.nocUrl} isLink />
+              <DetailItem label="RERA Certificate" value={flat.reraCertificateUrl} isLink />
+              <DetailList label="KYC Docs" values={list(flat.kycDocsUrls)} />
+              <DetailItem label="Snag / Defect List" value={flat.snagListUrl} isLink />
+              <DetailItem label="Handover Checklist" value={flat.handoverChecklistUrl} isLink />
+              <DetailList label="Other Documents" values={list(flat.otherDocuments)} />
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+            <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Statuses & Dates</h2>
+            </header>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <DetailItem label="Agreement Date" value={flat.agreementDate} />
+              <DetailItem label="Registration Date" value={flat.registrationDate} />
+              <DetailItem label="Handover Date" value={flat.handoverDate} />
+              <DetailItem label="Loan Status" value={flat.loanStatus} />
+              <DetailItem label="Handover Status" value={flat.handoverStatus} />
+              <DetailItem label="Verification Status" value={flat.verificationStatus} />
+              <DetailItem label="Verified At" value={flat.verifiedAt} />
+              <DetailItem label="Verified By" value={flat.verifiedBy} />
+            </dl>
+          </section>
+
+          <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+            <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Assignments & Extras</h2>
+            </header>
+            <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+              <DetailItem label="Salesperson ID" value={flat.salespersonId} />
+              <DetailItem label="Service Contact ID" value={flat.serviceContactId} />
+              <DetailItem label="Co-buyer Name" value={flat.coBuyerName} />
+              <DetailItem label="Co-buyer Email" value={flat.coBuyerEmail} />
+              <DetailItem label="Co-buyer Phone" value={flat.coBuyerPhone} />
+              <DetailItem label="Parking Number" value={flat.parkingNumber} />
+              <DetailItem label="Parking Type" value={flat.parkingType} />
+              <DetailItem label="Storage / Locker ID" value={flat.storageId} />
+              <DetailItem label="Furnishing Pack" value={flat.furnishingPack} />
+              <DetailItem label="Appliance Pack Applied" value={flat.appliancePack ? 'Yes' : 'No'} />
+            </dl>
+          </section>
 
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="border-b border-gray-100 pb-4">
@@ -343,6 +407,61 @@ export default function FlatDetailPage() {
                 )}
               </ul>
             </section>
+
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="border-b border-gray-100 pb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Documents & Compliance</h2>
+              </header>
+              <div className="mt-4 space-y-3">
+                <DetailItem label="Sale Agreement" value={flat.saleAgreementUrl} isLink />
+                <DetailItem label="Allotment Letter" value={flat.allotmentLetterUrl} isLink />
+                <DetailItem label="Possession Letter" value={flat.possessionLetterUrl} isLink />
+                <DetailItem label="Payment Plan" value={flat.paymentPlanUrl} isLink />
+                <DetailList label="Registration Receipts" values={list(flat.registrationReceiptUrls)} />
+                <DetailList label="Payment Receipts" values={list(flat.paymentReceiptUrls)} />
+                <DetailList label="Demand Letters" values={list(flat.demandLetterUrls)} />
+                <DetailItem label="NOC / No Dues" value={flat.nocUrl} isLink />
+                <DetailItem label="RERA Certificate" value={flat.reraCertificateUrl} isLink />
+                <DetailList label="KYC Docs" values={list(flat.kycDocsUrls)} />
+                <DetailItem label="Snag / Defect List" value={flat.snagListUrl} isLink />
+                <DetailItem label="Handover Checklist" value={flat.handoverChecklistUrl} isLink />
+                <DetailList label="Other Documents" values={list(flat.otherDocuments)} />
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="border-b border-gray-100 pb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Statuses & Dates</h2>
+              </header>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                <DetailItem label="Agreement Date" value={flat.agreementDate} />
+                <DetailItem label="Registration Date" value={flat.registrationDate} />
+                <DetailItem label="Handover Date" value={flat.handoverDate} />
+                <DetailItem label="Loan Status" value={flat.loanStatus} />
+                <DetailItem label="Handover Status" value={flat.handoverStatus} />
+                <DetailItem label="Verification Status" value={flat.verificationStatus} />
+                <DetailItem label="Verified At" value={flat.verifiedAt} />
+                <DetailItem label="Verified By" value={flat.verifiedBy} />
+              </dl>
+            </section>
+
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="border-b border-gray-100 pb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Assignments & Extras</h2>
+              </header>
+              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                <DetailItem label="Salesperson ID" value={flat.salespersonId} />
+                <DetailItem label="Service Contact ID" value={flat.serviceContactId} />
+                <DetailItem label="Co-buyer Name" value={flat.coBuyerName} />
+                <DetailItem label="Co-buyer Email" value={flat.coBuyerEmail} />
+                <DetailItem label="Co-buyer Phone" value={flat.coBuyerPhone} />
+                <DetailItem label="Parking Number" value={flat.parkingNumber} />
+                <DetailItem label="Parking Type" value={flat.parkingType} />
+                <DetailItem label="Storage / Locker ID" value={flat.storageId} />
+                <DetailItem label="Furnishing Pack" value={flat.furnishingPack} />
+                <DetailItem label="Appliance Pack Applied" value={flat.appliancePack ? 'Yes' : 'No'} />
+              </dl>
+            </section>
           </div>
         </div>
       ) : null}
@@ -350,11 +469,43 @@ export default function FlatDetailPage() {
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailItem({ label, value, isLink }: { label: string; value: React.ReactNode; isLink?: boolean }) {
   return (
     <div className="space-y-1 text-sm">
       <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
-      <dd className="text-gray-800">{value ?? '—'}</dd>
+      <dd className="text-gray-800 break-all">
+        {isLink && typeof value === 'string' ? (
+          <a href={value} className="text-blue-600 hover:underline" target="_blank" rel="noreferrer">
+            {value}
+          </a>
+        ) : (
+          value ?? '—'
+        )}
+      </dd>
+    </div>
+  );
+}
+
+function DetailList({ label, values }: { label: string; values: string[] }) {
+  if (!values || values.length === 0) return null;
+  return (
+    <div className="space-y-1 text-sm">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</dt>
+      <dd className="space-y-1">
+        <ul className="space-y-1 text-blue-600 break-all">
+          {values.map((v, idx) => (
+            <li key={`${label}-${idx}`}>
+              {v.startsWith('http') ? (
+                <a href={v} className="hover:underline" target="_blank" rel="noreferrer">
+                  {v}
+                </a>
+              ) : (
+                v
+              )}
+            </li>
+          ))}
+        </ul>
+      </dd>
     </div>
   );
 }

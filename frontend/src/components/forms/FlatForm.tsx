@@ -25,6 +25,12 @@ export default function FlatForm({
 }: FlatFormProps) {
   const handleSubmit = async (values: any) => {
     const num = (val: any) => (val === '' || val === undefined || val === null ? undefined : Number(val));
+    const list = (val: any) =>
+      typeof val === 'string'
+        ? val.split(',').map((x) => x.trim()).filter(Boolean)
+        : Array.isArray(val)
+        ? val
+        : undefined;
 
     const payload = {
       ...values,
@@ -61,6 +67,11 @@ export default function FlatForm({
       amenities: typeof values.amenities === 'string'
         ? values.amenities.split(',').map((a: string) => a.trim()).filter(Boolean)
         : values.amenities,
+      registrationReceiptUrls: list(values.registrationReceiptUrls),
+      paymentReceiptUrls: list(values.paymentReceiptUrls),
+      demandLetterUrls: list(values.demandLetterUrls),
+      kycDocsUrls: list(values.kycDocsUrls),
+      otherDocuments: list(values.otherDocuments),
     };
 
     await onSubmit(payload);
@@ -489,6 +500,87 @@ export default function FlatForm({
           label: 'Mark as Active',
           type: 'checkbox',
         },
+      ],
+    },
+    {
+      title: 'Documents & Compliance',
+      description: 'Upload key documents and compliance artifacts',
+      fields: [
+        { name: 'saleAgreementUrl', label: 'Sale Agreement URL', type: 'text' },
+        { name: 'allotmentLetterUrl', label: 'Allotment Letter URL', type: 'text' },
+        { name: 'possessionLetterUrl', label: 'Possession Letter URL', type: 'text' },
+        { name: 'paymentPlanUrl', label: 'Payment Plan URL', type: 'text' },
+        { name: 'registrationReceiptUrls', label: 'Registration Receipt URLs (comma-separated)', type: 'textarea', helperText: 'Paste multiple URLs separated by commas' },
+        { name: 'paymentReceiptUrls', label: 'Payment Receipt URLs (comma-separated)', type: 'textarea', helperText: 'Paste multiple URLs separated by commas' },
+        { name: 'demandLetterUrls', label: 'Demand Letter URLs (comma-separated)', type: 'textarea', helperText: 'Paste multiple URLs separated by commas' },
+        { name: 'nocUrl', label: 'NOC / No Dues URL', type: 'text' },
+        { name: 'reraCertificateUrl', label: 'RERA Certificate URL', type: 'text' },
+        { name: 'kycDocsUrls', label: 'KYC Docs URLs (comma-separated)', type: 'textarea', helperText: 'Paste multiple URLs separated by commas' },
+        { name: 'snagListUrl', label: 'Snag / Defect List URL', type: 'text' },
+        { name: 'handoverChecklistUrl', label: 'Handover Checklist URL', type: 'text' },
+        { name: 'otherDocuments', label: 'Other Document URLs (comma-separated)', type: 'textarea', helperText: 'Paste multiple URLs separated by commas' },
+      ],
+    },
+    {
+      title: 'Statuses & Dates',
+      fields: [
+        { name: 'agreementDate', label: 'Agreement Date', type: 'date' },
+        { name: 'registrationDate', label: 'Registration Date', type: 'date' },
+        { name: 'handoverDate', label: 'Handover Date', type: 'date' },
+        {
+          name: 'loanStatus',
+          label: 'Loan Status',
+          type: 'select',
+          options: [
+            { value: 'NONE', label: 'None' },
+            { value: 'APPLIED', label: 'Applied' },
+            { value: 'SANCTIONED', label: 'Sanctioned' },
+            { value: 'DISBURSED', label: 'Disbursed' },
+          ],
+        },
+        {
+          name: 'handoverStatus',
+          label: 'Handover Status',
+          type: 'select',
+          options: [
+            { value: 'PENDING', label: 'Pending' },
+            { value: 'READY', label: 'Ready' },
+            { value: 'HANDED_OVER', label: 'Handed Over' },
+          ],
+        },
+        {
+          name: 'verificationStatus',
+          label: 'Verification Status',
+          type: 'select',
+          options: [
+            { value: 'PENDING', label: 'Pending' },
+            { value: 'VERIFIED', label: 'Verified' },
+          ],
+        },
+      ],
+    },
+    {
+      title: 'Assignments & Extras',
+      fields: [
+        { name: 'salespersonId', label: 'Salesperson ID', type: 'text' },
+        { name: 'serviceContactId', label: 'Service Contact ID', type: 'text' },
+        { name: 'coBuyerName', label: 'Co-buyer Name', type: 'text' },
+        { name: 'coBuyerEmail', label: 'Co-buyer Email', type: 'text' },
+        { name: 'coBuyerPhone', label: 'Co-buyer Phone', type: 'text' },
+        { name: 'parkingNumber', label: 'Parking Number', type: 'text' },
+        { name: 'parkingType', label: 'Parking Type', type: 'text' },
+        { name: 'storageId', label: 'Storage/Locker ID', type: 'text' },
+        {
+          name: 'furnishingPack',
+          label: 'Furnishing Pack',
+          type: 'select',
+          options: [
+            { value: '', label: 'None' },
+            { value: 'BASIC', label: 'Basic' },
+            { value: 'PREMIUM', label: 'Premium' },
+          ],
+        },
+        { name: 'appliancePack', label: 'Appliance Pack Applied', type: 'checkbox' },
       ],
     },
   ];

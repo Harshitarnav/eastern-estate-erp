@@ -284,6 +284,118 @@ export class Flat {
   @Column({ type: 'text', nullable: true })
   remarks: string;
 
+  // Documents & Compliance
+  @Column({ name: 'sale_agreement_url', type: 'text', nullable: true })
+  saleAgreementUrl: string | null;
+
+  @Column({ name: 'allotment_letter_url', type: 'text', nullable: true })
+  allotmentLetterUrl: string | null;
+
+  @Column({ name: 'possession_letter_url', type: 'text', nullable: true })
+  possessionLetterUrl: string | null;
+
+  @Column({ name: 'payment_plan_url', type: 'text', nullable: true })
+  paymentPlanUrl: string | null;
+
+  @Column({ name: 'registration_receipt_urls', type: 'jsonb', nullable: true })
+  registrationReceiptUrls: string[] | null;
+
+  @Column({ name: 'payment_receipt_urls', type: 'jsonb', nullable: true })
+  paymentReceiptUrls: string[] | null;
+
+  @Column({ name: 'demand_letter_urls', type: 'jsonb', nullable: true })
+  demandLetterUrls: string[] | null;
+
+  @Column({ name: 'noc_url', type: 'text', nullable: true })
+  nocUrl: string | null;
+
+  @Column({ name: 'rera_certificate_url', type: 'text', nullable: true })
+  reraCertificateUrl: string | null;
+
+  @Column({ name: 'kyc_docs_urls', type: 'jsonb', nullable: true })
+  kycDocsUrls: string[] | null;
+
+  @Column({ name: 'snag_list_url', type: 'text', nullable: true })
+  snagListUrl: string | null;
+
+  @Column({ name: 'handover_checklist_url', type: 'text', nullable: true })
+  handoverChecklistUrl: string | null;
+
+  @Column({ name: 'other_documents', type: 'jsonb', nullable: true })
+  otherDocuments: string[] | null;
+
+  // Status & Dates
+  @Column({ name: 'agreement_date', type: 'date', nullable: true })
+  agreementDate: Date | null;
+
+  @Column({ name: 'registration_date', type: 'date', nullable: true })
+  registrationDate: Date | null;
+
+  @Column({ name: 'handover_date', type: 'date', nullable: true })
+  handoverDate: Date | null;
+
+  @Column({
+    name: 'loan_status',
+    type: 'varchar',
+    length: 20,
+    default: 'NONE',
+  })
+  loanStatus: 'NONE' | 'APPLIED' | 'SANCTIONED' | 'DISBURSED';
+
+  @Column({
+    name: 'handover_status',
+    type: 'varchar',
+    length: 20,
+    default: 'PENDING',
+  })
+  handoverStatus: 'PENDING' | 'READY' | 'HANDED_OVER';
+
+  @Column({
+    name: 'verification_status',
+    type: 'varchar',
+    length: 20,
+    default: 'PENDING',
+  })
+  verificationStatus: 'PENDING' | 'VERIFIED';
+
+  @Column({ name: 'verified_at', type: 'timestamp', nullable: true })
+  verifiedAt: Date | null;
+
+  @Column({ name: 'verified_by', type: 'uuid', nullable: true })
+  verifiedBy: string | null;
+
+  // Assignments & Contacts
+  @Column({ name: 'salesperson_id', type: 'uuid', nullable: true })
+  salespersonId: string | null;
+
+  @Column({ name: 'service_contact_id', type: 'uuid', nullable: true })
+  serviceContactId: string | null;
+
+  @Column({ name: 'co_buyer_name', type: 'text', nullable: true })
+  coBuyerName: string | null;
+
+  @Column({ name: 'co_buyer_email', type: 'text', nullable: true })
+  coBuyerEmail: string | null;
+
+  @Column({ name: 'co_buyer_phone', type: 'text', nullable: true })
+  coBuyerPhone: string | null;
+
+  // Inventory / Extras
+  @Column({ name: 'parking_number', type: 'varchar', length: 50, nullable: true })
+  parkingNumber: string | null;
+
+  @Column({ name: 'parking_type', type: 'varchar', length: 50, nullable: true })
+  parkingType: string | null;
+
+  @Column({ name: 'storage_id', type: 'varchar', length: 50, nullable: true })
+  storageId: string | null;
+
+  @Column({ name: 'furnishing_pack', type: 'varchar', length: 50, nullable: true })
+  furnishingPack: string | null;
+
+  @Column({ name: 'appliance_pack', type: 'boolean', default: false })
+  appliancePack: boolean;
+
   // System Fields
   @Column({ type: 'boolean', default: true })
   @Index()
