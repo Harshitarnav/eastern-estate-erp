@@ -98,7 +98,11 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
         numberOfLifts: Math.max(formData.numberOfLifts ?? 1, 1),
       });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save tower');
+      const apiMessage =
+        err?.response?.data?.message ||
+        err?.response?.data?.errors?.join?.(', ') ||
+        err?.message;
+      setError(apiMessage || 'Failed to save tower');
     } finally {
       setLoading(false);
     }
