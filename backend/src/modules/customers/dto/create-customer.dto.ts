@@ -24,8 +24,8 @@ export class CreateCustomerDto {
   lastName: string;
 
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -103,4 +103,8 @@ export class CreateCustomerDto {
   @IsEnum(KYCStatus)
   @IsOptional()
   kycStatus?: KYCStatus;
+
+  @IsString()
+  @IsOptional()
+  propertyId?: string;
 }

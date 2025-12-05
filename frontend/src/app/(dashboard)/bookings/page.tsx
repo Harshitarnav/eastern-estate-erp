@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePropertyStore } from '@/store/propertyStore';
+import { propertiesService } from '@/services/properties.service';
 import {
   FileText,
   Plus,
@@ -31,7 +32,12 @@ export default function BookingsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get('customerId');
-  const { selectedProperties } = usePropertyStore();
+  const {
+    selectedProperties,
+    properties,
+    setProperties,
+    setSelectedProperties,
+  } = usePropertyStore();
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +55,23 @@ export default function BookingsPage() {
     totalPages: 0,
   });
   const [stats, setStats] = useState<any>(null);
+  const [loadingProperties, setLoadingProperties] = useState(false);
+
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        if (properties.length > 0) return;
+        setLoadingProperties(true);
+        const res = await propertiesService.getProperties({ limit: 100, isActive: true });
+        setProperties(res.data || []);
+      } catch (err) {
+        console.error('Error loading properties', err);
+      } finally {
+        setLoadingProperties(false);
+      }
+    };
+    loadProperties();
+  }, [properties.length, setProperties]);
 
   useEffect(() => {
     fetchBookings();
@@ -252,6 +275,25 @@ export default function BookingsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <select
+            value={filters.propertyId || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              const nextPropertyId = value || undefined;
+              setFilters({ ...filters, propertyId: nextPropertyId, page: 1 });
+              setSelectedProperties(nextPropertyId ? [nextPropertyId] : []);
+            }}
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A8211B]"
+            title="Filter by property"
+          >
+            <option value="">{loadingProperties ? 'Loading properties...' : 'All Properties'}</option>
+            {(properties || []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+
           <select
             value={filters.status || ''}
             onChange={(e) => setFilters({ ...filters, status: e.target.value || undefined, page: 1 })}

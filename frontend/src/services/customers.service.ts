@@ -50,6 +50,7 @@ export interface CustomerFilters {
   createdFrom?: string;
   createdTo?: string;
   isActive?: boolean;
+  propertyId?: string;
   page?: number;
   limit?: number;
   sortBy?: string;

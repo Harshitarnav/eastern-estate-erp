@@ -5,15 +5,27 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { salesDashboardService } from '@/services/sales-dashboard.service';
 import { leadsService, Lead } from '@/services/leads.service';
+import { usersService, User } from '@/services/users.service';
+import { propertiesService } from '@/services/properties.service';
+import { usePropertyStore } from '@/store/propertyStore';
 import { MobileFAB } from '@/components/mobile/FloatingActionButton';
 import { DashboardMetrics } from '@/types/sales-crm.types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   TrendingUp,
@@ -46,6 +58,13 @@ import {
 export default function SalesDashboard() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const {
+    selectedProperties,
+    setSelectedProperties,
+    properties,
+    setMultiSelectMode,
+    setProperties,
+  } = usePropertyStore();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,27 +77,76 @@ export default function SalesDashboard() {
   const [priorityTasks, setPriorityTasks] = useState<any[]>([]);
   const [smartTips, setSmartTips] = useState<string[]>([]);
   const [priorityLoading, setPriorityLoading] = useState(false);
+  const [agentOptions, setAgentOptions] = useState<User[]>([]);
+  const [filters, setFilters] = useState<{
+    agentId?: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }>({});
+
+  const isManager = useMemo(() => {
+    const roles = user?.roles || [];
+    return roles.some((r) =>
+      ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r),
+    );
+  }, [user]);
 
   useEffect(() => {
+    setMultiSelectMode(isManager);
     if (user?.id) {
-      loadDashboard();
+      const propertyId = selectedProperties[0];
+      const agentId = isManager ? undefined : user.id;
+      setFilters((prev) => ({ ...prev, propertyId, agentId }));
+      loadDashboard({ propertyId, agentId });
     } else if (!authLoading && !user) {
       setLoading(false);
       setError('User not authenticated. Please log in.');
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, isManager, selectedProperties, setMultiSelectMode]);
 
-  const loadDashboard = async () => {
+  useEffect(() => {
+    // Load properties for the selector if not already loaded
+    if (properties.length === 0) {
+      (async () => {
+        try {
+          const res = await propertiesService.getProperties({ limit: 200, isActive: true });
+          setProperties(res.data || []);
+        } catch (err) {
+          console.error('Failed to load properties', err);
+        }
+      })();
+    }
+  }, [properties.length, setProperties]);
+
+  useEffect(() => {
+    if (isManager) {
+      (async () => {
+        try {
+          const res = await usersService.getUsers({ role: 'sales_agent', limit: 100 }, { forceRefresh: true });
+          setAgentOptions(res.data || []);
+        } catch (err) {
+          console.error('Failed to load agents', err);
+        }
+      })();
+    }
+  }, [isManager]);
+
+  const loadDashboard = async (override?: Partial<typeof filters>) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await salesDashboardService.getDashboardMetrics(user!.id);
+      const mergedFilters = { ...filters, ...override };
+      const data = await salesDashboardService.getDashboardMetrics(user!.id, mergedFilters);
       if (!data) {
         setError('No dashboard data available yet. Please try again later.');
         setMetrics(null);
         return;
       }
       setMetrics(data);
+      setFilters(mergedFilters);
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard');
       console.error('Dashboard error:', err);
@@ -144,6 +212,17 @@ export default function SalesDashboard() {
     } finally {
       setPriorityLoading(false);
     }
+  };
+
+  const handleFiltersApply = () => {
+    loadDashboard();
+  };
+
+  const handleResetFilters = () => {
+    const base = { agentId: isManager ? undefined : user?.id, propertyId: undefined, towerId: undefined, flatId: undefined, dateFrom: undefined, dateTo: undefined };
+    setSelectedProperties([]);
+    setFilters(base);
+    loadDashboard(base);
   };
 
   const handleQuickAction = (action: any) => {
@@ -248,6 +327,89 @@ export default function SalesDashboard() {
 
   return (
     <div className="space-y-6 p-6 md:p-8" style={{ backgroundColor: brandPalette.background }}>
+      {/* Filters */}
+      <div className="grid gap-3 rounded-2xl bg-white p-4 shadow-sm md:grid-cols-3">
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold text-gray-700">Property</Label>
+          <Select
+            value={filters.propertyId || selectedProperties[0] || 'all'}
+            onValueChange={(v) => {
+              if (v === 'all') {
+                setSelectedProperties([]);
+                setFilters((prev) => ({ ...prev, propertyId: undefined }));
+              } else {
+                setSelectedProperties([v]);
+                setFilters((prev) => ({ ...prev, propertyId: v }));
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All properties" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All properties</SelectItem>
+              {properties.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Date from</Label>
+            <Input
+              type="date"
+              value={filters.dateFrom || ''}
+              onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value || undefined }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Date to</Label>
+            <Input
+              type="date"
+              value={filters.dateTo || ''}
+              onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value || undefined }))}
+            />
+          </div>
+        </div>
+
+        {isManager && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Agent</Label>
+            <Select
+              value={filters.agentId || 'all'}
+              onValueChange={(v) =>
+                setFilters((prev) => ({ ...prev, agentId: v === 'all' ? undefined : v }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All agents" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All agents</SelectItem>
+                {agentOptions.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.firstName} {agent.lastName || ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div className="flex items-end gap-2 md:col-span-3">
+          <Button onClick={handleFiltersApply} className="px-5" style={{ background: brandGradient }}>
+            Apply Filters
+          </Button>
+          <Button variant="outline" onClick={handleResetFilters}>
+            Reset
+          </Button>
+        </div>
+      </div>
+
       {/* Hero */}
       <div
         className="relative overflow-hidden rounded-3xl p-6 md:p-10 text-white shadow-lg"

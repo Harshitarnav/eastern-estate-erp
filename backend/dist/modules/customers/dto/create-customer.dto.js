@@ -29,7 +29,7 @@ __decorate([
 ], CreateCustomerDto.prototype, "lastName", void 0);
 __decorate([
     (0, class_validator_1.IsEmail)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "email", void 0);
 __decorate([
@@ -128,4 +128,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "kycStatus", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateCustomerDto.prototype, "propertyId", void 0);
 //# sourceMappingURL=create-customer.dto.js.map

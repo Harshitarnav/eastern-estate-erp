@@ -51,6 +51,10 @@ export class QueryCustomerDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsString()
+  propertyId?: string;
+
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   @Min(1)

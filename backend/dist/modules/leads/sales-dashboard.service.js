@@ -33,24 +33,47 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
         this.bookingRepository = bookingRepository;
         this.logger = new common_1.Logger(SalesDashboardService_1.name);
     }
-    async getDashboardMetrics(salesPersonId) {
-        this.logger.log(`Generating dashboard metrics for ${salesPersonId}`);
+    buildDateRange(filter) {
         const today = new Date();
-        const startOfThisMonth = (0, date_fns_1.startOfMonth)(today);
-        const endOfThisMonth = (0, date_fns_1.endOfMonth)(today);
-        const startOfThisWeek = (0, date_fns_1.startOfWeek)(today);
-        const endOfThisWeek = (0, date_fns_1.endOfWeek)(today);
+        const from = filter.dateFrom ? new Date(filter.dateFrom) : (0, date_fns_1.startOfMonth)(today);
+        const to = filter.dateTo ? new Date(filter.dateTo) : (0, date_fns_1.endOfMonth)(today);
+        const weekStart = (0, date_fns_1.startOfWeek)(from);
+        const weekEnd = (0, date_fns_1.endOfWeek)(to);
+        return { today, from, to, weekStart, weekEnd };
+    }
+    buildLeadWhere(filter) {
+        const where = {
+            assignedTo: filter.salesPersonId,
+        };
+        if (filter.propertyId)
+            where.propertyId = filter.propertyId;
+        if (filter.towerId)
+            where.towerId = filter.towerId;
+        if (filter.flatId)
+            where.flatId = filter.flatId;
+        return where;
+    }
+    async getDashboardMetrics(filter) {
+        const { salesPersonId } = filter;
+        this.logger.log(`Generating dashboard metrics for ${salesPersonId} with filters property=${filter.propertyId} tower=${filter.towerId} flat=${filter.flatId} dateFrom=${filter.dateFrom} dateTo=${filter.dateTo}`);
+        const { today, from, to, weekStart, weekEnd } = this.buildDateRange(filter);
+        const leadWhere = this.buildLeadWhere(filter);
+        const scopedLeads = await this.leadRepository.find({
+            where: leadWhere,
+            select: ['id', 'createdAt', 'status', 'priority', 'source', 'convertedToCustomerId', 'nextFollowUpDate'],
+        });
+        const leadIds = scopedLeads.map((l) => l.id);
         const [currentTarget, leads, siteVisits, followups, tasks, bookings,] = await Promise.all([
             this.getCurrentTarget(salesPersonId),
-            this.getLeadMetrics(salesPersonId, startOfThisMonth, endOfThisMonth),
-            this.getSiteVisitMetrics(salesPersonId, startOfThisWeek, endOfThisWeek, startOfThisMonth, endOfThisMonth),
-            this.getFollowUpMetrics(salesPersonId, today, startOfThisWeek, endOfThisWeek, startOfThisMonth, endOfThisMonth),
-            this.getTaskMetrics(salesPersonId, today, startOfThisWeek, endOfThisWeek),
-            this.getRevenueMetrics(salesPersonId, startOfThisMonth, endOfThisMonth),
+            this.getLeadMetrics(scopedLeads, from, to),
+            this.getSiteVisitMetrics(salesPersonId, leadWhere, from, to, weekStart, weekEnd),
+            this.getFollowUpMetrics(salesPersonId, leadIds, today, weekStart, weekEnd, from, to),
+            this.getTaskMetrics(salesPersonId, leadIds, today, weekStart, weekEnd, filter),
+            this.getRevenueMetrics(filter, from, to),
         ]);
         const [recentActivities, upcomingEvents] = await Promise.all([
-            this.getRecentActivities(salesPersonId),
-            this.getUpcomingEvents(salesPersonId),
+            this.getRecentActivities(salesPersonId, leadIds),
+            this.getUpcomingEvents(salesPersonId, leadIds, filter),
         ]);
         return {
             performance: this.buildPerformanceMetrics(currentTarget),
@@ -123,12 +146,7 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             daysRemaining,
         };
     }
-    async getLeadMetrics(salesPersonId, startDate, endDate) {
-        const allLeads = await this.leadRepository.find({
-            where: {
-                assignedTo: salesPersonId,
-            },
-        });
+    async getLeadMetrics(allLeads, startDate, endDate) {
         const newLeads = allLeads.filter(l => l.createdAt >= startDate && l.createdAt <= endDate);
         const bySource = {};
         allLeads.forEach(l => {
@@ -148,23 +166,25 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             conversionRate: Math.round(conversionRate * 100) / 100,
         };
     }
-    async getSiteVisitMetrics(salesPersonId, startOfWeek, endOfWeek, startOfMonth, endOfMonth) {
+    async getSiteVisitMetrics(salesPersonId, leadWhere, startOfMonth, endOfMonth, startOfWeek, endOfWeek) {
+        const baseWhere = { ...leadWhere };
         const pendingThisWeek = await this.leadRepository.count({
             where: {
-                assignedTo: salesPersonId,
+                ...baseWhere,
                 siteVisitStatus: lead_entity_2.SiteVisitStatus.PENDING,
+                nextFollowUpDate: (0, typeorm_2.Between)(startOfWeek, endOfWeek),
             },
         });
         const completedThisMonth = await this.leadRepository.count({
             where: {
-                assignedTo: salesPersonId,
+                ...baseWhere,
                 siteVisitStatus: lead_entity_2.SiteVisitStatus.DONE,
                 lastSiteVisitDate: (0, typeorm_2.Between)(startOfMonth, endOfMonth),
             },
         });
         const scheduledUpcoming = await this.leadRepository.count({
             where: {
-                assignedTo: salesPersonId,
+                ...baseWhere,
                 siteVisitStatus: lead_entity_2.SiteVisitStatus.SCHEDULED,
             },
         });
@@ -184,11 +204,18 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             avgRating: Math.round(avgRating * 10) / 10,
         };
     }
-    async getFollowUpMetrics(salesPersonId, today, startOfWeek, endOfWeek, startOfMonth, endOfMonth) {
+    async getFollowUpMetrics(salesPersonId, leadIds, today, startOfWeek, endOfWeek, startOfMonth, endOfMonth) {
+        if (leadIds.length === 0) {
+            return {
+                dueToday: 0,
+                dueThisWeek: 0,
+                overdue: 0,
+                completedThisMonth: 0,
+                avgResponseTime: 0,
+            };
+        }
         const leads = await this.leadRepository.find({
-            where: {
-                assignedTo: salesPersonId,
-            },
+            where: { id: (0, typeorm_2.In)(leadIds) },
         });
         const dueToday = leads.filter(l => l.nextFollowUpDate && (0, date_fns_1.startOfDay)(l.nextFollowUpDate).getTime() === (0, date_fns_1.startOfDay)(today).getTime()).length;
         const dueThisWeek = leads.filter(l => l.nextFollowUpDate && l.nextFollowUpDate >= startOfWeek && l.nextFollowUpDate <= endOfWeek).length;
@@ -196,6 +223,7 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
         const completedThisMonth = await this.followUpRepository.count({
             where: {
                 performedBy: salesPersonId,
+                leadId: (0, typeorm_2.In)(leadIds),
                 followUpDate: (0, typeorm_2.Between)(startOfMonth, endOfMonth),
             },
         });
@@ -207,11 +235,13 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             avgResponseTime: 0,
         };
     }
-    async getTaskMetrics(salesPersonId, today, startOfWeek, endOfWeek) {
+    async getTaskMetrics(salesPersonId, leadIds, today, startOfWeek, endOfWeek, filter) {
         const allTasks = await this.salesTaskRepository.find({
             where: {
                 assignedTo: salesPersonId,
                 isActive: true,
+                ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
+                ...(leadIds.length ? { leadId: (0, typeorm_2.In)(leadIds) } : {}),
             },
         });
         const dueToday = allTasks.filter(t => t.dueDate && (0, date_fns_1.startOfDay)(t.dueDate).getTime() === (0, date_fns_1.startOfDay)(today).getTime() && t.status !== sales_task_entity_1.TaskStatus.COMPLETED).length;
@@ -228,10 +258,11 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             completionRate: Math.round(completionRate * 100) / 100,
         };
     }
-    async getRevenueMetrics(salesPersonId, startOfMonth, endOfMonth) {
+    async getRevenueMetrics(filter, startOfMonth, endOfMonth) {
         const bookings = await this.bookingRepository.find({
             where: {
                 bookingDate: (0, typeorm_2.Between)(startOfMonth, endOfMonth),
+                ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
             },
         });
         const thisMonth = bookings.reduce((sum, b) => sum + Number(b.totalAmount), 0);
@@ -247,17 +278,24 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             projectedMonthEnd: Math.round(projectedMonthEnd),
         };
     }
-    async getRecentActivities(salesPersonId) {
+    async getRecentActivities(salesPersonId, leadIds) {
         const limit = 20;
         const [followups, tasks] = await Promise.all([
             this.followUpRepository.find({
-                where: { performedBy: salesPersonId },
+                where: {
+                    performedBy: salesPersonId,
+                    ...(leadIds.length ? { leadId: (0, typeorm_2.In)(leadIds) } : {}),
+                },
                 order: { followUpDate: 'DESC' },
                 take: limit,
                 relations: ['lead'],
             }),
             this.salesTaskRepository.find({
-                where: { assignedTo: salesPersonId, status: sales_task_entity_1.TaskStatus.COMPLETED },
+                where: {
+                    assignedTo: salesPersonId,
+                    status: sales_task_entity_1.TaskStatus.COMPLETED,
+                    ...(leadIds.length ? { leadId: (0, typeorm_2.In)(leadIds) } : {}),
+                },
                 order: { completedAt: 'DESC' },
                 take: limit,
                 relations: ['lead'],
@@ -284,7 +322,7 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
             .sort((a, b) => b.date.getTime() - a.date.getTime())
             .slice(0, limit);
     }
-    async getUpcomingEvents(salesPersonId) {
+    async getUpcomingEvents(salesPersonId, leadIds, filter) {
         const today = new Date();
         const nextWeek = (0, date_fns_1.addDays)(today, 7);
         const [upcomingFollowUps, upcomingTasks, upcomingSiteVisits] = await Promise.all([
@@ -292,6 +330,7 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
                 where: {
                     performedBy: salesPersonId,
                     nextFollowUpDate: (0, typeorm_2.Between)(today, nextWeek),
+                    ...(leadIds.length ? { leadId: (0, typeorm_2.In)(leadIds) } : {}),
                 },
                 order: { nextFollowUpDate: 'ASC' },
                 relations: ['lead'],
@@ -301,6 +340,8 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
                     assignedTo: salesPersonId,
                     dueDate: (0, typeorm_2.Between)(today, nextWeek),
                     status: sales_task_entity_1.TaskStatus.PENDING,
+                    ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
+                    ...(leadIds.length ? { leadId: (0, typeorm_2.In)(leadIds) } : {}),
                 },
                 order: { dueDate: 'ASC', dueTime: 'ASC' },
                 relations: ['lead'],
@@ -309,6 +350,9 @@ let SalesDashboardService = SalesDashboardService_1 = class SalesDashboardServic
                 where: {
                     assignedTo: salesPersonId,
                     siteVisitStatus: lead_entity_2.SiteVisitStatus.SCHEDULED,
+                    ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
+                    ...(filter.towerId ? { towerId: filter.towerId } : {}),
+                    ...(filter.flatId ? { flatId: filter.flatId } : {}),
                 },
                 take: 10,
             }),

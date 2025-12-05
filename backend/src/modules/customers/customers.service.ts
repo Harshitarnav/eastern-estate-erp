@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Customer } from './entities/customer.entity';
 import {
   CreateCustomerDto,
@@ -28,17 +28,31 @@ export class CustomersService {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    
-    // Get count of customers this month to generate sequence
+
+    // Get count of customers created in the current month to generate sequence
     const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const startOfNextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
     const count = await this.customersRepository.count({
       where: {
-        createdAt: startOfMonth as any,
+        createdAt: Between(startOfMonth as any, startOfNextMonth as any),
       },
     });
-    
-    const sequence = (count + 1).toString().padStart(4, '0');
-    return `CU${year}${month}${sequence}`;
+
+    // Try next codes until a free one is found (handles concurrent inserts)
+    let sequenceNumber = count + 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const sequence = sequenceNumber.toString().padStart(4, '0');
+      const code = `CU${year}${month}${sequence}`;
+      const exists = await this.customersRepository.findOne({
+        where: { customerCode: code },
+        select: ['id'],
+      });
+      if (!exists) {
+        return code;
+      }
+      sequenceNumber += 1;
+    }
   }
 
   async create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto> {
@@ -57,13 +71,16 @@ export class CustomersService {
     const customerCode = await this.generateCustomerCode();
 
     // Map firstName and lastName to fullName
-    const { firstName, lastName, phone, isVIP, ...rest } = createCustomerDto;
+    const { firstName, lastName, phone, isVIP, propertyId, ...rest } = createCustomerDto;
     const fullName = `${firstName} ${lastName}`.trim();
 
     // Handle isVIP and other metadata fields
     const metadata: any = {};
     if (isVIP !== undefined) {
       metadata.isVIP = isVIP;
+    }
+    if (propertyId) {
+      metadata.propertyId = propertyId;
     }
 
     const customer = this.customersRepository.create({
@@ -134,6 +151,13 @@ export class CustomersService {
 
     if (isActive !== undefined) {
       queryBuilder.andWhere('customer.isActive = :isActive', { isActive });
+    }
+
+    if (query.propertyId) {
+      queryBuilder.andWhere(
+        `(customer.metadata ->> 'propertyId') = :pid OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))`,
+        { pid: query.propertyId },
+      );
     }
 
     queryBuilder.orderBy(`customer.${sortBy}`, sortOrder);

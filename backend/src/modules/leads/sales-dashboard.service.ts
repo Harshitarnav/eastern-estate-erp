@@ -6,14 +6,23 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { Lead, LeadStatus } from './entities/lead.entity';
 import { FollowUp } from './entities/followup.entity';
 import { SalesTask, TaskStatus } from './entities/sales-task.entity';
 import { SalesTarget, TargetStatus } from '../employees/entities/sales-target.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { SiteVisitStatus } from './entities/lead.entity';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay, addDays } from 'date-fns';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, addDays } from 'date-fns';
+
+export interface DashboardFilter {
+  salesPersonId: string;
+  propertyId?: string;
+  towerId?: string;
+  flatId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
 
 export interface DashboardMetrics {
   // Performance Summary
@@ -101,17 +110,45 @@ export class SalesDashboardService {
     private bookingRepository: Repository<Booking>,
   ) {}
 
-  /**
-   * Get comprehensive dashboard metrics for a sales person
-   */
-  async getDashboardMetrics(salesPersonId: string): Promise<DashboardMetrics> {
-    this.logger.log(`Generating dashboard metrics for ${salesPersonId}`);
-
+  private buildDateRange(filter: DashboardFilter) {
     const today = new Date();
-    const startOfThisMonth = startOfMonth(today);
-    const endOfThisMonth = endOfMonth(today);
-    const startOfThisWeek = startOfWeek(today);
-    const endOfThisWeek = endOfWeek(today);
+    const from = filter.dateFrom ? new Date(filter.dateFrom) : startOfMonth(today);
+    const to = filter.dateTo ? new Date(filter.dateTo) : endOfMonth(today);
+    const weekStart = startOfWeek(from);
+    const weekEnd = endOfWeek(to);
+    return { today, from, to, weekStart, weekEnd };
+  }
+
+  private buildLeadWhere(filter: DashboardFilter) {
+    const where: any = {
+      assignedTo: filter.salesPersonId,
+    };
+
+    if (filter.propertyId) where.propertyId = filter.propertyId;
+    if (filter.towerId) where.towerId = filter.towerId;
+    if (filter.flatId) where.flatId = filter.flatId;
+
+    return where;
+  }
+
+  /**
+   * Get comprehensive dashboard metrics for a sales person (with optional filters)
+   */
+  async getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics> {
+    const { salesPersonId } = filter;
+    this.logger.log(
+      `Generating dashboard metrics for ${salesPersonId} with filters property=${filter.propertyId} tower=${filter.towerId} flat=${filter.flatId} dateFrom=${filter.dateFrom} dateTo=${filter.dateTo}`,
+    );
+
+    const { today, from, to, weekStart, weekEnd } = this.buildDateRange(filter);
+    const leadWhere = this.buildLeadWhere(filter);
+
+    // Preload scoped leads and leadIds to reuse across metrics
+    const scopedLeads = await this.leadRepository.find({
+      where: leadWhere,
+      select: ['id', 'createdAt', 'status', 'priority', 'source', 'convertedToCustomerId', 'nextFollowUpDate'],
+    });
+    const leadIds = scopedLeads.map((l) => l.id);
 
     // Fetch all data in parallel for efficiency
     const [
@@ -123,17 +160,17 @@ export class SalesDashboardService {
       bookings,
     ] = await Promise.all([
       this.getCurrentTarget(salesPersonId),
-      this.getLeadMetrics(salesPersonId, startOfThisMonth, endOfThisMonth),
-      this.getSiteVisitMetrics(salesPersonId, startOfThisWeek, endOfThisWeek, startOfThisMonth, endOfThisMonth),
-      this.getFollowUpMetrics(salesPersonId, today, startOfThisWeek, endOfThisWeek, startOfThisMonth, endOfThisMonth),
-      this.getTaskMetrics(salesPersonId, today, startOfThisWeek, endOfThisWeek),
-      this.getRevenueMetrics(salesPersonId, startOfThisMonth, endOfThisMonth),
+      this.getLeadMetrics(scopedLeads, from, to),
+      this.getSiteVisitMetrics(salesPersonId, leadWhere, from, to, weekStart, weekEnd),
+      this.getFollowUpMetrics(salesPersonId, leadIds, today, weekStart, weekEnd, from, to),
+      this.getTaskMetrics(salesPersonId, leadIds, today, weekStart, weekEnd, filter),
+      this.getRevenueMetrics(filter, from, to),
     ]);
 
     // Get recent activities and upcoming events
     const [recentActivities, upcomingEvents] = await Promise.all([
-      this.getRecentActivities(salesPersonId),
-      this.getUpcomingEvents(salesPersonId),
+      this.getRecentActivities(salesPersonId, leadIds),
+      this.getUpcomingEvents(salesPersonId, leadIds, filter),
     ]);
 
     return {
@@ -224,12 +261,7 @@ export class SalesDashboardService {
   /**
    * Get lead metrics
    */
-  private async getLeadMetrics(salesPersonId: string, startDate: Date, endDate: Date): Promise<any> {
-    const allLeads = await this.leadRepository.find({
-      where: {
-        assignedTo: salesPersonId,
-      },
-    });
+  private async getLeadMetrics(allLeads: Lead[], startDate: Date, endDate: Date): Promise<any> {
 
     const newLeads = allLeads.filter(l => l.createdAt >= startDate && l.createdAt <= endDate);
 
@@ -259,22 +291,25 @@ export class SalesDashboardService {
    */
   private async getSiteVisitMetrics(
     salesPersonId: string,
-    startOfWeek: Date,
-    endOfWeek: Date,
+    leadWhere: any,
     startOfMonth: Date,
     endOfMonth: Date,
+    startOfWeek: Date,
+    endOfWeek: Date,
   ): Promise<any> {
-    // Since site_visit_date column doesn't exist, we can't filter by date range for pending
+    const baseWhere = { ...leadWhere };
+
     const pendingThisWeek = await this.leadRepository.count({
       where: {
-        assignedTo: salesPersonId,
+        ...baseWhere,
         siteVisitStatus: SiteVisitStatus.PENDING,
+        nextFollowUpDate: Between(startOfWeek, endOfWeek),
       },
     });
 
     const completedThisMonth = await this.leadRepository.count({
       where: {
-        assignedTo: salesPersonId,
+        ...baseWhere,
         siteVisitStatus: SiteVisitStatus.DONE,
         lastSiteVisitDate: Between(startOfMonth, endOfMonth),
       },
@@ -282,7 +317,7 @@ export class SalesDashboardService {
 
     const scheduledUpcoming = await this.leadRepository.count({
       where: {
-        assignedTo: salesPersonId,
+        ...baseWhere,
         siteVisitStatus: SiteVisitStatus.SCHEDULED,
       },
     });
@@ -312,16 +347,25 @@ export class SalesDashboardService {
    */
   private async getFollowUpMetrics(
     salesPersonId: string,
+    leadIds: string[],
     today: Date,
     startOfWeek: Date,
     endOfWeek: Date,
     startOfMonth: Date,
     endOfMonth: Date,
   ): Promise<any> {
+    if (leadIds.length === 0) {
+      return {
+        dueToday: 0,
+        dueThisWeek: 0,
+        overdue: 0,
+        completedThisMonth: 0,
+        avgResponseTime: 0,
+      };
+    }
+
     const leads = await this.leadRepository.find({
-      where: {
-        assignedTo: salesPersonId,
-      },
+      where: { id: In(leadIds) },
     });
 
     const dueToday = leads.filter(
@@ -339,6 +383,7 @@ export class SalesDashboardService {
     const completedThisMonth = await this.followUpRepository.count({
       where: {
         performedBy: salesPersonId,
+        leadId: In(leadIds),
         followUpDate: Between(startOfMonth, endOfMonth),
       },
     });
@@ -357,14 +402,18 @@ export class SalesDashboardService {
    */
   private async getTaskMetrics(
     salesPersonId: string,
+    leadIds: string[],
     today: Date,
     startOfWeek: Date,
     endOfWeek: Date,
+    filter: DashboardFilter,
   ): Promise<any> {
     const allTasks = await this.salesTaskRepository.find({
       where: {
         assignedTo: salesPersonId,
         isActive: true,
+        ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
+        ...(leadIds.length ? { leadId: In(leadIds) } : {}),
       },
     });
 
@@ -399,11 +448,11 @@ export class SalesDashboardService {
   /**
    * Get revenue metrics
    */
-  private async getRevenueMetrics(salesPersonId: string, startOfMonth: Date, endOfMonth: Date): Promise<any> {
-    // Note: You might need to add salesPersonId to Booking entity
+  private async getRevenueMetrics(filter: DashboardFilter, startOfMonth: Date, endOfMonth: Date): Promise<any> {
     const bookings = await this.bookingRepository.find({
       where: {
         bookingDate: Between(startOfMonth, endOfMonth),
+        ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
       },
     });
 
@@ -427,18 +476,25 @@ export class SalesDashboardService {
   /**
    * Get recent activities
    */
-  private async getRecentActivities(salesPersonId: string): Promise<any[]> {
+  private async getRecentActivities(salesPersonId: string, leadIds: string[]): Promise<any[]> {
     const limit = 20;
 
     const [followups, tasks] = await Promise.all([
       this.followUpRepository.find({
-        where: { performedBy: salesPersonId },
+        where: {
+          performedBy: salesPersonId,
+          ...(leadIds.length ? { leadId: In(leadIds) } : {}),
+        },
         order: { followUpDate: 'DESC' },
         take: limit,
         relations: ['lead'],
       }),
       this.salesTaskRepository.find({
-        where: { assignedTo: salesPersonId, status: TaskStatus.COMPLETED },
+        where: {
+          assignedTo: salesPersonId,
+          status: TaskStatus.COMPLETED,
+          ...(leadIds.length ? { leadId: In(leadIds) } : {}),
+        },
         order: { completedAt: 'DESC' },
         take: limit,
         relations: ['lead'],
@@ -471,7 +527,11 @@ export class SalesDashboardService {
   /**
    * Get upcoming events
    */
-  private async getUpcomingEvents(salesPersonId: string): Promise<any> {
+  private async getUpcomingEvents(
+    salesPersonId: string,
+    leadIds: string[],
+    filter: DashboardFilter,
+  ): Promise<any> {
     const today = new Date();
     const nextWeek = addDays(today, 7);
 
@@ -480,6 +540,7 @@ export class SalesDashboardService {
         where: {
           performedBy: salesPersonId,
           nextFollowUpDate: Between(today, nextWeek),
+          ...(leadIds.length ? { leadId: In(leadIds) } : {}),
         },
         order: { nextFollowUpDate: 'ASC' },
         relations: ['lead'],
@@ -489,6 +550,8 @@ export class SalesDashboardService {
           assignedTo: salesPersonId,
           dueDate: Between(today, nextWeek),
           status: TaskStatus.PENDING,
+          ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
+          ...(leadIds.length ? { leadId: In(leadIds) } : {}),
         },
         order: { dueDate: 'ASC', dueTime: 'ASC' },
         relations: ['lead'],
@@ -497,6 +560,9 @@ export class SalesDashboardService {
         where: {
           assignedTo: salesPersonId,
           siteVisitStatus: SiteVisitStatus.SCHEDULED,
+          ...(filter.propertyId ? { propertyId: filter.propertyId } : {}),
+          ...(filter.towerId ? { towerId: filter.towerId } : {}),
+          ...(filter.flatId ? { flatId: filter.flatId } : {}),
         },
         // Note: Can't filter by date since site_visit_date column doesn't exist
         take: 10, // Limit to 10 upcoming site visits

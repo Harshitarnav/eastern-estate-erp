@@ -27,13 +27,25 @@ let CustomersService = class CustomersService {
         const year = date.getFullYear().toString().slice(-2);
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const startOfNextMonth = new Date(date.getFullYear(), date.getMonth() + 1, 1);
         const count = await this.customersRepository.count({
             where: {
-                createdAt: startOfMonth,
+                createdAt: (0, typeorm_2.Between)(startOfMonth, startOfNextMonth),
             },
         });
-        const sequence = (count + 1).toString().padStart(4, '0');
-        return `CU${year}${month}${sequence}`;
+        let sequenceNumber = count + 1;
+        while (true) {
+            const sequence = sequenceNumber.toString().padStart(4, '0');
+            const code = `CU${year}${month}${sequence}`;
+            const exists = await this.customersRepository.findOne({
+                where: { customerCode: code },
+                select: ['id'],
+            });
+            if (!exists) {
+                return code;
+            }
+            sequenceNumber += 1;
+        }
     }
     async create(createCustomerDto) {
         const existing = await this.customersRepository.findOne({
@@ -46,11 +58,14 @@ let CustomersService = class CustomersService {
             throw new common_1.ConflictException('Customer with this email or phone already exists');
         }
         const customerCode = await this.generateCustomerCode();
-        const { firstName, lastName, phone, isVIP, ...rest } = createCustomerDto;
+        const { firstName, lastName, phone, isVIP, propertyId, ...rest } = createCustomerDto;
         const fullName = `${firstName} ${lastName}`.trim();
         const metadata = {};
         if (isVIP !== undefined) {
             metadata.isVIP = isVIP;
+        }
+        if (propertyId) {
+            metadata.propertyId = propertyId;
         }
         const customer = this.customersRepository.create({
             ...rest,
@@ -91,6 +106,9 @@ let CustomersService = class CustomersService {
         }
         if (isActive !== undefined) {
             queryBuilder.andWhere('customer.isActive = :isActive', { isActive });
+        }
+        if (query.propertyId) {
+            queryBuilder.andWhere(`(customer.metadata ->> 'propertyId') = :pid OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))`, { pid: query.propertyId });
         }
         queryBuilder.orderBy(`customer.${sortBy}`, sortOrder);
         const total = await queryBuilder.getCount();

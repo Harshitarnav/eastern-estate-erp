@@ -10,8 +10,10 @@ import { customersService } from '@/services/customers.service';
 import { bookingsService } from '@/services/bookings.service';
 import { paymentsService } from '@/services/payments.service';
 import { materialsService } from '@/services/materials.service';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     properties: { total: 0, active: 0 },
@@ -81,6 +83,10 @@ export default function DashboardPage() {
     return `₹${amount.toFixed(0)}`;
   };
 
+  const totalBookingValue = stats.bookings.totalValue || 0;
+  const totalReceived = stats.payments.totalReceived || 0;
+  const totalPending = Math.max(totalBookingValue - totalReceived, stats.payments.pending || 0);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -100,6 +106,55 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-gray-600">Welcome to Eastern Estate ERP • Building Homes, Nurturing Bonds</p>
+        {user?.roles && (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {user.roles.map((r: any, idx: number) => (
+              <span key={idx} className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                {typeof r === 'string' ? r : (r.displayName || r.name || 'Role')}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sales Collections */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Collections (Received)</p>
+              <p className="text-3xl font-bold text-green-600">{formatCurrency(totalReceived)}</p>
+              <p className="text-xs text-gray-500 mt-1">Across {stats.payments.total || 0} payments</p>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <DollarSign className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-orange-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Pending Collections</p>
+              <p className="text-3xl font-bold text-orange-600">{formatCurrency(totalPending)}</p>
+              <p className="text-xs text-gray-500 mt-1">Pending vs booked</p>
+            </div>
+            <div className="bg-orange-50 p-3 rounded-lg">
+              <AlertTriangle className="h-8 w-8 text-orange-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 mb-1">Total Bookings Value</p>
+              <p className="text-3xl font-bold text-blue-600">{formatCurrency(totalBookingValue)}</p>
+              <p className="text-xs text-gray-500 mt-1">{stats.bookings.total || 0} bookings</p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <Briefcase className="h-8 w-8 text-blue-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Key Metrics */}

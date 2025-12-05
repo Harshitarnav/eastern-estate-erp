@@ -18,15 +18,17 @@ import {
   Users,
   TrendingUp,
   AlertCircle,
+  MapPin,
 } from 'lucide-react';
 import { customersService, Customer, CustomerFilters } from '@/services/customers.service';
+import { propertiesService } from '@/services/properties.service';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
 
 export default function CustomersPage() {
   const router = useRouter();
-  const { selectedProperties } = usePropertyStore();
+  const { selectedProperties, properties, setProperties, setSelectedProperties } = usePropertyStore();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,7 +49,7 @@ export default function CustomersPage() {
       setLoading(true);
       const response = await customersService.getCustomers({
         ...filters,
-        propertyId: selectedProperties.length > 0 ? selectedProperties[0] : undefined,
+        propertyId: filters.propertyId || (selectedProperties.length > 0 ? selectedProperties[0] : undefined),
       } as any);
       setCustomers(response.data);
       setMeta(response.meta);
@@ -63,6 +65,20 @@ export default function CustomersPage() {
   useEffect(() => {
     fetchCustomers();
   }, [filters, selectedProperties]);
+
+  useEffect(() => {
+    // Load properties once for the selector
+    if (properties.length === 0) {
+      (async () => {
+        try {
+          const res = await propertiesService.getProperties({ limit: 200, isActive: true });
+          setProperties(res.data || []);
+        } catch (err) {
+          console.error('Failed to load properties', err);
+        }
+      })();
+    }
+  }, [properties.length, setProperties]);
 
   const stats = useMemo(() => {
     const total = meta.total || (customers || []).length;
@@ -259,6 +275,29 @@ export default function CustomersPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <select
+            value={filters.propertyId || selectedProperties[0] || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '') {
+                setSelectedProperties([]);
+                setFilters({ ...filters, propertyId: undefined, page: 1 });
+              } else {
+                setSelectedProperties([value]);
+                setFilters({ ...filters, propertyId: value, page: 1 });
+              }
+            }}
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A8211B]"
+            title="Filter by property"
+          >
+            <option value="">All Properties</option>
+            {properties.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+
+          <select
             value={filters.type || ''}
             onChange={(e) => setFilters({ ...filters, type: e.target.value || undefined, page: 1 })}
             className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#A8211B]"
@@ -355,7 +394,18 @@ export default function CustomersPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {((customers || [])).map((customer) => (
+            {((customers || [])).map((customer) => {
+              const displayName =
+                customer.fullName ||
+                `${customer.firstName || ''} ${customer.lastName || ''}`.trim() ||
+                customer.customerCode ||
+                customer.email ||
+                customer.phoneNumber ||
+                customer.phone ||
+                'Customer';
+              const contactPhone = customer.phoneNumber || customer.phone || 'Phone unavailable';
+              const contactEmail = customer.email || 'Email unavailable';
+              return (
               <div
                 key={customer.id}
                 className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
@@ -367,10 +417,11 @@ export default function CustomersPage() {
                 >
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold truncate" style={{ color: brandPalette.secondary }}>
-                      {customer.firstName} {customer.lastName}
+                      {displayName}
                     </h3>
                     <p className="text-xs uppercase tracking-wide text-gray-600">
                       {customer.type}
+                      {customer.customerCode ? ` • ${customer.customerCode}` : ''}
                     </p>
                   </div>
                   {customer.isVIP && (
@@ -384,12 +435,20 @@ export default function CustomersPage() {
                   <div className="flex flex-col gap-2 text-sm text-gray-600">
                     <span className="flex items-center gap-2 truncate">
                       <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{customer.phone}</span>
+                      <span className="truncate">{contactPhone}</span>
                     </span>
                     <span className="flex items-center gap-2 truncate">
                       <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{customer.email}</span>
+                      <span className="truncate">{contactEmail}</span>
                     </span>
+                    {(customer.city || customer.state) && (
+                      <span className="flex items-center gap-2 truncate text-xs text-gray-500">
+                        <MapPin className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                        <span className="truncate">
+                          {[customer.city, customer.state].filter(Boolean).join(', ')}
+                        </span>
+                      </span>
+                    )}
                   </div>
 
                   <div className="border rounded-xl p-3 bg-gray-50 flex items-center justify-between">
@@ -408,6 +467,27 @@ export default function CustomersPage() {
                     >
                       {customer.kycStatus.replace(/_/g, ' ')}
                     </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg bg-gray-50 p-2">
+                      <p className="font-semibold text-gray-800">
+                        {formatIndianNumber(customer.totalBookings || 0)}
+                      </p>
+                      <p className="text-[11px] text-gray-500">Bookings</p>
+                    </div>
+                    <div className="rounded-lg bg-gray-50 p-2">
+                      <p className="font-semibold text-gray-800">
+                        {formatIndianNumber(customer.totalPurchases || 0)}
+                      </p>
+                      <p className="text-[11px] text-gray-500">Purchases</p>
+                    </div>
+                    <div className="rounded-lg bg-gray-50 p-2">
+                      <p className="font-semibold text-gray-800">
+                        {formatAmount(customer.totalSpent || 0)}
+                      </p>
+                      <p className="text-[11px] text-gray-500">Spent</p>
+                    </div>
                   </div>
 
                   <div className="flex gap-2">
@@ -439,7 +519,8 @@ export default function CustomersPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           {meta.totalPages > 1 && (

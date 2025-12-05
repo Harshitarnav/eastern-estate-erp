@@ -20,16 +20,34 @@ let SalesDashboardController = class SalesDashboardController {
     constructor(salesDashboardService) {
         this.salesDashboardService = salesDashboardService;
     }
-    getDashboardMetrics(salesPersonId) {
-        return this.salesDashboardService.getDashboardMetrics(salesPersonId);
+    getDashboardMetrics(salesPersonId, agentId, propertyId, towerId, flatId, dateFrom, dateTo, req) {
+        const user = req?.user;
+        const roles = Array.isArray(user?.roles) ? user.roles : [];
+        const isManager = roles.some((r) => ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r));
+        const effectiveSalesPersonId = isManager ? agentId || salesPersonId : user?.id || salesPersonId;
+        return this.salesDashboardService.getDashboardMetrics({
+            salesPersonId: effectiveSalesPersonId,
+            propertyId,
+            towerId,
+            flatId,
+            dateFrom,
+            dateTo,
+        });
     }
 };
 exports.SalesDashboardController = SalesDashboardController;
 __decorate([
     (0, common_1.Get)(':salesPersonId'),
     __param(0, (0, common_1.Param)('salesPersonId')),
+    __param(1, (0, common_1.Query)('agentId')),
+    __param(2, (0, common_1.Query)('propertyId')),
+    __param(3, (0, common_1.Query)('towerId')),
+    __param(4, (0, common_1.Query)('flatId')),
+    __param(5, (0, common_1.Query)('dateFrom')),
+    __param(6, (0, common_1.Query)('dateTo')),
+    __param(7, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesDashboardController.prototype, "getDashboardMetrics", null);
 exports.SalesDashboardController = SalesDashboardController = __decorate([

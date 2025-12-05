@@ -81,6 +81,18 @@ export default function BookingViewPage() {
     });
   };
 
+  const customerName =
+    booking?.customer?.full_name ||
+    booking?.customer?.fullName ||
+    [booking?.customer?.first_name, booking?.customer?.last_name].filter(Boolean).join(' ') ||
+    'N/A';
+  const customerPhone =
+    booking?.customer?.phone_number ||
+    booking?.customer?.phone ||
+    booking?.customer?.phoneNumber ||
+    'N/A';
+  const customerEmail = booking?.customer?.email || 'N/A';
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -239,7 +251,9 @@ export default function BookingViewPage() {
                   <User className="w-4 h-4" />
                   Customer
                 </p>
-                <p className="font-medium">{booking.customer?.full_name || 'N/A'}</p>
+                <p className="font-medium">{customerName}</p>
+                <p className="text-xs text-gray-500 mt-1">{customerPhone}</p>
+                <p className="text-xs text-gray-500">{customerEmail}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 flex items-center gap-2">
@@ -253,7 +267,10 @@ export default function BookingViewPage() {
                   <Home className="w-4 h-4" />
                   Flat/Unit
                 </p>
-                <p className="font-medium">{booking.flat?.flatNumber || 'N/A'}</p>
+                <p className="font-medium">{booking.flat?.flatNumber || booking.flat?.name || 'N/A'}</p>
+                {booking.flat?.towerId && (
+                  <p className="text-xs text-gray-500">Tower: {booking.flat?.towerId}</p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-600 flex items-center gap-2">
@@ -295,8 +312,82 @@ export default function BookingViewPage() {
                 <p className="text-sm text-gray-600">Parking Charges</p>
                 <p className="font-medium">{formatAmount(booking.parkingCharges)}</p>
               </div>
+              <div>
+                <p className="text-sm text-gray-600">Other Charges</p>
+                <p className="font-medium">{formatAmount(booking.otherCharges)}</p>
+              </div>
+              {booking.discountReason && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-600">Discount Reason</p>
+                  <p className="font-medium">{booking.discountReason}</p>
+                </div>
+              )}
+              {booking.paymentPlan && (
+                <div>
+                  <p className="text-sm text-gray-600">Payment Plan</p>
+                  <p className="font-medium">{booking.paymentPlan}</p>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Payment References */}
+          {(booking.tokenPaymentMode ||
+            booking.rtgsNumber ||
+            booking.utrNumber ||
+            booking.chequeNumber ||
+            booking.paymentBank ||
+            booking.paymentBranch) && (
+            <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
+                Payment References
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                {booking.tokenPaymentMode && (
+                  <div>
+                    <p className="text-sm text-gray-600">Token Payment Mode</p>
+                    <p className="font-medium">{booking.tokenPaymentMode}</p>
+                  </div>
+                )}
+                {booking.rtgsNumber && (
+                  <div>
+                    <p className="text-sm text-gray-600">RTGS Number</p>
+                    <p className="font-medium font-mono">{booking.rtgsNumber}</p>
+                  </div>
+                )}
+                {booking.utrNumber && (
+                  <div>
+                    <p className="text-sm text-gray-600">UTR Number</p>
+                    <p className="font-medium font-mono">{booking.utrNumber}</p>
+                  </div>
+                )}
+                {booking.chequeNumber && (
+                  <div>
+                    <p className="text-sm text-gray-600">Cheque Number</p>
+                    <p className="font-medium font-mono">{booking.chequeNumber}</p>
+                  </div>
+                )}
+                {booking.chequeDate && (
+                  <div>
+                    <p className="text-sm text-gray-600">Cheque Date</p>
+                    <p className="font-medium">{formatDate(booking.chequeDate)}</p>
+                  </div>
+                )}
+                {booking.paymentBank && (
+                  <div>
+                    <p className="text-sm text-gray-600">Bank</p>
+                    <p className="font-medium">{booking.paymentBank}</p>
+                  </div>
+                )}
+                {booking.paymentBranch && (
+                  <div>
+                    <p className="text-sm text-gray-600">Branch</p>
+                    <p className="font-medium">{booking.paymentBranch}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Agreement Details */}
           {(booking.agreementNumber || booking.agreementDate) && (
@@ -348,6 +439,59 @@ export default function BookingViewPage() {
                     <p className="font-medium font-mono">{booking.loanApplicationNumber}</p>
                   </div>
                 )}
+                {booking.loanApprovalDate && (
+                  <div>
+                    <p className="text-sm text-gray-600">Approval Date</p>
+                    <p className="font-medium">{formatDate(booking.loanApprovalDate)}</p>
+                  </div>
+                )}
+                {booking.loanDisbursementDate && (
+                  <div>
+                    <p className="text-sm text-gray-600">Disbursement Date</p>
+                    <p className="font-medium">{formatDate(booking.loanDisbursementDate)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Nominees & Co-Applicants */}
+          {(booking.nominee1Name ||
+            booking.nominee2Name ||
+            booking.coApplicantName) && (
+            <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
+                Nominees & Co-Applicants
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                {booking.nominee1Name && (
+                  <div>
+                    <p className="text-sm text-gray-600">Nominee 1</p>
+                    <p className="font-medium">{booking.nominee1Name}</p>
+                    {booking.nominee1Relation && (
+                      <p className="text-xs text-gray-500">{booking.nominee1Relation}</p>
+                    )}
+                  </div>
+                )}
+                {booking.nominee2Name && (
+                  <div>
+                    <p className="text-sm text-gray-600">Nominee 2</p>
+                    <p className="font-medium">{booking.nominee2Name}</p>
+                    {booking.nominee2Relation && (
+                      <p className="text-xs text-gray-500">{booking.nominee2Relation}</p>
+                    )}
+                  </div>
+                )}
+                {booking.coApplicantName && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-600">Co-Applicant</p>
+                    <p className="font-medium">{booking.coApplicantName}</p>
+                    <p className="text-xs text-gray-500">
+                      {booking.coApplicantRelation ? `${booking.coApplicantRelation} • ` : ''}
+                      {booking.coApplicantPhone || booking.coApplicantEmail || '—'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -359,6 +503,30 @@ export default function BookingViewPage() {
                 Notes
               </h2>
               <p className="text-gray-700 whitespace-pre-wrap">{booking.notes}</p>
+            </div>
+          )}
+          {booking.specialTerms && (
+            <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
+                Special Terms
+              </h2>
+              <p className="text-gray-700 whitespace-pre-wrap">{booking.specialTerms}</p>
+            </div>
+          )}
+          {booking.documents && booking.documents.length > 0 && (
+            <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+              <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
+                Documents
+              </h2>
+              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+                {booking.documents.map((doc, idx) => (
+                  <li key={idx}>
+                    <a href={doc} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                      {doc}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>

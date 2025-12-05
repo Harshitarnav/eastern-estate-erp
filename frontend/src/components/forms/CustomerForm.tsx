@@ -7,13 +7,15 @@ interface CustomerFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel?: () => void;
   loading?: boolean;
+  propertyOptions?: { value: string; label: string }[];
 }
 
 export default function CustomerForm({ 
   initialData, 
   onSubmit, 
   onCancel,
-  loading = false
+  loading = false,
+  propertyOptions = [],
 }: CustomerFormProps) {
   
   const sections: FormSection[] = [
@@ -99,6 +101,22 @@ export default function CustomerForm({
         },
       ],
     },
+    ...(propertyOptions.length > 0
+      ? [
+          {
+            title: 'Property Association',
+            fields: [
+              {
+                name: 'propertyId',
+                label: 'Property',
+                type: 'select',
+                required: false,
+                options: [{ value: '', label: 'Not linked to a property' }, ...propertyOptions],
+              },
+            ],
+          } as FormSection,
+        ]
+      : []),
     {
       title: 'Customer Classification',
       fields: [

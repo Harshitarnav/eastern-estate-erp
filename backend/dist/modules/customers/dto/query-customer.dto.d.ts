@@ -9,6 +9,7 @@ export declare class QueryCustomerDto {
     createdFrom?: string;
     createdTo?: string;
     isActive?: boolean;
+    propertyId?: string;
     page?: number;
     limit?: number;
     sortBy?: string;

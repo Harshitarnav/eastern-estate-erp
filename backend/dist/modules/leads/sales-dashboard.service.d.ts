@@ -4,6 +4,14 @@ import { FollowUp } from './entities/followup.entity';
 import { SalesTask } from './entities/sales-task.entity';
 import { SalesTarget } from '../employees/entities/sales-target.entity';
 import { Booking } from '../bookings/entities/booking.entity';
+export interface DashboardFilter {
+    salesPersonId: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+}
 export interface DashboardMetrics {
     performance: {
         currentTarget: any;
@@ -65,7 +73,9 @@ export declare class SalesDashboardService {
     private bookingRepository;
     private readonly logger;
     constructor(leadRepository: Repository<Lead>, followUpRepository: Repository<FollowUp>, salesTaskRepository: Repository<SalesTask>, salesTargetRepository: Repository<SalesTarget>, bookingRepository: Repository<Booking>);
-    getDashboardMetrics(salesPersonId: string): Promise<DashboardMetrics>;
+    private buildDateRange;
+    private buildLeadWhere;
+    getDashboardMetrics(filter: DashboardFilter): Promise<DashboardMetrics>;
     private getCurrentTarget;
     private buildPerformanceMetrics;
     private getLeadMetrics;

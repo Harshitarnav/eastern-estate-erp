@@ -36,6 +36,11 @@ export declare class CustomerResponseDto {
     isBlacklisted: boolean;
     createdAt: string | Date;
     updatedAt: string | Date;
+    fullName?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    phoneNumber?: string;
+    propertyId?: string;
     static fromEntity(customer: Customer): CustomerResponseDto;
     static fromEntities(customers: Customer[]): CustomerResponseDto[];
 }

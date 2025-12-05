@@ -109,8 +109,8 @@ export default function CustomerViewPage() {
             <ArrowLeft className="w-5 h-5" style={{ color: brandPalette.secondary }} />
           </button>
           <div>
-            <h1 className="text-3xl font-bold" style={{ color: brandPalette.secondary }}>
-              {customer.firstName} {customer.lastName}
+            <h1 className="text-3xl font-bold truncate" style={{ color: brandPalette.secondary }}>
+              {customer.fullName || `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Customer'}
             </h1>
             <p className="text-gray-600 text-sm mt-1">
               Customer Code: <span className="font-mono font-semibold">{customer.customerCode}</span>
@@ -200,14 +200,14 @@ export default function CustomerViewPage() {
                 <Mail className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium">{customer.email}</p>
+                  <p className="font-medium">{customer.email || 'Not provided'}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-600">Phone</p>
-                  <p className="font-medium">{customer.phone}</p>
+                  <p className="font-medium">{(customer as any).phoneNumber || customer.phone || 'Not provided'}</p>
                 </div>
               </div>
               {customer.alternatePhone && (
@@ -219,20 +219,22 @@ export default function CustomerViewPage() {
                   </div>
                 </div>
               )}
-              {customer.address && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-1" />
-                  <div>
-                    <p className="text-sm text-gray-600">Address</p>
-                    <p className="font-medium">
-                      {customer.address}
-                      {customer.city && `, ${customer.city}`}
-                      {customer.state && `, ${customer.state}`}
-                      {customer.pincode && ` - ${customer.pincode}`}
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-gray-400 mt-1" />
+                <div>
+                  <p className="text-sm text-gray-600">Address</p>
+                  <p className="font-medium whitespace-pre-line">
+                    {customer.address || (customer as any).addressLine1 || 'Not provided'}
+                    {customer.addressLine2 || (customer as any).addressLine2
+                      ? `\n${customer.addressLine2 || (customer as any).addressLine2}`
+                      : ''}
+                    {customer.city || customer.state || customer.pincode
+                      ? `\n${[customer.city, customer.state, customer.pincode].filter(Boolean).join(', ')}`
+                      : ''}
+                    {customer.country ? `\n${customer.country}` : ''}
+                  </p>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -260,10 +262,16 @@ export default function CustomerViewPage() {
                   <p className="font-medium">{customer.occupation}</p>
                 </div>
               )}
-              {customer.company && (
+              {(customer as any).companyName || customer.company && (
                 <div>
                   <p className="text-sm text-gray-600">Company</p>
-                  <p className="font-medium">{customer.company}</p>
+                  <p className="font-medium">{(customer as any).companyName || customer.company}</p>
+                </div>
+              )}
+              {(customer as any).annualIncome && (
+                <div>
+                  <p className="text-sm text-gray-600">Annual Income</p>
+                  <p className="font-medium">₹{formatIndianNumber((customer as any).annualIncome)}</p>
                 </div>
               )}
             </div>

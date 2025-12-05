@@ -2,7 +2,7 @@ import { CustomerType, KYCStatus } from '../entities/customer.entity';
 export declare class CreateCustomerDto {
     firstName: string;
     lastName: string;
-    email: string;
+    email?: string;
     phone: string;
     alternatePhone?: string;
     dateOfBirth?: string;
@@ -22,4 +22,5 @@ export declare class CreateCustomerDto {
     isActive?: boolean;
     isVIP?: boolean;
     kycStatus?: KYCStatus;
+    propertyId?: string;
 }
