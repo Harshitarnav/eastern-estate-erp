@@ -17,6 +17,8 @@ export declare class LeadResponseDto {
     leadScore: number;
     notes: string;
     propertyId: string;
+    towerId: string;
+    flatId: string;
     interestedPropertyTypes: string;
     budgetMin: number;
     budgetMax: number;

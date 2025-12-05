@@ -29,7 +29,10 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
         const task = this.salesTaskRepository.create(createTaskDto);
         return this.salesTaskRepository.save(task);
     }
-    async findByUser(userId, status) {
+    async findByUser(userId, status, user) {
+        if (user && !this.isManager(user) && user.id !== userId) {
+            throw new common_1.ForbiddenException('You are not allowed to view these tasks');
+        }
         const where = {
             assignedTo: userId,
             isActive: true,
@@ -43,7 +46,10 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
             relations: ['lead', 'assignedByUser'],
         });
     }
-    async getTodayTasks(userId) {
+    async getTodayTasks(userId, user) {
+        if (user && !this.isManager(user) && user.id !== userId) {
+            throw new common_1.ForbiddenException('You are not allowed to view these tasks');
+        }
         const today = (0, date_fns_1.startOfDay)(new Date());
         const endToday = (0, date_fns_1.endOfDay)(new Date());
         return this.salesTaskRepository.find({
@@ -57,7 +63,10 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
             relations: ['lead'],
         });
     }
-    async getUpcomingTasks(userId, days = 7) {
+    async getUpcomingTasks(userId, days = 7, user) {
+        if (user && !this.isManager(user) && user.id !== userId) {
+            throw new common_1.ForbiddenException('You are not allowed to view these tasks');
+        }
         const today = (0, date_fns_1.startOfDay)(new Date());
         const futureDate = (0, date_fns_1.endOfDay)((0, date_fns_1.addDays)(today, days));
         return this.salesTaskRepository.find({
@@ -71,7 +80,10 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
             relations: ['lead'],
         });
     }
-    async getOverdueTasks(userId) {
+    async getOverdueTasks(userId, user) {
+        if (user && !this.isManager(user) && user.id !== userId) {
+            throw new common_1.ForbiddenException('You are not allowed to view these tasks');
+        }
         const today = (0, date_fns_1.startOfDay)(new Date());
         const tasks = await this.salesTaskRepository.find({
             where: {
@@ -106,13 +118,15 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
             return (0, date_fns_1.isBefore)(reminderTime, now) && (0, date_fns_1.isBefore)(now, task.dueDate);
         });
     }
-    async markReminderSent(taskId) {
+    async markReminderSent(taskId, user) {
+        await this.findOne(taskId, user);
         await this.salesTaskRepository.update(taskId, {
             reminderSent: true,
             reminderSentAt: new Date(),
         });
     }
-    async completeTask(taskId, outcome, notes) {
+    async completeTask(taskId, outcome, notes, user) {
+        await this.findOne(taskId, user);
         const updateData = {
             status: sales_task_entity_1.TaskStatus.COMPLETED,
             completedAt: new Date(),
@@ -122,17 +136,21 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
         if (notes)
             updateData.notes = notes;
         await this.salesTaskRepository.update(taskId, updateData);
-        return this.findOne(taskId);
+        return this.findOne(taskId, user);
     }
-    async updateStatus(taskId, status) {
+    async updateStatus(taskId, status, user) {
+        await this.findOne(taskId, user);
         const updateData = { status };
         if (status === sales_task_entity_1.TaskStatus.COMPLETED) {
             updateData.completedAt = new Date();
         }
         await this.salesTaskRepository.update(taskId, updateData);
-        return this.findOne(taskId);
+        return this.findOne(taskId, user);
     }
-    async getStatistics(userId, startDate, endDate) {
+    async getStatistics(userId, startDate, endDate, user) {
+        if (user && !this.isManager(user) && user.id !== userId) {
+            throw new common_1.ForbiddenException('You are not allowed to view these tasks');
+        }
         const where = {
             assignedTo: userId,
             isActive: true,
@@ -153,7 +171,10 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
             avgCompletionTime: this.calculateAvgCompletionTime(tasks),
         };
     }
-    async getTasksByDateRange(userId, startDate, endDate) {
+    async getTasksByDateRange(userId, startDate, endDate, user) {
+        if (user && !this.isManager(user) && user.id !== userId) {
+            throw new common_1.ForbiddenException('You are not allowed to view these tasks');
+        }
         const tasks = await this.salesTaskRepository.find({
             where: {
                 assignedTo: userId,
@@ -173,7 +194,7 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
         });
         return groupedTasks;
     }
-    async findOne(id) {
+    async findOne(id, user) {
         const task = await this.salesTaskRepository.findOne({
             where: { id, isActive: true },
             relations: ['lead', 'assignedToUser', 'assignedByUser'],
@@ -181,16 +202,30 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
         if (!task) {
             throw new common_1.NotFoundException(`Task with ID ${id} not found`);
         }
+        if (user && !this.isManager(user) && !this.isOwner(task, user.id)) {
+            throw new common_1.ForbiddenException('You are not allowed to view this task');
+        }
         return task;
     }
-    async update(id, updateData) {
-        await this.salesTaskRepository.update(id, updateData);
-        return this.findOne(id);
+    async update(id, updateData, user) {
+        const existing = await this.findOne(id, user);
+        const safeUpdate = { ...updateData };
+        if (user) {
+            safeUpdate.assignedTo = this.isManager(user) && updateData.assignedTo
+                ? updateData.assignedTo
+                : existing.assignedTo;
+            safeUpdate.assignedBy = user.id;
+            safeUpdate.createdBy = existing.createdBy ?? user.id;
+        }
+        await this.salesTaskRepository.update(id, safeUpdate);
+        return this.findOne(id, user);
     }
-    async remove(id) {
+    async remove(id, user) {
+        await this.findOne(id, user);
         await this.salesTaskRepository.update(id, { isActive: false });
     }
-    async cancelTask(id, reason) {
+    async cancelTask(id, reason, user) {
+        await this.findOne(id, user);
         const updateData = {
             status: sales_task_entity_1.TaskStatus.CANCELLED,
         };
@@ -198,7 +233,14 @@ let SalesTaskService = SalesTaskService_1 = class SalesTaskService {
             updateData.notes = reason;
         }
         await this.salesTaskRepository.update(id, updateData);
-        return this.findOne(id);
+        return this.findOne(id, user);
+    }
+    isOwner(task, userId) {
+        return task.assignedTo === userId || task.createdBy === userId || task.assignedBy === userId;
+    }
+    isManager(user) {
+        const roles = user?.roles?.map((r) => r.name) ?? [];
+        return roles.some((r) => ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r));
     }
     groupByType(tasks) {
         const grouped = {};

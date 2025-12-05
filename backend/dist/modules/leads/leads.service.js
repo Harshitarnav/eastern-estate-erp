@@ -30,10 +30,11 @@ let LeadsService = class LeadsService {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+        const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
         const count = await this.leadsRepository.count({
             where: {
-                createdAt: startOfMonth,
+                createdAt: (0, typeorm_2.Between)(startOfMonth, endOfMonth),
             },
         });
         const sequence = (count + 1).toString().padStart(4, '0');
@@ -61,8 +62,8 @@ let LeadsService = class LeadsService {
         const savedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(savedLead);
     }
-    async findAll(query) {
-        const { search, status, source, priority, assignedTo, isQualified, needsHomeLoan, hasSiteVisit, minBudget, maxBudget, createdFrom, createdTo, followUpDue, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
+    async findAll(query, user) {
+        const { search, status, source, priority, assignedTo, propertyId, towerId, flatId, isQualified, needsHomeLoan, hasSiteVisit, minBudget, maxBudget, createdFrom, createdTo, followUpDue, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const queryBuilder = this.leadsRepository
             .createQueryBuilder('lead')
             .leftJoinAndMapOne('lead.assignedUser', user_entity_1.User, 'assignedUser', '"assignedUser"."id"::text = "lead"."assigned_to"');
@@ -78,9 +79,19 @@ let LeadsService = class LeadsService {
         if (priority) {
             queryBuilder.andWhere('lead.priority = :priority', { priority });
         }
-        if (assignedTo) {
+        if (propertyId) {
+            queryBuilder.andWhere('lead.propertyId = :propertyId', { propertyId });
+        }
+        if (towerId) {
+            queryBuilder.andWhere('lead.towerId = :towerId', { towerId });
+        }
+        if (flatId) {
+            queryBuilder.andWhere('lead.flatId = :flatId', { flatId });
+        }
+        const effectiveAssignedTo = this.isManager(user) && assignedTo ? assignedTo : !this.isManager(user) && user?.id ? user.id : undefined;
+        if (effectiveAssignedTo) {
             queryBuilder.andWhere('lead.assignedTo = :assignedTo', {
-                assignedTo,
+                assignedTo: effectiveAssignedTo,
             });
         }
         if (isQualified !== undefined) {
@@ -182,13 +193,20 @@ let LeadsService = class LeadsService {
         lead.isActive = false;
         await this.leadsRepository.save(lead);
     }
-    async assignLead(id, userId) {
+    async assignLead(id, userId, assignedBy) {
         const lead = await this.leadsRepository.findOne({ where: { id } });
         if (!lead) {
             throw new common_1.NotFoundException(`Lead with ID ${id} not found`);
         }
         lead.assignedTo = userId;
         lead.assignedAt = new Date();
+        const history = Array.isArray(lead.assignmentHistory) ? lead.assignmentHistory : [];
+        history.push({
+            assignedBy: assignedBy || 'system',
+            assignedTo: userId,
+            at: new Date(),
+        });
+        lead.assignmentHistory = history;
         const updatedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(updatedLead);
     }
@@ -298,11 +316,17 @@ let LeadsService = class LeadsService {
         return { isDuplicate: false };
     }
     async getAgentDashboardStats(agentId, query) {
-        const { startDate, endDate } = query;
+        const { startDate, endDate, propertyId, towerId, flatId } = query;
         const baseQuery = this.leadsRepository
             .createQueryBuilder('lead')
             .where('lead.assignedTo = :agentId', { agentId })
             .andWhere('lead.isActive = true');
+        if (propertyId)
+            baseQuery.andWhere('lead.propertyId = :propertyId', { propertyId });
+        if (towerId)
+            baseQuery.andWhere('lead.towerId = :towerId', { towerId });
+        if (flatId)
+            baseQuery.andWhere('lead.flatId = :flatId', { flatId });
         if (startDate) {
             baseQuery.andWhere('lead.createdAt >= :startDate', { startDate });
         }
@@ -347,11 +371,17 @@ let LeadsService = class LeadsService {
         };
     }
     async getAdminDashboardStats(query) {
-        const { startDate, endDate } = query;
+        const { startDate, endDate, propertyId, towerId, flatId } = query;
         const baseQuery = this.leadsRepository
             .createQueryBuilder('lead')
             .leftJoinAndSelect('lead.assignedUser', 'assignedUser')
             .where('lead.isActive = true');
+        if (propertyId)
+            baseQuery.andWhere('lead.propertyId = :propertyId', { propertyId });
+        if (towerId)
+            baseQuery.andWhere('lead.towerId = :towerId', { towerId });
+        if (flatId)
+            baseQuery.andWhere('lead.flatId = :flatId', { flatId });
         if (startDate) {
             baseQuery.andWhere('lead.createdAt >= :startDate', { startDate });
         }
@@ -372,7 +402,23 @@ let LeadsService = class LeadsService {
             acc[lead.source] = (acc[lead.source] || 0) + 1;
             return acc;
         }, {})).map(([source, count]) => ({ source, count }));
-        const propertyWiseBreakdown = [];
+        const propertyGroups = leads.reduce((acc, lead) => {
+            const key = lead.propertyId || 'unassigned';
+            if (!acc[key]) {
+                acc[key] = { leads: 0, conversions: 0 };
+            }
+            acc[key].leads += 1;
+            if (lead.status === 'WON')
+                acc[key].conversions += 1;
+            return acc;
+        }, {});
+        const propertyWiseBreakdown = Object.entries(propertyGroups).map(([propertyId, stats]) => ({
+            propertyId,
+            propertyName: propertyId,
+            leads: stats.leads,
+            conversions: stats.conversions,
+            conversionRate: stats.leads > 0 ? (stats.conversions / stats.leads) * 100 : 0,
+        }));
         const agentStats = Array.from(uniqueAgents).map(agentId => {
             const agentLeads = leads.filter(l => l.assignedTo === agentId);
             const agentConversions = agentLeads.filter(l => l.status === 'WON').length;
@@ -453,6 +499,9 @@ let LeadsService = class LeadsService {
                     source: row.source,
                     status: row.status || 'NEW',
                     notes: row.notes,
+                    propertyId: row.propertyId || importDto.propertyId,
+                    towerId: row.towerId || importDto.towerId,
+                    flatId: row.flatId || importDto.flatId,
                 };
                 const created = await this.create(createDto);
                 result.successCount++;
@@ -468,6 +517,10 @@ let LeadsService = class LeadsService {
             }
         }
         return result;
+    }
+    isManager(user) {
+        const roles = user?.roles?.map((r) => r.name) ?? [];
+        return roles.some((r) => ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r));
     }
 };
 exports.LeadsService = LeadsService;

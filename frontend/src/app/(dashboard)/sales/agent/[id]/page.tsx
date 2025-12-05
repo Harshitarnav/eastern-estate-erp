@@ -3,27 +3,54 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { leadsService } from '@/services/leads.service';
+import { propertiesService } from '@/services/properties.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, TrendingUp, Clock, Target } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function AgentDashboardPage() {
   const params = useParams();
   const agentId = params.id as string;
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [propertyId, setPropertyId] = useState('');
+  const [towerId, setTowerId] = useState('');
+  const [flatId, setFlatId] = useState('');
 
   useEffect(() => {
     loadDashboard();
+    loadProperties();
   }, [agentId]);
+
+  useEffect(() => {
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId, towerId, flatId]);
 
   const loadDashboard = async () => {
     try {
-      const data = await leadsService.getAgentDashboard(agentId);
+      const data = await leadsService.getAgentDashboardStats(agentId, {
+        propertyId: propertyId || undefined,
+        towerId: towerId || undefined,
+        flatId: flatId || undefined,
+      });
       setStats(data);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProperties = async () => {
+    try {
+      const data = await propertiesService.getProperties();
+      setProperties(Array.isArray(data) ? data : data.data || []);
+    } catch (error) {
+      console.error('Error loading properties:', error);
     }
   };
 
@@ -33,7 +60,40 @@ export default function AgentDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">My Dashboard</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
+        <div className="flex flex-wrap gap-2 items-center">
+          <Select
+            value={propertyId || 'all'}
+            onValueChange={(v) => setPropertyId(v === 'all' ? '' : v)}
+          >
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="Property" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Properties</SelectItem>
+              {properties.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>🏢 {p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Tower ID"
+            className="h-9 w-[160px]"
+            value={towerId}
+            onChange={(e) => setTowerId(e.target.value)}
+          />
+          <Input
+            placeholder="Flat ID"
+            className="h-9 w-[160px]"
+            value={flatId}
+            onChange={(e) => setFlatId(e.target.value)}
+          />
+          <Button variant="outline" size="sm" onClick={() => { setPropertyId(''); setTowerId(''); setFlatId(''); }}>
+            Clear Filters
+          </Button>
+        </div>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

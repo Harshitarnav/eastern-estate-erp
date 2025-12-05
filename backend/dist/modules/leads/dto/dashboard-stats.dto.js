@@ -29,6 +29,21 @@ __decorate([
     (0, class_validator_1.IsUUID)('4'),
     __metadata("design:type", String)
 ], GetDashboardStatsDto.prototype, "agentId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)('4'),
+    __metadata("design:type", String)
+], GetDashboardStatsDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)('4'),
+    __metadata("design:type", String)
+], GetDashboardStatsDto.prototype, "towerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)('4'),
+    __metadata("design:type", String)
+], GetDashboardStatsDto.prototype, "flatId", void 0);
 class AgentDashboardStatsDto {
 }
 exports.AgentDashboardStatsDto = AgentDashboardStatsDto;

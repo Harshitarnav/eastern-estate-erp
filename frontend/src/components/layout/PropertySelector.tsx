@@ -107,22 +107,9 @@ export function PropertySelector() {
       }));
       
       setProperties(mappedProperties);
-      
       console.log('[PropertySelector] Mapped properties:', mappedProperties);
       console.log('[PropertySelector] Current selectedProperties before auto-select:', selectedProperties);
-      
-      // Auto-select first property if none selected - use setTimeout to ensure store is updated
-      setTimeout(() => {
-        const currentSelected = usePropertyStore.getState().selectedProperties;
-        console.log('[PropertySelector] Checking auto-select - currentSelected:', currentSelected);
-        
-        if (currentSelected.length === 0 && mappedProperties.length > 0) {
-          console.log('[PropertySelector] Auto-selecting first property:', mappedProperties[0]);
-          toggleProperty(mappedProperties[0].id);
-        } else {
-          console.log('[PropertySelector] Skipping auto-select - already have', currentSelected.length, 'selected');
-        }
-      }, 100);
+      // NOTE: Auto-select disabled to allow "All properties" (no filter) view.
     } catch (error) {
       console.error('[PropertySelector] Failed to load properties:', error);
     } finally {
@@ -138,7 +125,9 @@ export function PropertySelector() {
     ? 'Loading properties...' 
     : properties.length === 0 
       ? 'No properties found' 
-      : getSelectedPropertyNames();
+      : selectedProperties.length === 0
+        ? 'All properties'
+        : getSelectedPropertyNames();
       
   const allSelected = selectedProperties.length === properties.length && properties.length > 0;
 
@@ -198,6 +187,22 @@ export function PropertySelector() {
             </div>
           </CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-auto">
+            <CommandItem
+              key="__all"
+              value="__all"
+              onSelect={() => {
+                clearSelection();
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-gray-400" />
+                <div>
+                  <div className="font-medium text-sm text-gray-900">All properties</div>
+                  <div className="text-xs text-gray-500">Show leads across every property</div>
+                </div>
+              </div>
+              {selectedProperties.length === 0 && <Check className="h-4 w-4 ml-auto text-blue-600" />}
+            </CommandItem>
             {/* All Properties Option (Admin only) */}
             {isMultiSelectMode && (
               <>

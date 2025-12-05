@@ -1,12 +1,13 @@
 import { LeadsService } from './leads.service';
 import { PriorityService } from './priority.service';
 import { CreateLeadDto, UpdateLeadDto, QueryLeadDto, LeadResponseDto, PaginatedLeadsResponse } from './dto';
+import { Request } from 'express';
 export declare class LeadsController {
     private readonly leadsService;
     private readonly priorityService;
     constructor(leadsService: LeadsService, priorityService: PriorityService);
     create(createLeadDto: CreateLeadDto): Promise<LeadResponseDto>;
-    findAll(query: QueryLeadDto): Promise<PaginatedLeadsResponse>;
+    findAll(query: QueryLeadDto, req: Request): Promise<PaginatedLeadsResponse>;
     getStatistics(): Promise<{
         total: number;
         newLeads: number;
@@ -16,7 +17,7 @@ export declare class LeadsController {
         lost: number;
         conversionRate: number;
     }>;
-    getPrioritizedLeads(userId: string): Promise<{
+    getPrioritizedLeads(req: Request, userId?: string): Promise<{
         priorityInfo: import("./priority.service").PriorityScore;
         id: string;
         leadCode: string;
@@ -30,6 +31,10 @@ export declare class LeadsController {
         status: import("./entities/lead.entity").LeadStatus;
         source: import("./entities/lead.entity").LeadSource;
         priority: import("./entities/lead.entity").LeadPriority;
+        propertyId: string;
+        property: import("../properties/entities/property.entity").Property;
+        towerId: string;
+        flatId: string;
         interestedPropertyTypes: string;
         requirementType: import("./entities/lead.entity").CustomerRequirementType;
         propertyPreference: import("./entities/lead.entity").PropertyPreference;
@@ -50,6 +55,11 @@ export declare class LeadsController {
         assignedTo: string;
         assignedAt: Date;
         assignedUser: import("../users/entities/user.entity").User;
+        assignmentHistory: {
+            assignedBy: string;
+            assignedTo: string;
+            at: Date;
+        }[];
         isQualified: boolean;
         isFirstTimeBuyer: boolean;
         hasExistingProperty: boolean;
@@ -87,18 +97,19 @@ export declare class LeadsController {
         createdBy: string;
         updatedBy: string;
     }[]>;
-    getTodaysTasks(userId: string): Promise<import("./priority.service").PrioritizedTask[]>;
-    getSmartTips(userId: string): Promise<{
+    getTodaysTasks(req: Request, userId?: string): Promise<import("./priority.service").PrioritizedTask[]>;
+    getSmartTips(req: Request, userId?: string): Promise<{
         tips: string[];
         timestamp: Date;
     }>;
-    getMyLeads(userId: string): Promise<LeadResponseDto[]>;
-    getDueFollowUps(userId?: string): Promise<LeadResponseDto[]>;
+    getMyLeads(userId: string, req: Request): Promise<LeadResponseDto[]>;
+    getDueFollowUps(req: Request, userId?: string): Promise<LeadResponseDto[]>;
     findOne(id: string): Promise<LeadResponseDto>;
     update(id: string, updateLeadDto: UpdateLeadDto): Promise<LeadResponseDto>;
-    assignLead(id: string, userId: string): Promise<LeadResponseDto>;
+    assignLead(id: string, userId: string, req: Request): Promise<LeadResponseDto>;
     updateStatus(id: string, status: string, notes?: string): Promise<LeadResponseDto>;
     remove(id: string): Promise<void>;
+    createPublicLead(createLeadDto: Partial<CreateLeadDto>, req: Request): Promise<LeadResponseDto>;
     bulkAssignLeads(bulkAssignDto: any): Promise<{
         assigned: number;
     }>;
@@ -107,4 +118,5 @@ export declare class LeadsController {
     getAdminDashboardStats(query: any): Promise<import("./dto").AdminDashboardStatsDto>;
     getTeamDashboardStats(gmId: string, query: any): Promise<import("./dto").TeamDashboardStatsDto>;
     importLeads(importDto: any): Promise<import("./dto").ImportLeadsResultDto>;
+    private getEffectiveUserId;
 }

@@ -24,6 +24,7 @@ const priority_service_1 = require("./priority.service");
 const sales_target_entity_1 = require("../employees/entities/sales-target.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
+const leads_schema_sync_service_1 = require("./leads.schema-sync.service");
 let LeadsModule = class LeadsModule {
 };
 exports.LeadsModule = LeadsModule;
@@ -34,7 +35,7 @@ exports.LeadsModule = LeadsModule = __decorate([
             notifications_module_1.NotificationsModule,
         ],
         controllers: [leads_controller_1.LeadsController, followup_controller_1.FollowUpController, sales_task_controller_1.SalesTaskController, sales_dashboard_controller_1.SalesDashboardController],
-        providers: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService, priority_service_1.PriorityService],
+        providers: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService, priority_service_1.PriorityService, leads_schema_sync_service_1.LeadsSchemaSyncService],
         exports: [leads_service_1.LeadsService, followup_service_1.FollowUpService, sales_task_service_1.SalesTaskService, sales_dashboard_service_1.SalesDashboardService, priority_service_1.PriorityService],
     })
 ], LeadsModule);

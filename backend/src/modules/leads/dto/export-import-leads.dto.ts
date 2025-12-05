@@ -50,6 +50,18 @@ export class ImportLeadRowDto {
 
   @IsOptional()
   @IsString()
+  propertyId?: string;
+
+  @IsOptional()
+  @IsString()
+  towerId?: string;
+
+  @IsOptional()
+  @IsString()
+  flatId?: string;
+
+  @IsOptional()
+  @IsString()
   status?: string;
 
   @IsOptional()
@@ -62,6 +74,18 @@ export class ImportLeadsDto {
   @ValidateNested({ each: true })
   @Type(() => ImportLeadRowDto)
   leads: ImportLeadRowDto[];
+
+  @IsOptional()
+  @IsString()
+  propertyId?: string;
+
+  @IsOptional()
+  @IsString()
+  towerId?: string;
+
+  @IsOptional()
+  @IsString()
+  flatId?: string;
 }
 
 export class ImportLeadsResultDto {

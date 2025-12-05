@@ -31,13 +31,16 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
             return undefined;
         return typeof date === 'string' ? new Date(date) : date;
     }
-    async create(createFollowUpDto) {
+    async create(createFollowUpDto, user) {
         this.logger.log(`Creating followup for lead ${createFollowUpDto.leadId}`);
         const lead = await this.leadRepository.findOne({
             where: { id: createFollowUpDto.leadId },
         });
         if (!lead) {
             throw new common_1.NotFoundException(`Lead with ID ${createFollowUpDto.leadId} not found`);
+        }
+        if (user && !this.isManager(user) && lead.assignedTo !== user.id) {
+            throw new common_1.ForbiddenException('You are not allowed to update this lead');
         }
         const followUp = this.followUpRepository.create(createFollowUpDto);
         const savedFollowUp = await this.followUpRepository.save(followUp);
@@ -74,14 +77,23 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
         }
         await this.leadRepository.update(lead.id, updateData);
     }
-    async findByLead(leadId) {
+    async findByLead(leadId, user) {
+        if (user && !this.isManager(user)) {
+            const lead = await this.leadRepository.findOne({ where: { id: leadId } });
+            if (lead && lead.assignedTo !== user.id) {
+                throw new common_1.ForbiddenException('You are not allowed to view these followups');
+            }
+        }
         return this.followUpRepository.find({
             where: { leadId, isActive: true },
             order: { followUpDate: 'DESC' },
             relations: ['performedByUser'],
         });
     }
-    async findBySalesPerson(salesPersonId, startDate, endDate) {
+    async findBySalesPerson(salesPersonId, startDate, endDate, user) {
+        if (user && !this.isManager(user) && salesPersonId !== user.id) {
+            throw new common_1.ForbiddenException('You are not allowed to view these followups');
+        }
         const where = {
             performedBy: salesPersonId,
             isActive: true,
@@ -95,7 +107,10 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
             relations: ['lead', 'performedByUser'],
         });
     }
-    async getUpcomingFollowUps(salesPersonId) {
+    async getUpcomingFollowUps(salesPersonId, user) {
+        if (user && !this.isManager(user) && salesPersonId !== user.id) {
+            throw new common_1.ForbiddenException('You are not allowed to view these followups');
+        }
         const today = (0, date_fns_1.startOfDay)(new Date());
         const nextWeek = (0, date_fns_1.endOfDay)((0, date_fns_1.addDays)(today, 7));
         return this.followUpRepository.find({
@@ -118,14 +133,18 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
             relations: ['lead', 'performedByUser'],
         });
     }
-    async markReminderSent(followUpId) {
+    async markReminderSent(followUpId, user) {
+        await this.findOne(followUpId, user);
         await this.followUpRepository.update(followUpId, {
             reminderSent: true,
             reminderSentAt: new Date(),
         });
     }
-    async getStatistics(salesPersonId, startDate, endDate) {
-        const followUps = await this.findBySalesPerson(salesPersonId, startDate, endDate);
+    async getStatistics(salesPersonId, startDate, endDate, user) {
+        if (user && !this.isManager(user) && salesPersonId !== user.id) {
+            throw new common_1.ForbiddenException('You are not allowed to view these followups');
+        }
+        const followUps = await this.findBySalesPerson(salesPersonId, startDate, endDate, user);
         const stats = {
             totalFollowUps: followUps.length,
             byCalls: followUps.filter(f => f.followUpType === 'CALL').length,
@@ -145,8 +164,11 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
         };
         return stats;
     }
-    async getSiteVisitStatistics(salesPersonId, startDate, endDate) {
-        const siteVisits = (await this.findBySalesPerson(salesPersonId, startDate, endDate))
+    async getSiteVisitStatistics(salesPersonId, startDate, endDate, user) {
+        if (user && !this.isManager(user) && salesPersonId !== user.id) {
+            throw new common_1.ForbiddenException('You are not allowed to view these followups');
+        }
+        const siteVisits = (await this.findBySalesPerson(salesPersonId, startDate, endDate, user))
             .filter(f => f.isSiteVisit);
         return {
             totalSiteVisits: siteVisits.length,
@@ -176,7 +198,7 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
         const converted = siteVisits.filter(sv => sv.outcome === 'CONVERTED').length;
         return (converted / siteVisits.length) * 100;
     }
-    async findOne(id) {
+    async findOne(id, user) {
         const followUp = await this.followUpRepository.findOne({
             where: { id, isActive: true },
             relations: ['lead', 'performedByUser'],
@@ -184,14 +206,29 @@ let FollowUpService = FollowUpService_1 = class FollowUpService {
         if (!followUp) {
             throw new common_1.NotFoundException(`FollowUp with ID ${id} not found`);
         }
+        if (user && !this.isManager(user) && followUp.performedBy !== user.id) {
+            throw new common_1.ForbiddenException('You are not allowed to view this followup');
+        }
         return followUp;
     }
-    async update(id, updateData) {
-        await this.followUpRepository.update(id, updateData);
-        return this.findOne(id);
+    async update(id, updateData, user) {
+        const existing = await this.findOne(id, user);
+        const safeUpdate = { ...updateData };
+        if (user) {
+            safeUpdate.performedBy = this.isManager(user) && updateData.performedBy
+                ? updateData.performedBy
+                : existing.performedBy;
+        }
+        await this.followUpRepository.update(id, safeUpdate);
+        return this.findOne(id, user);
     }
-    async remove(id) {
+    async remove(id, user) {
+        await this.findOne(id, user);
         await this.followUpRepository.update(id, { isActive: false });
+    }
+    isManager(user) {
+        const roles = user?.roles?.map((r) => r.name) ?? [];
+        return roles.some((r) => ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r));
     }
 };
 exports.FollowUpService = FollowUpService;

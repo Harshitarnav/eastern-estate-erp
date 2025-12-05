@@ -14,6 +14,7 @@ const users_controller_1 = require("./users.controller");
 const user_entity_1 = require("./entities/user.entity");
 const role_entity_1 = require("./entities/role.entity");
 const permission_entity_1 = require("./entities/permission.entity");
+const users_bootstrap_1 = require("./users.bootstrap");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
@@ -21,7 +22,7 @@ exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
         imports: [typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, role_entity_1.Role, permission_entity_1.Permission])],
         controllers: [users_controller_1.UsersController, users_controller_1.RolesController, users_controller_1.PermissionsController],
-        providers: [users_service_1.UsersService],
+        providers: [users_service_1.UsersService, users_bootstrap_1.UsersBootstrapService],
         exports: [users_service_1.UsersService, typeorm_1.TypeOrmModule],
     })
 ], UsersModule);

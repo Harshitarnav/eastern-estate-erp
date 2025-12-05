@@ -10,7 +10,9 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  HttpException,
   Patch,
+  Req,
 } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { PriorityService } from './priority.service';
@@ -22,9 +24,12 @@ import {
   PaginatedLeadsResponse,
 } from './dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Request } from 'express';
 
 @Controller('leads')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LeadsController {
   constructor(
     private readonly leadsService: LeadsService,
@@ -43,11 +48,12 @@ export class LeadsController {
 
   /**
    * Get all leads with filtering and pagination
-   * GET /leads
-   */
+  * GET /leads
+  */
   @Get()
-  async findAll(@Query() query: QueryLeadDto): Promise<PaginatedLeadsResponse> {
-    return this.leadsService.findAll(query);
+  async findAll(@Query() query: QueryLeadDto, @Req() req: Request): Promise<PaginatedLeadsResponse> {
+    console.log('[LeadsController] findAll query:', query, 'user:', (req.user as any)?.id);
+    return this.leadsService.findAll(query, req.user as any);
   }
 
   /**
@@ -64,8 +70,8 @@ export class LeadsController {
    * GET /leads/prioritized
    */
   @Get('prioritized')
-  async getPrioritizedLeads(@Query('userId') userId: string) {
-    const leads = await this.leadsService.getMyLeads(userId);
+  async getPrioritizedLeads(@Req() req: Request, @Query('userId') userId?: string) {
+    const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
     const prioritized = this.priorityService.prioritizeLeads(leads as any[]);
     
     // Add priority info to each lead
@@ -80,8 +86,8 @@ export class LeadsController {
    * GET /leads/today-tasks
    */
   @Get('today-tasks')
-  async getTodaysTasks(@Query('userId') userId: string) {
-    const leads = await this.leadsService.getMyLeads(userId);
+  async getTodaysTasks(@Req() req: Request, @Query('userId') userId?: string) {
+    const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
     return this.priorityService.getTodaysPrioritizedTasks(leads as any[]);
   }
 
@@ -90,8 +96,8 @@ export class LeadsController {
    * GET /leads/smart-tips
    */
   @Get('smart-tips')
-  async getSmartTips(@Query('userId') userId: string) {
-    const leads = await this.leadsService.getMyLeads(userId);
+  async getSmartTips(@Req() req: Request, @Query('userId') userId?: string) {
+    const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
     return {
       tips: this.priorityService.getSmartTips(leads as any[]),
       timestamp: new Date(),
@@ -103,8 +109,8 @@ export class LeadsController {
    * GET /leads/my-leads/:userId
    */
   @Get('my-leads/:userId')
-  async getMyLeads(@Param('userId') userId: string): Promise<LeadResponseDto[]> {
-    return this.leadsService.getMyLeads(userId);
+  async getMyLeads(@Param('userId') userId: string, @Req() req: Request): Promise<LeadResponseDto[]> {
+    return this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
   }
 
   /**
@@ -112,8 +118,8 @@ export class LeadsController {
    * GET /leads/due-followups
    */
   @Get('due-followups')
-  async getDueFollowUps(@Query('userId') userId?: string): Promise<LeadResponseDto[]> {
-    return this.leadsService.getDueFollowUps(userId);
+  async getDueFollowUps(@Req() req: Request, @Query('userId') userId?: string): Promise<LeadResponseDto[]> {
+    return this.leadsService.getDueFollowUps(this.getEffectiveUserId(req, userId));
   }
 
   /**
@@ -142,11 +148,13 @@ export class LeadsController {
    * PATCH /leads/:id/assign
    */
   @Patch(':id/assign')
+  @Roles('super_admin', 'admin', 'sales_manager', 'sales_gm')
   async assignLead(
     @Param('id') id: string,
     @Body('userId') userId: string,
+    @Req() req: Request,
   ): Promise<LeadResponseDto> {
-    return this.leadsService.assignLead(id, userId);
+    return this.leadsService.assignLead(id, userId, (req.user as any)?.id);
   }
 
   /**
@@ -170,6 +178,36 @@ export class LeadsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string): Promise<void> {
     return this.leadsService.remove(id);
+  }
+
+  /**
+   * Public lead capture endpoint (token protected)
+   * POST /leads/public
+   */
+  @Post('public')
+  @HttpCode(HttpStatus.CREATED)
+  async createPublicLead(
+    @Body() createLeadDto: Partial<CreateLeadDto>,
+    @Req() req: Request,
+  ): Promise<LeadResponseDto> {
+    const token = (req.headers['x-public-token'] || req.query.token) as string;
+    const expected = process.env.PUBLIC_LEAD_TOKEN;
+    if (!expected || token !== expected) {
+      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
+    }
+    const payload: CreateLeadDto = {
+      firstName: createLeadDto.firstName || 'Website',
+      lastName: createLeadDto.lastName || 'Lead',
+      phone: createLeadDto.phone || createLeadDto['phoneNumber'] || '',
+      email: createLeadDto.email || '',
+      source: (createLeadDto.source as any) || 'WEBSITE',
+      status: createLeadDto.status as any || 'NEW',
+      notes: createLeadDto.notes || '',
+      propertyId: createLeadDto.propertyId,
+      towerId: createLeadDto['towerId'],
+      flatId: createLeadDto['flatId'],
+    };
+    return this.leadsService.create(payload);
   }
 
   /**
@@ -230,5 +268,15 @@ export class LeadsController {
   @Post('import')
   async importLeads(@Body() importDto: any) {
     return this.leadsService.importLeads(importDto);
+  }
+
+  private getEffectiveUserId(req: Request, requestedUserId?: string): string {
+    const user = req.user as any;
+    const roles: string[] = user?.roles?.map((r: any) => r.name) ?? [];
+    const isManager = roles.some((r) =>
+      ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r),
+    );
+    if (isManager && requestedUserId) return requestedUserId;
+    return user?.id;
   }
 }

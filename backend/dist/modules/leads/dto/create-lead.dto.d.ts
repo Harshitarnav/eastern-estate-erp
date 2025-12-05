@@ -2,7 +2,7 @@ import { LeadStatus, LeadSource, LeadPriority } from '../entities/lead.entity';
 export declare class CreateLeadDto {
     firstName: string;
     lastName: string;
-    email: string;
+    email?: string;
     phone: string;
     alternatePhone?: string;
     address?: string;
@@ -15,6 +15,8 @@ export declare class CreateLeadDto {
     leadScore?: number;
     notes?: string;
     propertyId?: string;
+    towerId?: string;
+    flatId?: string;
     interestedPropertyTypes?: string;
     budgetMin?: number;
     budgetMax?: number;

@@ -18,6 +18,8 @@ const leads_service_1 = require("./leads.service");
 const priority_service_1 = require("./priority.service");
 const dto_1 = require("./dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../auth/guards/roles.guard");
+const roles_decorator_1 = require("../../auth/decorators/roles.decorator");
 let LeadsController = class LeadsController {
     constructor(leadsService, priorityService) {
         this.leadsService = leadsService;
@@ -26,36 +28,37 @@ let LeadsController = class LeadsController {
     async create(createLeadDto) {
         return this.leadsService.create(createLeadDto);
     }
-    async findAll(query) {
-        return this.leadsService.findAll(query);
+    async findAll(query, req) {
+        console.log('[LeadsController] findAll query:', query, 'user:', req.user?.id);
+        return this.leadsService.findAll(query, req.user);
     }
     async getStatistics() {
         return this.leadsService.getStatistics();
     }
-    async getPrioritizedLeads(userId) {
-        const leads = await this.leadsService.getMyLeads(userId);
+    async getPrioritizedLeads(req, userId) {
+        const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
         const prioritized = this.priorityService.prioritizeLeads(leads);
         return prioritized.map(lead => ({
             ...lead,
             priorityInfo: this.priorityService.calculateLeadPriority(lead),
         }));
     }
-    async getTodaysTasks(userId) {
-        const leads = await this.leadsService.getMyLeads(userId);
+    async getTodaysTasks(req, userId) {
+        const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
         return this.priorityService.getTodaysPrioritizedTasks(leads);
     }
-    async getSmartTips(userId) {
-        const leads = await this.leadsService.getMyLeads(userId);
+    async getSmartTips(req, userId) {
+        const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
         return {
             tips: this.priorityService.getSmartTips(leads),
             timestamp: new Date(),
         };
     }
-    async getMyLeads(userId) {
-        return this.leadsService.getMyLeads(userId);
+    async getMyLeads(userId, req) {
+        return this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
     }
-    async getDueFollowUps(userId) {
-        return this.leadsService.getDueFollowUps(userId);
+    async getDueFollowUps(req, userId) {
+        return this.leadsService.getDueFollowUps(this.getEffectiveUserId(req, userId));
     }
     async findOne(id) {
         return this.leadsService.findOne(id);
@@ -63,14 +66,34 @@ let LeadsController = class LeadsController {
     async update(id, updateLeadDto) {
         return this.leadsService.update(id, updateLeadDto);
     }
-    async assignLead(id, userId) {
-        return this.leadsService.assignLead(id, userId);
+    async assignLead(id, userId, req) {
+        return this.leadsService.assignLead(id, userId, req.user?.id);
     }
     async updateStatus(id, status, notes) {
         return this.leadsService.updateStatus(id, status, notes);
     }
     async remove(id) {
         return this.leadsService.remove(id);
+    }
+    async createPublicLead(createLeadDto, req) {
+        const token = (req.headers['x-public-token'] || req.query.token);
+        const expected = process.env.PUBLIC_LEAD_TOKEN;
+        if (!expected || token !== expected) {
+            throw new common_1.HttpException('Forbidden', common_1.HttpStatus.FORBIDDEN);
+        }
+        const payload = {
+            firstName: createLeadDto.firstName || 'Website',
+            lastName: createLeadDto.lastName || 'Lead',
+            phone: createLeadDto.phone || createLeadDto['phoneNumber'] || '',
+            email: createLeadDto.email || '',
+            source: createLeadDto.source || 'WEBSITE',
+            status: createLeadDto.status || 'NEW',
+            notes: createLeadDto.notes || '',
+            propertyId: createLeadDto.propertyId,
+            towerId: createLeadDto['towerId'],
+            flatId: createLeadDto['flatId'],
+        };
+        return this.leadsService.create(payload);
     }
     async bulkAssignLeads(bulkAssignDto) {
         return this.leadsService.bulkAssignLeads(bulkAssignDto);
@@ -90,6 +113,14 @@ let LeadsController = class LeadsController {
     async importLeads(importDto) {
         return this.leadsService.importLeads(importDto);
     }
+    getEffectiveUserId(req, requestedUserId) {
+        const user = req.user;
+        const roles = user?.roles?.map((r) => r.name) ?? [];
+        const isManager = roles.some((r) => ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r));
+        if (isManager && requestedUserId)
+            return requestedUserId;
+        return user?.id;
+    }
 };
 exports.LeadsController = LeadsController;
 __decorate([
@@ -103,8 +134,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryLeadDto]),
+    __metadata("design:paramtypes", [dto_1.QueryLeadDto, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "findAll", null);
 __decorate([
@@ -115,37 +147,42 @@ __decorate([
 ], LeadsController.prototype, "getStatistics", null);
 __decorate([
     (0, common_1.Get)('prioritized'),
-    __param(0, (0, common_1.Query)('userId')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getPrioritizedLeads", null);
 __decorate([
     (0, common_1.Get)('today-tasks'),
-    __param(0, (0, common_1.Query)('userId')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getTodaysTasks", null);
 __decorate([
     (0, common_1.Get)('smart-tips'),
-    __param(0, (0, common_1.Query)('userId')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getSmartTips", null);
 __decorate([
     (0, common_1.Get)('my-leads/:userId'),
     __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getMyLeads", null);
 __decorate([
     (0, common_1.Get)('due-followups'),
-    __param(0, (0, common_1.Query)('userId')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('userId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getDueFollowUps", null);
 __decorate([
@@ -165,10 +202,12 @@ __decorate([
 ], LeadsController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/assign'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'sales_manager', 'sales_gm'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)('userId')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "assignLead", null);
 __decorate([
@@ -188,6 +227,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)('public'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "createPublicLead", null);
 __decorate([
     (0, common_1.Post)('bulk-assign'),
     __param(0, (0, common_1.Body)()),
@@ -234,7 +282,7 @@ __decorate([
 ], LeadsController.prototype, "importLeads", null);
 exports.LeadsController = LeadsController = __decorate([
     (0, common_1.Controller)('leads'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [leads_service_1.LeadsService,
         priority_service_1.PriorityService])
 ], LeadsController);

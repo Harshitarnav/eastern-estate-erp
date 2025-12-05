@@ -4,7 +4,7 @@
  * @module LeadsModule
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan } from 'typeorm';
 import { FollowUp } from './entities/followup.entity';
@@ -34,7 +34,7 @@ export class FollowUpService {
   /**
    * Create a new followup record
    */
-  async create(createFollowUpDto: CreateFollowUpDto): Promise<FollowUp> {
+  async create(createFollowUpDto: CreateFollowUpDto, user?: any): Promise<FollowUp> {
     this.logger.log(`Creating followup for lead ${createFollowUpDto.leadId}`);
 
     // Verify lead exists
@@ -44,6 +44,11 @@ export class FollowUpService {
 
     if (!lead) {
       throw new NotFoundException(`Lead with ID ${createFollowUpDto.leadId} not found`);
+    }
+
+    // Access control: non-managers can only add followups for leads assigned to them
+    if (user && !this.isManager(user) && lead.assignedTo !== user.id) {
+      throw new ForbiddenException('You are not allowed to update this lead');
     }
 
     // Create followup record
@@ -100,7 +105,14 @@ export class FollowUpService {
   /**
    * Get all followups for a lead
    */
-  async findByLead(leadId: string): Promise<FollowUp[]> {
+  async findByLead(leadId: string, user?: any): Promise<FollowUp[]> {
+    if (user && !this.isManager(user)) {
+      const lead = await this.leadRepository.findOne({ where: { id: leadId } });
+      if (lead && lead.assignedTo !== user.id) {
+        throw new ForbiddenException('You are not allowed to view these followups');
+      }
+    }
+
     return this.followUpRepository.find({
       where: { leadId, isActive: true },
       order: { followUpDate: 'DESC' },
@@ -111,7 +123,16 @@ export class FollowUpService {
   /**
    * Get followups by sales person
    */
-  async findBySalesPerson(salesPersonId: string, startDate?: Date, endDate?: Date): Promise<FollowUp[]> {
+  async findBySalesPerson(
+    salesPersonId: string,
+    startDate?: Date,
+    endDate?: Date,
+    user?: any,
+  ): Promise<FollowUp[]> {
+    if (user && !this.isManager(user) && salesPersonId !== user.id) {
+      throw new ForbiddenException('You are not allowed to view these followups');
+    }
+
     const where: any = {
       performedBy: salesPersonId,
       isActive: true,
@@ -131,7 +152,11 @@ export class FollowUpService {
   /**
    * Get upcoming followups (next 7 days)
    */
-  async getUpcomingFollowUps(salesPersonId: string): Promise<FollowUp[]> {
+  async getUpcomingFollowUps(salesPersonId: string, user?: any): Promise<FollowUp[]> {
+    if (user && !this.isManager(user) && salesPersonId !== user.id) {
+      throw new ForbiddenException('You are not allowed to view these followups');
+    }
+
     const today = startOfDay(new Date());
     const nextWeek = endOfDay(addDays(today, 7));
 
@@ -164,7 +189,8 @@ export class FollowUpService {
   /**
    * Mark reminder as sent
    */
-  async markReminderSent(followUpId: string): Promise<void> {
+  async markReminderSent(followUpId: string, user?: any): Promise<void> {
+    await this.findOne(followUpId, user);
     await this.followUpRepository.update(followUpId, {
       reminderSent: true,
       reminderSentAt: new Date(),
@@ -174,8 +200,12 @@ export class FollowUpService {
   /**
    * Get followup statistics for a sales person
    */
-  async getStatistics(salesPersonId: string, startDate: Date, endDate: Date): Promise<any> {
-    const followUps = await this.findBySalesPerson(salesPersonId, startDate, endDate);
+  async getStatistics(salesPersonId: string, startDate: Date, endDate: Date, user?: any): Promise<any> {
+    if (user && !this.isManager(user) && salesPersonId !== user.id) {
+      throw new ForbiddenException('You are not allowed to view these followups');
+    }
+
+    const followUps = await this.findBySalesPerson(salesPersonId, startDate, endDate, user);
 
     const stats = {
       totalFollowUps: followUps.length,
@@ -201,8 +231,17 @@ export class FollowUpService {
   /**
    * Get site visit statistics
    */
-  async getSiteVisitStatistics(salesPersonId: string, startDate: Date, endDate: Date): Promise<any> {
-    const siteVisits = (await this.findBySalesPerson(salesPersonId, startDate, endDate))
+  async getSiteVisitStatistics(
+    salesPersonId: string,
+    startDate: Date,
+    endDate: Date,
+    user?: any,
+  ): Promise<any> {
+    if (user && !this.isManager(user) && salesPersonId !== user.id) {
+      throw new ForbiddenException('You are not allowed to view these followups');
+    }
+
+    const siteVisits = (await this.findBySalesPerson(salesPersonId, startDate, endDate, user))
       .filter(f => f.isSiteVisit);
 
     return {
@@ -238,7 +277,7 @@ export class FollowUpService {
   /**
    * Find one followup by ID
    */
-  async findOne(id: string): Promise<FollowUp> {
+  async findOne(id: string, user?: any): Promise<FollowUp> {
     const followUp = await this.followUpRepository.findOne({
       where: { id, isActive: true },
       relations: ['lead', 'performedByUser'],
@@ -248,22 +287,40 @@ export class FollowUpService {
       throw new NotFoundException(`FollowUp with ID ${id} not found`);
     }
 
+    if (user && !this.isManager(user) && followUp.performedBy !== user.id) {
+      throw new ForbiddenException('You are not allowed to view this followup');
+    }
+
     return followUp;
   }
 
   /**
    * Update a followup
    */
-  async update(id: string, updateData: Partial<CreateFollowUpDto>): Promise<FollowUp> {
-    await this.followUpRepository.update(id, updateData);
-    return this.findOne(id);
+  async update(id: string, updateData: Partial<CreateFollowUpDto>, user?: any): Promise<FollowUp> {
+    const existing = await this.findOne(id, user);
+    const safeUpdate: Partial<CreateFollowUpDto> = { ...updateData };
+    if (user) {
+      safeUpdate.performedBy = this.isManager(user) && updateData.performedBy
+        ? updateData.performedBy
+        : existing.performedBy;
+    }
+    await this.followUpRepository.update(id, safeUpdate);
+    return this.findOne(id, user);
   }
 
   /**
    * Delete (soft) a followup
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user?: any): Promise<void> {
+    await this.findOne(id, user);
     await this.followUpRepository.update(id, { isActive: false });
   }
-}
 
+  private isManager(user?: any): boolean {
+    const roles: string[] = user?.roles?.map((r: any) => r.name) ?? [];
+    return roles.some((r) =>
+      ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r),
+    );
+  }
+}

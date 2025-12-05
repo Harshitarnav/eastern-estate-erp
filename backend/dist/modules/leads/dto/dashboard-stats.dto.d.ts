@@ -2,6 +2,9 @@ export declare class GetDashboardStatsDto {
     startDate?: string;
     endDate?: string;
     agentId?: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
 }
 export declare class AgentDashboardStatsDto {
     totalLeads: number;

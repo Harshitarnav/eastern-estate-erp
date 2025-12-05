@@ -12,6 +12,18 @@ export class GetDashboardStatsDto {
   @IsOptional()
   @IsUUID('4')
   agentId?: string;
+
+   @IsOptional()
+   @IsUUID('4')
+   propertyId?: string;
+
+   @IsOptional()
+   @IsUUID('4')
+   towerId?: string;
+
+   @IsOptional()
+   @IsUUID('4')
+   flatId?: string;
 }
 
 export class AgentDashboardStatsDto {

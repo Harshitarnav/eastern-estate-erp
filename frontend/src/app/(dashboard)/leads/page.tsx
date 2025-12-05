@@ -87,6 +87,12 @@ function LeadRow({
   const [phoneValue, setPhoneValue] = useState(lead.phone);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(lead.followUpNotes || '');
+  const displayName =
+    (lead.fullName && lead.fullName.trim()) ||
+    [lead.firstName, lead.lastName].filter(Boolean).join(' ').trim() ||
+    lead.email ||
+    lead.phone ||
+    'Lead';
   const priority = PRIORITY_COLORS[lead.priority as keyof typeof PRIORITY_COLORS] || PRIORITY_COLORS.MEDIUM;
   const statusConfig = STATUS_CONFIG[lead.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.NEW;
   const StatusIcon = statusConfig.icon;
@@ -118,7 +124,7 @@ function LeadRow({
           {/* Name & Contact */}
           <div className="md:col-span-3">
             <div className="font-semibold text-gray-900 truncate">
-              {lead.firstName} {lead.lastName}
+              {displayName}
             </div>
             <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
               {editingPhone ? (
@@ -155,12 +161,6 @@ function LeadRow({
                 >
                   {lead.phone}
                 </span>
-              )}
-              {lead.email && (
-                <>
-                  <span className="text-gray-300">•</span>
-                  <span className="truncate">{lead.email}</span>
-                </>
               )}
             </div>
           </div>
@@ -203,7 +203,7 @@ function LeadRow({
           </div>
 
           {/* Property & Source */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 space-y-1">
             {isAdmin ? (
               <Select
                 value={lead.propertyId || 'none'}
@@ -248,7 +248,19 @@ function LeadRow({
                 )}
               </>
             )}
-            <div className="text-xs text-gray-500 mt-0.5">{lead.source.replace(/_/g, ' ')}</div>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+              <span className="text-gray-500">{lead.source.replace(/_/g, ' ')}</span>
+              {lead.towerId && (
+                <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  Tower: {lead.towerId}
+                </span>
+              )}
+              {lead.flatId && (
+                <span className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100">
+                  Flat: {lead.flatId}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Assigned To */}
@@ -293,16 +305,14 @@ function LeadRow({
           </div>
 
           {/* Next Follow-up */}
-          <div className="md:col-span-2">
-            {lead.nextFollowUpDate ? (
-              <div className={`text-sm flex items-center gap-1.5 ${isOverdue ? 'text-red-600 font-medium' : isDueToday ? 'text-orange-600 font-medium' : 'text-gray-600'}`}>
-                <Calendar className="h-3.5 w-3.5" />
-                {new Date(lead.nextFollowUpDate).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
-                {isOverdue && <AlertCircle className="h-3.5 w-3.5" />}
-              </div>
-            ) : (
-              <span className="text-xs text-gray-400 italic">No follow-up</span>
-            )}
+          <div className="md:col-span-2 flex items-center gap-3">
+            <input
+              type="date"
+              className="h-8 px-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+              value={lead.nextFollowUpDate ? lead.nextFollowUpDate.split('T')[0] : ''}
+              onChange={(e) => onQuickAction('nextFollowUpDate', lead.id, e.target.value || null)}
+              title="Set next follow-up date"
+            />
           </div>
 
           {/* Created */}
@@ -330,7 +340,7 @@ function LeadRow({
             <MessageCircle className="h-4 w-4 text-gray-400 group-hover:text-green-600" />
           </button>
           <button
-            onClick={() => window.location.href = `mailto:${lead.email}`}
+            onClick={() => lead.email && (window.location.href = `mailto:${lead.email}`)}
             className="p-2 hover:bg-blue-50 rounded-lg transition-colors group"
             title="Email"
           >
@@ -408,6 +418,33 @@ function LeadRow({
               </div>
             )}
           </div>
+          {/* Assignment history */}
+          {Array.isArray(lead.assignmentHistory) && lead.assignmentHistory.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-gray-200">
+              <span className="text-gray-500 font-medium text-sm">Assignment History:</span>
+              <div className="mt-2 space-y-1 text-sm text-gray-700">
+                {lead.assignmentHistory.slice(-5).reverse().map((entry, idx) => {
+                  const assignedToUser = users.find((u) => u.id === entry.assignedTo);
+                  const assignedByUser = users.find((u) => u.id === entry.assignedBy);
+                  return (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-gray-500">•</span>
+                      <span>
+                        {assignedByUser ? `${assignedByUser.firstName || ''} ${assignedByUser.lastName || ''}`.trim() : (entry.assignedBy || 'Someone')}
+                        {' → '}
+                        {assignedToUser ? `${assignedToUser.firstName || ''} ${assignedToUser.lastName || ''}`.trim() : (entry.assignedTo || 'Unassigned')}
+                      </span>
+                      {entry.at && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(entry.at as any).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="mt-3 flex gap-2">
             <Button asChild size="sm" variant="outline">
               <Link href={`/leads/${lead.id}/edit`}>
@@ -424,7 +461,7 @@ function LeadRow({
 
 export default function LeadsListPage() {
   const { user } = useAuth();
-  const { selectedProperties } = usePropertyStore();
+  const { selectedProperties, setSelectedProperties } = usePropertyStore();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
@@ -435,6 +472,8 @@ export default function LeadsListPage() {
     sortBy: 'createdAt',
     sortOrder: 'DESC',
   });
+  const [towerFilter, setTowerFilter] = useState('');
+  const [flatFilter, setFlatFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
@@ -483,7 +522,9 @@ export default function LeadsListPage() {
       setLoading(true);
       const response = await leadsService.getLeads({
         ...filters,
-        propertyId: selectedProperties.length > 0 ? selectedProperties[0] : undefined,
+        propertyId: filters.propertyId || (selectedProperties.length > 0 ? selectedProperties[0] : undefined),
+        towerId: filters.towerId || (towerFilter || undefined),
+        flatId: filters.flatId || (flatFilter || undefined),
       } as any);
       setLeads(response.data);
       setTotal(response.meta.total);
@@ -525,6 +566,8 @@ export default function LeadsListPage() {
         await leadsService.updateLead(leadId, { phone: value });
       } else if (action === 'notes') {
         await leadsService.updateLead(leadId, { followUpNotes: value });
+      } else if (action === 'nextFollowUpDate') {
+        await leadsService.updateLead(leadId, { nextFollowUpDate: value || null });
       }
       await loadLeads();
     } catch (error) {
@@ -656,6 +699,53 @@ export default function LeadsListPage() {
           {showFilters && (
             <div className="mt-3 pt-3 border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-3">
               <Select
+                value={filters.propertyId || (selectedProperties[0] ?? 'all')}
+                onValueChange={(v) => {
+                  if (v === 'all') {
+                    setFilters({ ...filters, propertyId: undefined, page: 1 });
+                    setSelectedProperties([]);
+                  } else {
+                    setFilters({ ...filters, propertyId: v, page: 1 });
+                    setSelectedProperties([v]);
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Property" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Properties</SelectItem>
+                  {properties.map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      🏢 {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Input
+                placeholder="Tower ID (optional)"
+                className="h-9"
+                value={towerFilter}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTowerFilter(val);
+                  setFilters({ ...filters, towerId: val || undefined, page: 1 });
+                }}
+              />
+
+              <Input
+                placeholder="Flat ID (optional)"
+                className="h-9"
+                value={flatFilter}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFlatFilter(val);
+                  setFilters({ ...filters, flatId: val || undefined, page: 1 });
+                }}
+              />
+
+              <Select
                 value={filters.status || 'all'}
                 onValueChange={(v) => setFilters({ ...filters, status: v === 'all' ? undefined : v, page: 1 })}
               >
@@ -707,6 +797,9 @@ export default function LeadsListPage() {
               <Button variant="outline" size="sm" onClick={() => {
                 setFilters({ page: 1, limit: 100 });
                 setSearchTerm('');
+                setTowerFilter('');
+                setFlatFilter('');
+                setSelectedProperties([]);
               }}>
                 Clear All
               </Button>

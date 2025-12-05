@@ -24,86 +24,116 @@ let SalesTaskController = class SalesTaskController {
     constructor(salesTaskService) {
         this.salesTaskService = salesTaskService;
     }
-    create(createSalesTaskDto) {
-        return this.salesTaskService.create(createSalesTaskDto);
+    create(createSalesTaskDto, req) {
+        const user = req.user;
+        const isManager = this.isManager(user);
+        const effectiveAssignee = isManager && createSalesTaskDto.assignedTo
+            ? createSalesTaskDto.assignedTo
+            : user?.id;
+        return this.salesTaskService.create({
+            ...createSalesTaskDto,
+            assignedTo: effectiveAssignee,
+            assignedBy: user?.id,
+            createdBy: user?.id,
+        });
     }
-    findByUser(userId, status) {
-        return this.salesTaskService.findByUser(userId, status);
+    findByUser(userId, status, req) {
+        const effectiveUserId = this.getEffectiveUserId(req, userId);
+        return this.salesTaskService.findByUser(effectiveUserId, status, req.user);
     }
-    getTodayTasks(userId) {
-        return this.salesTaskService.getTodayTasks(userId);
+    getTodayTasks(userId, req) {
+        const effectiveUserId = this.getEffectiveUserId(req, userId);
+        return this.salesTaskService.getTodayTasks(effectiveUserId, req.user);
     }
-    getUpcomingTasks(userId, days) {
-        return this.salesTaskService.getUpcomingTasks(userId, days ? Number(days) : 7);
+    getUpcomingTasks(userId, days, req) {
+        const effectiveUserId = this.getEffectiveUserId(req, userId);
+        return this.salesTaskService.getUpcomingTasks(effectiveUserId, days ? Number(days) : 7, req.user);
     }
-    getOverdueTasks(userId) {
-        return this.salesTaskService.getOverdueTasks(userId);
+    getOverdueTasks(userId, req) {
+        const effectiveUserId = this.getEffectiveUserId(req, userId);
+        return this.salesTaskService.getOverdueTasks(effectiveUserId, req.user);
     }
-    getStatistics(userId, startDate, endDate) {
-        return this.salesTaskService.getStatistics(userId, startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined);
+    getStatistics(userId, startDate, endDate, req) {
+        const effectiveUserId = this.getEffectiveUserId(req, userId);
+        return this.salesTaskService.getStatistics(effectiveUserId, startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined, req?.user);
     }
-    getTasksByDateRange(userId, startDate, endDate) {
-        return this.salesTaskService.getTasksByDateRange(userId, new Date(startDate), new Date(endDate));
+    getTasksByDateRange(userId, startDate, endDate, req) {
+        const effectiveUserId = this.getEffectiveUserId(req, userId);
+        return this.salesTaskService.getTasksByDateRange(effectiveUserId, new Date(startDate), new Date(endDate), req.user);
     }
-    findOne(id) {
-        return this.salesTaskService.findOne(id);
+    findOne(id, req) {
+        return this.salesTaskService.findOne(id, req.user);
     }
-    update(id, updateData) {
-        return this.salesTaskService.update(id, updateData);
+    update(id, updateData, req) {
+        return this.salesTaskService.update(id, updateData, req.user);
     }
-    completeTask(id, body) {
-        return this.salesTaskService.completeTask(id, body.outcome, body.notes);
+    completeTask(id, body, req) {
+        return this.salesTaskService.completeTask(id, body.outcome, body.notes, req.user);
     }
-    updateStatus(id, body) {
-        return this.salesTaskService.updateStatus(id, body.status);
+    updateStatus(id, body, req) {
+        return this.salesTaskService.updateStatus(id, body.status, req.user);
     }
-    cancelTask(id, body) {
-        return this.salesTaskService.cancelTask(id, body.reason);
+    cancelTask(id, body, req) {
+        return this.salesTaskService.cancelTask(id, body.reason, req.user);
     }
-    markReminderSent(id) {
-        return this.salesTaskService.markReminderSent(id);
+    markReminderSent(id, req) {
+        return this.salesTaskService.markReminderSent(id, req.user);
     }
-    remove(id) {
-        return this.salesTaskService.remove(id);
+    remove(id, req) {
+        return this.salesTaskService.remove(id, req.user);
+    }
+    isManager(user) {
+        const roles = user?.roles?.map((r) => r.name) ?? [];
+        return roles.some((r) => ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r));
+    }
+    getEffectiveUserId(req, requestedUserId) {
+        const user = req?.user;
+        if (this.isManager(user) && requestedUserId)
+            return requestedUserId;
+        return user?.id;
     }
 };
 exports.SalesTaskController = SalesTaskController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('super_admin', 'sales_manager', 'sales_gm'),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_sales_task_dto_1.CreateSalesTaskDto]),
+    __metadata("design:paramtypes", [create_sales_task_dto_1.CreateSalesTaskDto, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)('user/:userId'),
     __param(0, (0, common_1.Param)('userId')),
     __param(1, (0, common_1.Query)('status')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "findByUser", null);
 __decorate([
     (0, common_1.Get)('user/:userId/today'),
     __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "getTodayTasks", null);
 __decorate([
     (0, common_1.Get)('user/:userId/upcoming'),
     __param(0, (0, common_1.Param)('userId')),
     __param(1, (0, common_1.Query)('days')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:paramtypes", [String, Number, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "getUpcomingTasks", null);
 __decorate([
     (0, common_1.Get)('user/:userId/overdue'),
     __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "getOverdueTasks", null);
 __decorate([
@@ -111,8 +141,9 @@ __decorate([
     __param(0, (0, common_1.Param)('userId')),
     __param(1, (0, common_1.Query)('startDate')),
     __param(2, (0, common_1.Query)('endDate')),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "getStatistics", null);
 __decorate([
@@ -120,15 +151,17 @@ __decorate([
     __param(0, (0, common_1.Param)('userId')),
     __param(1, (0, common_1.Query)('startDate')),
     __param(2, (0, common_1.Query)('endDate')),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "getTasksByDateRange", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "findOne", null);
 __decorate([
@@ -136,24 +169,27 @@ __decorate([
     (0, roles_decorator_1.Roles)('super_admin', 'sales_manager', 'sales_gm'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/complete'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "completeTask", null);
 __decorate([
     (0, common_1.Patch)(':id/status'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "updateStatus", null);
 __decorate([
@@ -161,24 +197,27 @@ __decorate([
     (0, roles_decorator_1.Roles)('super_admin', 'sales_manager', 'sales_gm'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "cancelTask", null);
 __decorate([
     (0, common_1.Patch)(':id/reminder-sent'),
     (0, roles_decorator_1.Roles)('super_admin', 'sales_manager', 'sales_gm'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "markReminderSent", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, roles_decorator_1.Roles)('super_admin', 'sales_manager', 'sales_gm'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesTaskController.prototype, "remove", null);
 exports.SalesTaskController = SalesTaskController = __decorate([

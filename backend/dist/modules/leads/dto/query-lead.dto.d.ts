@@ -5,6 +5,8 @@ export declare class QueryLeadDto {
     source?: LeadSource;
     priority?: LeadPriority;
     propertyId?: string;
+    towerId?: string;
+    flatId?: string;
     assignedTo?: string;
     isQualified?: boolean;
     needsHomeLoan?: boolean;

@@ -39,7 +39,7 @@ export default function LeadForm({
           name: 'email',
           label: 'Email',
           type: 'email',
-          required: true,
+          required: false,
           icon: <Mail className="w-5 h-5" />,
         },
         {
@@ -163,16 +163,6 @@ export default function LeadForm({
           label: 'Additional Notes',
           type: 'textarea',
           rows: 4,
-        },
-      ],
-    },
-    {
-      title: 'Status',
-      fields: [
-        {
-          name: 'isActive',
-          label: 'Mark as Active',
-          type: 'checkbox',
         },
       ],
     },

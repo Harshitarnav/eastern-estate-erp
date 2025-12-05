@@ -56,11 +56,12 @@ async function bootstrap() {
     app.use(compression());
     app.useGlobalPipes(new common_1.ValidationPipe({
         whitelist: true,
-        forbidNonWhitelisted: true,
+        forbidNonWhitelisted: false,
         transform: true,
         transformOptions: {
             enableImplicitConversion: true,
         },
+        validationError: { target: false },
     }));
     app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
     const apiPrefix = configService.get('app.apiPrefix') ?? 'api/v1';

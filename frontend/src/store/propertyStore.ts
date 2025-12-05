@@ -86,13 +86,8 @@ export const usePropertyStore = create<PropertyStore>()(
       },
 
       clearSelection: () => {
-        // Don't allow completely empty selection - select first property
-        const state = get();
-        if (state.properties.length > 0) {
-          set({ selectedProperties: [state.properties[0].id] });
-        } else {
-          set({ selectedProperties: [] });
-        }
+        // Allow empty selection to represent "All properties"
+        set({ selectedProperties: [] });
       },
 
       setProperties: (properties) => set({ properties }),

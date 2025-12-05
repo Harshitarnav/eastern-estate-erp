@@ -15,6 +15,7 @@ import { PriorityService } from './priority.service';
 import { SalesTarget } from '../employees/entities/sales-target.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { LeadsSchemaSyncService } from './leads.schema-sync.service';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [LeadsController, FollowUpController, SalesTaskController, SalesDashboardController],
-  providers: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService, PriorityService],
+  providers: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService, PriorityService, LeadsSchemaSyncService],
   exports: [LeadsService, FollowUpService, SalesTaskService, SalesDashboardService, PriorityService],
 })
 export class LeadsModule {}

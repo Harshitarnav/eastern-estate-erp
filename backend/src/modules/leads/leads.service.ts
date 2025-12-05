@@ -44,15 +44,16 @@ export class LeadsService {
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    
-    // Get count of leads this month to generate sequence
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+
+    // Count leads in the current month to generate a sequential code
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
     const count = await this.leadsRepository.count({
       where: {
-        createdAt: startOfMonth as any,
+        createdAt: Between(startOfMonth as any, endOfMonth as any),
       },
     });
-    
+
     const sequence = (count + 1).toString().padStart(4, '0');
     return `LD${year}${month}${sequence}`;
   }
@@ -96,13 +97,16 @@ export class LeadsService {
   /**
    * Get all leads with filtering and pagination
    */
-  async findAll(query: QueryLeadDto): Promise<PaginatedLeadsResponse> {
+  async findAll(query: QueryLeadDto, user?: any): Promise<PaginatedLeadsResponse> {
     const {
       search,
       status,
       source,
       priority,
       assignedTo,
+      propertyId,
+      towerId,
+      flatId,
       isQualified,
       needsHomeLoan,
       hasSiteVisit,
@@ -148,9 +152,23 @@ export class LeadsService {
       queryBuilder.andWhere('lead.priority = :priority', { priority });
     }
 
-    if (assignedTo) {
+    if (propertyId) {
+      queryBuilder.andWhere('lead.propertyId = :propertyId', { propertyId });
+    }
+
+    if (towerId) {
+      queryBuilder.andWhere('lead.towerId = :towerId', { towerId });
+    }
+
+    if (flatId) {
+      queryBuilder.andWhere('lead.flatId = :flatId', { flatId });
+    }
+
+    const effectiveAssignedTo =
+      this.isManager(user) && assignedTo ? assignedTo : !this.isManager(user) && user?.id ? user.id : undefined;
+    if (effectiveAssignedTo) {
       queryBuilder.andWhere('lead.assignedTo = :assignedTo', {
-        assignedTo,
+        assignedTo: effectiveAssignedTo,
       });
     }
 
@@ -306,7 +324,7 @@ export class LeadsService {
   /**
    * Assign lead to user
    */
-  async assignLead(id: string, userId: string): Promise<LeadResponseDto> {
+  async assignLead(id: string, userId: string, assignedBy?: string): Promise<LeadResponseDto> {
     const lead = await this.leadsRepository.findOne({ where: { id } });
 
     if (!lead) {
@@ -315,6 +333,14 @@ export class LeadsService {
 
     lead.assignedTo = userId;
     lead.assignedAt = new Date();
+
+    const history = Array.isArray(lead.assignmentHistory) ? lead.assignmentHistory : [];
+    history.push({
+      assignedBy: assignedBy || 'system',
+      assignedTo: userId,
+      at: new Date(),
+    });
+    lead.assignmentHistory = history;
 
     const updatedLead = await this.leadsRepository.save(lead);
     return LeadResponseDto.fromEntity(updatedLead);
@@ -490,12 +516,16 @@ export class LeadsService {
    * Get agent dashboard statistics
    */
   async getAgentDashboardStats(agentId: string, query: GetDashboardStatsDto): Promise<AgentDashboardStatsDto> {
-    const { startDate, endDate } = query;
+    const { startDate, endDate, propertyId, towerId, flatId } = query;
 
     const baseQuery = this.leadsRepository
       .createQueryBuilder('lead')
       .where('lead.assignedTo = :agentId', { agentId })
       .andWhere('lead.isActive = true');
+
+    if (propertyId) baseQuery.andWhere('lead.propertyId = :propertyId', { propertyId });
+    if (towerId) baseQuery.andWhere('lead.towerId = :towerId', { towerId });
+    if (flatId) baseQuery.andWhere('lead.flatId = :flatId', { flatId });
 
     if (startDate) {
       baseQuery.andWhere('lead.createdAt >= :startDate', { startDate });
@@ -560,12 +590,16 @@ export class LeadsService {
    * Get admin dashboard statistics
    */
   async getAdminDashboardStats(query: GetDashboardStatsDto): Promise<AdminDashboardStatsDto> {
-    const { startDate, endDate } = query;
+    const { startDate, endDate, propertyId, towerId, flatId } = query;
 
     const baseQuery = this.leadsRepository
       .createQueryBuilder('lead')
       .leftJoinAndSelect('lead.assignedUser', 'assignedUser')
       .where('lead.isActive = true');
+
+    if (propertyId) baseQuery.andWhere('lead.propertyId = :propertyId', { propertyId });
+    if (towerId) baseQuery.andWhere('lead.towerId = :towerId', { towerId });
+    if (flatId) baseQuery.andWhere('lead.flatId = :flatId', { flatId });
 
     if (startDate) {
       baseQuery.andWhere('lead.createdAt >= :startDate', { startDate });
@@ -600,8 +634,24 @@ export class LeadsService {
       }, {} as Record<string, number>)
     ).map(([source, count]) => ({ source, count }));
 
-    // Property-wise breakdown (placeholder)
-    const propertyWiseBreakdown = [];
+    // Property-wise breakdown
+    const propertyGroups = leads.reduce((acc, lead) => {
+      const key = lead.propertyId || 'unassigned';
+      if (!acc[key]) {
+        acc[key] = { leads: 0, conversions: 0 };
+      }
+      acc[key].leads += 1;
+      if (lead.status === 'WON') acc[key].conversions += 1;
+      return acc;
+    }, {} as Record<string, { leads: number; conversions: number }>);
+
+    const propertyWiseBreakdown = Object.entries(propertyGroups).map(([propertyId, stats]) => ({
+      propertyId,
+      propertyName: propertyId,
+      leads: stats.leads,
+      conversions: stats.conversions,
+      conversionRate: stats.leads > 0 ? (stats.conversions / stats.leads) * 100 : 0,
+    }));
 
     // Top performers
     const agentStats = Array.from(uniqueAgents).map(agentId => {
@@ -704,6 +754,9 @@ export class LeadsService {
           source: row.source as any,
           status: (row.status as any) || 'NEW',
           notes: row.notes,
+          propertyId: row.propertyId || importDto.propertyId,
+          towerId: row.towerId || importDto.towerId,
+          flatId: row.flatId || importDto.flatId,
         };
 
         const created = await this.create(createDto);
@@ -720,5 +773,12 @@ export class LeadsService {
     }
 
     return result;
+  }
+
+  private isManager(user?: any): boolean {
+    const roles: string[] = user?.roles?.map((r: any) => r.name) ?? [];
+    return roles.some((r) =>
+      ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r),
+    );
   }
 }

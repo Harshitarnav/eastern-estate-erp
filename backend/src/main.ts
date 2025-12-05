@@ -72,11 +72,12 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // strip unknown props instead of rejecting
       transform: true,
       transformOptions: {
         enableImplicitConversion: true,
       },
+      validationError: { target: false },
     }),
   );
 

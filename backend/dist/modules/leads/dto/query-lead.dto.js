@@ -51,6 +51,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
+], QueryLeadDto.prototype, "towerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], QueryLeadDto.prototype, "flatId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
 ], QueryLeadDto.prototype, "assignedTo", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),

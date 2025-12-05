@@ -1,4 +1,5 @@
 import { User } from '../../users/entities/user.entity';
+import { Property } from '../../properties/entities/property.entity';
 export declare enum LeadStatus {
     NEW = "NEW",
     CONTACTED = "CONTACTED",
@@ -65,6 +66,10 @@ export declare class Lead {
     status: LeadStatus;
     source: LeadSource;
     priority: LeadPriority;
+    propertyId: string;
+    property: Property;
+    towerId: string;
+    flatId: string;
     interestedPropertyTypes: string;
     requirementType: CustomerRequirementType;
     propertyPreference: PropertyPreference;
@@ -86,6 +91,11 @@ export declare class Lead {
     assignedTo: string;
     assignedAt: Date;
     assignedUser: User;
+    assignmentHistory: {
+        assignedBy: string;
+        assignedTo: string;
+        at: Date;
+    }[];
     isQualified: boolean;
     isFirstTimeBuyer: boolean;
     hasExistingProperty: boolean;

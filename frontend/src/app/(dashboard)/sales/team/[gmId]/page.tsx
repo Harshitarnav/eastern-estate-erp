@@ -5,25 +5,51 @@ import { useParams } from 'next/navigation';
 import { leadsService } from '@/services/leads.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { propertiesService } from '@/services/properties.service';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 export default function TeamDashboardPage() {
   const params = useParams();
   const gmId = params.gmId as string;
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [propertyId, setPropertyId] = useState('');
+  const [towerId, setTowerId] = useState('');
+  const [flatId, setFlatId] = useState('');
 
   useEffect(() => {
     loadDashboard();
+    loadProperties();
   }, [gmId]);
+
+  useEffect(() => {
+    loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propertyId, towerId, flatId]);
 
   const loadDashboard = async () => {
     try {
-      const data = await leadsService.getTeamDashboard(gmId);
+      const data = await leadsService.getTeamDashboardStats(gmId, {
+        propertyId: propertyId || undefined,
+        towerId: towerId || undefined,
+        flatId: flatId || undefined,
+      });
       setStats(data);
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadProperties = async () => {
+    try {
+      const data = await propertiesService.getProperties();
+      setProperties(Array.isArray(data) ? data : data.data || []);
+    } catch (error) {
+      console.error('Error loading properties:', error);
     }
   };
 
@@ -33,9 +59,40 @@ export default function TeamDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <h1 className="text-3xl font-bold">Team Performance</h1>
-        <Button>Quick Assign</Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select
+            value={propertyId || 'all'}
+            onValueChange={(v) => setPropertyId(v === 'all' ? '' : v)}
+          >
+            <SelectTrigger className="h-9 w-[200px]">
+              <SelectValue placeholder="Property" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Properties</SelectItem>
+              {properties.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>🏢 {p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Tower ID"
+            className="h-9 w-[160px]"
+            value={towerId}
+            onChange={(e) => setTowerId(e.target.value)}
+          />
+          <Input
+            placeholder="Flat ID"
+            className="h-9 w-[160px]"
+            value={flatId}
+            onChange={(e) => setFlatId(e.target.value)}
+          />
+          <Button variant="outline" size="sm" onClick={() => { setPropertyId(''); setTowerId(''); setFlatId(''); }}>
+            Clear Filters
+          </Button>
+          <Button>Quick Assign</Button>
+        </div>
       </div>
 
       {/* Team Metrics */}
@@ -45,7 +102,7 @@ export default function TeamDashboardPage() {
             <CardTitle className="text-sm">Team Size</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.teamSize || 0}</div>
+            <div className="text-2xl font-bold">{stats?.teamSize || stats?.agentPerformance?.length || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -53,7 +110,7 @@ export default function TeamDashboardPage() {
             <CardTitle className="text-sm">Active Leads</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.activeLeads || 0}</div>
+            <div className="text-2xl font-bold">{stats?.teamLeads ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -61,7 +118,7 @@ export default function TeamDashboardPage() {
             <CardTitle className="text-sm">Team Conversions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats?.conversions || 0}</div>
+            <div className="text-2xl font-bold text-green-600">{stats?.teamConversions ?? 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -69,7 +126,7 @@ export default function TeamDashboardPage() {
             <CardTitle className="text-sm">Target Achievement</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">{stats?.targetAchievement || 0}%</div>
+            <div className="text-2xl font-bold text-purple-600">{stats?.teamConversionRate?.toFixed(1) ?? 0}%</div>
           </CardContent>
         </Card>
       </div>
@@ -81,36 +138,39 @@ export default function TeamDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {stats?.teamMembers?.map((member: any) => (
-              <div key={member.id} className="flex items-center justify-between p-4 border rounded hover:shadow-md transition-shadow">
+            {(stats?.agentPerformance || []).map((member: any) => (
+              <div key={member.agentId} className="flex items-center justify-between p-4 border rounded hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-4">
                   <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center font-bold">
-                    {member.name.charAt(0)}
+                    {(member.agentName || member.agentId || 'U')[0]}
                   </div>
                   <div>
-                    <p className="font-medium">{member.name}</p>
-                    <p className="text-sm text-muted-foreground">{member.role}</p>
+                    <p className="font-medium">{member.agentName || member.agentId}</p>
+                    <p className="text-sm text-muted-foreground">Agent</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-6 text-center">
                   <div>
                     <p className="text-sm text-muted-foreground">Leads</p>
-                    <p className="font-bold">{member.leads}</p>
+                    <p className="font-bold">{member.totalLeads ?? member.leads ?? 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Converted</p>
-                    <p className="font-bold text-green-600">{member.converted}</p>
+                    <p className="font-bold text-green-600">{member.conversions ?? 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Rate</p>
-                    <p className="font-bold">{member.conversionRate}%</p>
+                    <p className="font-bold">{member.conversionRate?.toFixed(1) ?? 0}%</p>
                   </div>
                   <div>
                     <Button size="sm" variant="outline">Assign</Button>
                   </div>
                 </div>
               </div>
-            )) || <p className="text-muted-foreground">No team members found</p>}
+            ))}
+            {(!stats?.agentPerformance || stats.agentPerformance.length === 0) && (
+              <p className="text-muted-foreground">No team members found</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -122,15 +182,15 @@ export default function TeamDashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {stats?.teamTasks?.map((task: any) => (
-              <div key={task.id} className="flex items-center justify-between p-3 border rounded">
-                <div>
-                  <p className="font-medium">{task.agentName}</p>
-                  <p className="text-sm text-muted-foreground">{task.taskCount} pending tasks</p>
-                </div>
-                <span className="text-sm text-red-600">{task.overdue} overdue</span>
+            {stats?.taskOverview ? (
+              <div className="flex gap-4 text-sm">
+                <span>Pending: {stats.taskOverview.pending}</span>
+                <span>Completed: {stats.taskOverview.completed}</span>
+                <span className="text-red-600">Overdue: {stats.taskOverview.overdue}</span>
               </div>
-            )) || <p className="text-muted-foreground">No tasks found</p>}
+            ) : (
+              <p className="text-muted-foreground">No tasks found</p>
+            )}
           </div>
         </CardContent>
       </Card>

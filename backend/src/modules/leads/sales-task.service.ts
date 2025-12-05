@@ -4,7 +4,7 @@
  * @module LeadsModule
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan, In } from 'typeorm';
 import { SalesTask, TaskStatus } from './entities/sales-task.entity';
@@ -32,7 +32,11 @@ export class SalesTaskService {
   /**
    * Get all tasks for a specific user
    */
-  async findByUser(userId: string, status?: TaskStatus): Promise<SalesTask[]> {
+  async findByUser(userId: string, status?: TaskStatus, user?: any): Promise<SalesTask[]> {
+    if (user && !this.isManager(user) && user.id !== userId) {
+      throw new ForbiddenException('You are not allowed to view these tasks');
+    }
+
     const where: any = {
       assignedTo: userId,
       isActive: true,
@@ -52,7 +56,11 @@ export class SalesTaskService {
   /**
    * Get tasks for today
    */
-  async getTodayTasks(userId: string): Promise<SalesTask[]> {
+  async getTodayTasks(userId: string, user?: any): Promise<SalesTask[]> {
+    if (user && !this.isManager(user) && user.id !== userId) {
+      throw new ForbiddenException('You are not allowed to view these tasks');
+    }
+
     const today = startOfDay(new Date());
     const endToday = endOfDay(new Date());
 
@@ -71,7 +79,11 @@ export class SalesTaskService {
   /**
    * Get upcoming tasks (next 7 days)
    */
-  async getUpcomingTasks(userId: string, days: number = 7): Promise<SalesTask[]> {
+  async getUpcomingTasks(userId: string, days: number = 7, user?: any): Promise<SalesTask[]> {
+    if (user && !this.isManager(user) && user.id !== userId) {
+      throw new ForbiddenException('You are not allowed to view these tasks');
+    }
+
     const today = startOfDay(new Date());
     const futureDate = endOfDay(addDays(today, days));
 
@@ -90,7 +102,11 @@ export class SalesTaskService {
   /**
    * Get overdue tasks
    */
-  async getOverdueTasks(userId: string): Promise<SalesTask[]> {
+  async getOverdueTasks(userId: string, user?: any): Promise<SalesTask[]> {
+    if (user && !this.isManager(user) && user.id !== userId) {
+      throw new ForbiddenException('You are not allowed to view these tasks');
+    }
+
     const today = startOfDay(new Date());
 
     const tasks = await this.salesTaskRepository.find({
@@ -144,7 +160,8 @@ export class SalesTaskService {
   /**
    * Mark reminder as sent
    */
-  async markReminderSent(taskId: string): Promise<void> {
+  async markReminderSent(taskId: string, user?: any): Promise<void> {
+    await this.findOne(taskId, user);
     await this.salesTaskRepository.update(taskId, {
       reminderSent: true,
       reminderSentAt: new Date(),
@@ -154,7 +171,8 @@ export class SalesTaskService {
   /**
    * Complete a task
    */
-  async completeTask(taskId: string, outcome?: string, notes?: string): Promise<SalesTask> {
+  async completeTask(taskId: string, outcome?: string, notes?: string, user?: any): Promise<SalesTask> {
+    await this.findOne(taskId, user);
     const updateData: any = {
       status: TaskStatus.COMPLETED,
       completedAt: new Date(),
@@ -164,13 +182,14 @@ export class SalesTaskService {
     if (notes) updateData.notes = notes;
 
     await this.salesTaskRepository.update(taskId, updateData);
-    return this.findOne(taskId);
+    return this.findOne(taskId, user);
   }
 
   /**
    * Update task status
    */
-  async updateStatus(taskId: string, status: TaskStatus): Promise<SalesTask> {
+  async updateStatus(taskId: string, status: TaskStatus, user?: any): Promise<SalesTask> {
+    await this.findOne(taskId, user);
     const updateData: any = { status };
 
     if (status === TaskStatus.COMPLETED) {
@@ -178,13 +197,17 @@ export class SalesTaskService {
     }
 
     await this.salesTaskRepository.update(taskId, updateData);
-    return this.findOne(taskId);
+    return this.findOne(taskId, user);
   }
 
   /**
    * Get task statistics for a user
    */
-  async getStatistics(userId: string, startDate?: Date, endDate?: Date): Promise<any> {
+  async getStatistics(userId: string, startDate?: Date, endDate?: Date, user?: any): Promise<any> {
+    if (user && !this.isManager(user) && user.id !== userId) {
+      throw new ForbiddenException('You are not allowed to view these tasks');
+    }
+
     const where: any = {
       assignedTo: userId,
       isActive: true,
@@ -212,7 +235,11 @@ export class SalesTaskService {
   /**
    * Get tasks grouped by date
    */
-  async getTasksByDateRange(userId: string, startDate: Date, endDate: Date): Promise<any> {
+  async getTasksByDateRange(userId: string, startDate: Date, endDate: Date, user?: any): Promise<any> {
+    if (user && !this.isManager(user) && user.id !== userId) {
+      throw new ForbiddenException('You are not allowed to view these tasks');
+    }
+
     const tasks = await this.salesTaskRepository.find({
       where: {
         assignedTo: userId,
@@ -239,7 +266,7 @@ export class SalesTaskService {
   /**
    * Find one task by ID
    */
-  async findOne(id: string): Promise<SalesTask> {
+  async findOne(id: string, user?: any): Promise<SalesTask> {
     const task = await this.salesTaskRepository.findOne({
       where: { id, isActive: true },
       relations: ['lead', 'assignedToUser', 'assignedByUser'],
@@ -249,28 +276,45 @@ export class SalesTaskService {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
 
+    if (user && !this.isManager(user) && !this.isOwner(task, user.id)) {
+      throw new ForbiddenException('You are not allowed to view this task');
+    }
+
     return task;
   }
 
   /**
    * Update a task
    */
-  async update(id: string, updateData: Partial<CreateSalesTaskDto>): Promise<SalesTask> {
-    await this.salesTaskRepository.update(id, updateData);
-    return this.findOne(id);
+  async update(id: string, updateData: Partial<CreateSalesTaskDto>, user?: any): Promise<SalesTask> {
+    const existing = await this.findOne(id, user);
+    const safeUpdate: Partial<CreateSalesTaskDto> = { ...updateData };
+
+    if (user) {
+      safeUpdate.assignedTo = this.isManager(user) && updateData.assignedTo
+        ? updateData.assignedTo
+        : existing.assignedTo;
+      safeUpdate.assignedBy = user.id;
+      safeUpdate.createdBy = existing.createdBy ?? user.id;
+    }
+
+    await this.salesTaskRepository.update(id, safeUpdate);
+    return this.findOne(id, user);
   }
 
   /**
    * Delete (soft) a task
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, user?: any): Promise<void> {
+    await this.findOne(id, user);
     await this.salesTaskRepository.update(id, { isActive: false });
   }
 
   /**
    * Cancel a task
    */
-  async cancelTask(id: string, reason?: string): Promise<SalesTask> {
+  async cancelTask(id: string, reason?: string, user?: any): Promise<SalesTask> {
+    await this.findOne(id, user);
     const updateData: any = {
       status: TaskStatus.CANCELLED,
     };
@@ -280,10 +324,21 @@ export class SalesTaskService {
     }
 
     await this.salesTaskRepository.update(id, updateData);
-    return this.findOne(id);
+    return this.findOne(id, user);
   }
 
   // Helper methods
+  private isOwner(task: SalesTask, userId: string): boolean {
+    return task.assignedTo === userId || task.createdBy === userId || task.assignedBy === userId;
+  }
+
+  private isManager(user?: any): boolean {
+    const roles: string[] = user?.roles?.map((r: any) => r.name) ?? [];
+    return roles.some((r) =>
+      ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r),
+    );
+  }
+
   private groupByType(tasks: SalesTask[]): Record<string, number> {
     const grouped: Record<string, number> = {};
     tasks.forEach(task => {
@@ -311,7 +366,3 @@ export class SalesTaskService {
     return totalTime / completedTasks.length / (1000 * 60 * 60); // Convert to hours
   }
 }
-
-
-
-

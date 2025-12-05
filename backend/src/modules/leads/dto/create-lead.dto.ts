@@ -28,8 +28,8 @@ export class CreateLeadDto {
   lastName: string;
 
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -82,6 +82,14 @@ export class CreateLeadDto {
   @IsUUID()
   @IsOptional()
   propertyId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  towerId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  flatId?: string;
 
   @IsString()
   @IsOptional()

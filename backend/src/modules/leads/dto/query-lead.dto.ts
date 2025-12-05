@@ -34,6 +34,14 @@ export class QueryLeadDto {
 
   @IsOptional()
   @IsUUID()
+  towerId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  flatId?: string;
+
+  @IsOptional()
+  @IsUUID()
   assignedTo?: string;
 
   @IsOptional()

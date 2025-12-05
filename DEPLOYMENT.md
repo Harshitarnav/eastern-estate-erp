@@ -138,3 +138,61 @@ If you need a clean DB locally, stop services and reset volumes (destructive):
 docker compose -f docker-compose.prod.yml down -v
 docker compose -f docker-compose.prod.yml up -d postgres redis minio
 Use npm run dev + npm run start:dev for rapid feedback; only use docker compose build when you need a production image. -->
+
+
+Here’s a simple way to pipe your React booking form into the leads API:
+
+Use the public leads endpoint (no auth cookie) with a secret token header:
+
+URL: https://<your-domain>/api/v1/leads/public
+Headers: Content-Type: application/json and x-public-token: <YOUR_PUBLIC_LEAD_TOKEN> (set this token in your backend config; keep it secret).
+Send the minimal payload your API needs:
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "email": "jane@example.com",
+  "phone": "9999999999",
+  "source": "WEBSITE",
+  "propertyId": "<optional-property-uuid>",
+  "notes": "Came from booking form on site"
+}
+React example (inside your form submit handler):
+async function submitLead(form) {
+  const payload = {
+    firstName: form.firstName,
+    lastName: form.lastName,
+    email: form.email,
+    phone: form.phone,
+    source: 'WEBSITE',
+    notes: form.notes || 'From booking form',
+    propertyId: form.propertyId || undefined,
+  };
+
+  const res = await fetch('https://<your-domain>/api/v1/leads/public', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-public-token': '<YOUR_PUBLIC_LEAD_TOKEN>',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Lead submit failed');
+  }
+  return res.json();
+}
+Security notes:
+
+Do not expose admin JWTs. Use the one-purpose x-public-token.
+Consider basic spam protection (honeypot field, minimal rate limit, optional reCAPTCHA).
+Validate email/phone client-side before sending.
+Test quickly with curl:
+
+curl -X POST https://<your-domain>/api/v1/leads/public \
+  -H "Content-Type: application/json" \
+  -H "x-public-token: <YOUR_PUBLIC_LEAD_TOKEN>" \
+  -d '{"firstName":"Test","lastName":"User","email":"test@example.com","phone":"9999999999","source":"WEBSITE"}'
+Once this is wired, submissions from your React booking form will create leads in the system.

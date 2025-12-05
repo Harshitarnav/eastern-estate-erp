@@ -9,6 +9,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Property } from '../../properties/entities/property.entity';
 
 export enum LeadStatus {
   NEW = 'NEW',
@@ -165,15 +166,21 @@ export class Lead {
   // @Column('int', { default: 0 })
   // leadScore: number; // 0-100 based on various factors
 
-  // Property Interest
-  // Note: property_id column doesn't exist in DB, commenting out for now
-  // @Column({ type: 'uuid', nullable: true })
-  // @Index()
-  // propertyId: string;
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
+  @Index()
+  propertyId: string;
 
-  // @ManyToOne(() => Property, { nullable: true })
-  // @JoinColumn({ name: 'propertyId' })
-  // property: Property;
+  @ManyToOne(() => Property, { nullable: true })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
+
+  @Column({ name: 'tower_id', type: 'uuid', nullable: true })
+  @Index()
+  towerId: string;
+
+  @Column({ name: 'flat_id', type: 'uuid', nullable: true })
+  @Index()
+  flatId: string;
 
   @Column({ name: 'interested_in', type: 'varchar', length: 255, nullable: true })
   interestedPropertyTypes: string; // 2BHK, 3BHK, Villa, etc.
@@ -255,6 +262,9 @@ export class Lead {
   @ManyToOne(() => User, { nullable: true, createForeignKeyConstraints: false })
   @JoinColumn({ name: 'assigned_to' })
   assignedUser: User;
+
+  @Column({ name: 'assignment_history', type: 'jsonb', nullable: true })
+  assignmentHistory: { assignedBy: string; assignedTo: string; at: Date }[];
 
   // Qualification
   @Column({ type: 'boolean', default: false })

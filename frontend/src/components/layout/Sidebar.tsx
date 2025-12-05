@@ -38,7 +38,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const isChildActive = (paths: string[]) => paths.some(path => pathname === path || pathname?.startsWith(path + '/'));
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/' },
     { 
       id: 'property-inventory', 
       label: 'Property Inventory', 
@@ -61,17 +61,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     { id: 'payments', label: 'Payments', icon: DollarSign, href: '/payments' },
-    { 
-      id: 'telephony', 
-      label: 'Telephony & IVR', 
-      icon: Phone,
-      children: [
-        { id: 'telephony-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/telephony/dashboard' },
-        { id: 'calls', label: 'Call History', icon: Phone, href: '/telephony/calls' },
-        { id: 'agents', label: 'Agents', icon: Users, href: '/telephony/agents' },
-        { id: 'insights', label: 'AI Insights', icon: TrendingUp, href: '/telephony/insights' },
-      ]
-    },
+    // { 
+    //   id: 'telephony', 
+    //   label: 'Telephony & IVR', 
+    //   icon: Phone,
+    //   children: [
+    //     { id: 'telephony-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/telephony/dashboard' },
+    //     { id: 'calls', label: 'Call History', icon: Phone, href: '/telephony/calls' },
+    //     { id: 'agents', label: 'Agents', icon: Users, href: '/telephony/agents' },
+    //     { id: 'insights', label: 'AI Insights', icon: TrendingUp, href: '/telephony/insights' },
+    //   ]
+    // },
     { 
       id: 'accounting', 
       label: 'Accounting', 
@@ -101,7 +101,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     // { id: 'inventory', label: 'Inventory', icon: Package, href: '/inventory' },
     { id: 'employees', label: 'Employees', icon: Briefcase, href: '/employees' },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
-    { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
+    // { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
     { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
 

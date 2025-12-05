@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Lead = exports.PropertyPreference = exports.CustomerRequirementType = exports.SiteVisitStatus = exports.LeadPriority = exports.LeadSource = exports.LeadStatus = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
+const property_entity_1 = require("../../properties/entities/property.entity");
 var LeadStatus;
 (function (LeadStatus) {
     LeadStatus["NEW"] = "NEW";
@@ -151,6 +152,26 @@ __decorate([
     __metadata("design:type", String)
 ], Lead.prototype, "priority", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid', nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], Lead.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], Lead.prototype, "property", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'tower_id', type: 'uuid', nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], Lead.prototype, "towerId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'flat_id', type: 'uuid', nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], Lead.prototype, "flatId", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'interested_in', type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
 ], Lead.prototype, "interestedPropertyTypes", void 0);
@@ -242,6 +263,10 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'assigned_to' }),
     __metadata("design:type", user_entity_1.User)
 ], Lead.prototype, "assignedUser", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'assignment_history', type: 'jsonb', nullable: true }),
+    __metadata("design:type", Array)
+], Lead.prototype, "assignmentHistory", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: false }),
     __metadata("design:type", Boolean)

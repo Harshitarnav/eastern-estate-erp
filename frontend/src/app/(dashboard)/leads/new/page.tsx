@@ -10,6 +10,12 @@ export default function NewLeadPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
+  const defaultValues = {
+    status: 'NEW',
+    source: 'WEBSITE',
+    priority: 'MEDIUM',
+    isActive: true,
+  };
 
   useEffect(() => {
     fetchProperties();
@@ -18,7 +24,7 @@ export default function NewLeadPage() {
   const fetchProperties = async () => {
     try {
       const response = await propertiesService.getProperties({ isActive: true });
-      setProperties(response.data);
+      setProperties(response.data || response);
     } catch (error) {
       console.error('Error fetching properties:', error);
     }
@@ -27,25 +33,34 @@ export default function NewLeadPage() {
   const handleSubmit = async (data: any) => {
     setLoading(true);
     try {
+      const toNumber = (val: any) => (val === '' || val === undefined || val === null ? undefined : Number(val));
+      const clean = <T,>(val: T) => (val === '' ? undefined : val);
+      const cleanEmail = (val: string | undefined) => {
+        if (!val) return undefined;
+        const trimmed = val.trim();
+        return trimmed.length ? trimmed : undefined;
+      };
+
       const leadData = {
         firstName: data.firstName,
         lastName: data.lastName,
-        email: data.email,
+        email: cleanEmail(data.email),
         phone: data.phone,
-        alternatePhone: data.alternatePhone,
+        alternatePhone: clean(data.alternatePhone),
         status: data.status || 'NEW',
-        source: data.source,
+        source: data.source || 'WEBSITE',
         priority: data.priority || 'MEDIUM',
-        propertyId: data.propertyId,
-        budgetMin: data.budgetMin,
-        budgetMax: data.budgetMax,
-        preferredLocation: data.preferredLocation,
-        needsHomeLoan: data.needsHomeLoan || false,
-        isFirstTimeBuyer: data.isFirstTimeBuyer || false,
-        nextFollowUpDate: data.nextFollowUpDate,
-        followUpNotes: data.followUpNotes,
-        notes: data.notes,
-        isActive: data.isActive !== false,
+        propertyId: clean(data.propertyId),
+        towerId: clean(data.towerId),
+        flatId: clean(data.flatId),
+        budgetMin: toNumber(data.budgetMin),
+        budgetMax: toNumber(data.budgetMax),
+        preferredLocation: clean(data.preferredLocation),
+        needsHomeLoan: !!data.needsHomeLoan,
+        isFirstTimeBuyer: !!data.isFirstTimeBuyer,
+        nextFollowUpDate: clean(data.nextFollowUpDate),
+        followUpNotes: clean(data.followUpNotes),
+        notes: clean(data.notes),
       };
 
       await leadsService.createLead(leadData);
@@ -70,6 +85,7 @@ export default function NewLeadPage() {
         onCancel={handleCancel}
         loading={loading}
         properties={properties}
+        initialData={defaultValues}
       />
     </div>
   );

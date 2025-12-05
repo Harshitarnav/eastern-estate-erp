@@ -7,7 +7,6 @@ import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import ChatButton from '@/components/layout/ChatButton';
-import { PropertySelector } from '@/components/layout/PropertySelector';
 import { Menu, LogOut } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -65,12 +64,8 @@ export default function DashboardLayout({
           >
             <Menu className="h-6 w-6" />
           </button>
-          
-          <div className="flex-1 flex items-center justify-center">
-            <PropertySelector />
-          </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <NotificationBell />
             <ChatButton />
             

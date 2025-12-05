@@ -13,11 +13,17 @@ export declare class ImportLeadRowDto {
     email?: string;
     source: string;
     property?: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
     status?: string;
     notes?: string;
 }
 export declare class ImportLeadsDto {
     leads: ImportLeadRowDto[];
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
 }
 export declare class ImportLeadsResultDto {
     totalRows: number;

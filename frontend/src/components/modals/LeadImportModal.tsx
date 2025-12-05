@@ -20,13 +20,16 @@ export default function LeadImportModal({
   const [error, setError] = useState('');
   const [importResult, setImportResult] = useState<any>(null);
   const [previewData, setPreviewData] = useState<any[]>([]);
+  const [propertyId, setPropertyId] = useState('');
+  const [towerId, setTowerId] = useState('');
+  const [flatId, setFlatId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const downloadTemplate = () => {
     // Create CSV template
-    const template = 'First Name,Last Name,Phone,Email,Source,Status,Notes\n' +
-      'John,Doe,9876543210,john@example.com,WEBSITE,NEW,Interested in 2BHK\n' +
-      'Jane,Smith,9876543211,jane@example.com,REFERRAL,CONTACTED,Looking for 3BHK';
+    const template = 'First Name,Last Name,Phone,Email,Source,Status,Notes,PropertyId,TowerId,FlatId\n' +
+      'John,Doe,9876543210,john@example.com,WEBSITE,NEW,Interested in 2BHK,PROPERTY_UUID,,\n' +
+      'Jane,Smith,9876543211,jane@example.com,REFERRAL,CONTACTED,Looking for 3BHK,PROPERTY_UUID,TOWER_UUID,FLAT_UUID';
     
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -106,10 +109,18 @@ export default function LeadImportModal({
             source: values[4]?.trim() || 'OTHER',
             status: values[5]?.trim() || 'NEW',
             notes: values[6]?.trim() || '',
+            propertyId: values[7]?.trim() || '',
+            towerId: values[8]?.trim() || '',
+            flatId: values[9]?.trim() || '',
           };
         }).filter(lead => lead.firstName && lead.phone); // Basic validation
 
-        const result = await leadsService.importLeads({ leads });
+        const result = await leadsService.importLeads({
+          leads,
+          propertyId: propertyId || undefined,
+          towerId: towerId || undefined,
+          flatId: flatId || undefined,
+        });
         setImportResult(result);
         
         if (result.errorCount === 0) {
@@ -134,6 +145,9 @@ export default function LeadImportModal({
       setError('');
       setImportResult(null);
       setPreviewData([]);
+      setPropertyId('');
+      setTowerId('');
+      setFlatId('');
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -221,6 +235,45 @@ export default function LeadImportModal({
                 </div>
               </div>
             )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Property ID (optional)
+                </label>
+                <input
+                  type="text"
+                  value={propertyId}
+                  onChange={(e) => setPropertyId(e.target.value)}
+                  placeholder="UUID applied to all rows if set"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Tower ID (optional)
+                </label>
+                <input
+                  type="text"
+                  value={towerId}
+                  onChange={(e) => setTowerId(e.target.value)}
+                  placeholder="UUID applied to all rows if set"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default Flat ID (optional)
+                </label>
+                <input
+                  type="text"
+                  value={flatId}
+                  onChange={(e) => setFlatId(e.target.value)}
+                  placeholder="UUID applied to all rows if set"
+                  className="w-full border rounded-lg px-3 py-2 text-sm"
+                />
+              </div>
+            </div>
 
             {/* Error Message */}
             {error && (

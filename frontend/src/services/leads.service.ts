@@ -17,6 +17,8 @@ export interface Lead {
   leadScore: number;
   notes?: string;
   propertyId?: string;
+  towerId?: string;
+  flatId?: string;
   interestedPropertyTypes?: string[];
   budgetMin?: number;
   budgetMax?: number;
@@ -62,6 +64,7 @@ export interface Lead {
   updatedAt: string;
   property?: any;
   assignedUser?: any;
+  assignmentHistory?: { assignedBy?: string; assignedTo?: string; at?: string | Date }[];
 }
 
 export interface LeadFilters {
@@ -70,6 +73,10 @@ export interface LeadFilters {
   source?: string;
   priority?: string;
   propertyId?: string;
+  towerId?: string;
+  flatId?: string;
+  towerId?: string;
+  flatId?: string;
   assignedTo?: string;
   isQualified?: boolean;
   needsHomeLoan?: boolean;
@@ -184,10 +191,16 @@ class LeadsService {
   async getAgentDashboardStats(agentId: string, filters?: {
     startDate?: string;
     endDate?: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.propertyId) params.append('propertyId', filters.propertyId);
+    if (filters?.towerId) params.append('towerId', filters.towerId);
+    if (filters?.flatId) params.append('flatId', filters.flatId);
     
     const response = await api.get(
       `${this.baseUrl}/dashboard/agent/${agentId}?${params.toString()}`
@@ -198,10 +211,16 @@ class LeadsService {
   async getAdminDashboardStats(filters?: {
     startDate?: string;
     endDate?: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.propertyId) params.append('propertyId', filters.propertyId);
+    if (filters?.towerId) params.append('towerId', filters.towerId);
+    if (filters?.flatId) params.append('flatId', filters.flatId);
     
     const response = await api.get(
       `${this.baseUrl}/dashboard/admin?${params.toString()}`
@@ -212,10 +231,16 @@ class LeadsService {
   async getTeamDashboardStats(gmId: string, filters?: {
     startDate?: string;
     endDate?: string;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
   }): Promise<any> {
     const params = new URLSearchParams();
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.propertyId) params.append('propertyId', filters.propertyId);
+    if (filters?.towerId) params.append('towerId', filters.towerId);
+    if (filters?.flatId) params.append('flatId', filters.flatId);
     
     const response = await api.get(
       `${this.baseUrl}/dashboard/team/${gmId}?${params.toString()}`

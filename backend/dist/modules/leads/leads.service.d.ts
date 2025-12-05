@@ -8,11 +8,11 @@ export declare class LeadsService {
     constructor(leadsRepository: Repository<Lead>, notificationsService: NotificationsService);
     private generateLeadCode;
     create(createLeadDto: CreateLeadDto): Promise<LeadResponseDto>;
-    findAll(query: QueryLeadDto): Promise<PaginatedLeadsResponse>;
+    findAll(query: QueryLeadDto, user?: any): Promise<PaginatedLeadsResponse>;
     findOne(id: string): Promise<LeadResponseDto>;
     update(id: string, updateLeadDto: UpdateLeadDto): Promise<LeadResponseDto>;
     remove(id: string): Promise<void>;
-    assignLead(id: string, userId: string): Promise<LeadResponseDto>;
+    assignLead(id: string, userId: string, assignedBy?: string): Promise<LeadResponseDto>;
     updateStatus(id: string, status: string, notes?: string): Promise<LeadResponseDto>;
     getStatistics(): Promise<{
         total: number;
@@ -33,4 +33,5 @@ export declare class LeadsService {
     getAdminDashboardStats(query: GetDashboardStatsDto): Promise<AdminDashboardStatsDto>;
     getTeamDashboardStats(gmId: string, query: GetDashboardStatsDto): Promise<TeamDashboardStatsDto>;
     importLeads(importDto: ImportLeadsDto): Promise<ImportLeadsResultDto>;
+    private isManager;
 }
