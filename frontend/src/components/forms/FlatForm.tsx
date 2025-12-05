@@ -64,9 +64,7 @@ export default function FlatForm({
       finalPrice: num(values.finalPrice) ?? 0,
       tokenAmount: num(values.tokenAmount),
       displayOrder: num(values.displayOrder) ?? 1,
-      amenities: typeof values.amenities === 'string'
-        ? values.amenities.split(',').map((a: string) => a.trim()).filter(Boolean)
-        : values.amenities,
+      amenities: list(values.amenities),
       registrationReceiptUrls: list(values.registrationReceiptUrls),
       paymentReceiptUrls: list(values.paymentReceiptUrls),
       demandLetterUrls: list(values.demandLetterUrls),
