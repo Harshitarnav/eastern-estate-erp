@@ -8,6 +8,7 @@ export interface Customer {
   fullName?: string;
   email: string;
   phone: string;
+  phoneNumber?: string;
   alternatePhone?: string;
   dateOfBirth?: string;
   gender?: string;
