@@ -136,7 +136,11 @@ export default function NewFlatPage() {
         parkingSlots: data.parkingSlots || 0,
         coveredParking: data.coveredParking || false,
         furnishingStatus: data.furnishingStatus,
-        amenities: data.amenities ? data.amenities.split(',').map((a: string) => a.trim()) : [],
+        amenities: Array.isArray(data.amenities)
+          ? data.amenities
+          : typeof data.amenities === 'string'
+            ? data.amenities.split(',').map((a: string) => a.trim()).filter(Boolean)
+            : [],
         specialFeatures: data.specialFeatures,
         floorPlanUrl: data.floorPlanUrl,
         images: data.images ? data.images.split(',').map((img: string) => img.trim()) : [],
