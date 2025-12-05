@@ -52,6 +52,11 @@ export interface Flat {
   allotmentLetterUrl?: string;
   possessionLetterUrl?: string;
   paymentPlanUrl?: string;
+  registrationReceiptUrls?: string[];
+  paymentReceiptUrls?: string[];
+  demandLetterUrls?: string[];
+  nocUrl?: string;
+  handoverDocumentUrl?: string;
   customerId?: string;
   bookingDate?: string;
   soldDate?: string;
