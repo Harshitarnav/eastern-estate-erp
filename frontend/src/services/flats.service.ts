@@ -48,6 +48,10 @@ export interface Flat {
   floorPlanUrl?: string;
   images?: string[];
   virtualTourUrl?: string;
+  saleAgreementUrl?: string;
+  allotmentLetterUrl?: string;
+  possessionLetterUrl?: string;
+  paymentPlanUrl?: string;
   customerId?: string;
   bookingDate?: string;
   soldDate?: string;
