@@ -104,6 +104,7 @@ export class CustomersService {
       legacyFirstName: safeFirst || fullName,
       legacyLastName: safeLast || '',
       phoneNumber,
+      legacyPhone: phoneNumber,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
     const savedCustomer = await this.customersRepository.save(customer);
@@ -241,6 +242,7 @@ export class CustomersService {
     
     if (phone) {
       customer.phoneNumber = phone;
+      customer.legacyPhone = phone;
     }
 
     Object.assign(customer, rest);

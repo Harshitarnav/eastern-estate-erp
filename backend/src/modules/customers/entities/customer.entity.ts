@@ -79,8 +79,12 @@ export class Customer {
   @Index()
   phoneNumber: string;
 
+  // Legacy phone column still present in DB
+  @Column({ name: 'phone', length: 20, nullable: true })
+  legacyPhone: string;
+
   get phone(): string {
-    return this.phoneNumber;
+    return this.phoneNumber || this.legacyPhone;
   }
 
   @Column({ name: 'alternate_phone', length: 20, nullable: true })
