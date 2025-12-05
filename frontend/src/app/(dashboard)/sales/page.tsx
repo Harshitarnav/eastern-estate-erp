@@ -88,8 +88,10 @@ export default function SalesDashboard() {
   }>({});
 
   const isManager = useMemo(() => {
-    const roles = user?.roles || [];
-    return roles.some((r) =>
+    const roleNames = (user?.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r?.name,
+    );
+    return roleNames.some((r) =>
       ['super_admin', 'admin', 'sales_manager', 'sales_gm'].includes(r),
     );
   }, [user]);
@@ -263,7 +265,7 @@ export default function SalesDashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={loadDashboard}>Try Again</Button>
+            <Button onClick={() => loadDashboard()}>Try Again</Button>
           </CardContent>
         </Card>
       </div>
@@ -281,7 +283,7 @@ export default function SalesDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={loadDashboard} className="w-full">
+            <Button onClick={() => loadDashboard()} className="w-full">
               Reload Dashboard
             </Button>
           </CardContent>

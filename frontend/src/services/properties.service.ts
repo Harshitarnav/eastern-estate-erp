@@ -29,6 +29,7 @@ export interface Property {
   reraStatus?: string;
   projectType?: string;
   propertyType?: string;
+  type?: string;
   status: string;
   images?: any;
   documents?: any;
@@ -79,6 +80,7 @@ export interface CreatePropertyDto {
   reraStatus?: string;
   projectType?: string;
   propertyType?: string;
+  type?: string;
   status?: string;
   images?: any;
   documents?: any;

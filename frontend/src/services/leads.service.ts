@@ -59,6 +59,8 @@ export interface Lead {
   convertedAt?: string;
   lostReason?: string;
   lostAt?: string;
+  leadCode?: string;
+  fullName?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -73,8 +75,6 @@ export interface LeadFilters {
   source?: string;
   priority?: string;
   propertyId?: string;
-  towerId?: string;
-  flatId?: string;
   towerId?: string;
   flatId?: string;
   assignedTo?: string;
@@ -265,7 +265,13 @@ class LeadsService {
       source: string;
       status?: string;
       notes?: string;
+      propertyId?: string;
+      towerId?: string;
+      flatId?: string;
     }>;
+    propertyId?: string;
+    towerId?: string;
+    flatId?: string;
   }): Promise<{
     totalRows: number;
     successCount: number;
