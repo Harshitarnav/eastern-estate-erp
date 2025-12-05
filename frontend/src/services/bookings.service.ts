@@ -31,6 +31,7 @@ export interface Booking {
   maintenanceDeposit: number;
   parkingCharges: number;
   otherCharges: number;
+  paymentPlan?: string;
   rtgsNumber?: string;
   utrNumber?: string;
   chequeNumber?: string;
@@ -51,6 +52,7 @@ export interface Booking {
   coApplicantEmail?: string;
   coApplicantPhone?: string;
   coApplicantRelation?: string;
+  documents?: string[];
   notes?: string;
   specialTerms?: string;
   tags?: string[];
