@@ -63,7 +63,13 @@ export default function BookingsPage() {
         if (properties.length > 0) return;
         setLoadingProperties(true);
         const res = await propertiesService.getProperties({ limit: 100, isActive: true });
-        setProperties(res.data || []);
+        const mapped = (res.data || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          location: p.location || p.city || '',
+          type: p.propertyType || p.type || 'Property',
+        }));
+        setProperties(mapped);
       } catch (err) {
         console.error('Error loading properties', err);
       } finally {

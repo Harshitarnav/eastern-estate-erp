@@ -72,7 +72,13 @@ export default function CustomersPage() {
       (async () => {
         try {
           const res = await propertiesService.getProperties({ limit: 200, isActive: true });
-          setProperties(res.data || []);
+          const mapped = (res.data || []).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            location: p.location || p.city || '',
+            type: p.propertyType || p.type || 'Property',
+          }));
+          setProperties(mapped);
         } catch (err) {
           console.error('Failed to load properties', err);
         }
