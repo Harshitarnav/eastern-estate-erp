@@ -110,6 +110,8 @@ cd ~/eastern-estate-erp
 PULL CHANGES FROM GIT
 docker compose -f docker-compose.prod.yml build backend frontend
 docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend -->
+
+<!-- docker compose -f docker-compose.prod.yml logs backend --tail 200 --since=5m -->
 <!-- 
 admin@eastern-estate.com
 Admin@123 -->

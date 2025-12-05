@@ -71,8 +71,22 @@ export class CustomersService {
     const customerCode = await this.generateCustomerCode();
 
     // Map firstName and lastName to fullName
-    const { firstName, lastName, phone, isVIP, propertyId, ...rest } = createCustomerDto;
-    const fullName = `${firstName} ${lastName}`.trim();
+    const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, ...rest } =
+      createCustomerDto;
+
+    // Build a safe full name even if pieces are missing
+    const safeFirst = (firstName || '').trim();
+    const safeLast = (lastName || '').trim();
+    const fullName = [safeFirst, safeLast].filter(Boolean).join(' ') || 'Customer';
+
+    // Ensure we always have a phone number stored (DB column is NOT NULL)
+    let phoneNumber = (phone || '').trim();
+    if (!phoneNumber) {
+      phoneNumber = (alternatePhone || '').trim();
+    }
+    if (!phoneNumber) {
+      phoneNumber = 'UNKNOWN';
+    }
 
     // Handle isVIP and other metadata fields
     const metadata: any = {};
@@ -87,7 +101,7 @@ export class CustomersService {
       ...rest,
       customerCode,
       fullName,
-      phoneNumber: phone,
+      phoneNumber,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
     const savedCustomer = await this.customersRepository.save(customer);
@@ -116,13 +130,13 @@ export class CustomersService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(customer.firstName ILIKE :search OR customer.lastName ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)',
+        "(customer.fullName ILIKE :search OR customer.email ILIKE :search OR customer.phoneNumber ILIKE :search)",
         { search: `%${search}%` },
       );
     }
 
     if (type) {
-      queryBuilder.andWhere('customer.type = :type', { type });
+      queryBuilder.andWhere('customer.customerType = :type', { type });
     }
 
     if (kycStatus) {
@@ -130,11 +144,14 @@ export class CustomersService {
     }
 
     if (needsHomeLoan !== undefined) {
-      queryBuilder.andWhere('customer.needsHomeLoan = :needsHomeLoan', { needsHomeLoan });
+      queryBuilder.andWhere(
+        "(customer.metadata ->> 'needsHomeLoan')::boolean = :needsHomeLoan",
+        { needsHomeLoan },
+      );
     }
 
     if (isVIP !== undefined) {
-      queryBuilder.andWhere('customer.isVIP = :isVIP', { isVIP });
+      queryBuilder.andWhere("(customer.metadata ->> 'isVIP')::boolean = :isVIP", { isVIP });
     }
 
     if (city) {

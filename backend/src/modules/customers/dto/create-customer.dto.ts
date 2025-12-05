@@ -14,22 +14,22 @@ import { CustomerType, KYCStatus } from '../entities/customer.entity';
 
 export class CreateCustomerDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  firstName: string;
+  firstName?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MaxLength(100)
-  lastName: string;
+  lastName?: string;
 
   @IsEmail()
   @IsOptional()
   email?: string;
 
   @IsString()
-  @IsNotEmpty()
-  phone: string;
+  @IsOptional()
+  phone?: string;
 
   @IsString()
   @IsOptional()
