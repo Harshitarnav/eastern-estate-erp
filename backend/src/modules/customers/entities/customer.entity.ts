@@ -55,14 +55,21 @@ export class Customer {
   @Index()
   fullName: string;
 
+  // Legacy columns still present in the DB (keep in sync to avoid NOT NULL errors)
+  @Column({ name: 'first_name', length: 255, nullable: true })
+  legacyFirstName: string;
+
+  @Column({ name: 'last_name', length: 255, nullable: true })
+  legacyLastName: string;
+
   // Getters for backward compatibility
   get firstName(): string {
-    return this.fullName?.split(' ')[0] || '';
+    return this.fullName?.split(' ')[0] || this.legacyFirstName || '';
   }
 
   get lastName(): string {
     const parts = this.fullName?.split(' ') || [];
-    return parts.slice(1).join(' ') || '';
+    return parts.slice(1).join(' ') || this.legacyLastName || '';
   }
 
   @Column({ length: 255, nullable: true })

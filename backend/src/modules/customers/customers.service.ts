@@ -101,6 +101,8 @@ export class CustomersService {
       ...rest,
       customerCode,
       fullName,
+      legacyFirstName: safeFirst || fullName,
+      legacyLastName: safeLast || '',
       phoneNumber,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
@@ -233,6 +235,8 @@ export class CustomersService {
       const newFirstName = firstName || customer.firstName;
       const newLastName = lastName || customer.lastName;
       customer.fullName = `${newFirstName} ${newLastName}`.trim();
+      customer.legacyFirstName = newFirstName;
+      customer.legacyLastName = newLastName;
     }
     
     if (phone) {
