@@ -167,7 +167,16 @@ export class Property {
   })
   expectedRevenue: number;
 
-  @Column({ name: 'bhk_types', type: 'simple-array', nullable: true })
+  @Column({
+    name: 'bhk_types',
+    type: 'text',
+    array: true,
+    nullable: true,
+    transformer: {
+      to: (value?: string[] | null) => value ?? null,
+      from: (value: string[] | null) => value ?? [],
+    },
+  })
   bhkTypes: string[] | null;
 
   @Column({ type: 'jsonb', nullable: true })
