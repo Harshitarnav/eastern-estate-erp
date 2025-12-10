@@ -1042,11 +1042,14 @@ export class PropertiesService {
       return undefined;
     }
 
-    if (!Array.isArray(value)) {
-      return null;
-    }
+    // Accept both string and array inputs; normalize to an array of trimmed strings
+    const sourceArray: unknown[] = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(',') // allow comma-separated string for single/multiple values
+        : [];
 
-    const normalized = value
+    const normalized = sourceArray
       .map((item) => (typeof item === 'string' ? item.trim() : item))
       .filter((item) => item !== undefined && item !== null && item !== '') as (string | number)[];
 
