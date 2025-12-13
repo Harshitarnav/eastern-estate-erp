@@ -46,7 +46,7 @@ let PropertiesSchemaSyncService = PropertiesSchemaSyncService_1 = class Properti
             `ALTER TABLE properties ADD COLUMN IF NOT EXISTS price_min DECIMAL(15,2);`,
             `ALTER TABLE properties ADD COLUMN IF NOT EXISTS price_max DECIMAL(15,2);`,
             `ALTER TABLE properties ADD COLUMN IF NOT EXISTS expected_revenue DECIMAL(18,2);`,
-            `ALTER TABLE properties ADD COLUMN IF NOT EXISTS bhk_types TEXT;`,
+            `ALTER TABLE properties ADD COLUMN IF NOT EXISTS bhk_types TEXT[];`,
             `ALTER TABLE properties ADD COLUMN IF NOT EXISTS images JSONB;`,
             `ALTER TABLE properties ADD COLUMN IF NOT EXISTS documents JSONB;`,
             `ALTER TABLE properties ADD COLUMN IF NOT EXISTS amenities JSONB;`,

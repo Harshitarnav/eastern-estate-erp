@@ -792,10 +792,12 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         if (value === undefined) {
             return undefined;
         }
-        if (!Array.isArray(value)) {
-            return null;
-        }
-        const normalized = value
+        const sourceArray = Array.isArray(value)
+            ? value
+            : typeof value === 'string'
+                ? value.split(',')
+                : [];
+        const normalized = sourceArray
             .map((item) => (typeof item === 'string' ? item.trim() : item))
             .filter((item) => item !== undefined && item !== null && item !== '');
         if (normalized.length === 0) {

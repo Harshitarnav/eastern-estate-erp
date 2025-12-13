@@ -27,10 +27,13 @@ export declare class Customer {
     id: string;
     customerCode: string;
     fullName: string;
+    legacyFirstName: string;
+    legacyLastName: string;
     get firstName(): string;
     get lastName(): string;
     email: string;
     phoneNumber: string;
+    legacyPhone: string;
     get phone(): string;
     alternatePhone: string;
     dateOfBirth: Date;

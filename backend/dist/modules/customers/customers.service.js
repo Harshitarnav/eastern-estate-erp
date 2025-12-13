@@ -58,8 +58,17 @@ let CustomersService = class CustomersService {
             throw new common_1.ConflictException('Customer with this email or phone already exists');
         }
         const customerCode = await this.generateCustomerCode();
-        const { firstName, lastName, phone, isVIP, propertyId, ...rest } = createCustomerDto;
-        const fullName = `${firstName} ${lastName}`.trim();
+        const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, ...rest } = createCustomerDto;
+        const safeFirst = (firstName || '').trim();
+        const safeLast = (lastName || '').trim();
+        const fullName = [safeFirst, safeLast].filter(Boolean).join(' ') || 'Customer';
+        let phoneNumber = (phone || '').trim();
+        if (!phoneNumber) {
+            phoneNumber = (alternatePhone || '').trim();
+        }
+        if (!phoneNumber) {
+            phoneNumber = 'UNKNOWN';
+        }
         const metadata = {};
         if (isVIP !== undefined) {
             metadata.isVIP = isVIP;
@@ -71,7 +80,10 @@ let CustomersService = class CustomersService {
             ...rest,
             customerCode,
             fullName,
-            phoneNumber: phone,
+            legacyFirstName: safeFirst || fullName,
+            legacyLastName: safeLast || '',
+            phoneNumber,
+            legacyPhone: phoneNumber,
             metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
         const savedCustomer = await this.customersRepository.save(customer);
@@ -81,19 +93,19 @@ let CustomersService = class CustomersService {
         const { search, type, kycStatus, needsHomeLoan, isVIP, city, createdFrom, createdTo, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const queryBuilder = this.customersRepository.createQueryBuilder('customer');
         if (search) {
-            queryBuilder.andWhere('(customer.firstName ILIKE :search OR customer.lastName ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)', { search: `%${search}%` });
+            queryBuilder.andWhere("(customer.fullName ILIKE :search OR customer.email ILIKE :search OR customer.phoneNumber ILIKE :search)", { search: `%${search}%` });
         }
         if (type) {
-            queryBuilder.andWhere('customer.type = :type', { type });
+            queryBuilder.andWhere('customer.customerType = :type', { type });
         }
         if (kycStatus) {
             queryBuilder.andWhere('customer.kycStatus = :kycStatus', { kycStatus });
         }
         if (needsHomeLoan !== undefined) {
-            queryBuilder.andWhere('customer.needsHomeLoan = :needsHomeLoan', { needsHomeLoan });
+            queryBuilder.andWhere("(customer.metadata ->> 'needsHomeLoan')::boolean = :needsHomeLoan", { needsHomeLoan });
         }
         if (isVIP !== undefined) {
-            queryBuilder.andWhere('customer.isVIP = :isVIP', { isVIP });
+            queryBuilder.andWhere("(customer.metadata ->> 'isVIP')::boolean = :isVIP", { isVIP });
         }
         if (city) {
             queryBuilder.andWhere('customer.city = :city', { city });
@@ -154,9 +166,12 @@ let CustomersService = class CustomersService {
             const newFirstName = firstName || customer.firstName;
             const newLastName = lastName || customer.lastName;
             customer.fullName = `${newFirstName} ${newLastName}`.trim();
+            customer.legacyFirstName = newFirstName;
+            customer.legacyLastName = newLastName;
         }
         if (phone) {
             customer.phoneNumber = phone;
+            customer.legacyPhone = phone;
         }
         Object.assign(customer, rest);
         const updatedCustomer = await this.customersRepository.save(customer);

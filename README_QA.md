@@ -20,7 +20,7 @@ Ensure the frontend calls the live API (not localhost) when testing live.
 - Log in with an admin/super-admin account.
 - Confirm the property selector loads; “All Properties” works where supported.
 - No CORS or localhost calls in the browser Network tab.
-
+    
 ## Property Inventory
 - Create project → property → tower → flat; no validation errors.
 - Lists and details show saved data; edits persist.
@@ -28,6 +28,7 @@ Ensure the frontend calls the live API (not localhost) when testing live.
 
 ## Customers
 - Create customer with phone only (email is optional) and pick a property.
+
 - `/customers` list: property filter works; name/contact/address visible.
 - `/customers/:id`: personal details (address, phone, email) display; updates persist.
 

@@ -42,14 +42,14 @@ var PropertyPreference;
 })(PropertyPreference || (exports.PropertyPreference = PropertyPreference = {}));
 let Customer = class Customer {
     get firstName() {
-        return this.fullName?.split(' ')[0] || '';
+        return this.fullName?.split(' ')[0] || this.legacyFirstName || '';
     }
     get lastName() {
         const parts = this.fullName?.split(' ') || [];
-        return parts.slice(1).join(' ') || '';
+        return parts.slice(1).join(' ') || this.legacyLastName || '';
     }
     get phone() {
-        return this.phoneNumber;
+        return this.phoneNumber || this.legacyPhone;
     }
     get company() {
         return this.companyName;
@@ -98,6 +98,14 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "fullName", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'first_name', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "legacyFirstName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'last_name', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "legacyLastName", void 0);
+__decorate([
     (0, typeorm_1.Column)({ length: 255, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "email", void 0);
@@ -106,6 +114,10 @@ __decorate([
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "phoneNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'phone', length: 20, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "legacyPhone", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'alternate_phone', length: 20, nullable: true }),
     __metadata("design:type", String)
