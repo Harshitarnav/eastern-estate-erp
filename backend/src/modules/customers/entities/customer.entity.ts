@@ -51,9 +51,15 @@ export class Customer {
   @Index()
   customerCode: string;
 
-  // Some environments may not have this column; keep it non-selectable and non-writable to avoid query errors.
-  @Column({ name: 'full_name', length: 255, nullable: true, select: false, insert: false, update: false })
-  @Index()
+  // Not present in the schema we see; keep disabled to avoid select errors
+  @Column({
+    name: 'full_name',
+    length: 255,
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   fullName: string;
 
   // Legacy columns still present in the DB (keep in sync to avoid NOT NULL errors)
@@ -81,17 +87,14 @@ export class Customer {
   @Column({ length: 255, nullable: true })
   email: string;
 
-  @Column({ name: 'phone_number', length: 20 })
+  // Map to the actual schema column "phone"
+  @Column({ name: 'phone', length: 20 })
   @Index()
   phoneNumber: string;
 
   // Legacy phone column still present in DB
-  @Column({ name: 'phone', length: 20, nullable: true })
+  @Column({ name: 'phone', length: 20, nullable: true, select: false, insert: false, update: false })
   legacyPhone: string;
-
-  get phone(): string {
-    return this.phoneNumber || this.legacyPhone;
-  }
 
   @Column({ name: 'alternate_phone', length: 20, nullable: true })
   alternatePhone: string;
@@ -140,40 +143,75 @@ export class Customer {
   @Column({ name: 'aadhar_number', length: 20, nullable: true })
   aadharNumber: string;
 
-  @Column({ name: 'customer_type', length: 50, default: 'INDIVIDUAL' })
+  // Optional/absent columns guarded to avoid select errors on older schemas
+  @Column({ name: 'customer_type', length: 50, nullable: true, select: false, insert: false, update: false })
   customerType: string;
 
   get type(): CustomerType {
-    return this.customerType as CustomerType;
+    return (this.customerType as CustomerType) || CustomerType.INDIVIDUAL;
   }
 
-  @Column({ name: 'lead_source', length: 100, nullable: true })
+  @Column({ name: 'lead_source', length: 100, nullable: true, select: false, insert: false, update: false })
   leadSource: string;
 
-  @Column({ name: 'assigned_sales_person', length: 255, nullable: true })
+  @Column({
+    name: 'assigned_sales_person',
+    length: 255,
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   assignedSalesPerson: string;
 
-  @Column({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({
+    name: 'credit_limit',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   creditLimit: number;
 
-  @Column({ name: 'outstanding_balance', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({
+    name: 'outstanding_balance',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   outstandingBalance: number;
 
-  @Column({ name: 'total_bookings', type: 'int', default: 0 })
+  @Column({ name: 'total_bookings', type: 'int', nullable: true, select: false, insert: false, update: false })
   totalBookings: number;
 
-  @Column({ name: 'total_purchases', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({
+    name: 'total_purchases',
+    type: 'decimal',
+    precision: 15,
+    scale: 2,
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   totalPurchases: number;
 
   get totalSpent(): number {
-    return this.totalPurchases;
+    return this.totalPurchases || 0;
   }
 
-  @Column({ name: 'kyc_status', length: 50, default: 'PENDING' })
+  @Column({ name: 'kyc_status', length: 50, nullable: true, select: false, insert: false, update: false })
   @Index()
   kycStatus: string;
 
-  @Column({ name: 'kyc_documents', type: 'jsonb', nullable: true })
+  @Column({ name: 'kyc_documents', type: 'jsonb', nullable: true, select: false, insert: false, update: false })
   kycDocuments: any;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
@@ -182,7 +220,7 @@ export class Customer {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: 'jsonb', nullable: true, select: false, insert: false, update: false })
   metadata: any;
 
   @CreateDateColumn({ name: 'created_at' })
@@ -191,15 +229,29 @@ export class Customer {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'requirement_type', type: 'varchar', nullable: true })
+  @Column({ name: 'requirement_type', type: 'varchar', nullable: true, select: false, insert: false, update: false })
   @Index()
   requirementType: string;
 
-  @Column({ name: 'property_preference', type: 'varchar', nullable: true })
+  @Column({
+    name: 'property_preference',
+    type: 'varchar',
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   @Index()
   propertyPreference: string;
 
-  @Column({ name: 'tentative_purchase_timeframe', length: 100, nullable: true })
+  @Column({
+    name: 'tentative_purchase_timeframe',
+    length: 100,
+    nullable: true,
+    select: false,
+    insert: false,
+    update: false,
+  })
   tentativePurchaseTimeframe: string;
 
   // Virtual properties for backward compatibility (not in DB)
