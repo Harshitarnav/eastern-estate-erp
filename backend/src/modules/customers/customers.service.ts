@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
@@ -16,6 +17,8 @@ import {
 
 @Injectable()
 export class CustomersService {
+  private readonly logger = new Logger(CustomersService.name);
+
   constructor(
     @InjectRepository(Customer)
     private customersRepository: Repository<Customer>,
@@ -129,57 +132,6 @@ export class CustomersService {
       sortOrder = 'DESC',
     } = query;
 
-    const queryBuilder = this.customersRepository.createQueryBuilder('customer');
-
-    if (search) {
-      queryBuilder.andWhere(
-        "(customer.fullName ILIKE :search OR customer.email ILIKE :search OR customer.phoneNumber ILIKE :search)",
-        { search: `%${search}%` },
-      );
-    }
-
-    if (type) {
-      queryBuilder.andWhere('customer.customerType = :type', { type });
-    }
-
-    if (kycStatus) {
-      queryBuilder.andWhere('customer.kycStatus = :kycStatus', { kycStatus });
-    }
-
-    if (needsHomeLoan !== undefined) {
-      queryBuilder.andWhere(
-        "(customer.metadata ->> 'needsHomeLoan')::boolean = :needsHomeLoan",
-        { needsHomeLoan },
-      );
-    }
-
-    if (isVIP !== undefined) {
-      queryBuilder.andWhere("(customer.metadata ->> 'isVIP')::boolean = :isVIP", { isVIP });
-    }
-
-    if (city) {
-      queryBuilder.andWhere('customer.city = :city', { city });
-    }
-
-    if (createdFrom) {
-      queryBuilder.andWhere('customer.createdAt >= :createdFrom', { createdFrom });
-    }
-
-    if (createdTo) {
-      queryBuilder.andWhere('customer.createdAt <= :createdTo', { createdTo });
-    }
-
-    if (isActive !== undefined) {
-      queryBuilder.andWhere('customer.isActive = :isActive', { isActive });
-    }
-
-    if (query.propertyId) {
-      queryBuilder.andWhere(
-        `(customer.metadata ->> 'propertyId') = :pid OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))`,
-        { pid: query.propertyId },
-      );
-    }
-
     const allowedSortFields = [
       'createdAt',
       'updatedAt',
@@ -192,23 +144,103 @@ export class CustomersService {
     ];
     const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
-    queryBuilder.orderBy(`customer.${safeSortBy}`, sortOrder);
+    // Helper to apply filters; toggle metadata-dependent filters to allow fallback if column missing
+    const applyFilters = (qb: ReturnType<Repository<Customer>['createQueryBuilder']>, includeMetadata = true) => {
+      if (search) {
+        qb.andWhere(
+          "(customer.fullName ILIKE :search OR customer.email ILIKE :search OR customer.phoneNumber ILIKE :search)",
+          { search: `%${search}%` },
+        );
+      }
 
-    const total = await queryBuilder.getCount();
-    const customers = await queryBuilder
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getMany();
+      if (type) {
+        qb.andWhere('customer.customerType = :type', { type });
+      }
 
-    return {
-      data: CustomerResponseDto.fromEntities(customers),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
+      if (kycStatus) {
+        qb.andWhere('customer.kycStatus = :kycStatus', { kycStatus });
+      }
+
+      if (includeMetadata && needsHomeLoan !== undefined) {
+        qb.andWhere("(customer.metadata ->> 'needsHomeLoan')::boolean = :needsHomeLoan", {
+          needsHomeLoan,
+        });
+      }
+
+      if (includeMetadata && isVIP !== undefined) {
+        qb.andWhere("(customer.metadata ->> 'isVIP')::boolean = :isVIP", { isVIP });
+      }
+
+      if (city) {
+        qb.andWhere('customer.city = :city', { city });
+      }
+
+      if (createdFrom) {
+        qb.andWhere('customer.createdAt >= :createdFrom', { createdFrom });
+      }
+
+      if (createdTo) {
+        qb.andWhere('customer.createdAt <= :createdTo', { createdTo });
+      }
+
+      if (isActive !== undefined) {
+        qb.andWhere('customer.isActive = :isActive', { isActive });
+      }
+
+      if (query.propertyId) {
+        // Keep the bookings subquery only; avoids JSON metadata dependency
+        qb.andWhere(
+          'EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))',
+          { pid: query.propertyId },
+        );
+      }
+
+      qb.orderBy(`customer.${safeSortBy}`, sortOrder);
     };
+
+    try {
+      const qb = this.customersRepository.createQueryBuilder('customer');
+      applyFilters(qb, true);
+
+      const total = await qb.getCount();
+      const customers = await qb
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany();
+
+      return {
+        data: CustomerResponseDto.fromEntities(customers),
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      // Fallback without metadata-dependent filters to avoid hard failures on older schemas
+      this.logger.error('Failed to fetch customers with full filters. Retrying without metadata filters.', error?.stack || String(error));
+
+      const qb = this.customersRepository.createQueryBuilder('customer');
+      applyFilters(qb, false);
+
+      const total = await qb.getCount();
+      const customers = await qb
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getMany();
+
+      return {
+        data: CustomerResponseDto.fromEntities(customers),
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          warning: 'Returned without metadata-based filters (isVIP/needsHomeLoan) due to schema incompatibility.',
+        } as any,
+      };
+    }
   }
 
   async findOne(id: string): Promise<CustomerResponseDto> {
