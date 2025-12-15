@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, QueryFailedError } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { EmailService } from './email.service';
@@ -17,6 +17,13 @@ export class NotificationsService {
     private userRepository: Repository<User>,
     private emailService: EmailService,
   ) {}
+
+  private isMissingNotificationsTable(error: any): boolean {
+    return (
+      error instanceof QueryFailedError &&
+      (error as any)?.driverError?.code === '42P01' // undefined table
+    );
+  }
 
   /**
    * Create a notification
@@ -144,72 +151,112 @@ export class NotificationsService {
    * Get all notifications for a user
    */
   async findAllForUser(userId: string, includeRead: boolean = true): Promise<Notification[]> {
-    const query = this.notificationRepository
-      .createQueryBuilder('notification')
-      .where('notification.userId = :userId', { userId })
-      .orderBy('notification.createdAt', 'DESC');
+    try {
+      const query = this.notificationRepository
+        .createQueryBuilder('notification')
+        .where('notification.userId = :userId', { userId })
+        .orderBy('notification.createdAt', 'DESC');
 
-    if (!includeRead) {
-      query.andWhere('notification.isRead = :isRead', { isRead: false });
+      if (!includeRead) {
+        query.andWhere('notification.isRead = :isRead', { isRead: false });
+      }
+
+      return query.getMany();
+    } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; returning empty list.');
+        return [];
+      }
+      throw error;
     }
-
-    return query.getMany();
   }
 
   /**
    * Get unread count for a user
    */
   async getUnreadCount(userId: string): Promise<number> {
-    return this.notificationRepository.count({
-      where: {
-        userId,
-        isRead: false,
-      },
-    });
+    try {
+      return this.notificationRepository.count({
+        where: {
+          userId,
+          isRead: false,
+        },
+      });
+    } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; returning unread count 0.');
+        return 0;
+      }
+      throw error;
+    }
   }
 
   /**
    * Mark notification as read
    */
   async markAsRead(id: string, userId: string): Promise<Notification> {
-    const notification = await this.notificationRepository.findOne({
-      where: { id, userId },
-    });
+    try {
+      const notification = await this.notificationRepository.findOne({
+        where: { id, userId },
+      });
 
-    if (!notification) {
-      throw new Error('Notification not found');
+      if (!notification) {
+        throw new Error('Notification not found');
+      }
+
+      notification.isRead = true;
+      notification.readAt = new Date();
+
+      return this.notificationRepository.save(notification);
+    } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; skipping markAsRead.');
+        return null;
+      }
+      throw error;
     }
-
-    notification.isRead = true;
-    notification.readAt = new Date();
-
-    return this.notificationRepository.save(notification);
   }
 
   /**
    * Mark all notifications as read for a user
    */
   async markAllAsRead(userId: string): Promise<void> {
-    await this.notificationRepository
-      .createQueryBuilder()
-      .update(Notification)
-      .set({ isRead: true, readAt: new Date() })
-      .where('userId = :userId', { userId })
-      .andWhere('isRead = :isRead', { isRead: false })
-      .execute();
+    try {
+      await this.notificationRepository
+        .createQueryBuilder()
+        .update(Notification)
+        .set({ isRead: true, readAt: new Date() })
+        .where('userId = :userId', { userId })
+        .andWhere('isRead = :isRead', { isRead: false })
+        .execute();
+    } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; skipping markAllAsRead.');
+        return;
+      }
+      throw error;
+    }
   }
 
   /**
    * Delete a notification
    */
   async remove(id: string, userId: string): Promise<void> {
-    const result = await this.notificationRepository.delete({
-      id,
-      userId,
-    });
+    try {
+      const result = await this.notificationRepository.delete({
+        id,
+        userId,
+      });
 
-    if (result.affected === 0) {
-      throw new Error('Notification not found');
+      if (result.affected === 0) {
+        throw new Error('Notification not found');
+      }
+    } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; skipping remove.');
+        return;
+      }
+      throw error;
     }
   }
 
@@ -217,10 +264,18 @@ export class NotificationsService {
    * Delete all read notifications for a user
    */
   async clearRead(userId: string): Promise<void> {
-    await this.notificationRepository.delete({
-      userId,
-      isRead: true,
-    });
+    try {
+      await this.notificationRepository.delete({
+        userId,
+        isRead: true,
+      });
+    } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; skipping clearRead.');
+        return;
+      }
+      throw error;
+    }
   }
 
   /**
