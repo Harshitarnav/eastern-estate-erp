@@ -135,7 +135,6 @@ export class CustomersService {
     const allowedSortFields = [
       'createdAt',
       'updatedAt',
-      'fullName',
       'customerCode',
       'phoneNumber',
       'city',

@@ -51,7 +51,8 @@ export class Customer {
   @Index()
   customerCode: string;
 
-  @Column({ name: 'full_name', length: 255 })
+  // Some environments may not have this column; keep it non-selectable and non-writable to avoid query errors.
+  @Column({ name: 'full_name', length: 255, nullable: true, select: false, insert: false, update: false })
   @Index()
   fullName: string;
 
@@ -70,6 +71,11 @@ export class Customer {
   get lastName(): string {
     const parts = this.fullName?.split(' ') || [];
     return parts.slice(1).join(' ') || this.legacyLastName || '';
+  }
+
+  // Virtual computed full name from legacy fields
+  get computedFullName(): string {
+    return [this.legacyFirstName, this.legacyLastName].filter(Boolean).join(' ').trim();
   }
 
   @Column({ length: 255, nullable: true })
