@@ -45,13 +45,14 @@ export class CustomerResponseDto {
 
   static fromEntity(customer: Customer): CustomerResponseDto {
     const dto = new CustomerResponseDto();
-    const [firstName, ...rest] = (customer.fullName || '').split(' ').filter(Boolean);
-    dto.fullName = customer.fullName;
+    const fullName = customer.fullName || customer.computedFullName || '';
+    const [firstName, ...rest] = fullName.split(' ').filter(Boolean);
+    dto.fullName = fullName;
     dto.firstName = firstName || customer.firstName || '';
     dto.lastName = rest.join(' ') || customer.lastName || '';
     dto.email = customer.email;
-    dto.phone = customer.phoneNumber || customer.phone;
-    dto.phoneNumber = customer.phoneNumber || customer.phone;
+    dto.phone = customer.phoneNumber || customer.legacyPhone || '';
+    dto.phoneNumber = customer.phoneNumber || customer.legacyPhone || '';
     dto.alternatePhone = customer.alternatePhone;
     dto.dateOfBirth = customer.dateOfBirth;
     dto.gender = customer.gender;

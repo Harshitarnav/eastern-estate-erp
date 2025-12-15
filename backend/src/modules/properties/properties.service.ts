@@ -706,7 +706,7 @@ export class PropertiesService {
         firstName: customer.firstName,
         lastName: customer.lastName,
         email: customer.email,
-        phone: customer.phone,
+        phone: customer.phoneNumber || (customer as any).legacyPhone || '',
         kycStatus: customer.kycStatus,
       };
     }
