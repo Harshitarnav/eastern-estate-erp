@@ -401,6 +401,7 @@ export default function CustomersPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {((customers || [])).map((customer) => {
+              const kycStatus = customer.kycStatus || 'PENDING';
               const displayName =
                 customer.fullName ||
                 `${customer.firstName || ''} ${customer.lastName || ''}`.trim() ||
@@ -467,11 +468,11 @@ export default function CustomersPage() {
                     <span
                       className="px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap"
                       style={{
-                        backgroundColor: `${getKYCColor(customer.kycStatus)}15`,
-                        color: getKYCColor(customer.kycStatus),
+                        backgroundColor: `${getKYCColor(kycStatus)}15`,
+                        color: getKYCColor(kycStatus),
                       }}
                     >
-                      {customer.kycStatus.replace(/_/g, ' ')}
+                      {kycStatus.replace(/_/g, ' ')}
                     </span>
                   </div>
 
