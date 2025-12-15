@@ -2,6 +2,7 @@ import { Customer } from '../entities/customer.entity';
 
 export class CustomerResponseDto {
   id: string;
+  customerCode?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -45,6 +46,8 @@ export class CustomerResponseDto {
 
   static fromEntity(customer: Customer): CustomerResponseDto {
     const dto = new CustomerResponseDto();
+    dto.id = customer.id;
+    dto.customerCode = customer.customerCode;
     const fullName = customer.fullName || customer.computedFullName || '';
     const [firstName, ...rest] = fullName.split(' ').filter(Boolean);
     dto.fullName = fullName;
