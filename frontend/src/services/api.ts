@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { handleApiError } from '@/utils/error-handler';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+// Default to same-origin API so prod/stage uses the current host (Caddy proxies /api/v1)
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 class ApiService {
   private api: AxiosInstance;
