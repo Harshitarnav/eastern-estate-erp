@@ -31,8 +31,13 @@ export class NotificationsController {
     if (!userId) {
       return [];
     }
-    const include = includeRead === 'true';
-    return this.notificationsService.findAllForUser(userId, include);
+    try {
+      const include = includeRead === 'true';
+      return await this.notificationsService.findAllForUser(userId, include);
+    } catch (error) {
+      // If notifications table is missing, avoid 500s and return empty
+      return [];
+    }
   }
 
   @Get('unread-count')
