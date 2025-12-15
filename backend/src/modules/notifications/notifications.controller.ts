@@ -41,8 +41,13 @@ export class NotificationsController {
     if (!userId) {
       return { count: 0 };
     }
-    const count = await this.notificationsService.getUnreadCount(userId);
-    return { count };
+    try {
+      const count = await this.notificationsService.getUnreadCount(userId);
+      return { count };
+    } catch (error) {
+      // In environments without the notifications table, avoid throwing
+      return { count: 0 };
+    }
   }
 
   @Patch(':id/read')

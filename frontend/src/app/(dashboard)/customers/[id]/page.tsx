@@ -71,6 +71,8 @@ export default function CustomerViewPage() {
     return `₹${(amount / 1000).toFixed(0)}K`;
   };
 
+  const safeKycStatus = customer?.kycStatus || 'PENDING';
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -132,13 +134,13 @@ export default function CustomerViewPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border p-4" style={{ borderColor: `${brandPalette.neutral}60` }}>
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg" style={{ backgroundColor: `${getKYCColor(customer.kycStatus)}15` }}>
-              <Shield className="w-6 h-6" style={{ color: getKYCColor(customer.kycStatus) }} />
+            <div className="p-3 rounded-lg" style={{ backgroundColor: `${getKYCColor(safeKycStatus)}15` }}>
+              <Shield className="w-6 h-6" style={{ color: getKYCColor(safeKycStatus) }} />
             </div>
             <div>
               <p className="text-sm text-gray-600">KYC Status</p>
               <p className="font-semibold" style={{ color: brandPalette.secondary }}>
-                {customer.kycStatus.replace(/_/g, ' ')}
+                {safeKycStatus.replace(/_/g, ' ')}
               </p>
             </div>
           </div>
