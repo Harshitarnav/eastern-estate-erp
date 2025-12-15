@@ -63,31 +63,38 @@ export class LeadsService {
    */
   async create(createLeadDto: CreateLeadDto): Promise<LeadResponseDto> {
     // Check for duplicate email or phone
-    const existing = await this.leadsRepository.findOne({
-      where: [
-        { email: createLeadDto.email },
-        { phoneNumber: createLeadDto.phone },
-      ],
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        'Lead with this email or phone already exists',
-      );
+    const duplicateChecks = [];
+    if (createLeadDto.email) {
+      duplicateChecks.push({ email: createLeadDto.email });
+    }
+    if (createLeadDto.phone) {
+      duplicateChecks.push({ phoneNumber: createLeadDto.phone });
+    }
+    if (duplicateChecks.length > 0) {
+      const existing = await this.leadsRepository.findOne({
+        where: duplicateChecks,
+      });
+      if (existing) {
+        throw new ConflictException('Lead with this email or phone already exists');
+      }
     }
 
     // Generate unique lead code
     const leadCode = await this.generateLeadCode();
 
     // Map firstName and lastName to fullName
-    const { firstName, lastName, phone, ...rest } = createLeadDto;
+    const { firstName, lastName, phone, email, ...rest } = createLeadDto;
     const fullName = `${firstName} ${lastName}`.trim();
+    const normalizedEmail =
+      (email || '').trim() ||
+      `lead-${leadCode.toLowerCase()}-${(phone || '').replace(/\D/g, '') || 'noemail'}@lead.local`;
 
     const lead = this.leadsRepository.create({
       ...rest,
       leadCode,
       fullName,
       phoneNumber: phone,
+      email: normalizedEmail,
     });
     const savedLead = await this.leadsRepository.save(lead);
 

@@ -104,7 +104,9 @@ Are you sure you want to continue connecting (yes/no/[fingerprint])?
 
 <!-- chmod 600 ../../../Downloads/myERP.pem -->
 <!-- 
-ssh -i ../../../Downloads/myERP.pem ubuntu@13.60.48.252
+ssh -i ../../../Downloads/myERP.pem ubuntu@13.60.48.252 -- aws
+
+ssh root@143.244.135.165 -- DigitalOcean
 
 <!-- sudo apt remove -y docker docker.io containerd runc
 
@@ -137,9 +139,27 @@ docker compose -f docker-compose.prod.yml build backend frontend
 docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend -->
 
 <!-- docker compose -f docker-compose.prod.yml logs backend --tail 200 --since=5m -->
-<!-- 
-admin@eastern-estate.com
-Admin@123 -->
+
+<!-- Seeding the users on the server:
+
+docker compose -f docker-compose.prod.yml exec backend node dist/database/seeds/seed-runner.js
+Verify users exist:
+
+docker compose -f docker-compose.prod.yml exec postgres \
+  psql -U eastern_estate -d eastern_estate_erp \
+  -c "select email, username from users limit 5;"
+Then retry login with Password@123. -->
+
+<!-- ACCOUNTS -->
+<!-- SUPER_ADMIN          | Email: superadmin@easternestates.com       | Password: Password@123
+ADMIN                | Email: admin@easternestates.com            | Password: Password@123
+ACCOUNTANT           | Email: accountant@easternestates.com       | Password: Password@123
+SALES_MANAGER        | Email: salesmanager@easternestates.com     | Password: Password@123
+SALES_EXECUTIVE      | Email: salesexec@easternestates.com        | Password: Password@123
+MARKETING_MANAGER    | Email: marketing@easternestates.com        | Password: Password@123
+CONSTRUCTION_MANAGER | Email: construction@easternestates.com     | Password: Password@123
+STORE_KEEPER         | Email: storekeeper@easternestates.com      | Password: Password@123
+HR_MANAGER           | Email: hr@easternestates.com               | Password: Password@123 -->
 
 <!-- Here’s a simple local dev loop so you can edit and see changes live:
 
