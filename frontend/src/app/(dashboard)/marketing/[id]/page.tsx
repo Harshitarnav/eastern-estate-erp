@@ -78,7 +78,8 @@ export default function CampaignDetailPage() {
     return colors[type] || '#6B7280';
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (value: number | string | null | undefined) => {
+    const amount = Number(value) || 0;
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
@@ -235,7 +236,7 @@ export default function CampaignDetailPage() {
                       <div>
                         <p className="font-medium text-gray-800">{file.filename}</p>
                         <p className="text-xs text-gray-500">
-                          {file.type} • {(file.size / 1024).toFixed(2)} KB
+                          {file.type} • {((Number(file.size) || 0) / 1024).toFixed(2)} KB
                         </p>
                       </div>
                     </div>

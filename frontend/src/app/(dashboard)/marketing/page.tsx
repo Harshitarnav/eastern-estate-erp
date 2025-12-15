@@ -68,7 +68,8 @@ export default function MarketingPage() {
     return colors[type] || '#6B7280';
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (value: number | string | null | undefined) => {
+    const amount = Number(value) || 0;
     if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
     if (amount >= 1000) return `₹${(amount / 1000).toFixed(0)}K`;
     return `₹${amount.toFixed(0)}`;

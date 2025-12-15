@@ -444,7 +444,7 @@ export default function EditCampaignPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-gray-800 truncate">{file.filename}</p>
                           <p className="text-xs text-gray-500">
-                            {file.type} • {(file.size / 1024).toFixed(2)} KB
+                            {file.type} • {((Number(file.size) || 0) / 1024).toFixed(2)} KB
                           </p>
                         </div>
                       </div>
