@@ -101,11 +101,8 @@ ED25519 key fingerprint is SHA256:h45R18+ExLNTwEc7UE1MecMnjPjCY+NHU8pdefOEVc0.
 This key is not known by any other names.
 Are you sure you want to continue connecting (yes/no/[fingerprint])? 
 
-<!-- ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
-
-ssh -i Eastern-Estate-ERP.pem ubuntu@3.83.192.2
-
-ssh -i ../../../Downloads/Eastern-Estate-ERP.pem ubuntu@34.226.234.236 -- new link
+<!-- 
+ssh -i ../../../Downloads/Eastern-Estate-ERP.pem ubuntu@51.21.219.220
 
 JWT_SECRET=6da8009d14f4138fb04cce03ee401217b2f00fcbfe093c4c8118e1519d3b9de9 -->
 

@@ -14,6 +14,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { LeadStatus, LeadSource, LeadPriority } from '../entities/lead.entity';
 
 export class CreateLeadDto {
@@ -109,6 +110,14 @@ export class CreateLeadDto {
   @IsOptional()
   preferredLocation?: string;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    const source = Array.isArray(value) ? value : [value];
+    const normalized = source
+      .map((item) => (typeof item === 'string' ? item.trim() : item))
+      .filter((item) => item !== undefined && item !== null && item !== '');
+    return normalized;
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
@@ -175,6 +184,14 @@ export class CreateLeadDto {
   @IsOptional()
   utmCampaign?: string;
 
+  @Transform(({ value }) => {
+    if (value === undefined || value === null) return value;
+    const source = Array.isArray(value) ? value : [value];
+    const normalized = source
+      .map((item) => (typeof item === 'string' ? item.trim() : item))
+      .filter((item) => item !== undefined && item !== null && item !== '');
+    return normalized;
+  })
   @IsArray()
   @IsString({ each: true })
   @IsOptional()

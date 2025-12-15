@@ -180,7 +180,19 @@ export class CustomersService {
       );
     }
 
-    queryBuilder.orderBy(`customer.${sortBy}`, sortOrder);
+    const allowedSortFields = [
+      'createdAt',
+      'updatedAt',
+      'fullName',
+      'customerCode',
+      'phoneNumber',
+      'city',
+      'kycStatus',
+      'customerType',
+    ];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    queryBuilder.orderBy(`customer.${safeSortBy}`, sortOrder);
 
     const total = await queryBuilder.getCount();
     const customers = await queryBuilder

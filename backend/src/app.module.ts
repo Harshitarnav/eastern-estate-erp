@@ -30,6 +30,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ThrottlerGuard, ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
+import { SchemaSyncService } from './database/schema-sync.service';
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { validationSchema } from './config/validation';
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
     },
+    SchemaSyncService,
   ],
 })
 export class AppModule {}

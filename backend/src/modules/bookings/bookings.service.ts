@@ -21,7 +21,12 @@ import { Tower } from '../towers/entities/tower.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsService } from '../payments/payments.service';
 import { EmailService } from '../notifications/email.service';
-import { PaymentType, PaymentMethod } from '../payments/entities/payment.entity';
+import {
+  PaymentType,
+  PaymentMethod,
+  PaymentStatus,
+  Payment,
+} from '../payments/entities/payment.entity';
 
 /**
  * BookingsService
@@ -148,21 +153,33 @@ export class BookingsService {
       // === CREATE TOKEN PAYMENT RECORD ===
 
       if (createBookingDto.tokenAmount && createBookingDto.tokenAmount > 0) {
-        const tokenPayment = {
-          paymentNumber: `PAY-${createBookingDto.bookingNumber}-TOKEN`,
-          receiptNumber: createBookingDto.tokenReceiptNumber || `REC-${createBookingDto.bookingNumber}-TOKEN`,
+        const paymentsRepo = queryRunner.manager.getRepository(Payment);
+        const paymentCode = `PAY-${createBookingDto.bookingNumber}-TOKEN`;
+        const tokenPayment = paymentsRepo.create({
+          paymentCode,
+          receiptNumber:
+            createBookingDto.tokenReceiptNumber || `REC-${createBookingDto.bookingNumber}-TOKEN`,
           bookingId: savedBooking.id,
           customerId: customer.id,
-//           paymentType: PaymentType.TOKEN,
+          paymentType: PaymentType.BOOKING,
+          paymentMethod:
+            (createBookingDto.tokenPaymentMode as PaymentMethod) || PaymentMethod.CASH,
           amount: createBookingDto.tokenAmount,
-          paymentDate: createBookingDto.tokenPaidDate || createBookingDto.bookingDate,
-          paymentMode: (createBookingDto.tokenPaymentMode as PaymentMethod) || PaymentMethod.CASH,
-          status: 'RECEIVED' as any,
-          remarks: 'Token amount paid at booking',
-        };
+          paymentDate: new Date(
+            createBookingDto.tokenPaidDate || createBookingDto.bookingDate,
+          ),
+          status: PaymentStatus.COMPLETED,
+          bankName: createBookingDto.paymentBank,
+          chequeNumber: createBookingDto.chequeNumber,
+          chequeDate: createBookingDto.chequeDate
+            ? new Date(createBookingDto.chequeDate)
+            : undefined,
+          transactionReference: createBookingDto.utrNumber || createBookingDto.rtgsNumber,
+          upiId: createBookingDto.utrNumber,
+        });
 
-        await queryRunner.manager.save('Payment', tokenPayment);
-        this.logger.log(`Token payment record created: ${tokenPayment.paymentNumber}`);
+        await paymentsRepo.save(tokenPayment);
+        this.logger.log(`Token payment record created: ${paymentCode}`);
       }
 
       // === GENERATE PAYMENT SCHEDULE ===
@@ -329,7 +346,18 @@ export class BookingsService {
       queryBuilder.andWhere('booking.isActive = :isActive', { isActive });
     }
 
-    queryBuilder.orderBy(`booking.${sortBy}`, sortOrder);
+    const allowedSortFields = [
+      'createdAt',
+      'updatedAt',
+      'bookingDate',
+      'status',
+      'totalAmount',
+      'paidAmount',
+      'balanceAmount',
+    ];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
+    queryBuilder.orderBy(`booking.${safeSortBy}`, sortOrder);
 
     const total = await queryBuilder.getCount();
     const bookings = await queryBuilder
