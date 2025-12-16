@@ -170,6 +170,12 @@ let DemandDraftsService = class DemandDraftsService {
         const saved = await this.draftsRepo.save(draft);
         return demand_draft_response_dto_1.DemandDraftResponseDto.fromEntity(saved);
     }
+    async remove(id) {
+        const result = await this.draftsRepo.delete(id);
+        if (!result.affected) {
+            throw new common_1.NotFoundException(`Demand draft ${id} not found`);
+        }
+    }
     buildDefaultContent(dto) {
         const md = dto?.metadata || {};
         const name = dto?.customerName || md.customerName || 'Mrs. Namita Rout';

@@ -43,6 +43,10 @@ class DemandDraftsService {
   async getHtml(id: string): Promise<{ html: string }> {
     return api.get<{ html: string }>(`/demand-drafts/${id}/html`);
   }
+
+  async delete(id: string) {
+    return api.delete<void>(`/demand-drafts/${id}`);
+  }
 }
 
 export const demandDraftsService = new DemandDraftsService();

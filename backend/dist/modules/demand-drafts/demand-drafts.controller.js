@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const demand_drafts_service_1 = require("./demand-drafts.service");
 const create_demand_draft_dto_1 = require("./dto/create-demand-draft.dto");
 const update_demand_draft_dto_1 = require("./dto/update-demand-draft.dto");
+const common_2 = require("@nestjs/common");
 let DemandDraftsController = class DemandDraftsController {
     constructor(demandDraftsService) {
         this.demandDraftsService = demandDraftsService;
@@ -39,6 +40,9 @@ let DemandDraftsController = class DemandDraftsController {
     }
     markSent(id, fileUrl) {
         return this.demandDraftsService.markSent(id, fileUrl);
+    }
+    remove(id) {
+        return this.demandDraftsService.remove(id);
     }
 };
 exports.DemandDraftsController = DemandDraftsController;
@@ -89,6 +93,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], DemandDraftsController.prototype, "markSent", null);
+__decorate([
+    (0, common_2.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], DemandDraftsController.prototype, "remove", null);
 exports.DemandDraftsController = DemandDraftsController = __decorate([
     (0, common_1.Controller)('demand-drafts'),
     __metadata("design:paramtypes", [demand_drafts_service_1.DemandDraftsService])

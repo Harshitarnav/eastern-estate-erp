@@ -12,4 +12,5 @@ export declare class DemandDraftsController {
     }>;
     update(id: string, dto: UpdateDemandDraftDto): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
     markSent(id: string, fileUrl?: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
+    remove(id: string): Promise<void>;
 }

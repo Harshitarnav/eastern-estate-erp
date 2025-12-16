@@ -18,5 +18,6 @@ export declare class DemandDraftsService {
     buildHtmlTemplate(draft: DemandDraft): string;
     update(id: string, dto: UpdateDemandDraftDto): Promise<DemandDraftResponseDto>;
     markSent(id: string, fileUrl?: string): Promise<DemandDraftResponseDto>;
+    remove(id: string): Promise<void>;
     buildDefaultContent(dto: Partial<CreateDemandDraftDto>): string;
 }

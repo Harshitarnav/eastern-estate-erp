@@ -255,6 +255,16 @@ export default function FlatDetailPage() {
     }
   };
 
+  const handleDeleteDraft = async (draftId: string) => {
+    try {
+      await demandDraftsService.delete(draftId);
+      await loadDrafts(flat?.id);
+      setDraftMessage('Draft deleted.');
+    } catch (err: any) {
+      setDraftMessage(err?.response?.data?.message ?? 'Failed to delete draft.');
+    }
+  };
+
   const checklistEntries = useMemo(() => {
     if (!flat?.flatChecklist) {
       return [];
@@ -744,6 +754,12 @@ export default function FlatDetailPage() {
                               className="rounded-md border px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
                             >
                               Preview / PDF
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDraft(draft.id)}
+                              className="rounded-md border px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                            >
+                              Delete
                             </button>
                           </div>
                         </div>

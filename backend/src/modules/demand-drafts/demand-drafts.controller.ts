@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Query } from '@nestjs/common
 import { DemandDraftsService } from './demand-drafts.service';
 import { CreateDemandDraftDto } from './dto/create-demand-draft.dto';
 import { UpdateDemandDraftDto } from './dto/update-demand-draft.dto';
+import { Delete } from '@nestjs/common';
 
 @Controller('demand-drafts')
 export class DemandDraftsController {
@@ -41,5 +42,10 @@ export class DemandDraftsController {
   @Post(':id/send')
   markSent(@Param('id') id: string, @Body('fileUrl') fileUrl?: string) {
     return this.demandDraftsService.markSent(id, fileUrl);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.demandDraftsService.remove(id);
   }
 }

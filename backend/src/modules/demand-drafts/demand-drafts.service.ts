@@ -173,6 +173,13 @@ export class DemandDraftsService {
     return DemandDraftResponseDto.fromEntity(saved);
   }
 
+  async remove(id: string): Promise<void> {
+    const result = await this.draftsRepo.delete(id);
+    if (!result.affected) {
+      throw new NotFoundException(`Demand draft ${id} not found`);
+    }
+  }
+
   /**
    * Build a default draft content using provided metadata.
    * This is editable by calling update() before export.
