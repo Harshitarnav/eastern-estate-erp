@@ -165,3 +165,4 @@ export class AiInsight {
   updatedAt: Date;
 }
 
+

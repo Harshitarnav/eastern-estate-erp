@@ -366,3 +366,4 @@ export class SalesTaskService {
     return totalTime / completedTasks.length / (1000 * 60 * 60); // Convert to hours
   }
 }
+

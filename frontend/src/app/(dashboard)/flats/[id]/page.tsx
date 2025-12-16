@@ -65,11 +65,18 @@ export default function FlatDetailPage() {
         setFlat(data);
         const inferredFlatLabel = buildFlatLabel(data);
         const inferredBhk = (data?.type || '').replace('_', ' ') || '—';
+        const inferredAmount = data?.finalPrice || 0;
+        const inferredAmountWords = inferredAmount ? formatAmountInWords(inferredAmount) : '';
+        const inferredPlace = data?.property?.city || data?.property?.state || '';
         setDraftForm((prev) => ({
           ...prev,
           flatLabel: inferredFlatLabel,
           bhk: inferredBhk,
-          amount: prev.amount || String(data?.finalPrice || ''),
+          amount: prev.amount || String(inferredAmount || ''),
+          amountWords: prev.amountWords || inferredAmountWords,
+          milestoneId: prev.milestoneId || data?.status?.replace(/_/g, ' ') || '',
+          date: prev.date || new Date().toLocaleDateString('en-GB'),
+          place: prev.place || inferredPlace,
         }));
         await loadDrafts(data?.id);
       } catch (err: any) {
@@ -924,6 +931,11 @@ function buildFlatLabel(flat?: Flat | null) {
   const flatNo = flat.flatNumber ? `Flat No-${flat.flatNumber}` : '';
   const property = flat.property?.name ? `in ${flat.property.name}` : '';
   return [block, flatNo, property].filter(Boolean).join(', ');
+}
+
+function formatAmountInWords(amount: number) {
+  const formatted = Number(amount || 0).toLocaleString('en-IN');
+  return `Rupees ${formatted} only`;
 }
 
 function buildDraftContent(fields: any) {

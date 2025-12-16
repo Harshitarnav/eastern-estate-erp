@@ -19,3 +19,4 @@ psql -U arnav -d eastern_estate_erp -c "SELECT call_sid, direction, status, dura
 If these return 0, the data wasn't loaded.
 If these return data, then the backend queries need fixing.
 
+
