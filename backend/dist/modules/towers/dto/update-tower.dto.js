@@ -14,6 +14,7 @@ const swagger_1 = require("@nestjs/swagger");
 const create_tower_dto_1 = require("./create-tower.dto");
 const class_validator_1 = require("class-validator");
 const swagger_2 = require("@nestjs/swagger");
+const class_transformer_1 = require("class-transformer");
 class UpdateTowerDto extends (0, swagger_1.PartialType)((0, swagger_1.OmitType)(create_tower_dto_1.CreateTowerDto, ['propertyId'])) {
 }
 exports.UpdateTowerDto = UpdateTowerDto;
@@ -33,6 +34,12 @@ __decorate([
     }),
     (0, class_validator_1.IsBoolean)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (typeof value === 'string') {
+            return value.toLowerCase() === 'true';
+        }
+        return Boolean(value);
+    }),
     __metadata("design:type", Boolean)
 ], UpdateTowerDto.prototype, "regenerateFlats", void 0);
 //# sourceMappingURL=update-tower.dto.js.map

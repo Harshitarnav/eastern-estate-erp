@@ -3,6 +3,7 @@ export declare class CreateFlatDto {
     propertyId: string;
     towerId: string;
     flatNumber: string;
+    flatCode?: string;
     name: string;
     description?: string;
     type: FlatType;

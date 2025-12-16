@@ -1,5 +1,6 @@
 import { CustomerType, KYCStatus } from '../entities/customer.entity';
 export declare class CreateCustomerDto {
+    private static toOptionalString;
     firstName?: string;
     lastName?: string;
     email?: string;

@@ -209,7 +209,7 @@ __decorate([
         default: 1,
     }),
     (0, class_validator_1.IsInt)(),
-    (0, class_validator_1.Min)(1, { message: 'At least 1 elevator is required' }),
+    (0, class_validator_1.Min)(0, { message: 'Number of elevators cannot be negative' }),
     (0, class_validator_1.Max)(10, { message: 'Maximum 10 elevators allowed' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),

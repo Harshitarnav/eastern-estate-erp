@@ -78,7 +78,8 @@ class EmployeesService {
    */
   async getById(id: string): Promise<Employee> {
     const response = await api.get<Employee>(`/employees/${id}`);
-    return response.data;
+    // api.get already returns the data payload, so return directly
+    return response;
   }
 
   /**
@@ -92,16 +93,14 @@ class EmployeesService {
    * Create a new employee
    */
   async createEmployee(data: Partial<Employee>): Promise<Employee> {
-    const response = await api.post<Employee>('/employees', data);
-    return response.data;
+    return api.post<Employee>('/employees', data);
   }
 
   /**
    * Update employee by ID
    */
   async updateEmployee(id: string, data: Partial<Employee>): Promise<Employee> {
-    const response = await api.put<Employee>(`/employees/${id}`, data);
-    return response.data;
+    return api.put<Employee>(`/employees/${id}`, data);
   }
 
   /**

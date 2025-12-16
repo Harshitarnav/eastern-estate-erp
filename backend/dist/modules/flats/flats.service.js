@@ -171,6 +171,7 @@ let FlatsService = class FlatsService {
             ...createFlatDto,
             amenities: this.normalizeSimpleArray(createFlatDto.amenities),
             images: this.normalizeSimpleArray(createFlatDto.images),
+            flatCode: createFlatDto.flatCode?.trim() || createFlatDto.flatNumber?.trim(),
         };
         const metadata = this.evaluateFlatMetadata(normalizedCreateDto);
         const flat = this.flatsRepository.create({

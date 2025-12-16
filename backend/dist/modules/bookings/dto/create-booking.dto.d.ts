@@ -1,5 +1,6 @@
 import { BookingStatus, PaymentStatus } from '../entities/booking.entity';
 export declare class CreateBookingDto {
+    private static nullableDate;
     bookingNumber: string;
     customerId: string;
     flatId: string;

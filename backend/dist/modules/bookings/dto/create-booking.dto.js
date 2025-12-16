@@ -11,10 +11,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateBookingDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const booking_entity_1 = require("../entities/booking.entity");
 class CreateBookingDto {
 }
 exports.CreateBookingDto = CreateBookingDto;
+CreateBookingDto.nullableDate = ({ value }) => value === undefined || value === null || value === '' ? undefined : value;
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
@@ -83,6 +85,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "tokenPaidDate", void 0);
 __decorate([
@@ -113,6 +116,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "chequeDate", void 0);
 __decorate([
@@ -133,11 +137,13 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "agreementDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "agreementSignedDate", void 0);
 __decorate([
@@ -148,16 +154,19 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "expectedPossessionDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "actualPossessionDate", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
+    (0, class_transformer_1.Transform)(CreateBookingDto.nullableDate),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "registrationDate", void 0);
 __decorate([
