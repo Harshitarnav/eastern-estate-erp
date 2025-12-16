@@ -2,6 +2,7 @@ import { PartialType, OmitType } from '@nestjs/swagger';
 import { CreateTowerDto } from './create-tower.dto';
 import { IsBoolean, IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 
 /**
  * DTO for updating an existing tower
@@ -41,5 +42,11 @@ export class UpdateTowerDto extends PartialType(
   })
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true';
+    }
+    return Boolean(value);
+  })
   regenerateFlats?: boolean;
 }
