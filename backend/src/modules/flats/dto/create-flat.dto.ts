@@ -28,6 +28,11 @@ export class CreateFlatDto {
   flatNumber: string;
 
   @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  flatCode?: string;
+
+  @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   name: string;
