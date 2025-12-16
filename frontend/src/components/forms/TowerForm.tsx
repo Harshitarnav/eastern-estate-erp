@@ -48,7 +48,7 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
     builtUpArea: tower?.builtUpArea || undefined,
     carpetArea: tower?.carpetArea || undefined,
     ceilingHeight: tower?.ceilingHeight || undefined,
-    numberOfLifts: tower?.numberOfLifts || 0,
+    numberOfLifts: tower?.numberOfLifts ?? 1,
     vastuCompliant: tower?.vastuCompliant ?? true,
     facing: tower?.facing || '',
     specialFeatures: tower?.specialFeatures || '',

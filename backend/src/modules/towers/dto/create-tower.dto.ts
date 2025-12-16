@@ -268,7 +268,7 @@ export class CreateTowerDto {
     default: 1,
   })
   @IsInt()
-  @Min(1, { message: 'At least 1 elevator is required' })
+  @Min(0, { message: 'Number of elevators cannot be negative' })
   @Max(10, { message: 'Maximum 10 elevators allowed' })
   @IsOptional()
   @Type(() => Number)
