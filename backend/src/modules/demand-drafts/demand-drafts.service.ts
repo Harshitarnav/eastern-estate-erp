@@ -82,39 +82,65 @@ export class DemandDraftsService {
    * This is editable by calling update() before export.
    */
   buildDefaultContent(dto: Partial<CreateDemandDraftDto>): string {
-    const name = (dto as any)?.customerName || 'Customer';
-    const address = (dto as any)?.customerAddress || '—';
-    const subjectMilestone = dto.milestoneId || 'construction milestone';
-    const amount = dto.amount ? Number(dto.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' }) : '₹0';
-    const flatInfo = (dto as any)?.flatInfo || 'Flat';
+    // Fill with provided values or placeholders; intended to be user-editable before export.
+    const name = (dto as any)?.customerName || 'Mrs. Namita Rout';
+    const spouse = (dto as any)?.spouseName || 'Mr. Sisir Kumar Rout';
+    const address = (dto as any)?.customerAddress || 'C-28, Banaharapali, Jharsuguda, Odisha,768234';
+    const subjectMilestone = dto.milestoneId || 'On Starting of 5th floor';
+    const flatLabel = (dto as any)?.flatLabel || 'Block C , Flat No-912, in Diamond City';
+    const bhk = (dto as any)?.bhk || '3 BHK';
+    const amount = dto.amount
+      ? Number(dto.amount).toLocaleString('en-IN', { style: 'currency', currency: 'INR' })
+      : '₹ 0';
+    const amountWords =
+      (dto as any)?.amountWords ||
+      'Four Lakh Eighty Nine Thousand Five Hundred Forty Two Rupees Fifty Paisa Only';
+    const demandRef = (dto as any)?.reference || 'EECD/DEMAND/AUG/2025';
+    const demandDate = (dto as any)?.date || '06/08/2025';
+    const place = (dto as any)?.place || 'Cuttack';
     const bankDetails = (dto as any)?.bankDetails || {
       accountHolder: 'Eastern Estate Construction & Developer’s Pvt. Ltd.',
-      accountNumber: 'XXXXXXXXXXXX',
-      ifsc: 'SBINXXXXXXX',
+      accountNumber: '40683619139',
+      ifsc: 'SBIN0063835',
     };
 
     return `To,
 ${name}
+W/O ${spouse}
 ${address}
 
-Subject: Release of payment for ${subjectMilestone}.
+Subject: Release of ${subjectMilestone} payment in respect of ${name}.
+as per agreement (under construction to the extent of ${subjectMilestone})
+i.e ${amount} (${amountWords}).
 
 Dear Sir/Madam,
+In respect of the above we would like to mention that construction work in respect of
+${flatLabel} allotted to ${name}, is under construction to the extent of ${subjectMilestone}.
+In terms of the above mentioned agreement payment upto ${subjectMilestone} fallen due
+as per details here under:-
+Flat No: ${flatLabel}
+BHK Type: ${bhk}
+Demand Amount details as per construction mentioned below:-
+Demand amount against construction
+${subjectMilestone}
+Total
+${amount}
 
-In respect of the above we would like to mention that construction work for ${flatInfo} is under construction and has reached ${subjectMilestone}. As per the agreement, payment up to this stage has fallen due as detailed below:
-
-Amount Due: ${amount}
-
-You are requested to release the above amount via DD/NEFT/RTGS as per our bank details given below.
+You are requested to release the above amount to DD/NEFT/RTGS as per our bank details given
+below.
 Account Holder : ${bankDetails.accountHolder}
 Account Number : ${bankDetails.accountNumber}
 IFSC : ${bankDetails.ifsc}
+Date: - ${demandDate}
+
+Place: - ${place}
 
 Thanking You
 
 Yours Faithfully
 Eastern Estate Construction & Developer’s Pvt. Ltd.
 www.eecd.in
+Ref. ${demandRef}                                                                                            DATE-${demandDate}
 `;
   }
 }
