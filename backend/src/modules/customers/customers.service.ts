@@ -273,7 +273,7 @@ export class CustomersService {
     }
 
     // Map firstName and lastName to fullName if provided
-    const { firstName, lastName, phone, ...rest } = updateCustomerDto;
+    const { firstName, lastName, phone, customerCode, ...rest } = updateCustomerDto;
     
     if (firstName || lastName) {
       const newFirstName = firstName || customer.firstName;
@@ -286,6 +286,11 @@ export class CustomersService {
     if (phone) {
       customer.phoneNumber = phone;
       customer.legacyPhone = phone;
+    }
+
+    // Only update customer code when provided and non-empty
+    if (typeof customerCode === 'string' && customerCode.trim().length > 0) {
+      customer.customerCode = customerCode.trim();
     }
 
     Object.assign(customer, rest);
