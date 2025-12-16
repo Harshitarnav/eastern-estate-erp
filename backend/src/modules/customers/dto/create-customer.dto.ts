@@ -14,56 +14,65 @@ import { Transform, Type } from 'class-transformer';
 import { CustomerType, KYCStatus } from '../entities/customer.entity';
 
 export class CreateCustomerDto {
+  // helper to drop empty strings/nulls for optional fields
+  private static toOptionalString = ({ value }: { value: any }) =>
+    value === undefined || value === null || value === '' ? undefined : String(value);
+
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @Transform(CreateCustomerDto.toOptionalString)
   firstName?: string;
 
   @IsString()
   @IsOptional()
   @MaxLength(100)
+  @Transform(CreateCustomerDto.toOptionalString)
   lastName?: string;
 
   @IsEmail()
   @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
   email?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   phone?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   alternatePhone?: string;
 
   @IsDateString()
   @IsOptional()
+  @Transform(({ value }) => (value === '' ? undefined : value))
   dateOfBirth?: string;
 
   @IsString()
   @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
   gender?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   address?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   city?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   state?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   pincode?: string;
 
   @IsEnum(CustomerType)
@@ -72,7 +81,7 @@ export class CreateCustomerDto {
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   occupation?: string;
 
   @IsNumber()
@@ -83,17 +92,17 @@ export class CreateCustomerDto {
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   company?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   panNumber?: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => (value !== undefined && value !== null ? String(value) : value))
+  @Transform(CreateCustomerDto.toOptionalString)
   aadharNumber?: string;
 
   @IsBoolean()
@@ -102,6 +111,7 @@ export class CreateCustomerDto {
 
   @IsString()
   @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
   notes?: string;
 
   @IsBoolean()
@@ -118,5 +128,6 @@ export class CreateCustomerDto {
 
   @IsString()
   @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
   propertyId?: string;
 }
