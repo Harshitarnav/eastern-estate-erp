@@ -43,7 +43,7 @@ export default function EmployeeDetailPage() {
       setEmployee(data);
       
       // Fetch role name if roleId exists
-      const resolvedRoleId = (data as any).roleId || (data as any).role?.id;
+      const resolvedRoleId = (data as any)?.roleId || (data as any)?.role?.id;
       if (resolvedRoleId) {
         try {
           const role = await rolesService.getRole(resolvedRoleId);
