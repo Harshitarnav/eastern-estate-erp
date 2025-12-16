@@ -49,6 +49,7 @@ export interface Tower {
   dataCompletionPct?: number | null;
   dataCompletenessStatus?: DataCompletenessStatus;
   issuesCount?: number;
+  regenerateFlats?: boolean;
 }
 
 export interface TowerFilters {

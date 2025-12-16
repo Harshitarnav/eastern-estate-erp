@@ -1,6 +1,7 @@
 import { Customer } from '../entities/customer.entity';
 export declare class CustomerResponseDto {
     id: string;
+    customerCode?: string;
     firstName: string;
     lastName: string;
     email: string;

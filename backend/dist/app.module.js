@@ -38,6 +38,7 @@ const logging_interceptor_1 = require("./common/interceptors/logging.interceptor
 const throttler_1 = require("@nestjs/throttler");
 const configuration_1 = require("./config/configuration");
 const validation_1 = require("./config/validation");
+const schema_sync_service_1 = require("./database/schema-sync.service");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -116,6 +117,7 @@ exports.AppModule = AppModule = __decorate([
                 provide: core_1.APP_INTERCEPTOR,
                 useClass: logging_interceptor_1.LoggingInterceptor,
             },
+            schema_sync_service_1.SchemaSyncService,
         ],
     })
 ], AppModule);

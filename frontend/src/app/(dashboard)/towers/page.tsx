@@ -74,6 +74,8 @@ export default function TowersInventoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [editingTower, setEditingTower] = useState<Tower | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -170,6 +172,32 @@ export default function TowersInventoryPage() {
     } catch (error) {
       console.error('Failed to create tower', error);
       throw error;
+    }
+  };
+
+  const handleStartEditTower = async (towerId: string) => {
+    try {
+      setLoadingEdit(true);
+      const tower = await towersService.getTower(towerId);
+      setEditingTower(tower);
+      setShowCreateForm(false);
+    } catch (err: any) {
+      console.error('Failed to load tower', err);
+      setError(err?.response?.data?.message ?? 'Unable to load tower for editing');
+    } finally {
+      setLoadingEdit(false);
+    }
+  };
+
+  const handleUpdateTower = async (payload: Partial<Tower>) => {
+    if (!editingTower) return;
+    try {
+      await towersService.updateTower(editingTower.id, payload);
+      setEditingTower(null);
+      await refreshSummary(payload.propertyId ?? editingTower.propertyId ?? selectedPropertyId);
+    } catch (err) {
+      console.error('Failed to update tower', err);
+      throw err;
     }
   };
 
@@ -290,6 +318,13 @@ export default function TowersInventoryPage() {
           >
             Add Missing Units
             <Plus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => handleStartEditTower(tower.id)}
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+            disabled={loadingEdit}
+          >
+            Edit Tower
           </button>
         </div>
       </div>
@@ -421,6 +456,14 @@ export default function TowersInventoryPage() {
 
       {showCreateForm && (
         <TowerForm tower={null} onCancel={() => setShowCreateForm(false)} onSubmit={handleCreateTower} />
+      )}
+
+      {editingTower && (
+        <TowerForm
+          tower={editingTower}
+          onCancel={() => setEditingTower(null)}
+          onSubmit={handleUpdateTower}
+        />
       )}
 
       {showBulkModal && (

@@ -42,14 +42,14 @@ var PropertyPreference;
 })(PropertyPreference || (exports.PropertyPreference = PropertyPreference = {}));
 let Customer = class Customer {
     get firstName() {
-        return this.fullName?.split(' ')[0] || '';
+        return this.fullName?.split(' ')[0] || this.legacyFirstName || '';
     }
     get lastName() {
         const parts = this.fullName?.split(' ') || [];
-        return parts.slice(1).join(' ') || '';
+        return parts.slice(1).join(' ') || this.legacyLastName || '';
     }
-    get phone() {
-        return this.phoneNumber;
+    get computedFullName() {
+        return [this.legacyFirstName, this.legacyLastName].filter(Boolean).join(' ').trim();
     }
     get company() {
         return this.companyName;
@@ -58,10 +58,10 @@ let Customer = class Customer {
         return this.addressLine1;
     }
     get type() {
-        return this.customerType;
+        return this.customerType || CustomerType.INDIVIDUAL;
     }
     get totalSpent() {
-        return this.totalPurchases;
+        return this.totalPurchases || 0;
     }
     get lastBookingDate() {
         return this.metadata?.lastBookingDate || null;
@@ -93,19 +93,37 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "customerCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'full_name', length: 255 }),
-    (0, typeorm_1.Index)(),
+    (0, typeorm_1.Column)({
+        name: 'full_name',
+        length: 255,
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     __metadata("design:type", String)
 ], Customer.prototype, "fullName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'first_name', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "legacyFirstName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'last_name', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], Customer.prototype, "legacyLastName", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 255, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'phone_number', length: 20 }),
+    (0, typeorm_1.Column)({ name: 'phone', length: 20 }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "phoneNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'phone', length: 20, nullable: true, select: false, insert: false, update: false }),
+    __metadata("design:type", String)
+], Customer.prototype, "legacyPhone", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'alternate_phone', length: 20, nullable: true }),
     __metadata("design:type", String)
@@ -159,40 +177,74 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "aadharNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'customer_type', length: 50, default: 'INDIVIDUAL' }),
+    (0, typeorm_1.Column)({ name: 'customer_type', length: 50, nullable: true, select: false, insert: false, update: false }),
     __metadata("design:type", String)
 ], Customer.prototype, "customerType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'lead_source', length: 100, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'lead_source', length: 100, nullable: true, select: false, insert: false, update: false }),
     __metadata("design:type", String)
 ], Customer.prototype, "leadSource", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'assigned_sales_person', length: 255, nullable: true }),
+    (0, typeorm_1.Column)({
+        name: 'assigned_sales_person',
+        length: 255,
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     __metadata("design:type", String)
 ], Customer.prototype, "assignedSalesPerson", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({
+        name: 'credit_limit',
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     __metadata("design:type", Number)
 ], Customer.prototype, "creditLimit", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'outstanding_balance', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({
+        name: 'outstanding_balance',
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     __metadata("design:type", Number)
 ], Customer.prototype, "outstandingBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_bookings', type: 'int', default: 0 }),
+    (0, typeorm_1.Column)({ name: 'total_bookings', type: 'int', nullable: true, select: false, insert: false, update: false }),
     __metadata("design:type", Number)
 ], Customer.prototype, "totalBookings", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_purchases', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({
+        name: 'total_purchases',
+        type: 'decimal',
+        precision: 15,
+        scale: 2,
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     __metadata("design:type", Number)
 ], Customer.prototype, "totalPurchases", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'kyc_status', length: 50, default: 'PENDING' }),
+    (0, typeorm_1.Column)({ name: 'kyc_status', length: 50, nullable: true, select: false, insert: false, update: false }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "kycStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'kyc_documents', type: 'jsonb', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'kyc_documents', type: 'jsonb', nullable: true, select: false, insert: false, update: false }),
     __metadata("design:type", Object)
 ], Customer.prototype, "kycDocuments", void 0);
 __decorate([
@@ -204,7 +256,7 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true, select: false, insert: false, update: false }),
     __metadata("design:type", Object)
 ], Customer.prototype, "metadata", void 0);
 __decorate([
@@ -216,17 +268,31 @@ __decorate([
     __metadata("design:type", Date)
 ], Customer.prototype, "updatedAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'requirement_type', type: 'varchar', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'requirement_type', type: 'varchar', nullable: true, select: false, insert: false, update: false }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "requirementType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'property_preference', type: 'varchar', nullable: true }),
+    (0, typeorm_1.Column)({
+        name: 'property_preference',
+        type: 'varchar',
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "propertyPreference", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'tentative_purchase_timeframe', length: 100, nullable: true }),
+    (0, typeorm_1.Column)({
+        name: 'tentative_purchase_timeframe',
+        length: 100,
+        nullable: true,
+        select: false,
+        insert: false,
+        update: false,
+    }),
     __metadata("design:type", String)
 ], Customer.prototype, "tentativePurchaseTimeframe", void 0);
 exports.Customer = Customer = __decorate([

@@ -30,16 +30,26 @@ let NotificationsController = class NotificationsController {
         if (!userId) {
             return [];
         }
-        const include = includeRead === 'true';
-        return this.notificationsService.findAllForUser(userId, include);
+        try {
+            const include = includeRead === 'true';
+            return await this.notificationsService.findAllForUser(userId, include);
+        }
+        catch (error) {
+            return [];
+        }
     }
     async getUnreadCount(req) {
         const userId = req.user?.userId || req.user?.id;
         if (!userId) {
             return { count: 0 };
         }
-        const count = await this.notificationsService.getUnreadCount(userId);
-        return { count };
+        try {
+            const count = await this.notificationsService.getUnreadCount(userId);
+            return { count };
+        }
+        catch (error) {
+            return { count: 0 };
+        }
     }
     async markAsRead(id, req) {
         const userId = req.user?.userId || req.user?.id;

@@ -26,4 +26,13 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Boolean)
 ], UpdateTowerDto.prototype, "isActive", void 0);
+__decorate([
+    (0, swagger_2.ApiPropertyOptional)({
+        description: 'Regenerate flats for this tower using updated floors/units. Fails if existing units are reserved, booked, blocked, or on hold.',
+        example: false,
+    }),
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], UpdateTowerDto.prototype, "regenerateFlats", void 0);
 //# sourceMappingURL=update-tower.dto.js.map

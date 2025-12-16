@@ -200,7 +200,16 @@ __decorate([
     __metadata("design:type", Number)
 ], Property.prototype, "expectedRevenue", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'bhk_types', type: 'simple-array', nullable: true }),
+    (0, typeorm_1.Column)({
+        name: 'bhk_types',
+        type: 'text',
+        array: true,
+        nullable: true,
+        transformer: {
+            to: (value) => value ?? null,
+            from: (value) => value ?? [],
+        },
+    }),
     __metadata("design:type", Array)
 ], Property.prototype, "bhkTypes", void 0);
 __decorate([

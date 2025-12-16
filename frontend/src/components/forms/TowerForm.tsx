@@ -53,6 +53,7 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
     facing: tower?.facing || '',
     specialFeatures: tower?.specialFeatures || '',
     displayOrder: tower?.displayOrder || 1,
+    regenerateFlats: false,
   });
 
   useEffect(() => {
@@ -312,6 +313,28 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 placeholder="4 units per floor (2BHK + 3BHK)"
               />
             </div>
+
+            {tower && (
+              <div className="md:col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    name="regenerateFlats"
+                    checked={!!formData.regenerateFlats}
+                    onChange={handleChange}
+                    className="mt-1 h-5 w-5 rounded"
+                    style={{ accentColor: '#A8211B' }}
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800">Regenerate flats with updated counts</p>
+                    <p className="text-xs text-amber-700">
+                      Rebuilds flat numbering based on total floors/units and units-per-floor. This will fail if any units are booked,
+                      blocked, on hold, or sold to prevent data loss.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
 
             {/* Construction Details */}
             <div className="md:col-span-2 mt-4">

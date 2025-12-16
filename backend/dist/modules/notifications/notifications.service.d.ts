@@ -9,6 +9,7 @@ export declare class NotificationsService {
     private emailService;
     private readonly logger;
     constructor(notificationRepository: Repository<Notification>, userRepository: Repository<User>, emailService: EmailService);
+    private isMissingNotificationsTable;
     create(createNotificationDto: CreateNotificationDto, createdBy?: string): Promise<Notification[]>;
     private getUsersByRoles;
     private getUsersByDepartments;

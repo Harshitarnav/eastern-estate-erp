@@ -179,8 +179,9 @@ let TowersService = TowersService_1 = class TowersService {
                 ...updateTowerDto,
             });
         }
+        const { regenerateFlats, ...rest } = updateTowerDto;
         const updatePayload = {};
-        Object.assign(updatePayload, updateTowerDto);
+        Object.assign(updatePayload, rest);
         if (updateTowerDto.constructionStartDate !== undefined) {
             const parsedStartDate = this.parseDate(updateTowerDto.constructionStartDate);
             updatePayload.constructionStartDate = parsedStartDate ?? undefined;
@@ -193,9 +194,19 @@ let TowersService = TowersService_1 = class TowersService {
             updatePayload.towerCode = updatePayload.towerNumber;
         }
         Object.assign(tower, updatePayload);
+        const structureChanged = updateTowerDto.totalFloors !== undefined ||
+            updateTowerDto.totalUnits !== undefined ||
+            updateTowerDto.unitsPerFloor !== undefined ||
+            updateTowerDto.towerNumber !== undefined;
         const updatedTower = await this.towerRepository.save(tower);
         updatedTower.property = tower.property;
-        await this.syncFlatsForUpdatedTower(updatedTower, tower.property);
+        const existingFlats = await this.flatRepository.count({ where: { towerId: updatedTower.id } });
+        if (regenerateFlats || (existingFlats === 0 && structureChanged)) {
+            await this.regenerateFlatsForTower(updatedTower);
+        }
+        else {
+            await this.syncFlatsForUpdatedTower(updatedTower, tower.property);
+        }
         return this.formatTowerResponse(updatedTower);
     }
     async remove(id) {
@@ -510,6 +521,31 @@ let TowersService = TowersService_1 = class TowersService {
         if (propertyEntity) {
             await this.generateDefaultFlatsForTower(tower, propertyEntity);
         }
+    }
+    async regenerateFlatsForTower(tower) {
+        const lockedStatuses = [
+            flat_entity_1.FlatStatus.BOOKED,
+            flat_entity_1.FlatStatus.SOLD,
+            flat_entity_1.FlatStatus.BLOCKED,
+            flat_entity_1.FlatStatus.ON_HOLD,
+        ];
+        const lockedFlats = await this.flatRepository.count({
+            where: {
+                towerId: tower.id,
+                status: (0, typeorm_2.In)(lockedStatuses),
+            },
+        });
+        if (lockedFlats > 0) {
+            throw new common_1.ConflictException(`Cannot regenerate flats for tower ${tower.towerNumber || tower.name}. There are ${lockedFlats} units that are booked, blocked, on hold, or sold.`);
+        }
+        await this.flatRepository.delete({ towerId: tower.id });
+        const property = tower.property ??
+            (await this.propertyRepository.findOne({ where: { id: tower.propertyId } }));
+        if (!property) {
+            this.logger.warn(`Skipping flat regeneration for tower ${tower.id}: property not found`);
+            return;
+        }
+        await this.generateDefaultFlatsForTower(tower, property);
     }
     normalizeRow(row) {
         const normalized = {};

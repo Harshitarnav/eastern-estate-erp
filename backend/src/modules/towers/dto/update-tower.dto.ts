@@ -29,4 +29,17 @@ export class UpdateTowerDto extends PartialType(
   @IsBoolean({ message: 'isActive must be a boolean value' })
   @IsOptional()
   isActive?: boolean;
+
+  /**
+   * When true, regenerate flats for this tower using the latest totals/units-per-floor.
+   * Safe-guarded to run only when no flats are booked/blocked/on-hold.
+   */
+  @ApiPropertyOptional({
+    description:
+      'Regenerate flats for this tower using updated floors/units. Fails if existing units are reserved, booked, blocked, or on hold.',
+    example: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  regenerateFlats?: boolean;
 }

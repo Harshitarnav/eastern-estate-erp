@@ -3,6 +3,7 @@ import { Customer } from './entities/customer.entity';
 import { CreateCustomerDto, UpdateCustomerDto, QueryCustomerDto, CustomerResponseDto, PaginatedCustomersResponse } from './dto';
 export declare class CustomersService {
     private customersRepository;
+    private readonly logger;
     constructor(customersRepository: Repository<Customer>);
     private generateCustomerCode;
     create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto>;

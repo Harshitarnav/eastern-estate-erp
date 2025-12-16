@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateLeadDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const lead_entity_1 = require("../entities/lead.entity");
 class CreateLeadDto {
 }
@@ -129,6 +130,15 @@ __decorate([
     __metadata("design:type", String)
 ], CreateLeadDto.prototype, "preferredLocation", void 0);
 __decorate([
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === undefined || value === null)
+            return value;
+        const source = Array.isArray(value) ? value : [value];
+        const normalized = source
+            .map((item) => (typeof item === 'string' ? item.trim() : item))
+            .filter((item) => item !== undefined && item !== null && item !== '');
+        return normalized;
+    }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.IsOptional)(),
@@ -211,6 +221,15 @@ __decorate([
     __metadata("design:type", String)
 ], CreateLeadDto.prototype, "utmCampaign", void 0);
 __decorate([
+    (0, class_transformer_1.Transform)(({ value }) => {
+        if (value === undefined || value === null)
+            return value;
+        const source = Array.isArray(value) ? value : [value];
+        const normalized = source
+            .map((item) => (typeof item === 'string' ? item.trim() : item))
+            .filter((item) => item !== undefined && item !== null && item !== '');
+        return normalized;
+    }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     (0, class_validator_1.IsOptional)(),

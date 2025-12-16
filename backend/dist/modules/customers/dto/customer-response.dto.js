@@ -4,13 +4,16 @@ exports.CustomerResponseDto = void 0;
 class CustomerResponseDto {
     static fromEntity(customer) {
         const dto = new CustomerResponseDto();
-        const [firstName, ...rest] = (customer.fullName || '').split(' ').filter(Boolean);
-        dto.fullName = customer.fullName;
+        dto.id = customer.id;
+        dto.customerCode = customer.customerCode;
+        const fullName = customer.fullName || customer.computedFullName || '';
+        const [firstName, ...rest] = fullName.split(' ').filter(Boolean);
+        dto.fullName = fullName;
         dto.firstName = firstName || customer.firstName || '';
         dto.lastName = rest.join(' ') || customer.lastName || '';
         dto.email = customer.email;
-        dto.phone = customer.phoneNumber || customer.phone;
-        dto.phoneNumber = customer.phoneNumber || customer.phone;
+        dto.phone = customer.phoneNumber || customer.legacyPhone || '';
+        dto.phoneNumber = customer.phoneNumber || customer.legacyPhone || '';
         dto.alternatePhone = customer.alternatePhone;
         dto.dateOfBirth = customer.dateOfBirth;
         dto.gender = customer.gender;

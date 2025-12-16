@@ -337,8 +337,9 @@ export class TowersService {
       } as any);
     }
 
+    const { regenerateFlats, ...rest } = updateTowerDto;
     const updatePayload: Partial<Tower> = {};
-    Object.assign(updatePayload, updateTowerDto);
+    Object.assign(updatePayload, rest);
 
     if (updateTowerDto.constructionStartDate !== undefined) {
       const parsedStartDate = this.parseDate(updateTowerDto.constructionStartDate);
@@ -356,10 +357,22 @@ export class TowersService {
 
     // Update tower
     Object.assign(tower, updatePayload);
+    const structureChanged =
+      updateTowerDto.totalFloors !== undefined ||
+      updateTowerDto.totalUnits !== undefined ||
+      updateTowerDto.unitsPerFloor !== undefined ||
+      updateTowerDto.towerNumber !== undefined;
+
     const updatedTower = await this.towerRepository.save(tower);
     updatedTower.property = tower.property;
 
-    await this.syncFlatsForUpdatedTower(updatedTower, tower.property);
+    // If explicitly requested or the tower has no flats yet and structure changed, regenerate flats
+    const existingFlats = await this.flatRepository.count({ where: { towerId: updatedTower.id } });
+    if (regenerateFlats || (existingFlats === 0 && structureChanged)) {
+      await this.regenerateFlatsForTower(updatedTower);
+    } else {
+      await this.syncFlatsForUpdatedTower(updatedTower, tower.property);
+    }
 
     return this.formatTowerResponse(updatedTower);
   }
@@ -775,6 +788,46 @@ export class TowersService {
     if (propertyEntity) {
       await this.generateDefaultFlatsForTower(tower, propertyEntity);
     }
+  }
+
+  /**
+   * Regenerate flats for a tower using the latest structure details.
+   * Blocks regeneration if any flats are booked/blocked/on-hold/sold to avoid data loss.
+   */
+  private async regenerateFlatsForTower(tower: Tower): Promise<void> {
+    const lockedStatuses = [
+      FlatStatus.BOOKED,
+      FlatStatus.SOLD,
+      FlatStatus.BLOCKED,
+      FlatStatus.ON_HOLD,
+    ];
+
+    const lockedFlats = await this.flatRepository.count({
+      where: {
+        towerId: tower.id,
+        status: In(lockedStatuses),
+      },
+    });
+
+    if (lockedFlats > 0) {
+      throw new ConflictException(
+        `Cannot regenerate flats for tower ${tower.towerNumber || tower.name}. There are ${lockedFlats} units that are booked, blocked, on hold, or sold.`,
+      );
+    }
+
+    // Safe to regenerate: remove existing flats and rebuild
+    await this.flatRepository.delete({ towerId: tower.id });
+
+    const property =
+      tower.property ??
+      (await this.propertyRepository.findOne({ where: { id: tower.propertyId } }));
+
+    if (!property) {
+      this.logger.warn(`Skipping flat regeneration for tower ${tower.id}: property not found`);
+      return;
+    }
+
+    await this.generateDefaultFlatsForTower(tower, property);
   }
 
   private normalizeRow(row: Record<string, any>): Record<string, any> {

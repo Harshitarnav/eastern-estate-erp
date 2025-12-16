@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var CustomersService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CustomersService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,9 +19,10 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const customer_entity_1 = require("./entities/customer.entity");
 const dto_1 = require("./dto");
-let CustomersService = class CustomersService {
+let CustomersService = CustomersService_1 = class CustomersService {
     constructor(customersRepository) {
         this.customersRepository = customersRepository;
+        this.logger = new common_1.Logger(CustomersService_1.name);
     }
     async generateCustomerCode() {
         const date = new Date();
@@ -58,8 +60,17 @@ let CustomersService = class CustomersService {
             throw new common_1.ConflictException('Customer with this email or phone already exists');
         }
         const customerCode = await this.generateCustomerCode();
-        const { firstName, lastName, phone, isVIP, propertyId, ...rest } = createCustomerDto;
-        const fullName = `${firstName} ${lastName}`.trim();
+        const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, ...rest } = createCustomerDto;
+        const safeFirst = (firstName || '').trim();
+        const safeLast = (lastName || '').trim();
+        const fullName = [safeFirst, safeLast].filter(Boolean).join(' ') || 'Customer';
+        let phoneNumber = (phone || '').trim();
+        if (!phoneNumber) {
+            phoneNumber = (alternatePhone || '').trim();
+        }
+        if (!phoneNumber) {
+            phoneNumber = 'UNKNOWN';
+        }
         const metadata = {};
         if (isVIP !== undefined) {
             metadata.isVIP = isVIP;
@@ -71,7 +82,10 @@ let CustomersService = class CustomersService {
             ...rest,
             customerCode,
             fullName,
-            phoneNumber: phone,
+            legacyFirstName: safeFirst || fullName,
+            legacyLastName: safeLast || '',
+            phoneNumber,
+            legacyPhone: phoneNumber,
             metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
         const savedCustomer = await this.customersRepository.save(customer);
@@ -79,52 +93,89 @@ let CustomersService = class CustomersService {
     }
     async findAll(query) {
         const { search, type, kycStatus, needsHomeLoan, isVIP, city, createdFrom, createdTo, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
-        const queryBuilder = this.customersRepository.createQueryBuilder('customer');
-        if (search) {
-            queryBuilder.andWhere('(customer.firstName ILIKE :search OR customer.lastName ILIKE :search OR customer.email ILIKE :search OR customer.phone ILIKE :search)', { search: `%${search}%` });
-        }
-        if (type) {
-            queryBuilder.andWhere('customer.type = :type', { type });
-        }
-        if (kycStatus) {
-            queryBuilder.andWhere('customer.kycStatus = :kycStatus', { kycStatus });
-        }
-        if (needsHomeLoan !== undefined) {
-            queryBuilder.andWhere('customer.needsHomeLoan = :needsHomeLoan', { needsHomeLoan });
-        }
-        if (isVIP !== undefined) {
-            queryBuilder.andWhere('customer.isVIP = :isVIP', { isVIP });
-        }
-        if (city) {
-            queryBuilder.andWhere('customer.city = :city', { city });
-        }
-        if (createdFrom) {
-            queryBuilder.andWhere('customer.createdAt >= :createdFrom', { createdFrom });
-        }
-        if (createdTo) {
-            queryBuilder.andWhere('customer.createdAt <= :createdTo', { createdTo });
-        }
-        if (isActive !== undefined) {
-            queryBuilder.andWhere('customer.isActive = :isActive', { isActive });
-        }
-        if (query.propertyId) {
-            queryBuilder.andWhere(`(customer.metadata ->> 'propertyId') = :pid OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))`, { pid: query.propertyId });
-        }
-        queryBuilder.orderBy(`customer.${sortBy}`, sortOrder);
-        const total = await queryBuilder.getCount();
-        const customers = await queryBuilder
-            .skip((page - 1) * limit)
-            .take(limit)
-            .getMany();
-        return {
-            data: dto_1.CustomerResponseDto.fromEntities(customers),
-            meta: {
-                total,
-                page,
-                limit,
-                totalPages: Math.ceil(total / limit),
-            },
+        const allowedSortFields = [
+            'createdAt',
+            'updatedAt',
+            'customerCode',
+            'phoneNumber',
+            'city',
+            'kycStatus',
+            'customerType',
+        ];
+        const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+        const applyFilters = (qb, includeMetadata = true) => {
+            if (search) {
+                qb.andWhere("(customer.fullName ILIKE :search OR customer.email ILIKE :search OR customer.phoneNumber ILIKE :search)", { search: `%${search}%` });
+            }
+            if (type) {
+                qb.andWhere('customer.customerType = :type', { type });
+            }
+            if (kycStatus) {
+                qb.andWhere('customer.kycStatus = :kycStatus', { kycStatus });
+            }
+            if (includeMetadata && needsHomeLoan !== undefined) {
+                qb.andWhere("(customer.metadata ->> 'needsHomeLoan')::boolean = :needsHomeLoan", {
+                    needsHomeLoan,
+                });
+            }
+            if (includeMetadata && isVIP !== undefined) {
+                qb.andWhere("(customer.metadata ->> 'isVIP')::boolean = :isVIP", { isVIP });
+            }
+            if (city) {
+                qb.andWhere('customer.city = :city', { city });
+            }
+            if (createdFrom) {
+                qb.andWhere('customer.createdAt >= :createdFrom', { createdFrom });
+            }
+            if (createdTo) {
+                qb.andWhere('customer.createdAt <= :createdTo', { createdTo });
+            }
+            if (isActive !== undefined) {
+                qb.andWhere('customer.isActive = :isActive', { isActive });
+            }
+            if (query.propertyId) {
+                qb.andWhere('EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))', { pid: query.propertyId });
+            }
+            qb.orderBy(`customer.${safeSortBy}`, sortOrder);
         };
+        try {
+            const qb = this.customersRepository.createQueryBuilder('customer');
+            applyFilters(qb, true);
+            const total = await qb.getCount();
+            const customers = await qb
+                .skip((page - 1) * limit)
+                .take(limit)
+                .getMany();
+            return {
+                data: dto_1.CustomerResponseDto.fromEntities(customers),
+                meta: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
+                },
+            };
+        }
+        catch (error) {
+            this.logger.error('Failed to fetch customers with full filters. Retrying without metadata filters.', error?.stack || String(error));
+            const qb = this.customersRepository.createQueryBuilder('customer');
+            applyFilters(qb, false);
+            const total = await qb.getCount();
+            const customers = await qb
+                .skip((page - 1) * limit)
+                .take(limit)
+                .getMany();
+            return {
+                data: dto_1.CustomerResponseDto.fromEntities(customers),
+                meta: {
+                    total,
+                    page,
+                    limit,
+                    totalPages: Math.ceil(total / limit),
+                    warning: 'Returned without metadata-based filters (isVIP/needsHomeLoan) due to schema incompatibility.',
+                },
+            };
+        }
     }
     async findOne(id) {
         const customer = await this.customersRepository.findOne({ where: { id } });
@@ -154,9 +205,12 @@ let CustomersService = class CustomersService {
             const newFirstName = firstName || customer.firstName;
             const newLastName = lastName || customer.lastName;
             customer.fullName = `${newFirstName} ${newLastName}`.trim();
+            customer.legacyFirstName = newFirstName;
+            customer.legacyLastName = newLastName;
         }
         if (phone) {
             customer.phoneNumber = phone;
+            customer.legacyPhone = phone;
         }
         Object.assign(customer, rest);
         const updatedCustomer = await this.customersRepository.save(customer);
@@ -191,7 +245,7 @@ let CustomersService = class CustomersService {
     }
 };
 exports.CustomersService = CustomersService;
-exports.CustomersService = CustomersService = __decorate([
+exports.CustomersService = CustomersService = CustomersService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
     __metadata("design:paramtypes", [typeorm_2.Repository])

@@ -41,23 +41,32 @@ let LeadsService = class LeadsService {
         return `LD${year}${month}${sequence}`;
     }
     async create(createLeadDto) {
-        const existing = await this.leadsRepository.findOne({
-            where: [
-                { email: createLeadDto.email },
-                { phoneNumber: createLeadDto.phone },
-            ],
-        });
-        if (existing) {
-            throw new common_1.ConflictException('Lead with this email or phone already exists');
+        const duplicateChecks = [];
+        if (createLeadDto.email) {
+            duplicateChecks.push({ email: createLeadDto.email });
+        }
+        if (createLeadDto.phone) {
+            duplicateChecks.push({ phoneNumber: createLeadDto.phone });
+        }
+        if (duplicateChecks.length > 0) {
+            const existing = await this.leadsRepository.findOne({
+                where: duplicateChecks,
+            });
+            if (existing) {
+                throw new common_1.ConflictException('Lead with this email or phone already exists');
+            }
         }
         const leadCode = await this.generateLeadCode();
-        const { firstName, lastName, phone, ...rest } = createLeadDto;
+        const { firstName, lastName, phone, email, ...rest } = createLeadDto;
         const fullName = `${firstName} ${lastName}`.trim();
+        const normalizedEmail = (email || '').trim() ||
+            `lead-${leadCode.toLowerCase()}-${(phone || '').replace(/\D/g, '') || 'noemail'}@lead.local`;
         const lead = this.leadsRepository.create({
             ...rest,
             leadCode,
             fullName,
             phoneNumber: phone,
+            email: normalizedEmail,
         });
         const savedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(savedLead);

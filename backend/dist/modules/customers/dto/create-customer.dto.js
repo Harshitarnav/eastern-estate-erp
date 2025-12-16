@@ -11,19 +11,20 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateCustomerDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const customer_entity_1 = require("../entities/customer.entity");
 class CreateCustomerDto {
 }
 exports.CreateCustomerDto = CreateCustomerDto;
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "firstName", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "lastName", void 0);
@@ -34,12 +35,14 @@ __decorate([
 ], CreateCustomerDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "phone", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "alternatePhone", void 0);
 __decorate([
@@ -55,21 +58,25 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "address", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "city", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "state", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "pincode", void 0);
 __decorate([
@@ -80,27 +87,32 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "occupation", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
+    (0, class_transformer_1.Type)(() => Number),
     __metadata("design:type", Number)
 ], CreateCustomerDto.prototype, "annualIncome", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "company", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "panNumber", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(({ value }) => (value !== undefined && value !== null ? String(value) : value)),
     __metadata("design:type", String)
 ], CreateCustomerDto.prototype, "aadharNumber", void 0);
 __decorate([

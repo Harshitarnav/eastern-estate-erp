@@ -24,6 +24,7 @@ export declare class TowersService {
     private formatTowerResponse;
     private generateDefaultFlatsForTower;
     private syncFlatsForUpdatedTower;
+    private regenerateFlatsForTower;
     private normalizeRow;
     private sanitizeString;
     private sanitizeNullableString;
