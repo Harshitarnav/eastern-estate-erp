@@ -176,7 +176,7 @@ export default function EditFlatPage() {
       if (resolvedCustomerId) {
         flatData.customerId = resolvedCustomerId;
       }
-      if (data.customerId && data.customerId !== flat.customerId) {
+      if (data.customerId) {
         flatData.customerId = data.customerId;
       }
 
