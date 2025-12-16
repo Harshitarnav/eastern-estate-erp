@@ -10,9 +10,13 @@ import {
   IsArray,
   Min,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { BookingStatus, PaymentStatus } from '../entities/booking.entity';
 
 export class CreateBookingDto {
+  private static nullableDate = ({ value }: { value: any }) =>
+    value === undefined || value === null || value === '' ? undefined : value;
+
   @IsNotEmpty()
   @IsString()
   bookingNumber: string;
@@ -68,6 +72,7 @@ export class CreateBookingDto {
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   tokenPaidDate?: string;
 
   @IsOptional()
@@ -92,6 +97,7 @@ export class CreateBookingDto {
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   chequeDate?: string;
 
   @IsOptional()
@@ -108,10 +114,12 @@ export class CreateBookingDto {
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   agreementDate?: string;
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   agreementSignedDate?: string;
 
   @IsOptional()
@@ -120,14 +128,17 @@ export class CreateBookingDto {
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   expectedPossessionDate?: string;
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   actualPossessionDate?: string;
 
   @IsOptional()
   @IsDateString()
+  @Transform(CreateBookingDto.nullableDate)
   registrationDate?: string;
 
   @IsOptional()
