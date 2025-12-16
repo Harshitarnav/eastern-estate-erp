@@ -24,6 +24,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { RolesModule } from './modules/roles/roles.module';
 // import { TelephonyModule } from './modules/telephony/telephony.module'; // Temporarily disabled
 import { TelephonySimpleModule } from './modules/telephony-simple/telephony-simple.module';
+import { DemandDraftsModule } from './modules/demand-drafts/demand-drafts.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -100,6 +101,7 @@ import { SchemaSyncService } from './database/schema-sync.service';
     RolesModule,
     // TelephonyModule, // Temporarily disabled - using simple version instead
     TelephonySimpleModule,
+    DemandDraftsModule,
     UploadModule,
   ],
   providers: [

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Building2, Loader2, MapPin, RefreshCw, ShieldAlert } from 'lucide-react';
 import { flatsService, Flat } from '@/services/flats.service';
 import { customersService, Customer } from '@/services/customers.service';
+import { demandDraftsService, DemandDraft } from '@/services/demand-drafts.service';
 import { BrandHero, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { formatCurrency } from '@/utils/formatters';
@@ -29,6 +30,14 @@ export default function FlatDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [customerError, setCustomerError] = useState<string | null>(null);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const [drafts, setDrafts] = useState<DemandDraft[]>([]);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [draftForm, setDraftForm] = useState({
+    milestoneId: '',
+    amount: '',
+    content: '',
+  });
+  const [draftMessage, setDraftMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!flatId) {
@@ -40,9 +49,10 @@ export default function FlatDetailPage() {
     const loadFlat = async () => {
       try {
         setError(null);
-        const data = await flatsService.getFlat(flatId, { forceRefresh: true });
-        setFlat(data);
-      } catch (err: any) {
+      const data = await flatsService.getFlat(flatId, { forceRefresh: true });
+      setFlat(data);
+      await loadDrafts(data?.id);
+    } catch (err: any) {
         const message =
           err?.response?.data?.message ??
           err?.message ??
@@ -95,6 +105,7 @@ export default function FlatDetailPage() {
       const data = await flatsService.getFlat(flatId, { forceRefresh: true });
       setFlat(data);
       setError(null);
+      await loadDrafts(data?.id);
     } catch (err: any) {
       const message =
         err?.response?.data?.message ??
@@ -103,6 +114,65 @@ export default function FlatDetailPage() {
       setError(message);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const loadDrafts = async (id?: string) => {
+    if (!id) return;
+    try {
+      setDraftLoading(true);
+      const data = await demandDraftsService.list({ flatId: id });
+      setDrafts(data || []);
+    } catch (err: any) {
+      setDraftMessage(err?.response?.data?.message ?? 'Could not load demand drafts.');
+    } finally {
+      setDraftLoading(false);
+    }
+  };
+
+  const handleDraftChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setDraftForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateDraft = async () => {
+    if (!flat) return;
+    try {
+      setDraftMessage(null);
+      const payload = {
+        flatId: flat.id,
+        customerId: flat.customerId || undefined,
+        amount: Number(draftForm.amount || flat.finalPrice || 0),
+        milestoneId: draftForm.milestoneId || 'Construction milestone',
+        content: draftForm.content || undefined,
+      };
+      await demandDraftsService.create(payload);
+      await loadDrafts(flat.id);
+      setDraftMessage('Draft created. You can edit it below.');
+    } catch (err: any) {
+      setDraftMessage(err?.response?.data?.message ?? 'Failed to create draft.');
+    }
+  };
+
+  const handleUpdateDraft = async (draftId: string, content: string, amount: number) => {
+    try {
+      setDraftMessage(null);
+      await demandDraftsService.update(draftId, { content, amount });
+      await loadDrafts(flat?.id);
+      setDraftMessage('Draft updated.');
+    } catch (err: any) {
+      setDraftMessage(err?.response?.data?.message ?? 'Failed to update draft.');
+    }
+  };
+
+  const handleMarkSent = async (draftId: string) => {
+    try {
+      setDraftMessage(null);
+      await demandDraftsService.markSent(draftId);
+      await loadDrafts(flat?.id);
+      setDraftMessage('Draft marked as sent.');
+    } catch (err: any) {
+      setDraftMessage(err?.response?.data?.message ?? 'Failed to mark draft as sent.');
     }
   };
 
@@ -358,6 +428,124 @@ export default function FlatDetailPage() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="border-b border-gray-100 pb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Demand Drafts</h2>
+                <p className="mt-1 text-sm text-gray-600">Generate, edit, and mark demand drafts for this flat.</p>
+              </header>
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Milestone</label>
+                    <input
+                      name="milestoneId"
+                      value={draftForm.milestoneId}
+                      onChange={handleDraftChange}
+                      placeholder="e.g., On Starting of 5th floor"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Amount</label>
+                    <input
+                      name="amount"
+                      type="number"
+                      value={draftForm.amount}
+                      onChange={handleDraftChange}
+                      placeholder={flat ? String(flat.finalPrice || 0) : '0'}
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Custom Content (optional)</label>
+                  <textarea
+                    name="content"
+                    value={draftForm.content}
+                    onChange={handleDraftChange}
+                    placeholder="Paste or edit the draft body before export."
+                    rows={4}
+                    className="w-full rounded-lg border px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCreateDraft}
+                    className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700"
+                    disabled={draftLoading}
+                  >
+                    {draftLoading ? 'Working…' : 'Create Draft'}
+                  </button>
+                  <button
+                    onClick={() => loadDrafts(flat?.id)}
+                    className="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    disabled={draftLoading}
+                  >
+                    Refresh
+                  </button>
+                </div>
+                {draftMessage && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                    {draftMessage}
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {draftLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading drafts…</span>
+                    </div>
+                  ) : drafts.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-600">
+                      No drafts yet. Create one to start editing before export.
+                    </div>
+                  ) : (
+                    drafts.map((draft) => (
+                      <div key={draft.id} className="rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {draft.milestoneId || 'Milestone'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {draft.status} · {formatCurrency(draft.amount ?? 0)}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {draft.fileUrl ? (
+                              <a
+                                href={draft.fileUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-xs font-semibold text-blue-600 hover:underline"
+                              >
+                                Download
+                              </a>
+                            ) : null}
+                            {draft.status !== 'SENT' && (
+                              <button
+                                onClick={() => handleMarkSent(draft.id)}
+                                className="rounded-md border px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                              >
+                                Mark sent
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <textarea
+                            defaultValue={draft.content || ''}
+                            onBlur={(e) => handleUpdateDraft(draft.id, e.target.value, Number(draft.amount || 0))}
+                            className="w-full rounded-lg border px-3 py-2 text-sm"
+                            rows={4}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </section>
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Completion score</h2>
