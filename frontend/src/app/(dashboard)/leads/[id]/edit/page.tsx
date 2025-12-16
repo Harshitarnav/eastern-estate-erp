@@ -50,12 +50,20 @@ export default function LeadEditPage() {
     try {
       setLoading(true);
       const lead = await leadsService.getLead(leadId);
+      const fullName = (lead.fullName || '').trim();
+      let derivedFirstName = lead.firstName || '';
+      let derivedLastName = lead.lastName || '';
+      if (!derivedFirstName && fullName) {
+        const parts = fullName.split(' ');
+        derivedFirstName = parts.shift() || '';
+        derivedLastName = parts.join(' ').trim();
+      }
       const propertyTypes = Array.isArray(lead.interestedPropertyTypes)
         ? lead.interestedPropertyTypes.join(', ')
         : lead.interestedPropertyTypes || '';
       setFormData({
-        firstName: lead.firstName || '',
-        lastName: lead.lastName || '',
+        firstName: derivedFirstName,
+        lastName: derivedLastName,
         email: lead.email || '',
         phone: lead.phone || '',
         source: lead.source || 'WEBSITE',
