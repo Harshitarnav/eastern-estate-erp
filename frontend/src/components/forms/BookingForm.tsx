@@ -48,7 +48,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   const fetchFlats = async (propertyId: string) => {
     try {
-      const res = await flatsService.getFlats({ propertyId, status: 'Available', limit: 100 });
+      const res = await flatsService.getFlats({ propertyId, status: 'AVAILABLE', limit: 100 });
       setFlats(res.data);
     } catch (error) {
       console.error('Error fetching flats:', error);
@@ -98,6 +98,13 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       type: 'select',
       required: true,
       options: properties.map(p => ({ value: p.id, label: `${p.name} - ${p.location}` })),
+      onChange: (value) => {
+        setSelectedProperty(String(value));
+        setFlats([]);
+        if (value) {
+          fetchFlats(String(value));
+        }
+      },
     },
     {
       name: 'flatId',
