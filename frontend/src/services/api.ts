@@ -2,7 +2,22 @@ import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { handleApiError } from '@/utils/error-handler';
 
 // Default to same-origin API so prod/stage uses the current host (Caddy proxies /api/v1)
-const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+// Normalize to avoid mixed-content when the site is served over HTTPS.
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+let API_URL = rawApiUrl;
+
+if (typeof window !== 'undefined') {
+  try {
+    const isHttps = window.location.protocol === 'https:';
+    const resolved = new URL(rawApiUrl, window.location.origin);
+    if (isHttps && resolved.protocol === 'http:' && resolved.hostname === window.location.hostname) {
+      resolved.protocol = 'https:';
+    }
+    API_URL = resolved.toString().replace(/\/$/, '');
+  } catch {
+    API_URL = rawApiUrl;
+  }
+}
 
 class ApiService {
   private api: AxiosInstance;
