@@ -77,6 +77,7 @@ export class CreateCustomerDto {
 
   @IsEnum(CustomerType)
   @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
   type?: CustomerType;
 
   @IsString()
@@ -124,6 +125,7 @@ export class CreateCustomerDto {
 
   @IsEnum(KYCStatus)
   @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
   kycStatus?: KYCStatus;
 
   @IsString()
