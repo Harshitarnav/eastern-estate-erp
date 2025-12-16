@@ -316,7 +316,8 @@ export class CustomersService {
       customer.isActive = updateCustomerDto.isActive;
     }
     if (updateCustomerDto.isVIP !== undefined) {
-      customer.isVIP = updateCustomerDto.isVIP;
+      customer.metadata = customer.metadata || {};
+      customer.metadata.isVIP = updateCustomerDto.isVIP;
     }
     assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
 
