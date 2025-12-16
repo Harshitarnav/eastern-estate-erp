@@ -52,7 +52,7 @@ export default function EmployeeDetailPage() {
           console.error('Error fetching role:', error);
         }
       }
-      
+
       setError('');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch employee');
@@ -99,7 +99,8 @@ export default function EmployeeDetailPage() {
     return status.replace(/_/g, ' ');
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (value: number | string | null | undefined) => {
+    const amount = Number(value) || 0;
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
