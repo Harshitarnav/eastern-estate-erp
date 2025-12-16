@@ -7,6 +7,7 @@ import { flatsService } from '@/services/flats.service';
 import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
 import { customersService } from '@/services/customers.service';
+import { mapFlatFormToPayload } from '@/utils/forms/flat';
 
 export default function EditFlatPage() {
   const router = useRouter();
@@ -168,95 +169,15 @@ export default function EditFlatPage() {
         }
       }
 
-      // Transform form data to match API expectations
       const flatData: any = {
-        propertyId: data.propertyId,
-        towerId: data.towerId,
-        flatNumber: data.flatNumber,
-        name: data.name,
-        description: data.description,
-        type: data.type,
-        floor: data.floor,
-        bedrooms: data.bedrooms,
-        bathrooms: data.bathrooms,
-        balconies: data.balconies,
-        servantRoom: data.servantRoom || false,
-        studyRoom: data.studyRoom || false,
-        poojaRoom: data.poojaRoom || false,
-        superBuiltUpArea: data.superBuiltUpArea,
-        builtUpArea: data.builtUpArea,
-        carpetArea: data.carpetArea,
-        balconyArea: data.balconyArea || 0,
-        basePrice: data.basePrice,
-        pricePerSqft: data.pricePerSqft || 0,
-        registrationCharges: data.registrationCharges || 0,
-        maintenanceCharges: data.maintenanceCharges || 0,
-        parkingCharges: data.parkingCharges || 0,
-        totalPrice: data.totalPrice,
-        discountAmount: data.discountAmount || 0,
-        finalPrice: data.finalPrice,
-        status: data.status || 'AVAILABLE',
-        isAvailable: data.isAvailable !== false,
-        vastuCompliant: data.vastuCompliant || false,
-        cornerUnit: data.cornerUnit || false,
-        roadFacing: data.roadFacing || false,
-        parkFacing: data.parkFacing || false,
-        parkingSlots: data.parkingSlots || 0,
-        coveredParking: data.coveredParking || false,
-        furnishingStatus: data.furnishingStatus,
-        amenities: Array.isArray(data.amenities)
-          ? data.amenities
-          : data.amenities
-          ? String(data.amenities).split(',').map((a: string) => a.trim()).filter(Boolean)
-          : [],
-        specialFeatures: data.specialFeatures,
-        remarks: data.remarks,
-        isActive: data.isActive !== false,
-        displayOrder: data.displayOrder || 0,
+        ...mapFlatFormToPayload(data),
       };
-
-      // Only include dates if they have values
-      if (data.availableFrom) flatData.availableFrom = data.availableFrom;
-      if (data.expectedPossession) flatData.expectedPossession = data.expectedPossession;
-      if (data.facing) flatData.facing = data.facing;
-      if (data.floorPlanUrl) flatData.floorPlanUrl = data.floorPlanUrl;
-      if (data.virtualTourUrl) flatData.virtualTourUrl = data.virtualTourUrl;
-      if (data.bookingDate) flatData.bookingDate = data.bookingDate;
-      if (data.soldDate) flatData.soldDate = data.soldDate;
-      if (data.tokenAmount) flatData.tokenAmount = data.tokenAmount;
-      if (data.paymentPlan) flatData.paymentPlan = data.paymentPlan;
-      const toList = (val: any) =>
-        Array.isArray(val)
-          ? val
-          : val
-          ? String(val)
-              .split(',')
-              .map((x: string) => x.trim())
-              .filter(Boolean)
-          : undefined;
-
-      // Handle list-like fields
-      const imagesList = toList(data.images);
-      if (imagesList && imagesList.length > 0) flatData.images = imagesList;
-      const registrationReceipts = toList(data.registrationReceiptUrls);
-      if (registrationReceipts) flatData.registrationReceiptUrls = registrationReceipts;
-      const paymentReceipts = toList(data.paymentReceiptUrls);
-      if (paymentReceipts) flatData.paymentReceiptUrls = paymentReceipts;
-      const demandLetters = toList(data.demandLetterUrls);
-      if (demandLetters) flatData.demandLetterUrls = demandLetters;
-      const kycDocs = toList(data.kycDocsUrls);
-      if (kycDocs) flatData.kycDocsUrls = kycDocs;
-      const otherDocs = toList(data.otherDocuments);
-      if (otherDocs) flatData.otherDocuments = otherDocs;
-
-      // Issues jsonb
-      if (data.issues) {
-        flatData.issues =
-          Array.isArray(data.issues) ? data.issues : [String(data.issues)];
-      }
 
       if (resolvedCustomerId) {
         flatData.customerId = resolvedCustomerId;
+      }
+      if (data.customerId && data.customerId !== flat.customerId) {
+        flatData.customerId = data.customerId;
       }
 
       await flatsService.updateFlat(flatId, flatData);

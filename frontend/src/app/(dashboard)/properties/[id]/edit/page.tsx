@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import PropertyForm from '@/components/forms/PropertyForm';
-import { propertiesService, Property, CreatePropertyDto } from '@/services/properties.service';
+import { propertiesService, Property } from '@/services/properties.service';
 import { projectsService, Project } from '@/services/projects.service';
+import { mapPropertyFormToPayload } from '@/utils/forms/property';
 
 export default function EditPropertyPage() {
   const router = useRouter();
@@ -45,27 +46,6 @@ export default function EditPropertyPage() {
     loadData();
   }, [propertyId]);
 
-  const toNumber = (value: any): number | undefined => {
-    if (value === null || value === undefined || value === '') {
-      return undefined;
-    }
-    const parsed = Number(value);
-    return Number.isNaN(parsed) ? undefined : parsed;
-  };
-
-  const toArray = (value: any): string[] => {
-    if (!value) {
-      return [];
-    }
-    if (Array.isArray(value)) {
-      return value;
-    }
-    return String(value)
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-  };
-
   const handleSubmit = async (data: any) => {
     if (!propertyId) {
       alert('Invalid property identifier.');
@@ -79,42 +59,7 @@ export default function EditPropertyPage() {
 
     setLoading(true);
     try {
-      const updatePayload: Partial<CreatePropertyDto> = {
-        projectId: data.projectId,
-        propertyCode: data.propertyCode,
-        name: data.name,
-        description: data.description,
-        country: data.country || 'India',
-        address: data.address,
-        location: data.location,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-        nearbyLandmarks: data.nearbyLandmarks,
-        projectType: data.projectType,
-        propertyType: data.projectType,
-        status: data.status || 'Active',
-        amenities: toArray(data.amenities),
-        bhkTypes: toArray(data.bhkTypes),
-        totalArea: toNumber(data.totalArea),
-        builtUpArea: toNumber(data.builtUpArea ?? data.totalArea),
-        areaUnit: data.areaUnit,
-        numberOfTowers: toNumber(data.numberOfTowers),
-        numberOfUnits: toNumber(data.numberOfUnits),
-        floorsPerTower: data.floorsPerTower,
-        reraNumber: data.reraNumber,
-        reraStatus: data.reraStatus,
-        launchDate: data.launchDate || undefined,
-        expectedCompletionDate: data.expectedCompletionDate || undefined,
-        actualCompletionDate: data.actualCompletionDate || undefined,
-        priceMin: toNumber(data.priceMin),
-        priceMax: toNumber(data.priceMax),
-        expectedRevenue: toNumber(data.expectedRevenue),
-        isActive: data.isActive !== false,
-        isFeatured: data.isFeatured === true,
-      };
-
-      await propertiesService.updateProperty(propertyId, updatePayload);
+      await propertiesService.updateProperty(propertyId, mapPropertyFormToPayload(data));
       alert('Property updated successfully!');
       window.location.href = '/properties';
     } catch (err: any) {
