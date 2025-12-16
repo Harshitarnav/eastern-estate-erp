@@ -8,6 +8,7 @@ export interface Flat {
   id: string;
   propertyId: string;
   towerId: string;
+  flatCode?: string;
   flatNumber: string;
   name: string;
   description?: string;
