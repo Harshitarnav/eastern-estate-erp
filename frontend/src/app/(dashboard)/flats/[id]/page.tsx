@@ -36,6 +36,18 @@ export default function FlatDetailPage() {
     milestoneId: '',
     amount: '',
     content: '',
+    customerName: '',
+    spouseName: '',
+    customerAddress: '',
+    flatLabel: '',
+    bhk: '',
+    amountWords: '',
+    reference: '',
+    date: '',
+    place: '',
+    bankAccountHolder: '',
+    bankAccountNumber: '',
+    bankIfsc: '',
   });
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
 
@@ -49,10 +61,18 @@ export default function FlatDetailPage() {
     const loadFlat = async () => {
       try {
         setError(null);
-      const data = await flatsService.getFlat(flatId, { forceRefresh: true });
-      setFlat(data);
-      await loadDrafts(data?.id);
-    } catch (err: any) {
+        const data = await flatsService.getFlat(flatId, { forceRefresh: true });
+        setFlat(data);
+        const inferredFlatLabel = buildFlatLabel(data);
+        const inferredBhk = (data?.type || '').replace('_', ' ') || '—';
+        setDraftForm((prev) => ({
+          ...prev,
+          flatLabel: inferredFlatLabel,
+          bhk: inferredBhk,
+          amount: prev.amount || String(data?.finalPrice || ''),
+        }));
+        await loadDrafts(data?.id);
+      } catch (err: any) {
         const message =
           err?.response?.data?.message ??
           err?.message ??
@@ -94,6 +114,25 @@ export default function FlatDetailPage() {
 
     loadCustomer();
   }, [flat?.customerId]);
+
+  useEffect(() => {
+    if (customer) {
+      const fullName = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || customer.email || '';
+      const addressLine = [
+        customer.address || customer.addressLine1,
+        customer.city,
+        customer.state,
+        customer.pincode,
+      ]
+        .filter(Boolean)
+        .join(', ');
+      setDraftForm((prev) => ({
+        ...prev,
+        customerName: prev.customerName || fullName,
+        customerAddress: prev.customerAddress || addressLine,
+      }));
+    }
+  }, [customer]);
 
   const handleRefresh = async () => {
     if (!flatId) {
@@ -139,12 +178,29 @@ export default function FlatDetailPage() {
     if (!flat) return;
     try {
       setDraftMessage(null);
+      const content = draftForm.content || buildDraftContent({ ...draftForm, flat });
       const payload = {
         flatId: flat.id,
         customerId: flat.customerId || undefined,
         amount: Number(draftForm.amount || flat.finalPrice || 0),
         milestoneId: draftForm.milestoneId || 'Construction milestone',
-        content: draftForm.content || undefined,
+        content,
+        metadata: {
+          customerName: draftForm.customerName,
+          spouseName: draftForm.spouseName,
+          customerAddress: draftForm.customerAddress,
+          flatLabel: draftForm.flatLabel,
+          bhk: draftForm.bhk,
+          amountWords: draftForm.amountWords,
+          reference: draftForm.reference,
+          date: draftForm.date,
+          place: draftForm.place,
+          bankDetails: {
+            accountHolder: draftForm.bankAccountHolder,
+            accountNumber: draftForm.bankAccountNumber,
+            ifsc: draftForm.bankIfsc,
+          },
+        },
       };
       await demandDraftsService.create(payload);
       await loadDrafts(flat.id);
@@ -456,7 +512,137 @@ export default function FlatDetailPage() {
                       className="w-full rounded-lg border px-3 py-2 text-sm"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Amount (in words)</label>
+                    <input
+                      name="amountWords"
+                      value={draftForm.amountWords}
+                      onChange={handleDraftChange}
+                      placeholder="Four Lakh Eighty Nine Thousand…"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Reference</label>
+                    <input
+                      name="reference"
+                      value={draftForm.reference}
+                      onChange={handleDraftChange}
+                      placeholder="EECD/DEMAND/AUG/2025"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
                 </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer Name</label>
+                    <input
+                      name="customerName"
+                      value={draftForm.customerName}
+                      onChange={handleDraftChange}
+                      placeholder="Customer full name"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Spouse Name</label>
+                    <input
+                      name="spouseName"
+                      value={draftForm.spouseName}
+                      onChange={handleDraftChange}
+                      placeholder="Spouse name (optional)"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer Address</label>
+                    <input
+                      name="customerAddress"
+                      value={draftForm.customerAddress}
+                      onChange={handleDraftChange}
+                      placeholder="Postal address"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Flat Label</label>
+                    <input
+                      name="flatLabel"
+                      value={draftForm.flatLabel}
+                      onChange={handleDraftChange}
+                      placeholder="Block C , Flat No-912, in Diamond City"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">BHK / Typology</label>
+                    <input
+                      name="bhk"
+                      value={draftForm.bhk}
+                      onChange={handleDraftChange}
+                      placeholder="3 BHK"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Date</label>
+                    <input
+                      name="date"
+                      value={draftForm.date}
+                      onChange={handleDraftChange}
+                      placeholder="06/08/2025"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Place</label>
+                    <input
+                      name="place"
+                      value={draftForm.place}
+                      onChange={handleDraftChange}
+                      placeholder="Cuttack"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bank Account Holder</label>
+                    <input
+                      name="bankAccountHolder"
+                      value={draftForm.bankAccountHolder}
+                      onChange={handleDraftChange}
+                      placeholder="Eastern Estate Construction & Developer’s Pvt. Ltd."
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Account Number</label>
+                    <input
+                      name="bankAccountNumber"
+                      value={draftForm.bankAccountNumber}
+                      onChange={handleDraftChange}
+                      placeholder="40683619139"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">IFSC</label>
+                    <input
+                      name="bankIfsc"
+                      value={draftForm.bankIfsc}
+                      onChange={handleDraftChange}
+                      placeholder="SBIN0063835"
+                      className="w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Custom Content (optional)</label>
                   <textarea
@@ -730,4 +916,73 @@ function FlatFinancialSnapshot({
       ))}
     </div>
   );
+}
+
+function buildFlatLabel(flat?: Flat | null) {
+  if (!flat) return '';
+  const block = flat?.tower?.name ? `Block ${flat.tower.name}` : '';
+  const flatNo = flat.flatNumber ? `Flat No-${flat.flatNumber}` : '';
+  const property = flat.property?.name ? `in ${flat.property.name}` : '';
+  return [block, flatNo, property].filter(Boolean).join(', ');
+}
+
+function buildDraftContent(fields: any) {
+  const {
+    customerName = 'Customer',
+    spouseName = 'Spouse',
+    customerAddress = '—',
+    milestoneId = 'Construction milestone',
+    flatLabel = 'Flat',
+    bhk = '—',
+    amount = 0,
+    amountWords = '',
+    reference = 'EECD/DEMAND/REF',
+    date = new Date().toLocaleDateString('en-GB'),
+    place = '—',
+    bankAccountHolder = 'Eastern Estate Construction & Developer’s Pvt. Ltd.',
+    bankAccountNumber = 'XXXXXXXXXXXX',
+    bankIfsc = 'SBINXXXXXXX',
+  } = fields;
+
+  const amountFormatted = amount ? `₹${Number(amount).toLocaleString('en-IN')}` : '₹0';
+  const amountWordsFinal = amountWords || 'Amount in words here';
+
+  return `To,
+${customerName}
+W/O ${spouseName}
+${customerAddress}
+
+Subject: Release of ${milestoneId} of payment in respect of ${customerName}.
+as per agreement (under construction to the extent of ${milestoneId} )
+i.e ${amountFormatted} (${amountWordsFinal}).
+
+Dear Sir/Madam,
+In respect of the above we would like to mention that construction work in respect of ${flatLabel} allotted to ${customerName},
+is under construction to the extent of ${milestoneId}. In terms of
+the above mentioned agreement payment upto ${milestoneId} fallen due
+as per details here under:-
+Flat: ${flatLabel}
+BHK Type: ${bhk}
+Demand Amount details as per construction mentioned below:-
+Demand amount against construction
+${milestoneId}
+Total
+${amountFormatted}
+
+You are requested to release the above amount to DD/NEFT/RTGS as per our bank details given
+below.
+Account Holder : ${bankAccountHolder}
+Account Number : ${bankAccountNumber}
+IFSC : ${bankIfsc}
+Date: - ${date}
+
+Place: - ${place}
+
+Thanking You
+
+Yours Faithfully
+Eastern Estate Construction & Developer’s Pvt. Ltd.
+www.eecd.in
+Ref. ${reference}                                                                                            DATE-${date}
+`;
 }
