@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   Query,
@@ -38,6 +39,12 @@ export class EmployeesController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
+    return this.employeesService.update(id, updateEmployeeDto);
+  }
+
+  // Accept PUT for clients that use PUT semantics for updates
+  @Put(':id')
+  replace(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(id, updateEmployeeDto);
   }
 

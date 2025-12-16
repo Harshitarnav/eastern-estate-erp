@@ -13,5 +13,6 @@ export declare class EmployeesController {
     }>;
     findOne(id: string): Promise<import("./entities/employee.entity").Employee>;
     update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<import("./entities/employee.entity").Employee>;
+    replace(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<import("./entities/employee.entity").Employee>;
     remove(id: string): Promise<void>;
 }

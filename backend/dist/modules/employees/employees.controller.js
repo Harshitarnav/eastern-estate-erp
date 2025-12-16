@@ -35,6 +35,9 @@ let EmployeesController = class EmployeesController {
     update(id, updateEmployeeDto) {
         return this.employeesService.update(id, updateEmployeeDto);
     }
+    replace(id, updateEmployeeDto) {
+        return this.employeesService.update(id, updateEmployeeDto);
+    }
     remove(id) {
         return this.employeesService.remove(id);
     }
@@ -75,6 +78,14 @@ __decorate([
     __metadata("design:paramtypes", [String, dto_1.UpdateEmployeeDto]),
     __metadata("design:returntype", void 0)
 ], EmployeesController.prototype, "update", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, dto_1.UpdateEmployeeDto]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "replace", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
