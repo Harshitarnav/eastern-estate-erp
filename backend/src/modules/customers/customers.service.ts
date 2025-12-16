@@ -272,9 +272,9 @@ export class CustomersService {
       }
     }
 
+    const { firstName, lastName, phone, customerCode } = updateCustomerDto;
+
     // Map firstName and lastName to fullName if provided
-    const { firstName, lastName, phone, customerCode, ...rest } = updateCustomerDto;
-    
     if (firstName || lastName) {
       const newFirstName = firstName || customer.firstName;
       const newLastName = lastName || customer.lastName;
@@ -282,7 +282,7 @@ export class CustomersService {
       customer.legacyFirstName = newFirstName;
       customer.legacyLastName = newLastName;
     }
-    
+
     if (phone) {
       customer.phoneNumber = phone;
       customer.legacyPhone = phone;
@@ -293,7 +293,33 @@ export class CustomersService {
       customer.customerCode = customerCode.trim();
     }
 
-    Object.assign(customer, rest);
+    // Map allowed fields explicitly to avoid accidentally writing unsupported columns
+    const assignIfPresent = <T>(val: T | undefined | null, setter: (v: T) => void) => {
+      if (val !== undefined && val !== null && val !== '') {
+        setter(val);
+      }
+    };
+
+    assignIfPresent(updateCustomerDto.email, (v) => (customer.email = v));
+    assignIfPresent(updateCustomerDto.alternatePhone, (v) => (customer.alternatePhone = v));
+    assignIfPresent(updateCustomerDto.dateOfBirth, (v) => (customer.dateOfBirth = new Date(v)));
+    assignIfPresent(updateCustomerDto.gender, (v) => (customer.gender = v));
+    assignIfPresent(updateCustomerDto.occupation, (v) => (customer.occupation = v));
+    assignIfPresent(updateCustomerDto.company, (v) => (customer.companyName = v));
+    assignIfPresent(updateCustomerDto.panNumber, (v) => (customer.panNumber = v));
+    assignIfPresent(updateCustomerDto.aadharNumber, (v) => (customer.aadharNumber = v));
+    assignIfPresent(updateCustomerDto.address, (v) => (customer.addressLine1 = v));
+    assignIfPresent(updateCustomerDto.city, (v) => (customer.city = v));
+    assignIfPresent(updateCustomerDto.state, (v) => (customer.state = v));
+    assignIfPresent(updateCustomerDto.pincode, (v) => (customer.pincode = v));
+    if (updateCustomerDto.isActive !== undefined) {
+      customer.isActive = updateCustomerDto.isActive;
+    }
+    if (updateCustomerDto.isVIP !== undefined) {
+      customer.isVIP = updateCustomerDto.isVIP;
+    }
+    assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
+
     const updatedCustomer = await this.customersRepository.save(customer);
 
     return CustomerResponseDto.fromEntity(updatedCustomer);
