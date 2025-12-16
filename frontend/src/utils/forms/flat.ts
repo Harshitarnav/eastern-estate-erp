@@ -1,4 +1,4 @@
-import { CreateFlatDto } from '@/services/flats.service';
+import type { Flat } from '@/services/flats.service';
 
 const toList = (val: any): string[] =>
   Array.isArray(val)
@@ -10,8 +10,8 @@ const toList = (val: any): string[] =>
         .filter(Boolean)
     : [];
 
-export const mapFlatFormToPayload = (data: any): Partial<CreateFlatDto> => {
-  const payload: Partial<CreateFlatDto> = {
+export const mapFlatFormToPayload = (data: any): Partial<Flat> => {
+  const payload: Partial<Flat> = {
     propertyId: data.propertyId,
     towerId: data.towerId,
     flatNumber: data.flatNumber,
