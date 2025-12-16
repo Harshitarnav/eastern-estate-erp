@@ -71,7 +71,10 @@ export default function CustomerViewPage() {
     return `₹${(amount / 1000).toFixed(0)}K`;
   };
 
-  const safeKycStatus = customer?.kycStatus || 'PENDING';
+  const safeKycStatus =
+    typeof customer?.kycStatus === 'string' && customer.kycStatus.length > 0
+      ? customer.kycStatus
+      : 'PENDING';
 
   if (loading) {
     return (

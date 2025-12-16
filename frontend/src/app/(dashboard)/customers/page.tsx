@@ -401,7 +401,10 @@ export default function CustomersPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {((customers || [])).map((customer) => {
-              const kycStatus = customer.kycStatus || 'PENDING';
+              const kycStatus =
+                typeof customer.kycStatus === 'string' && customer.kycStatus.length > 0
+                  ? customer.kycStatus
+                  : 'PENDING';
               const displayName =
                 customer.fullName ||
                 `${customer.firstName || ''} ${customer.lastName || ''}`.trim() ||
