@@ -30,6 +30,10 @@ let DemandDraftsController = class DemandDraftsController {
     findOne(id) {
         return this.demandDraftsService.findOne(id);
     }
+    async getHtml(id) {
+        const draft = await this.demandDraftsService.findOneRaw(id);
+        return { html: this.demandDraftsService.buildHtmlTemplate(draft) };
+    }
     update(id, dto) {
         return this.demandDraftsService.update(id, dto);
     }
@@ -62,6 +66,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], DemandDraftsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)(':id/html'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DemandDraftsController.prototype, "getHtml", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),

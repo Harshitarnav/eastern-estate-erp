@@ -7,6 +7,9 @@ export declare class DemandDraftsController {
     create(dto: CreateDemandDraftDto): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
     findAll(flatId?: string, customerId?: string, bookingId?: string, milestoneId?: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto[]>;
     findOne(id: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
+    getHtml(id: string): Promise<{
+        html: string;
+    }>;
     update(id: string, dto: UpdateDemandDraftDto): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
     markSent(id: string, fileUrl?: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
 }

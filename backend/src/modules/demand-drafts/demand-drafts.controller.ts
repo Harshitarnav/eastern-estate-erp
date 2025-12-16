@@ -27,6 +27,12 @@ export class DemandDraftsController {
     return this.demandDraftsService.findOne(id);
   }
 
+  @Get(':id/html')
+  async getHtml(@Param('id') id: string) {
+    const draft = await this.demandDraftsService.findOneRaw(id);
+    return { html: this.demandDraftsService.buildHtmlTemplate(draft) };
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateDemandDraftDto) {
     return this.demandDraftsService.update(id, dto);

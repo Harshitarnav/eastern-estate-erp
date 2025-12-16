@@ -39,6 +39,10 @@ class DemandDraftsService {
   async markSent(id: string, fileUrl?: string) {
     return api.post<DemandDraft>(`/demand-drafts/${id}/send`, { fileUrl });
   }
+
+  async getHtml(id: string): Promise<{ html: string }> {
+    return api.get<{ html: string }>(`/demand-drafts/${id}/html`);
+  }
 }
 
 export const demandDraftsService = new DemandDraftsService();

@@ -239,6 +239,22 @@ export default function FlatDetailPage() {
     }
   };
 
+  const handlePreviewDraft = async (draftId: string) => {
+    try {
+      const res = await demandDraftsService.getHtml(draftId);
+      const w = window.open('', '_blank');
+      if (!w) return;
+      w.document.write(res.html || '<p>No content</p>');
+      w.document.close();
+      w.focus();
+      setTimeout(() => {
+        w.print();
+      }, 200);
+    } catch (err: any) {
+      setDraftMessage(err?.response?.data?.message ?? 'Failed to render draft.');
+    }
+  };
+
   const checklistEntries = useMemo(() => {
     if (!flat?.flatChecklist) {
       return [];
@@ -723,6 +739,12 @@ export default function FlatDetailPage() {
                                 Mark sent
                               </button>
                             )}
+                            <button
+                              onClick={() => handlePreviewDraft(draft.id)}
+                              className="rounded-md border px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                            >
+                              Preview / PDF
+                            </button>
                           </div>
                         </div>
                         <div className="mt-3">
