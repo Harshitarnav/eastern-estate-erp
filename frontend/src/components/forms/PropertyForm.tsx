@@ -67,8 +67,10 @@ export default function PropertyForm({
   const initialValues = useMemo(() => {
     if (!initialData) {
       return {
+        projectId: '',
         propertyCode: '',
         name: '',
+        description: '',
         status: 'Active',
         projectType: 'Township',
         country: 'India',
@@ -79,8 +81,10 @@ export default function PropertyForm({
     }
 
     return {
+      projectId: initialData.projectId ?? '',
       propertyCode: initialData.propertyCode ?? '',
       name: initialData.name ?? '',
+      description: initialData.description ?? '',
       status: initialData.status ?? 'Active',
       projectType: initialData.projectType ?? initialData.propertyType ?? 'Township',
       country: initialData.country ?? 'India',
@@ -146,6 +150,13 @@ export default function PropertyForm({
           placeholder: 'Diamond City',
           required: true,
           icon: <Building2 className="w-5 h-5" />,
+        },
+        {
+          name: 'description',
+          label: 'Description',
+          type: 'textarea' as const,
+          rows: 3,
+          placeholder: 'Short overview of the property/project',
         },
         {
           name: 'projectType',
