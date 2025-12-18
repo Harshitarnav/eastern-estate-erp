@@ -52,14 +52,13 @@ export default function EditPropertyPage() {
       return;
     }
 
-    if (!data.projectId) {
-      alert('Please select a project before saving the property.');
-      return;
-    }
-
     setLoading(true);
     try {
-      await propertiesService.updateProperty(propertyId, mapPropertyFormToPayload(data));
+      const payloadData = {
+        ...data,
+        projectId: data.projectId || property?.projectId || undefined,
+      };
+      await propertiesService.updateProperty(propertyId, mapPropertyFormToPayload(payloadData));
       alert('Property updated successfully!');
       window.location.href = '/properties';
     } catch (err: any) {

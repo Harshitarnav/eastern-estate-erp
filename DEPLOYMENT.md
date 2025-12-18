@@ -142,6 +142,12 @@ docker compose -f docker-compose.prod.yml up -d --force-recreate backend fronten
 
 <!-- Seeding the users on the server:
 
+>> Property Edit not working.
+>> After submitting invalid data in Flats and correcting it, a popup shows that mobile and email already exist.
+>> 2nd no same with New Lead
+>> Edit on Lead mobile no not auto-fetched.
+>> Booking's field Flat/Unit dropdown is not visible.
+
 docker compose -f docker-compose.prod.yml exec backend node dist/database/seeds/seed-runner.js
 Verify users exist:
 
