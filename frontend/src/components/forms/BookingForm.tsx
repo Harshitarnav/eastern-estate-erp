@@ -22,8 +22,8 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   const [isHomeLoan, setIsHomeLoan] = useState(false);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(initialData);
+  }, [initialData]);
 
   useEffect(() => {
     if (selectedProperty) {
@@ -31,7 +31,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     }
   }, [selectedProperty]);
 
-  const fetchData = async () => {
+  const fetchData = async (initial?: any) => {
     try {
       const [propsRes, customersRes] = await Promise.all([
         propertiesService.getProperties({ limit: 100, isActive: true }),
@@ -39,6 +39,11 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       ]);
       setProperties(propsRes.data);
       setCustomers(customersRes.data);
+      if (initial?.propertyId) {
+        setSelectedProperty(initial.propertyId);
+        setIsHomeLoan(!!initial.isHomeLoan);
+        await fetchFlats(initial.propertyId);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -48,7 +53,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   const fetchFlats = async (propertyId: string) => {
     try {
-      const res = await flatsService.getFlats({ propertyId, status: 'AVAILABLE', limit: 100 });
+      const res = await flatsService.getFlats({ propertyId, isAvailable: true, limit: 200, sortBy: 'flatNumber', sortOrder: 'ASC' });
       setFlats(res.data);
     } catch (error) {
       console.error('Error fetching flats:', error);
@@ -111,7 +116,14 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       label: 'Flat/Unit *',
       type: 'select',
       required: true,
-      options: flats.map(f => ({ value: f.id, label: `${f.flatNumber} - ${f.bhkType} (₹${(f.salePrice / 100000).toFixed(2)}L)` })),
+      options: flats.map(f => {
+        const price = Number(f.finalPrice || f.totalPrice || f.salePrice || 0);
+        const typology = f.type || f.bhkType || f.flatType || '';
+        return {
+          value: f.id,
+          label: `${f.flatNumber} - ${typology} (${price ? `₹${price.toLocaleString('en-IN')}` : 'Price N/A'})`,
+        };
+      }),
       disabled: !selectedProperty,
     },
   ];
@@ -473,6 +485,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       {/* Form */}
       <Form
         fields={currentFields}
+        initialValues={initialData}
         onSubmit={onSubmit}
         submitLabel={initialData ? 'Update Booking' : 'Create Booking'}
         onCancel={onCancel}

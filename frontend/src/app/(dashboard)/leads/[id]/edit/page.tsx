@@ -61,11 +61,12 @@ export default function LeadEditPage() {
       const propertyTypes = Array.isArray(lead.interestedPropertyTypes)
         ? lead.interestedPropertyTypes.join(', ')
         : lead.interestedPropertyTypes || '';
+      const phoneValue = lead.phone || (lead as any).phoneNumber || lead.alternatePhone || '';
       setFormData({
         firstName: derivedFirstName,
         lastName: derivedLastName,
         email: lead.email || '',
-        phone: lead.phone || '',
+        phone: phoneValue,
         source: lead.source || 'WEBSITE',
         status: lead.status || 'NEW',
         priority: lead.priority || 'MEDIUM',

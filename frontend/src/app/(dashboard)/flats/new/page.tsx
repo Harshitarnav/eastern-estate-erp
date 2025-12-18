@@ -91,10 +91,33 @@ export default function NewFlatPage() {
           resolvedCustomerId = createdCustomer.id;
           await fetchCustomers();
         } catch (customerError: any) {
-          console.error('Error creating customer:', customerError);
-          alert(customerError.response?.data?.message || 'Failed to create customer');
-          setLoading(false);
-          return;
+          // If customer already exists (email/phone conflict), try to resolve to existing record instead of failing.
+          const status = customerError?.response?.status;
+          const message = customerError?.response?.data?.message;
+          if (status === 409 || /exist/i.test(message || '')) {
+            try {
+              const searchTerm = trimmedEmail || trimmedPhone || '';
+              const existing = await customersService.getCustomers({ search: searchTerm, limit: 1, page: 1 });
+              const match = existing?.data?.[0];
+              if (match?.id) {
+                resolvedCustomerId = match.id;
+              } else {
+                alert(message || 'Customer already exists. Please select the existing customer.');
+                setLoading(false);
+                return;
+              }
+            } catch (resolveErr) {
+              console.error('Error resolving existing customer:', resolveErr);
+              alert(message || 'Customer already exists. Please select the existing customer.');
+              setLoading(false);
+              return;
+            }
+          } else {
+            console.error('Error creating customer:', customerError);
+            alert(message || 'Failed to create customer');
+            setLoading(false);
+            return;
+          }
         }
       }
 
