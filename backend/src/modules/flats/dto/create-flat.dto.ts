@@ -11,6 +11,7 @@ import {
   Min,
   MaxLength,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { FlatStatus, FlatType, FacingDirection } from '../entities/flat.entity';
 
 export class CreateFlatDto {
@@ -45,21 +46,25 @@ export class CreateFlatDto {
   @IsNotEmpty()
   type: FlatType;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   floor: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   bedrooms: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   bathrooms: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -77,61 +82,73 @@ export class CreateFlatDto {
   @IsOptional()
   poojaRoom?: boolean;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   superBuiltUpArea: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   builtUpArea: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   carpetArea: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   balconyArea?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   basePrice: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   pricePerSqft?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   registrationCharges?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   maintenanceCharges?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   parkingCharges?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
   totalPrice: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
   discountAmount?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   @Min(0)
@@ -173,6 +190,7 @@ export class CreateFlatDto {
   @IsOptional()
   parkFacing?: boolean;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -220,6 +238,7 @@ export class CreateFlatDto {
   @IsOptional()
   soldDate?: string;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -366,6 +385,7 @@ export class CreateFlatDto {
   @IsOptional()
   isActive?: boolean;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   @Min(1)

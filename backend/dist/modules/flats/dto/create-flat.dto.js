@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateFlatDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 const flat_entity_1 = require("../entities/flat.entity");
 class CreateFlatDto {
 }
@@ -54,24 +55,28 @@ __decorate([
     __metadata("design:type", String)
 ], CreateFlatDto.prototype, "type", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "floor", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "bedrooms", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "bathrooms", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
@@ -93,72 +98,84 @@ __decorate([
     __metadata("design:type", Boolean)
 ], CreateFlatDto.prototype, "poojaRoom", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "superBuiltUpArea", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "builtUpArea", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "carpetArea", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "balconyArea", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "basePrice", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "pricePerSqft", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "registrationCharges", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "maintenanceCharges", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "parkingCharges", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "totalPrice", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
 ], CreateFlatDto.prototype, "discountAmount", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.Min)(0),
@@ -210,6 +227,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], CreateFlatDto.prototype, "parkFacing", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
@@ -268,6 +286,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateFlatDto.prototype, "soldDate", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(0),
@@ -449,6 +468,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], CreateFlatDto.prototype, "isActive", void 0);
 __decorate([
+    (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsNumber)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Min)(1),
