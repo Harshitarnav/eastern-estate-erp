@@ -23,8 +23,10 @@ export interface Customer {
   occupation?: string;
   annualIncome?: number;
   company?: string;
+  companyName?: string;
   designation?: string;
   kycStatus: 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'REJECTED';
+  propertyId?: string;
   panNumber?: string;
   aadharNumber?: string;
   needsHomeLoan: boolean;

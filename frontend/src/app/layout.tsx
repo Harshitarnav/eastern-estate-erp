@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster } from '@/components/ui/Toaster';
 
-const inter = Inter({ subsets: ["latin"] });
+// Use a local, cache-friendly fallback font to avoid external downloads during offline builds
+const inter = { className: "font-sans" };
 
 export const metadata: Metadata = {
   title: "Eastern Estate ERP - Building Homes, Nurturing Bonds",

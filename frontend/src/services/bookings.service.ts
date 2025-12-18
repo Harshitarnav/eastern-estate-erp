@@ -6,16 +6,16 @@ export interface Booking {
   customerId: string;
   flatId: string;
   propertyId: string;
+  towerId?: string;
   status: string;
   bookingDate: string;
   totalAmount: number;
   tokenAmount: number;
-  // agreementAmount: number; // Removed - column doesn't exist
+  agreementAmount?: number;
   paidAmount: number;
   balanceAmount: number;
-  // paymentStatus: string; // Removed - column doesn't exist
-  // tokenPaidDate?: string; // Removed - column doesn't exist
-  // tokenReceiptNumber?: string; // Removed - column doesn't exist
+  tokenPaidDate?: string;
+  tokenReceiptNumber?: string;
   tokenPaymentMode?: string;
   agreementNumber?: string;
   agreementDate?: string;

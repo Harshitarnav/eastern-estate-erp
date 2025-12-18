@@ -2,93 +2,65 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { customersService, Customer } from '@/services/customers.service';
-import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
-import { brandPalette } from '@/utils/brand';
+import CustomerForm from '@/components/forms/CustomerForm';
+import { customersService } from '@/services/customers.service';
+import { propertiesService } from '@/services/properties.service';
 
 export default function CustomerEditPage() {
   const router = useRouter();
   const params = useParams();
   const customerId = params.id as string;
-  
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  type CustomerForm = {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-    alternatePhone: string;
-    dateOfBirth: string;
-    gender: string;
-    address: string;
-    city: string;
-    state: string;
-    pincode: string;
-    type: Customer['type'];
-    occupation: string;
-    company: string;
-    panNumber: string;
-    aadharNumber: string;
-    kycStatus: Customer['kycStatus'];
-    isVIP: boolean;
-    notes: string;
-  };
 
-  const [formData, setFormData] = useState<CustomerForm>({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    alternatePhone: '',
-    dateOfBirth: '',
-    gender: '',
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    type: 'INDIVIDUAL',
-    occupation: '',
-    company: '',
-    panNumber: '',
-    aadharNumber: '',
-    kycStatus: 'PENDING',
-    isVIP: false,
-    notes: '',
-  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [initialData, setInitialData] = useState<any>(null);
+  const [propertyOptions, setPropertyOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     if (customerId) {
       fetchCustomer();
     }
+    (async () => {
+      try {
+        const res = await propertiesService.getProperties({ limit: 200, isActive: true });
+        const options = res.data?.map((p: any) => ({ value: p.id, label: p.name })) || [];
+        setPropertyOptions(options);
+      } catch (err) {
+        console.error('Failed to load properties for customer form', err);
+      }
+    })();
   }, [customerId]);
 
   const fetchCustomer = async () => {
     try {
       setLoading(true);
       const customer = await customersService.getCustomer(customerId);
-      setFormData({
+      setInitialData({
         firstName: customer.firstName || '',
         lastName: customer.lastName || '',
         email: customer.email || '',
-        phone: customer.phone || '',
+        phone: customer.phone || customer.phoneNumber || '',
         alternatePhone: customer.alternatePhone || '',
         dateOfBirth: customer.dateOfBirth ? new Date(customer.dateOfBirth).toISOString().split('T')[0] : '',
         gender: customer.gender || '',
-        address: customer.address || '',
+        address: customer.address || customer.addressLine1 || '',
         city: customer.city || '',
         state: customer.state || '',
         pincode: customer.pincode || '',
         type: customer.type || 'INDIVIDUAL',
         occupation: customer.occupation || '',
-        company: customer.company || '',
+        company: customer.company || customer.companyName || '',
+        designation: (customer as any).designation || '',
         panNumber: customer.panNumber || '',
         aadharNumber: customer.aadharNumber || '',
-        kycStatus: customer.kycStatus || 'PENDING',
-        isVIP: customer.isVIP || false,
+        needsHomeLoan: (customer as any).needsHomeLoan || false,
+        hasApprovedLoan: (customer as any).hasApprovedLoan || false,
+        bankName: (customer as any).bankName || '',
         notes: customer.notes || '',
+        isActive: customer.isActive !== false,
+        isVIP: customer.isVIP || false,
+        propertyId: (customer as any).propertyId || '',
+        kycStatus: customer.kycStatus || 'PENDING',
       });
       setError('');
     } catch (err: any) {
@@ -98,161 +70,73 @@ export default function CustomerEditPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async (data: any) => {
     try {
-      setSaving(true);
-      setError('');
-      
-      await customersService.updateCustomer(customerId, formData);
+      await customersService.updateCustomer(customerId, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        alternatePhone: data.alternatePhone,
+        dateOfBirth: data.dateOfBirth,
+        gender: data.gender,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        type: data.type || 'INDIVIDUAL',
+        occupation: data.occupation,
+        annualIncome: data.annualIncome,
+        company: data.company,
+        designation: data.designation,
+        panNumber: data.panNumber,
+        aadharNumber: data.aadharNumber,
+        needsHomeLoan: data.needsHomeLoan || false,
+        hasApprovedLoan: data.hasApprovedLoan || false,
+        bankName: data.bankName,
+        notes: data.notes,
+        isActive: data.isActive !== false,
+        isVIP: data.isVIP || false,
+        propertyId: data.propertyId || undefined,
+        kycStatus: data.kycStatus || 'PENDING',
+      });
       alert('Customer updated successfully!');
       window.location.href = '/customers';
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update customer');
-      alert('Failed to update customer. Please try again.');
-    } finally {
-      setSaving(false);
+    } catch (error: any) {
+      console.error('Error updating customer:', error);
+      alert(error.response?.data?.message || 'Failed to update customer');
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    } as CustomerForm));
+  const handleCancel = () => {
+    router.push('/customers');
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandPalette.primary }} />
+      <div className="container mx-auto py-16 px-4 text-center text-gray-600">
+        Loading customer...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-16 px-4 text-center text-red-600">
+        {error}
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <button
-          onClick={() => router.push(`/customers/${customerId}`)}
-          className="p-2 hover:bg-gray-100 rounded-lg"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-3xl font-bold" style={{ color: brandPalette.secondary }}>Edit Customer</h1>
-      </div>
-
-      {error && <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">{error}</div>}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white rounded-2xl border p-6">
-          <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">First Name *</label>
-              <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} required className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Last Name *</label>
-              <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} required className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Email *</label>
-              <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Phone *</label>
-              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Type *</label>
-              <select name="type" value={formData.type} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg">
-                <option value="INDIVIDUAL">Individual</option>
-                <option value="CORPORATE">Corporate</option>
-                <option value="NRI">NRI</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">KYC Status *</label>
-              <select name="kycStatus" value={formData.kycStatus} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg">
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="VERIFIED">Verified</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="isVIP" checked={formData.isVIP} onChange={handleChange} />
-              <span className="text-sm font-medium">VIP Customer</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border p-6">
-          <h2 className="text-xl font-semibold mb-4">Additional Details</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Occupation</label>
-              <input type="text" name="occupation" value={formData.occupation} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Company</label>
-              <input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">PAN Number</label>
-              <input type="text" name="panNumber" value={formData.panNumber} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Aadhar Number</label>
-              <input type="text" name="aadharNumber" value={formData.aadharNumber} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border p-6">
-          <h2 className="text-xl font-semibold mb-4">Address</h2>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Address</label>
-              <input type="text" name="address" value={formData.address} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">City</label>
-                <input type="text" name="city" value={formData.city} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">State</label>
-                <input type="text" name="state" value={formData.state} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Pincode</label>
-                <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} className="w-full px-4 py-2 border rounded-lg" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl border p-6">
-          <h2 className="text-xl font-semibold mb-4">Notes</h2>
-          <textarea name="notes" value={formData.notes} onChange={handleChange} rows={4} className="w-full px-4 py-2 border rounded-lg" placeholder="Add any notes..." />
-        </div>
-
-        <div className="flex gap-4">
-          <BrandPrimaryButton type="submit" disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {saving ? 'Saving...' : 'Save Changes'}
-          </BrandPrimaryButton>
-          <BrandSecondaryButton type="button" onClick={() => router.push(`/customers/${customerId}`)}>
-            Cancel
-          </BrandSecondaryButton>
-        </div>
-      </form>
+    <div className="container mx-auto py-8 px-4">
+      <CustomerForm
+        initialData={initialData}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        loading={loading}
+        propertyOptions={propertyOptions}
+      />
     </div>
   );
 }
