@@ -142,6 +142,10 @@ export default function PropertyForm({
           placeholder: 'EECD-PRJ-001',
           required: true,
           icon: <Building2 className="w-5 h-5" />,
+          validation: {
+            pattern: /^[A-Za-z0-9-]+$/,
+          },
+          helperText: 'Only letters, numbers, and hyphens are allowed',
         },
         {
           name: 'name',
