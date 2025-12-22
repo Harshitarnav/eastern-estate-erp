@@ -22,7 +22,7 @@ import {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency';
+  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'chips' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency';
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -235,8 +235,46 @@ export default function Form({
               className={`${inputClasses} ${field.icon ? 'pl-10' : ''}`}
             />
           </div>
-        );
+        )
+      case 'chips': {
+        const selectedValues: string[] = Array.isArray(value) ? value : [];
 
+        return (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+              {field.options?.map(option => {
+                const isSelected = selectedValues.includes(option.value as string);
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    onClick={() => {
+                      handleChange(
+                        field.name,
+                        isSelected
+                          ? selectedValues.filter(v => v !== option.value)
+                          : [...selectedValues, option.value]
+                      );
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all
+                      focus:outline-none focus:ring-2 focus:ring-[var(--eastern-red)]
+                      ${
+                        isSelected
+                          ? 'bg-[var(--eastern-red)] text-white border-[var(--eastern-red)] shadow-sm hover:cursor-pointer'
+                          : 'bg-white text-gray-500 border-gray-300 hover:border-[var(--eastern-red)] hover:bg-blue-50 hover:cursor-pointer'
+                      }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
       case 'password':
         return (
           <div className="relative">
