@@ -136,10 +136,20 @@ export default function Form({
     const field = allFields.find(f => f.name === name);
     if (field) {
       const error = validateField(field, value);
-      setErrors(prev => ({
-        ...prev,
-        [name]: error || '',
-      }));
+      setErrors(prev => {
+        const updatedErrors = {
+          ...prev,
+          [name]: error || '',
+        };
+
+        // If there are no errors left, reset submit status
+        const hasAnyError = Object.values(updatedErrors).some(Boolean);
+        if (!hasAnyError) {
+          setSubmitStatus('idle');
+        }
+
+        return updatedErrors;
+      });
       
       // Call field's onChange callback if provided
       if (field.onChange) {
@@ -167,13 +177,18 @@ export default function Form({
 
     // Validate all fields
     const newErrors: Record<string, string> = {};
+    const newTouched: Record<string, boolean> = {}
+
     allFields.forEach(field => {
+      newTouched[field.name] = true;
+
       const error = validateField(field, formValues[field.name]);
       if (error) {
         newErrors[field.name] = error;
       }
     });
 
+    setTouched(newTouched);
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -471,10 +486,10 @@ export default function Form({
                 <span className="text-sm font-medium">Saved successfully!</span>
               </div>
             )}
-            {submitStatus === 'error' && (
+            {submitStatus === 'error' && Object.keys(errors).length > 0 && (
               <div className="flex items-center gap-2 text-red-600">
                 <AlertCircle className="w-5 h-5" />
-                <span className="text-sm font-medium">Please fix the errors above</span>
+                <span className="text-sm font-medium">Please fill in all required fields.</span>
               </div>
             )}
           </div>
