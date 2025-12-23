@@ -33,6 +33,7 @@ export default function NewPropertyPage() {
     } catch (error: any) {
       console.error('Error creating property:', error);
       alert(error.response?.data?.message || 'Failed to create property');
+      throw error; // throw the error to let the form handle it if needed
     } finally {
       setLoading(false);
     }
