@@ -247,15 +247,31 @@ export default function PropertyForm({
           label: 'Total Area',
           type: 'number',
           placeholder: '28',
-          validation: { min: 0 },
           required: true,
+          // validation: { min: 0 },
+          validation: {
+            custom: (value) => {
+              if (Number(value) <= 0) {
+                return "Total Area must be atleast 1";
+              }
+              return null;
+            },
+          },
         },
         {
           name: 'builtUpArea',
           label: 'Built-up Area',
           type: 'number',
           placeholder: '24',
-          validation: { min: 0 },
+          // validation: { min: 0 },
+          validation: {
+            custom: (value) => {
+              if (Number(value) <= 0) {
+                return "Built-up Area must be atleast 1";
+              }
+              return null;
+            },
+          },
         },
         {
           name: 'areaUnit',
