@@ -63,6 +63,7 @@ interface FormProps {
   cancelLabel?: string;
   loading?: boolean;
   columns?: 1 | 2 | 3;
+  onValuesChange?: (values: Record<string, any>) => void;
 }
 
 // Validation function
@@ -116,6 +117,7 @@ export default function Form({
   cancelLabel = 'Cancel',
   loading = false,
   columns = 2,
+  onValuesChange,
 }: FormProps) {
   const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -129,7 +131,11 @@ export default function Form({
     : fields || [];
 
   const handleChange = (name: string, value: any) => {
-    setFormValues(prev => ({ ...prev, [name]: value }));
+    // setFormValues(prev => ({ ...prev, [name]: value }));
+    const updatedValues = { ...formValues, [name]: value };
+    setFormValues(updatedValues);
+    onValuesChange?.(updatedValues);
+    
     setTouched(prev => ({ ...prev, [name]: true }));
 
     // Validate on change

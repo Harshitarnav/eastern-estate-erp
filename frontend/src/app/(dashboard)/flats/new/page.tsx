@@ -18,9 +18,18 @@ export default function NewFlatPage() {
 
   useEffect(() => {
     fetchProperties();
-    fetchTowers();
+    // fetchTowers();
     fetchCustomers();
   }, []);
+
+  const fetchTowersByProperty = async (propertyId: string) => {
+    setTowers([]);
+    const response = await towersService.getTowers({
+      isActive: true,
+      propertyId,
+    });
+    setTowers(response.data);
+  };
 
   const fetchProperties = async () => {
     try {
@@ -150,6 +159,7 @@ export default function NewFlatPage() {
         properties={properties}
         towers={towers}
         customers={customers}
+        onPropertyChange={fetchTowersByProperty}
       />
     </div>
   );
