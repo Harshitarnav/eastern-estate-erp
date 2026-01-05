@@ -16,14 +16,14 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const basicFields: FormField[] = [
     {
       name: 'employeeCode',
-      label: 'Employee Code *',
+      label: 'Employee Code',
       type: 'text',
       required: true,
       placeholder: 'e.g., EMP-001',
     },
     {
       name: 'fullName',
-      label: 'Full Name *',
+      label: 'Full Name',
       type: 'text',
       required: true,
       placeholder: 'e.g., John Doe',
@@ -37,7 +37,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'phoneNumber',
-      label: 'Phone Number *',
+      label: 'Phone Number',
       type: 'tel',
       required: true,
       placeholder: 'e.g., 9876543210',
@@ -51,13 +51,13 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'dateOfBirth',
-      label: 'Date of Birth *',
+      label: 'Date of Birth',
       type: 'date',
       required: true,
     },
     {
       name: 'gender',
-      label: 'Gender *',
+      label: 'Gender',
       type: 'select',
       required: true,
       options: [
@@ -100,7 +100,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const addressFields: FormField[] = [
     {
       name: 'currentAddress',
-      label: 'Current Address *',
+      label: 'Current Address',
       type: 'textarea',
       required: true,
       placeholder: 'Complete current address...',
@@ -139,7 +139,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const employmentFields: FormField[] = [
     {
       name: 'department',
-      label: 'Department *',
+      label: 'Department',
       type: 'select',
       required: true,
       options: [
@@ -157,14 +157,14 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'designation',
-      label: 'Designation *',
+      label: 'Designation',
       type: 'text',
       required: true,
       placeholder: 'e.g., Senior Manager, Developer',
     },
     {
       name: 'employmentType',
-      label: 'Employment Type *',
+      label: 'Employment Type',
       type: 'select',
       required: true,
       options: [
@@ -177,7 +177,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'employmentStatus',
-      label: 'Employment Status *',
+      label: 'Employment Status',
       type: 'select',
       required: true,
       options: [
@@ -190,7 +190,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'joiningDate',
-      label: 'Joining Date *',
+      label: 'Joining Date',
       type: 'date',
       required: true,
     },
@@ -225,7 +225,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const salaryFields: FormField[] = [
     {
       name: 'basicSalary',
-      label: 'Basic Salary (₹) *',
+      label: 'Basic Salary (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 30000',
@@ -260,7 +260,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'grossSalary',
-      label: 'Gross Salary (₹) *',
+      label: 'Gross Salary (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 55000',
@@ -295,7 +295,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'netSalary',
-      label: 'Net Salary (₹) *',
+      label: 'Net Salary (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 44988',
