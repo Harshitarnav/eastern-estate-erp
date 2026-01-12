@@ -327,6 +327,7 @@ export default function PropertyForm({
             { value: '2BHK', label: '2 BHK' },
             { value: '3BHK', label: '3 BHK' },
             { value: '4BHK', label: '4 BHK' },
+            { value: 'CommercialSpace', label: 'Commercial Space' },
             { value: 'Duplex', label: 'Duplex' },
           ],
         },
