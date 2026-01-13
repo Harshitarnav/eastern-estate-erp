@@ -90,6 +90,8 @@
 // }
 
 
+
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -143,7 +145,7 @@ export default function LoginPage() {
           className="absolute inset-0"
           style={{
             backgroundImage:
-              "linear-gradient(#e6c29c 1px, transparent 1px), linear-gradient(90deg, #e6c29c 1px, transparent 1px)",
+              "linear-gradient(#F2C94C 1px, transparent 1px), linear-gradient(90deg, #F2C94C 1px, transparent 1px)",
             backgroundSize: "50px 50px",
             animation: "gridMove 20s linear infinite",
           }}
@@ -154,7 +156,7 @@ export default function LoginPage() {
         {particles.map((p, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 bg-[#e6c29c] rounded-full"
+            className="absolute w-1 h-1 bg-[#F2C94C] rounded-full"
             style={{
               left: p.left,
               top: p.top,
@@ -207,20 +209,20 @@ export default function LoginPage() {
         >
           <div className="flex justify-center">
             <div
-              className="w-24 h-24 rounded-full bg-gradient-to-br from-[#e6c29c] to-[#d1a16f] flex items-center justify-center text-black text-3xl font-bold shadow-2xl relative"
+              className="w-24 h-24 rounded-full bg-gradient-to-br bg-[#F3E3C1] flex items-center justify-center text-black text-3xl font-bold shadow-2xl relative"
               style={{ animation: "glow 3s ease-in-out infinite" }}
             >
-              <Building2 className="w-12 h-12" />
+              <img src="/icon-192.png" alt="eecd_icon" />
             </div>
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-7xl font-bold tracking-wider bg-gradient-to-r from-[#e6c29c] via-[#f0d5ac] to-[#e6c29c] bg-clip-text text-transparent">
+            <h1 className="text-7xl font-bold tracking-wider text-[#F3E3C1] bg-clip-text">
               Eastern Estate
             </h1>
-            <div className="flex items-center justify-center gap-2 text-[#e6c29c]">
+            <div className="flex items-center justify-center gap-2 text-[#F2C94C]">
               <Sparkles className="w-4 h-4" />
-              <p className="text-sm tracking-widest uppercase">Est. 1995</p>
+              <p className="text-sm tracking-widest uppercase">Trusted for decade</p>
               <Sparkles className="w-4 h-4" />
             </div>
           </div>
@@ -228,35 +230,35 @@ export default function LoginPage() {
           <p className="text-gray-400 text-lg max-w-md mx-auto leading-relaxed">
             Where architectural brilliance meets timeless elegance.
             <br />
-            <span className="text-[#e6c29c]">
+            <span className="text-[#F2C94C]">
               Crafting dreams into reality.
             </span>
           </p>
 
           <div className="flex justify-center gap-12 text-center">
             <div>
-              <div className="text-3xl font-bold text-[#e6c29c]">500+</div>
+              <div className="text-3xl font-bold text-[#F3E3C1]">500+</div>
               <div className="text-xs text-gray-500 uppercase">Projects</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#e6c29c]">30</div>
+              <div className="text-3xl font-bold text-[#F3E3C1]">25+</div>
               <div className="text-xs text-gray-500 uppercase">Years</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-[#e6c29c]">50+</div>
+              <div className="text-3xl font-bold text-[#F3E3C1]">10+</div>
               <div className="text-xs text-gray-500 uppercase">Awards</div>
             </div>
           </div>
 
           <button
             onClick={() => setShowLogin(true)}
-            className="group px-12 py-5 rounded-full bg-gradient-to-r from-[#e6c29c] to-[#d1a16f] text-black font-bold tracking-widest hover:scale-110 transition-all duration-300 shadow-2xl relative overflow-hidden"
+            className="group px-12 py-5 rounded-full bg-gradient-to-r from-[#F2C94C] to-[#d1a16f] text-black font-bold tracking-widest hover:scale-110 transition-all duration-300 shadow-2xl relative overflow-hidden"
           >
             <span className="relative z-10 flex items-center gap-2">
               Continue
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#d1a16f] to-[#e6c29c] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#d1a16f] to-[#F2C94C] opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </button>
         </div>
       ) : (
@@ -268,11 +270,12 @@ export default function LoginPage() {
           }}
         >
           <div className="p-12 hidden md:flex flex-col justify-center space-y-8 bg-gradient-to-br from-[#141414] to-[#0a0a0a] relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-[#e6c29c] opacity-5 rounded-full blur-3xl"></div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#F2C94C] opacity-5 rounded-full blur-3xl"></div>
 
             <div className="relative z-10">
-              <Building2 className="w-16 h-16 text-[#e6c29c] mb-4" />
-              <h2 className="text-5xl font-bold text-[#e6c29c] mb-4">
+              {/* <Building2 className="w-16 h-16 text-[#F2C94C] mb-4" /> */}
+              <img src="/icon-192.png" alt="eecd_icon"  className="w-[100px] h-[100px] bg-[#F3E3C1] mb-4 rounded-full" />
+              <h2 className="text-5xl font-bold text-[#F3E3C1] mb-4">
                 Our Legacy
               </h2>
               <p className="text-gray-400 text-lg leading-relaxed">
@@ -290,9 +293,9 @@ export default function LoginPage() {
               ].map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 text-gray-300 hover:text-[#e6c29c] transition-colors group"
+                  className="flex items-center gap-3 text-gray-300 hover:text-[#F2C94C] transition-colors group"
                 >
-                  <div className="w-2 h-2 bg-[#e6c29c] rotate-45 group-hover:scale-150 transition-transform"></div>
+                  <div className="w-2 h-2 bg-[#F2C94C] rotate-45 group-hover:scale-150 transition-transform"></div>
                   <span>{item}</span>
                 </div>
               ))}
@@ -307,13 +310,13 @@ export default function LoginPage() {
 
           <div className="p-12 flex flex-col justify-center relative">
             <div className="absolute top-6 right-6">
-              <div className="w-12 h-12 rounded-full bg-[#e6c29c]/10 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-[#e6c29c]" />
+              <div className="w-12 h-12 rounded-full bg-[#F2C94C]/10 flex items-center justify-center">
+                <Building2 className="w-6 h-6 text-[#F2C94C]" />
               </div>
             </div>
 
             <div className="mb-8">
-              <h3 className="text-4xl font-bold mb-2 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              <h3 className="text-4xl font-bold mb-2 bg-gradient-to-r bg-[#F3E3C1] bg-clip-text text-transparent">
                 Welcome Back
               </h3>
               <p className="text-gray-500">
@@ -333,14 +336,14 @@ export default function LoginPage() {
                   Email Address
                 </label>
                 <div className="relative group">
-                  <Mail className="absolute left-0 top-3 w-5 h-5 text-gray-600 group-focus-within:text-[#e6c29c] transition-colors" />
+                  <Mail className="absolute left-0 top-3 w-5 h-5 text-gray-600 group-focus-within:text-[#F2C94C] transition-colors" />
                   <input
                     type="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                    className="w-full bg-transparent border-b-2 border-gray-700 py-3 pl-8 outline-none focus:border-[#e6c29c] transition-colors text-white"
+                    className="w-full bg-transparent border-b-2 border-gray-700 py-3 pl-8 outline-none focus:border-[#F2C94C] transition-colors text-white"
                   />
                 </div>
               </div>
@@ -350,14 +353,14 @@ export default function LoginPage() {
                   Password
                 </label>
                 <div className="relative group">
-                  <Lock className="absolute left-0 top-3 w-5 h-5 text-gray-600 group-focus-within:text-[#e6c29c] transition-colors" />
+                  <Lock className="absolute left-0 top-3 w-5 h-5 text-gray-600 group-focus-within:text-[#F2C94C] transition-colors" />
                   <input
                     type="password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
-                    className="w-full bg-transparent border-b-2 border-gray-700 py-3 pl-8 outline-none focus:border-[#e6c29c] transition-colors text-white"
+                    className="w-full bg-transparent border-b-2 border-gray-700 py-3 pl-8 outline-none focus:border-[#F2C94C] transition-colors text-white"
                   />
                 </div>
               </div>
@@ -370,7 +373,7 @@ export default function LoginPage() {
                   />
                   Remember me
                 </label>
-                <button className="text-[#e6c29c] hover:underline">
+                <button className="text-[#F2C94C] hover:underline">
                   Forgot password?
                 </button>
               </div>
@@ -378,7 +381,7 @@ export default function LoginPage() {
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className="group w-full mt-8 py-4 rounded-full bg-gradient-to-r from-[#e6c29c] to-[#d1a16f] text-black font-bold tracking-widest hover:scale-105 transition-all duration-300 shadow-xl relative overflow-hidden disabled:opacity-50"
+                className="group w-full mt-8 py-4 rounded-full bg-gradient-to-r from-[#F2C94C] to-[#d1a16f] text-black font-bold tracking-widest hover:scale-105 transition-all duration-300 shadow-xl relative overflow-hidden disabled:opacity-50"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {loading ? "SIGNING IN..." : "ACCESS DASHBOARD"}
@@ -391,7 +394,7 @@ export default function LoginPage() {
 
             <button
               onClick={() => setShowLogin(false)}
-              className="mt-8 text-sm text-gray-500 hover:text-[#e6c29c] transition-colors flex items-center gap-2 mx-auto"
+              className="mt-8 text-sm text-gray-500 hover:text-[#F2C94C] transition-colors flex items-center gap-2 mx-auto"
             >
               <ArrowRight className="w-4 h-4 rotate-180" />
               Return Home
