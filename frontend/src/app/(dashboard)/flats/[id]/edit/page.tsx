@@ -143,8 +143,9 @@ export default function EditFlatPage() {
       let resolvedCustomerId = existingCustomerId;
 
       if (!resolvedCustomerId && hasNewCustomerData) {
-        if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || !trimmedPhone) {
-          alert('Please provide first name, last name, email, and phone to create a customer.');
+        // if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || !trimmedPhone) {
+        if (!trimmedFirstName || !trimmedLastName) {
+          alert('Please provide first name, last name to create a customer.');
           setLoading(false);
           return;
         }
