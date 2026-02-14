@@ -4,6 +4,12 @@ easternestate.global {
         reverse_proxy backend:3001
     }
 
+    # Handle upload files - proxy to backend
+    @uploads path /uploads/*
+    handle @uploads {
+        reverse_proxy backend:3001
+    }
+
     handle {
         reverse_proxy frontend:3000
     }
