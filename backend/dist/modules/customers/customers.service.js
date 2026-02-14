@@ -82,10 +82,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
             ...rest,
             customerCode,
             fullName,
-            legacyFirstName: safeFirst || fullName,
-            legacyLastName: safeLast || '',
             phoneNumber,
-            legacyPhone: phoneNumber,
             metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
         const savedCustomer = await this.customersRepository.save(customer);
@@ -205,12 +202,9 @@ let CustomersService = CustomersService_1 = class CustomersService {
             const newFirstName = firstName || customer.firstName;
             const newLastName = lastName || customer.lastName;
             customer.fullName = `${newFirstName} ${newLastName}`.trim();
-            customer.legacyFirstName = newFirstName;
-            customer.legacyLastName = newLastName;
         }
         if (phone) {
             customer.phoneNumber = phone;
-            customer.legacyPhone = phone;
         }
         if (typeof customerCode === 'string' && customerCode.trim().length > 0) {
             customer.customerCode = customerCode.trim();

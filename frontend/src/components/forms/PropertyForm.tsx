@@ -99,12 +99,17 @@ export default function PropertyForm({
       numberOfTowers: initialData.numberOfTowers ?? '',
       numberOfUnits: initialData.numberOfUnits ?? '',
       floorsPerTower: initialData.floorsPerTower ?? '',
-      bhkTypes: Array.isArray(initialData.bhkTypes)
-        ? initialData.bhkTypes.join(', ')
-        : initialData.bhkTypes ?? '',
-      amenities: Array.isArray(initialData.amenities)
-        ? initialData.amenities.join(', ')
-        : initialData.amenities ?? '',
+      // bhkTypes: Array.isArray(initialData.bhkTypes)
+      //   ? initialData.bhkTypes.join(', ')
+      //   : initialData.bhkTypes ?? '',
+
+      // amenities: Array.isArray(initialData.amenities)
+      //   ? initialData.amenities.join(', ')
+      //   : initialData.amenities ?? '',
+
+      bhkTypes: Array.isArray(initialData.bhkTypes) ? initialData.bhkTypes : [],
+      amenities: Array.isArray(initialData.amenities) ? initialData.amenities : [],
+
       nearbyLandmarks: initialData.nearbyLandmarks ?? initialData.location ?? '',
       reraNumber: initialData.reraNumber ?? '',
       reraStatus: initialData.reraStatus ?? '',
@@ -142,6 +147,10 @@ export default function PropertyForm({
           placeholder: 'EECD-PRJ-001',
           required: true,
           icon: <Building2 className="w-5 h-5" />,
+          validation: {
+            pattern: /^[A-Za-z0-9-]+$/,
+          },
+          helperText: 'Only letters, numbers, and hyphens are allowed',
         },
         {
           name: 'name',
@@ -238,15 +247,31 @@ export default function PropertyForm({
           label: 'Total Area',
           type: 'number',
           placeholder: '28',
-          validation: { min: 0 },
           required: true,
+          // validation: { min: 0 },
+          validation: {
+            custom: (value) => {
+              if (Number(value) <= 0) {
+                return "Total Area must be atleast 1";
+              }
+              return null;
+            },
+          },
         },
         {
           name: 'builtUpArea',
           label: 'Built-up Area',
           type: 'number',
           placeholder: '24',
-          validation: { min: 0 },
+          // validation: { min: 0 },
+          validation: {
+            custom: (value) => {
+              if (Number(value) <= 0) {
+                return "Built-up Area must be atleast 1";
+              }
+              return null;
+            },
+          },
         },
         {
           name: 'areaUnit',
@@ -278,18 +303,56 @@ export default function PropertyForm({
           placeholder: 'G+9',
           helperText: 'Use descriptors like G+9 or 2 Basements + Stilt + 15',
         },
+        // {
+        //   name: 'bhkTypes',
+        //   label: 'BHK Mix (comma separated)',
+        //   type: 'text',
+        //   placeholder: '2BHK, 3BHK, Duplex',
+        // },
+
+        // {
+        //   name: 'amenities',
+        //   label: 'Key Amenities (comma separated)',
+        //   type: 'textarea',
+        //   rows: 2,
+        //   placeholder: 'Clubhouse, Pool, Gym, Garden',
+        // },
+
         {
           name: 'bhkTypes',
-          label: 'BHK Mix (comma separated)',
-          type: 'text',
-          placeholder: '2BHK, 3BHK, Duplex',
+          label: 'BHK Mix',
+          type: 'chips',
+          options: [
+            { value: '1BHK', label: '1 BHK' },
+            { value: '2BHK', label: '2 BHK' },
+            { value: '3BHK', label: '3 BHK' },
+            { value: '4BHK', label: '4 BHK' },
+            { value: 'CommercialSpace', label: 'Commercial Space' },
+            { value: 'Duplex', label: 'Duplex' },
+          ],
         },
         {
           name: 'amenities',
-          label: 'Key Amenities (comma separated)',
-          type: 'textarea',
-          rows: 2,
-          placeholder: 'Clubhouse, Pool, Gym, Garden',
+          label: 'Key Amenities',
+          type: 'chips',
+          options: [
+            { value: 'Pool', label: 'Pool' },
+            { value: 'ATM/Bank', label: 'ATM/Bank' },
+            { value: 'Temple', label: 'Temple' },
+            { value: 'Lift', label: 'Lift' },
+            { value: 'Security', label: '24*7 Security' },
+            { value: 'CCTV', label: 'CCTV Surveillance' },
+            { value: 'Wifi', label: 'Wi-Fi' },
+            { value: 'Garden', label: 'Garden' },
+            { value: 'Club House', label: 'Club House' },
+            { value: 'Indoor Games', label: 'Indoor Games' },
+            { value: 'Swimming Pool', label: 'Swimming Pool' },
+            { value: 'Gym', label: 'Gym' },
+            { value: 'Play Zone', label: 'Play Zone' },
+            { value: 'Food Court', label: 'Food Court' },
+            { value: 'Mall', label: 'Mall' },
+            { value: 'Yoga', label: 'Yoga' },
+          ],
         },
       ],
     },

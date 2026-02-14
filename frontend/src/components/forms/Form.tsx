@@ -22,7 +22,7 @@ import {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency';
+  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'chips' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency';
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -63,6 +63,7 @@ interface FormProps {
   cancelLabel?: string;
   loading?: boolean;
   columns?: 1 | 2 | 3;
+  onValuesChange?: (values: Record<string, any>) => void;
 }
 
 // Validation function
@@ -116,6 +117,7 @@ export default function Form({
   cancelLabel = 'Cancel',
   loading = false,
   columns = 2,
+  onValuesChange,
 }: FormProps) {
   const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -129,17 +131,31 @@ export default function Form({
     : fields || [];
 
   const handleChange = (name: string, value: any) => {
-    setFormValues(prev => ({ ...prev, [name]: value }));
+    // setFormValues(prev => ({ ...prev, [name]: value }));
+    const updatedValues = { ...formValues, [name]: value };
+    setFormValues(updatedValues);
+    onValuesChange?.(updatedValues);
+    
     setTouched(prev => ({ ...prev, [name]: true }));
 
     // Validate on change
     const field = allFields.find(f => f.name === name);
     if (field) {
       const error = validateField(field, value);
-      setErrors(prev => ({
-        ...prev,
-        [name]: error || '',
-      }));
+      setErrors(prev => {
+        const updatedErrors = {
+          ...prev,
+          [name]: error || '',
+        };
+
+        // If there are no errors left, reset submit status
+        const hasAnyError = Object.values(updatedErrors).some(Boolean);
+        if (!hasAnyError) {
+          setSubmitStatus('idle');
+        }
+
+        return updatedErrors;
+      });
       
       // Call field's onChange callback if provided
       if (field.onChange) {
@@ -167,13 +183,18 @@ export default function Form({
 
     // Validate all fields
     const newErrors: Record<string, string> = {};
+    const newTouched: Record<string, boolean> = {}
+
     allFields.forEach(field => {
+      newTouched[field.name] = true;
+
       const error = validateField(field, formValues[field.name]);
       if (error) {
         newErrors[field.name] = error;
       }
     });
 
+    setTouched(newTouched);
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -220,8 +241,46 @@ export default function Form({
               className={`${inputClasses} ${field.icon ? 'pl-10' : ''}`}
             />
           </div>
-        );
+        )
+      case 'chips': {
+        const selectedValues: string[] = Array.isArray(value) ? value : [];
 
+        return (
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2 rounded-lg border border-gray-200 p-3 bg-gray-50">
+              {field.options?.map(option => {
+                const isSelected = selectedValues.includes(option.value as string);
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    onClick={() => {
+                      handleChange(
+                        field.name,
+                        isSelected
+                          ? selectedValues.filter(v => v !== option.value)
+                          : [...selectedValues, option.value]
+                      );
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all
+                      focus:outline-none focus:ring-2 focus:ring-[var(--eastern-red)]
+                      ${
+                        isSelected
+                          ? 'bg-[var(--eastern-red)] text-white border-[var(--eastern-red)] shadow-sm hover:cursor-pointer'
+                          : 'bg-white text-gray-500 border-gray-300 hover:border-[var(--eastern-red)] hover:bg-blue-50 hover:cursor-pointer'
+                      }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      }
       case 'password':
         return (
           <div className="relative">
@@ -471,10 +530,10 @@ export default function Form({
                 <span className="text-sm font-medium">Saved successfully!</span>
               </div>
             )}
-            {submitStatus === 'error' && (
+            {submitStatus === 'error' && Object.keys(errors).length > 0 && (
               <div className="flex items-center gap-2 text-red-600">
                 <AlertCircle className="w-5 h-5" />
-                <span className="text-sm font-medium">Please fix the errors above</span>
+                <span className="text-sm font-medium">Please fill in all required fields.</span>
               </div>
             )}
           </div>

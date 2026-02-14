@@ -11,22 +11,38 @@ interface EmployeeFormProps {
 
 export default function EmployeeForm({ onSubmit, initialData, onCancel }: EmployeeFormProps) {
   const [activeTab, setActiveTab] = useState('basic');
+  const [formValues, setFormValues] = useState<Record<string, any>>(initialData || {});
+
 
   // Tab 1: Basic Information
   const basicFields: FormField[] = [
     {
+      name: 'profilePicture',
+      label: 'Profile Picture',
+      type: 'file',
+      required: false,
+      accept: 'image/*',
+      helperText: 'Upload employee photo for ID card (JPEG, PNG)',
+    },
+    {
       name: 'employeeCode',
-      label: 'Employee Code *',
+      label: 'Employee Code',
       type: 'text',
       required: true,
-      placeholder: 'e.g., EMP-001',
+      placeholder: 'e.g., EECD-EMP-001',
+      validation: {
+        pattern: /^[a-zA-Z0-9_-]+$/,
+      },
     },
     {
       name: 'fullName',
-      label: 'Full Name *',
+      label: 'Full Name',
       type: 'text',
       required: true,
       placeholder: 'e.g., John Doe',
+      validation: {
+        minLength: 3,
+      },
     },
     {
       name: 'email',
@@ -34,13 +50,19 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'email',
       required: false,
       placeholder: 'e.g., john.doe@example.com',
+      validation: {
+        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      },
     },
     {
       name: 'phoneNumber',
-      label: 'Phone Number *',
+      label: 'Phone Number',
       type: 'tel',
       required: true,
       placeholder: 'e.g., 9876543210',
+      validation: {
+        pattern: /^[6-9]\d{9}$/,
+      },
     },
     {
       name: 'alternatePhone',
@@ -48,16 +70,36 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'tel',
       required: false,
       placeholder: 'e.g., 9876543211',
+      validation: {
+        pattern: /^[6-9]\d{9}$/,
+      },
     },
     {
       name: 'dateOfBirth',
-      label: 'Date of Birth *',
+      label: 'Date of Birth',
       type: 'date',
       required: true,
+      validation: {
+        custom: (value) => {
+          if (!value) return null;
+
+          const dob = new Date(value);
+          const today = new Date();
+
+          let age = today.getFullYear() - dob.getFullYear();
+          const m = today.getMonth() - dob.getMonth();
+
+          if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+          }
+
+          return age < 18 ? 'Employee must be at least 18 years old' : null;
+        },
+      },
     },
     {
       name: 'gender',
-      label: 'Gender *',
+      label: 'Gender',
       type: 'select',
       required: true,
       options: [
@@ -100,7 +142,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const addressFields: FormField[] = [
     {
       name: 'currentAddress',
-      label: 'Current Address *',
+      label: 'Current Address',
       type: 'textarea',
       required: true,
       placeholder: 'Complete current address...',
@@ -132,6 +174,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'text',
       required: false,
       placeholder: 'e.g., 400001',
+      validation: {
+        pattern: /^\d{6}$/,
+      },
     },
   ];
 
@@ -139,7 +184,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const employmentFields: FormField[] = [
     {
       name: 'department',
-      label: 'Department *',
+      label: 'Department',
       type: 'select',
       required: true,
       options: [
@@ -157,14 +202,14 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'designation',
-      label: 'Designation *',
+      label: 'Designation',
       type: 'text',
       required: true,
       placeholder: 'e.g., Senior Manager, Developer',
     },
     {
       name: 'employmentType',
-      label: 'Employment Type *',
+      label: 'Employment Type',
       type: 'select',
       required: true,
       options: [
@@ -177,7 +222,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'employmentStatus',
-      label: 'Employment Status *',
+      label: 'Employment Status',
       type: 'select',
       required: true,
       options: [
@@ -190,7 +235,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'joiningDate',
-      label: 'Joining Date *',
+      label: 'Joining Date',
       type: 'date',
       required: true,
     },
@@ -205,6 +250,16 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       label: 'Resignation Date',
       type: 'date',
       required: false,
+      validation: {
+        custom: (value) => {
+          if (!value) return null;
+          const joining = new Date(formValues.joiningDate);
+          const resign = new Date(value);
+          return resign <= joining
+            ? 'Resignation date must be after joining date'
+            : null;
+        },
+      },
     },
     {
       name: 'lastWorkingDate',
@@ -225,10 +280,13 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   const salaryFields: FormField[] = [
     {
       name: 'basicSalary',
-      label: 'Basic Salary (₹) *',
+      label: 'Basic Salary (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 30000',
+      validation: {
+        min: 0,
+      },
     },
     {
       name: 'houseRentAllowance',
@@ -260,10 +318,18 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'grossSalary',
-      label: 'Gross Salary (₹) *',
+      label: 'Gross Salary (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 55000',
+      validation: {
+        custom: (value) => {
+          if (!value) return null;
+          return value < Number(formValues.basicSalary || 0)
+            ? 'Gross salary cannot be less than basic salary'
+            : null;
+        },
+      },
     },
     {
       name: 'pfDeduction',
@@ -295,10 +361,18 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
     {
       name: 'netSalary',
-      label: 'Net Salary (₹) *',
+      label: 'Net Salary (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 44988',
+      validation: {
+        custom: (value) => {
+          if (!value) return null;
+          return value > Number(formValues.grossSalary || 0)
+            ? 'Net salary cannot exceed gross salary'
+            : null;
+        },
+      },
     },
   ];
 
@@ -317,6 +391,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'text',
       required: false,
       placeholder: 'e.g., 12345678901234',
+      validation: {
+        pattern: /^\d{9,18}$/,
+      },
     },
     {
       name: 'ifscCode',
@@ -324,6 +401,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'text',
       required: false,
       placeholder: 'e.g., HDFC0001234',
+      validation: {
+        pattern: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+      },
     },
     {
       name: 'branchName',
@@ -342,6 +422,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'text',
       required: false,
       placeholder: 'e.g., 1234 5678 9012',
+      validation: {
+        pattern: /^\d{12}$/,
+      },
     },
     {
       name: 'panNumber',
@@ -349,6 +432,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'text',
       required: false,
       placeholder: 'e.g., ABCDE1234F',
+      validation: {
+        pattern: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+      },
     },
     {
       name: 'pfNumber',
@@ -381,6 +467,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'text',
       required: false,
       placeholder: 'e.g., Jane Doe',
+      validation: {
+        minLength: 3,
+      },
     },
     {
       name: 'emergencyContactPhone',
@@ -388,6 +477,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'tel',
       required: false,
       placeholder: 'e.g., 9876543210',
+      validation: {
+        pattern: /^[6-9]\d{9}$/,
+      },
     },
     {
       name: 'emergencyContactRelation',
@@ -546,6 +638,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
         initialValues={initialData}
         submitLabel={initialData ? 'Update Employee' : 'Add Employee'}
         onCancel={onCancel}
+        onValuesChange={setFormValues}
       />
     </div>
   );

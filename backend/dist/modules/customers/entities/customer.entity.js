@@ -42,14 +42,14 @@ var PropertyPreference;
 })(PropertyPreference || (exports.PropertyPreference = PropertyPreference = {}));
 let Customer = class Customer {
     get firstName() {
-        return this.fullName?.split(' ')[0] || this.legacyFirstName || '';
+        return this.fullName?.split(' ')[0] || '';
     }
     get lastName() {
         const parts = this.fullName?.split(' ') || [];
-        return parts.slice(1).join(' ') || this.legacyLastName || '';
+        return parts.slice(1).join(' ') || '';
     }
-    get computedFullName() {
-        return [this.legacyFirstName, this.legacyLastName].filter(Boolean).join(' ').trim();
+    get displayName() {
+        return this.fullName || '';
     }
     get company() {
         return this.companyName;
@@ -96,34 +96,18 @@ __decorate([
     (0, typeorm_1.Column)({
         name: 'full_name',
         length: 255,
-        nullable: true,
-        select: false,
-        insert: false,
-        update: false,
     }),
     __metadata("design:type", String)
 ], Customer.prototype, "fullName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'first_name', length: 255, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "legacyFirstName", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'last_name', length: 255, nullable: true }),
-    __metadata("design:type", String)
-], Customer.prototype, "legacyLastName", void 0);
 __decorate([
     (0, typeorm_1.Column)({ length: 255, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'phone', length: 20 }),
+    (0, typeorm_1.Column)({ name: 'phone_number', length: 20 }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "phoneNumber", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'phone', length: 20, nullable: true, select: false, insert: false, update: false }),
-    __metadata("design:type", String)
-], Customer.prototype, "legacyPhone", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'alternate_phone', length: 20, nullable: true }),
     __metadata("design:type", String)

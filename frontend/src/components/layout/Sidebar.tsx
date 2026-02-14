@@ -7,7 +7,7 @@ import {
   X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
-  Settings, ChevronDown, Target, Bell, Phone
+  Settings, ChevronDown, Target, Bell, Phone, Database, Table as TableIcon
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -99,9 +99,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     // { id: 'inventory', label: 'Inventory', icon: Package, href: '/inventory' },
-    { id: 'employees', label: 'Employees', icon: Briefcase, href: '/employees' },
+    { 
+      id: 'hr', 
+      label: 'HR', 
+      icon: Briefcase,
+      children: [
+        { id: 'hr-dashboard', label: 'HR Dashboard', icon: LayoutDashboard, href: '/hr' },
+        { id: 'employees', label: 'Employee Login', icon: Users, href: '/employees' },
+      ]
+    },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
     // { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
+    { 
+      id: 'database', 
+      label: 'Database', 
+      icon: Database,
+      children: [
+        { id: 'database-explorer', label: 'Database Explorer', icon: Database, href: '/database' },
+        { id: 'database-viewer', label: 'Data Viewer', icon: TableIcon, href: '/database/viewer' },
+        { id: 'database-relationships', label: 'Relationships', icon: BarChart3, href: '/database/relationships' },
+      ]
+    },
     { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
 

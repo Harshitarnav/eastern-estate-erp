@@ -51,50 +51,35 @@ export class Customer {
   @Index()
   customerCode: string;
 
-  // Not present in the schema we see; keep disabled to avoid select errors
+  // Full name column (actual column in database)
   @Column({
     name: 'full_name',
     length: 255,
-    nullable: true,
-    select: false,
-    insert: false,
-    update: false,
   })
   fullName: string;
 
-  // Legacy columns still present in the DB (keep in sync to avoid NOT NULL errors)
-  @Column({ name: 'first_name', length: 255, nullable: true })
-  legacyFirstName: string;
-
-  @Column({ name: 'last_name', length: 255, nullable: true })
-  legacyLastName: string;
-
-  // Getters for backward compatibility
+  // Getters for backward compatibility (split full_name into first/last)
   get firstName(): string {
-    return this.fullName?.split(' ')[0] || this.legacyFirstName || '';
+    return this.fullName?.split(' ')[0] || '';
   }
 
   get lastName(): string {
     const parts = this.fullName?.split(' ') || [];
-    return parts.slice(1).join(' ') || this.legacyLastName || '';
+    return parts.slice(1).join(' ') || '';
   }
 
-  // Virtual computed full name from legacy fields
-  get computedFullName(): string {
-    return [this.legacyFirstName, this.legacyLastName].filter(Boolean).join(' ').trim();
+  // Virtual computed full name
+  get displayName(): string {
+    return this.fullName || '';
   }
 
   @Column({ length: 255, nullable: true })
   email: string;
 
-  // Map to the actual schema column "phone"
-  @Column({ name: 'phone', length: 20 })
+  // Map to the actual schema column "phone_number"
+  @Column({ name: 'phone_number', length: 20 })
   @Index()
   phoneNumber: string;
-
-  // Legacy phone column still present in DB
-  @Column({ name: 'phone', length: 20, nullable: true, select: false, insert: false, update: false })
-  legacyPhone: string;
 
   @Column({ name: 'alternate_phone', length: 20, nullable: true })
   alternatePhone: string;

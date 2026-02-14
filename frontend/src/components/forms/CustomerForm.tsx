@@ -28,12 +28,24 @@ export default function CustomerForm({
           type: 'text',
           required: true,
           icon: <UserCheck className="w-5 h-5" />,
+          placeholder: 'Enter first name',
+          validation: {
+            minLength: 2,
+            maxLength: 50,
+            pattern: /^[A-Za-z ]+$/,
+          },
         },
         {
           name: 'lastName',
           label: 'Last Name',
           type: 'text',
           required: true,
+          placeholder: 'Enter last name',
+          validation: {
+            minLength: 2,
+            maxLength: 50,
+            pattern: /^[A-Za-z ]+$/,
+          },
         },
         {
           name: 'email',
@@ -41,6 +53,10 @@ export default function CustomerForm({
           type: 'email',
           required: true,
           icon: <Mail className="w-5 h-5" />,
+          placeholder: 'Enter email address',
+          validation: {
+            pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+          },
         },
         {
           name: 'phone',
@@ -48,11 +64,17 @@ export default function CustomerForm({
           type: 'tel',
           required: true,
           icon: <Phone className="w-5 h-5" />,
+          placeholder: 'Enter phone number',
+          validation: {
+            pattern: /^[6-9]\d{9}$/,
+          },
+          helperText: '10-digit mobile number',
         },
         {
           name: 'alternatePhone',
           label: 'Alternate Phone',
           type: 'tel',
+          placeholder: 'Enter phone number',
         },
         {
           name: 'dateOfBirth',
@@ -79,25 +101,28 @@ export default function CustomerForm({
           label: 'Address',
           type: 'textarea',
           rows: 3,
+          placeholder: 'Enter correspondence address',
         },
         {
           name: 'city',
           label: 'City',
           type: 'text',
+          placeholder: 'Enter city'
         },
         {
           name: 'state',
           label: 'State',
           type: 'text',
+          placeholder: 'Enter state'
         },
         {
           name: 'pincode',
           label: 'Pincode',
           type: 'text',
+          placeholder: 'Enter pincode',
           validation: {
             pattern: /^\d{6}$/,
           },
-          helperText: '6-digit pincode',
         },
       ],
     },
@@ -135,23 +160,33 @@ export default function CustomerForm({
           name: 'occupation',
           label: 'Occupation',
           type: 'text',
+          placeholder: 'Enter occupation',
         },
         {
           name: 'annualIncome',
           label: 'Annual Income',
           type: 'currency',
           prefix: '₹',
+          placeholder: 'Enter annual income',
           validation: { min: 0 },
         },
         {
           name: 'company',
           label: 'Company',
           type: 'text',
+          placeholder: 'Enter company name',
+          validation: {
+            maxLength: 100,
+          },
         },
         {
           name: 'designation',
           label: 'Designation',
           type: 'text',
+          placeholder: 'Enter designation',
+          validation: {
+            maxLength: 100,
+          },
         },
       ],
     },
@@ -164,11 +199,21 @@ export default function CustomerForm({
           label: 'PAN Number',
           type: 'text',
           icon: <Shield className="w-5 h-5" />,
+          placeholder: 'Enter PAN number',
+          validation: {
+            pattern: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+          },
+          helperText: 'Format: ABCDE1234F (Capital letters only)',
         },
         {
           name: 'aadharNumber',
           label: 'Aadhar Number',
           type: 'text',
+          placeholder: 'Enter Aadhar number',
+          validation: {
+            pattern: /^\d{12}$/,
+          },
+          helperText: '12-digit Aadhar number',
         },
       ],
     },
@@ -184,6 +229,7 @@ export default function CustomerForm({
           name: 'bankName',
           label: 'Bank Name',
           type: 'text',
+          placeholder: 'Enter bank name',
         },
       ],
     },
@@ -195,6 +241,7 @@ export default function CustomerForm({
           label: 'Notes',
           type: 'textarea',
           rows: 4,
+          placeholder: 'Enter any additional notes about the customer',
         },
       ],
     },

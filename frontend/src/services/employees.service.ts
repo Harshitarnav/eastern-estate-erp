@@ -12,6 +12,7 @@ export interface Employee {
   employmentStatus: string;
   joiningDate: string;
   grossSalary: number;
+  profilePicture?: string;
   casualLeaveBalance?: number;
   sickLeaveBalance?: number;
   earnedLeaveBalance?: number;

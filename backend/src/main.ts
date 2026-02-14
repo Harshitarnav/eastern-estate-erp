@@ -1,14 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import * as compression from 'compression';
 import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     logger:
       process.env.NODE_ENV === 'production'
@@ -19,6 +21,12 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const nodeEnv = configService.get<string>('app.nodeEnv') ?? 'development';
   const isProduction = nodeEnv === 'production';
+
+  // Serve static files from uploads directory
+  const uploadPath = process.env.UPLOAD_LOCATION || './uploads';
+  app.useStaticAssets(join(process.cwd(), uploadPath), {
+    prefix: '/uploads/',
+  });
 
   // Body parsing limits
   const bodyLimit = configService.get<string>('request.bodyLimit') ?? '1mb';
@@ -77,7 +85,19 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-      validationError: { target: false },
+      validationError: { target: false, value: false },
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => {
+          const constraints = error.constraints;
+          if (constraints) {
+            return Object.values(constraints).join('. ');
+          }
+          return `${error.property} validation failed`;
+        }).filter(Boolean);
+        
+        // Return BadRequestException with array of error messages
+        return new BadRequestException(messages);
+      },
     }),
   );
 

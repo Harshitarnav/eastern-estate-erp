@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Form, FormSection } from './Form';
 import { Home, Building2, DollarSign } from 'lucide-react';
 
@@ -11,6 +11,7 @@ interface FlatFormProps {
   towers?: any[];
   customers?: any[];
   isEdit?: boolean;
+  onPropertyChange?: (propertyId: string) => void;
 }
 
 export default function FlatForm({ 
@@ -22,7 +23,18 @@ export default function FlatForm({
   towers = [],
   customers = [],
   isEdit = false,
+  onPropertyChange,
 }: FlatFormProps) {
+
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>(
+    initialData?.propertyId || ''
+  );
+
+  useEffect(() => {
+    if (!selectedPropertyId) return;
+    onPropertyChange?.(selectedPropertyId);
+  }, [selectedPropertyId]);
+
   const handleSubmit = async (values: any) => {
     const num = (val: any) => (val === '' || val === undefined || val === null ? undefined : Number(val));
     const list = (val: any) =>
@@ -95,6 +107,7 @@ export default function FlatForm({
           required: true,
           options: towers.map(t => ({ value: t.id, label: t.name })),
           icon: <Building2 className="w-5 h-5" />,
+          disabled: !selectedPropertyId || towers.length === 0,
         },
         {
           name: 'flatNumber',
@@ -595,6 +608,11 @@ export default function FlatForm({
       cancelLabel="Cancel"
       loading={loading}
       columns={2}
+      onValuesChange={(values) => {
+        if (values.propertyId !== selectedPropertyId) {
+          setSelectedPropertyId(values.propertyId);
+        }
+      }}
     />
   );
 }

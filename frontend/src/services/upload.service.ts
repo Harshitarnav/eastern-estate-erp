@@ -27,7 +27,7 @@ class UploadService {
     formData.append('category', category);
 
     try {
-      const response = await api.post('/upload/single', formData, {
+      const response = await api.post<FileUploadResponse>('/upload/single', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {
@@ -36,7 +36,8 @@ class UploadService {
           }
         },
       });
-      return response.data;
+      // api.post already returns response.data, so response IS the FileUploadResponse
+      return response;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Upload failed');
     }
@@ -52,7 +53,7 @@ class UploadService {
     formData.append('category', category);
 
     try {
-      const response = await api.post('/upload/multiple', formData, {
+      const response = await api.post<FileUploadResponse[]>('/upload/multiple', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {
@@ -61,7 +62,8 @@ class UploadService {
           }
         },
       });
-      return response.data;
+      // api.post already returns response.data, so response IS the FileUploadResponse[]
+      return response;
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Upload failed');
     }

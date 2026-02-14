@@ -8,6 +8,7 @@ const compression = require("compression");
 const helmet_1 = require("helmet");
 const express_1 = require("express");
 const http_exception_filter_1 = require("./common/filters/http-exception.filter");
+const path_1 = require("path");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule, {
         bufferLogs: true,
@@ -18,6 +19,10 @@ async function bootstrap() {
     const configService = app.get(config_1.ConfigService);
     const nodeEnv = configService.get('app.nodeEnv') ?? 'development';
     const isProduction = nodeEnv === 'production';
+    const uploadPath = process.env.UPLOAD_LOCATION || './uploads';
+    app.useStaticAssets((0, path_1.join)(process.cwd(), uploadPath), {
+        prefix: '/uploads/',
+    });
     const bodyLimit = configService.get('request.bodyLimit') ?? '1mb';
     app.use((0, express_1.json)({ limit: bodyLimit }));
     app.use((0, express_1.urlencoded)({ extended: true, limit: bodyLimit }));
@@ -61,7 +66,17 @@ async function bootstrap() {
         transformOptions: {
             enableImplicitConversion: true,
         },
-        validationError: { target: false },
+        validationError: { target: false, value: false },
+        exceptionFactory: (errors) => {
+            const messages = errors.map((error) => {
+                const constraints = error.constraints;
+                if (constraints) {
+                    return Object.values(constraints).join('. ');
+                }
+                return `${error.property} validation failed`;
+            }).filter(Boolean);
+            return new common_1.BadRequestException(messages);
+        },
     }));
     app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
     const apiPrefix = configService.get('app.apiPrefix') ?? 'api/v1';

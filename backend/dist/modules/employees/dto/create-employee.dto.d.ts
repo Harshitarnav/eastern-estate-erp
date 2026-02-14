@@ -5,6 +5,7 @@ export declare class CreateEmployeeDto {
     email?: string;
     phoneNumber?: string;
     alternatePhone?: string;
+    profilePicture?: string;
     dateOfBirth?: string | Date;
     gender?: string;
     currentAddress?: string;
