@@ -141,13 +141,54 @@ export default function EmployeeDetailPage() {
           <span>Back to Employees</span>
         </button>
         
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2" style={{ color: '#7B1E12' }}>
-              {employee.fullName}
-            </h1>
-            <p className="text-gray-600">{employee.employeeCode}</p>
+        <div className="flex items-start justify-between gap-6">
+          {/* Profile Picture & Basic Info */}
+          <div className="flex items-start gap-6">
+            {employee.profilePicture ? (
+              <img
+                src={employee.profilePicture}
+                alt={employee.fullName}
+                className="h-24 w-24 rounded-full object-cover border-4 shadow-lg"
+                style={{ borderColor: '#A8211B' }}
+              />
+            ) : (
+              <div 
+                className="h-24 w-24 rounded-full flex items-center justify-center border-4 shadow-lg"
+                style={{ backgroundColor: '#A8211B', borderColor: '#7B1E12' }}
+              >
+                <User className="h-12 w-12 text-white" />
+              </div>
+            )}
+            
+            <div>
+              <h1 className="text-3xl font-bold mb-2" style={{ color: '#7B1E12' }}>
+                {employee.fullName}
+              </h1>
+              <p className="text-gray-600 mb-2">{employee.employeeCode}</p>
+              <div className="flex items-center gap-2">
+                <div
+                  className="px-3 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: `${getStatusColor(employee.employmentStatus)}20`,
+                    color: getStatusColor(employee.employmentStatus),
+                  }}
+                >
+                  {formatStatus(employee.employmentStatus)}
+                </div>
+                <div
+                  className="px-3 py-1 rounded-full text-sm font-medium"
+                  style={{
+                    backgroundColor: `${getDepartmentColor(employee.department)}20`,
+                    color: getDepartmentColor(employee.department),
+                  }}
+                >
+                  {formatStatus(employee.department)}
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* Edit Button */}
           <button
             onClick={() => router.push(`/employees/${employeeId}/edit`)}
             className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"

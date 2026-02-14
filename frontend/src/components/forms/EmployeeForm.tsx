@@ -17,6 +17,14 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
   // Tab 1: Basic Information
   const basicFields: FormField[] = [
     {
+      name: 'profilePicture',
+      label: 'Profile Picture',
+      type: 'file',
+      required: false,
+      accept: 'image/*',
+      helperText: 'Upload employee photo for ID card (JPEG, PNG)',
+    },
+    {
       name: 'employeeCode',
       label: 'Employee Code',
       type: 'text',
@@ -62,6 +70,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'tel',
       required: false,
       placeholder: 'e.g., 9876543211',
+      validation: {
+        pattern: /^[6-9]\d{9}$/,
+      },
     },
     {
       name: 'dateOfBirth',

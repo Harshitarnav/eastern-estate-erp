@@ -6,9 +6,11 @@ import * as compression from 'compression';
 import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     logger:
       process.env.NODE_ENV === 'production'
@@ -19,6 +21,12 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const nodeEnv = configService.get<string>('app.nodeEnv') ?? 'development';
   const isProduction = nodeEnv === 'production';
+
+  // Serve static files from uploads directory
+  const uploadPath = process.env.UPLOAD_LOCATION || './uploads';
+  app.useStaticAssets(join(process.cwd(), uploadPath), {
+    prefix: '/uploads/',
+  });
 
   // Body parsing limits
   const bodyLimit = configService.get<string>('request.bodyLimit') ?? '1mb';

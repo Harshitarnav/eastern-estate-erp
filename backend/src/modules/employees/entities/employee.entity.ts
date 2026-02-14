@@ -66,6 +66,9 @@ export class Employee {
   @Column({ length: 50, nullable: true })
   alternatePhone: string;
 
+  @Column({ type: 'text', nullable: true })
+  profilePicture: string;
+
   @Column({ type: 'date' })
   dateOfBirth: Date;
 

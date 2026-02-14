@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Plus, Search, Mail, Phone, Briefcase, UserCog, Shield } from 'lucide-react';
+import { Users, Plus, Search, Mail, Phone, Briefcase, UserCog, Shield, User } from 'lucide-react';
 import { employeesService, Employee, EmployeeFilters } from '@/services/employees.service';
 
 export default function EmployeesPage() {
@@ -32,10 +32,15 @@ export default function EmployeesPage() {
       setEmployees(response.data || []);
       setMeta(response.meta || { total: 0, page: 1, limit: 12, totalPages: 0 });
       setError('');
+      
+      // // Debug: Check profile pictures
+      // console.log('📸 Employee Profile Pictures:', response.data?.map(emp => ({
+      //   name: emp.fullName,
+      //   profilePicture: emp.profilePicture
+      // })));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch employees');
       setEmployees([]);
-      console.error('Error fetching employees:', err);
     } finally {
       setLoading(false);
     }
@@ -227,15 +232,36 @@ export default function EmployeesPage() {
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden"
               >
                 <div className="p-4" style={{ backgroundColor: '#FEF3E2' }}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
+                  <div className="flex items-start gap-4 mb-2">
+                    {/* Profile Picture */}
+                    <div className="flex-shrink-0">
+                      {employee.profilePicture ? (
+                        <img
+                          src={employee.profilePicture}
+                          alt={employee.fullName}
+                          className="h-16 w-16 rounded-full object-cover border-2 border-white shadow-sm"
+                        />
+                      ) : (
+                        <div 
+                          className="h-16 w-16 rounded-full flex items-center justify-center border-2 border-white shadow-sm"
+                          style={{ backgroundColor: '#A8211B' }}
+                        >
+                          <User className="h-8 w-8 text-white" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Employee Info */}
+                    <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold mb-1" style={{ color: '#7B1E12' }}>
                         {employee.fullName}
                       </h3>
                       <p className="text-sm text-gray-600">{employee.employeeCode}</p>
                     </div>
+
+                    {/* Status Badge */}
                     <div
-                      className="px-3 py-1 rounded-full text-xs font-medium"
+                      className="px-3 py-1 rounded-full text-xs font-medium flex-shrink-0"
                       style={{
                         backgroundColor: `${getStatusColor(employee.employmentStatus)}20`,
                         color: getStatusColor(employee.employmentStatus),

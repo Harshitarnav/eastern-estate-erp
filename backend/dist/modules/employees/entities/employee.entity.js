@@ -68,6 +68,10 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "alternatePhone", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], Employee.prototype, "profilePicture", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'date' }),
     __metadata("design:type", Date)
 ], Employee.prototype, "dateOfBirth", void 0);

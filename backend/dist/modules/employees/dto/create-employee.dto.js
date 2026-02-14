@@ -40,6 +40,11 @@ __decorate([
 ], CreateEmployeeDto.prototype, "alternatePhone", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateEmployeeDto.prototype, "profilePicture", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Object)
 ], CreateEmployeeDto.prototype, "dateOfBirth", void 0);
 __decorate([

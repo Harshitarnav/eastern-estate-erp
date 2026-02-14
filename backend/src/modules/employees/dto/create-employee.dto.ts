@@ -27,6 +27,10 @@ export class CreateEmployeeDto {
   alternatePhone?: string;
 
   @IsOptional()
+  @IsString()
+  profilePicture?: string;
+
+  @IsOptional()
   dateOfBirth?: string | Date;
 
   @IsOptional()

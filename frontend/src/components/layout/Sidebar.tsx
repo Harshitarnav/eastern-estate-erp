@@ -99,7 +99,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     // { id: 'inventory', label: 'Inventory', icon: Package, href: '/inventory' },
-    { id: 'employees', label: 'Employees', icon: Briefcase, href: '/employees' },
+    { 
+      id: 'hr', 
+      label: 'HR', 
+      icon: Briefcase,
+      children: [
+        { id: 'hr-dashboard', label: 'HR Dashboard', icon: LayoutDashboard, href: '/hr' },
+        { id: 'employees', label: 'Employee Login', icon: Users, href: '/employees' },
+      ]
+    },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
     // { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
     { 
