@@ -18,7 +18,10 @@ let LocalStorageService = LocalStorageService_1 = class LocalStorageService {
     constructor() {
         this.logger = new common_1.Logger(LocalStorageService_1.name);
         this.uploadPath = process.env.UPLOAD_LOCATION || './uploads';
-        this.baseUrl = process.env.APP_URL || 'http://localhost:3001';
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        this.baseUrl = isDevelopment
+            ? (process.env.APP_URL || 'http://localhost:3001')
+            : '';
     }
     async save(file, relativePath) {
         try {
@@ -47,7 +50,10 @@ let LocalStorageService = LocalStorageService_1 = class LocalStorageService {
         }
     }
     getUrl(relativePath) {
-        return `${this.baseUrl}/uploads/${relativePath}`;
+        if (this.baseUrl) {
+            return `${this.baseUrl}/uploads/${relativePath}`;
+        }
+        return `/uploads/${relativePath}`;
     }
     async exists(relativePath) {
         try {

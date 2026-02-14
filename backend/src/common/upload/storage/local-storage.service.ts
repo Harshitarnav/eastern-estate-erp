@@ -11,7 +11,12 @@ export class LocalStorageService implements IStorageService {
 
   constructor() {
     this.uploadPath = process.env.UPLOAD_LOCATION || './uploads';
-    this.baseUrl = process.env.APP_URL || 'http://localhost:3001';
+    // In development, use full URL (localhost:3001)
+    // In production, use relative URL (works with same domain)
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    this.baseUrl = isDevelopment 
+      ? (process.env.APP_URL || 'http://localhost:3001')
+      : ''; // Empty string for relative URLs in production
   }
 
   async save(file: Express.Multer.File, relativePath: string): Promise<string> {
@@ -46,7 +51,12 @@ export class LocalStorageService implements IStorageService {
   }
 
   getUrl(relativePath: string): string {
-    return `${this.baseUrl}/uploads/${relativePath}`;
+    // In development: return full URL (http://localhost:3001/uploads/...)
+    // In production: return relative URL (/uploads/...)
+    if (this.baseUrl) {
+      return `${this.baseUrl}/uploads/${relativePath}`;
+    }
+    return `/uploads/${relativePath}`;
   }
 
   async exists(relativePath: string): Promise<boolean> {
