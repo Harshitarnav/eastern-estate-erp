@@ -58,6 +58,7 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - backend_uploads:/srv/uploads:ro  # Mount backend uploads as read-only
     depends_on:
       - backend
       - frontend
