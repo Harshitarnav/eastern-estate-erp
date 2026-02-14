@@ -64,10 +64,14 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
     getValidationErrors(message) {
         if (typeof message === 'object' && Array.isArray(message.message)) {
             return message.message.map((msg) => {
-                return msg
-                    .replace(/^[a-z]+\s/, '')
-                    .replace(/^\w/, (c) => c.toUpperCase());
-            });
+                if (typeof msg === 'string') {
+                    return msg;
+                }
+                if (typeof msg === 'object' && msg.constraints) {
+                    return Object.values(msg.constraints).join('. ');
+                }
+                return String(msg);
+            }).filter(Boolean);
         }
         return undefined;
     }

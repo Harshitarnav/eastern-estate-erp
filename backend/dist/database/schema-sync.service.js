@@ -307,8 +307,8 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
         const campaignsTable = await queryRunner.query(`SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = $1`, ['campaigns']);
         if (campaignsTable.length > 0) {
             await queryRunner.query(`
-        INSERT INTO marketing_campaigns (name, description, status, budget, start_date, end_date)
-        SELECT name, description, COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
+        INSERT INTO marketing_campaigns (name, description, type, status, budget, start_date, end_date)
+        SELECT campaign_name, description, COALESCE(campaign_type, 'OTHER'), COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
         FROM campaigns
         ON CONFLICT DO NOTHING;
       `);

@@ -61,7 +61,17 @@ async function bootstrap() {
         transformOptions: {
             enableImplicitConversion: true,
         },
-        validationError: { target: false },
+        validationError: { target: false, value: false },
+        exceptionFactory: (errors) => {
+            const messages = errors.map((error) => {
+                const constraints = error.constraints;
+                if (constraints) {
+                    return Object.values(constraints).join('. ');
+                }
+                return `${error.property} validation failed`;
+            }).filter(Boolean);
+            return new common_1.BadRequestException(messages);
+        },
     }));
     app.useGlobalFilters(new http_exception_filter_1.HttpExceptionFilter());
     const apiPrefix = configService.get('app.apiPrefix') ?? 'api/v1';

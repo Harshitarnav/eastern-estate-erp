@@ -33,14 +33,19 @@ export const handleApiError = (error: any): string => {
   if (error.response) {
     const { status, data } = error.response;
 
-    // Return server message if available
-    if (data?.message) {
+    // Return validation errors if available
+    if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+      return data.errors.join('\n• ');
+    }
+
+    // Return server message if available (but not generic validation message)
+    if (data?.message && data.message !== 'Please fix the following errors and try again.') {
       return data.message;
     }
 
-    // Return validation errors if available
-    if (data?.errors && Array.isArray(data.errors)) {
-      return data.errors.join('. ');
+    // If we have generic validation message but no errors array, return helpful message
+    if (data?.message === 'Please fix the following errors and try again.' && !data?.errors) {
+      return 'Invalid input. Please check all required fields.';
     }
 
     // Default messages by status code

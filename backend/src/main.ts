@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import * as compression from 'compression';
@@ -77,7 +77,19 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
-      validationError: { target: false },
+      validationError: { target: false, value: false },
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => {
+          const constraints = error.constraints;
+          if (constraints) {
+            return Object.values(constraints).join('. ');
+          }
+          return `${error.property} validation failed`;
+        }).filter(Boolean);
+        
+        // Return BadRequestException with array of error messages
+        return new BadRequestException(messages);
+      },
     }),
   );
 

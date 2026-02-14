@@ -6,14 +6,14 @@ class CustomerResponseDto {
         const dto = new CustomerResponseDto();
         dto.id = customer.id;
         dto.customerCode = customer.customerCode;
-        const fullName = customer.fullName || customer.computedFullName || '';
+        const fullName = customer.fullName || '';
         const [firstName, ...rest] = fullName.split(' ').filter(Boolean);
         dto.fullName = fullName;
         dto.firstName = firstName || customer.firstName || '';
         dto.lastName = rest.join(' ') || customer.lastName || '';
         dto.email = customer.email;
-        dto.phone = customer.phoneNumber || customer.legacyPhone || '';
-        dto.phoneNumber = customer.phoneNumber || customer.legacyPhone || '';
+        dto.phone = customer.phoneNumber || '';
+        dto.phoneNumber = customer.phoneNumber || '';
         dto.alternatePhone = customer.alternatePhone;
         dto.dateOfBirth = customer.dateOfBirth;
         dto.gender = customer.gender;

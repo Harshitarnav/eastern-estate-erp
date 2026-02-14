@@ -528,9 +528,12 @@ export default function LoginPage() {
       await login(email, password);
 
       // Redirect to ERP Dashboard
+      console.log("Login successful, redirecting...");
       router.push("/");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Invalid login credentials");
+      console.error("Login error:", err);
+      const errorMessage = err?.response?.data?.message || err?.userMessage || err?.message || "Invalid login credentials";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
