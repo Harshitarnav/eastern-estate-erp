@@ -46,7 +46,9 @@ export class LocalStorageService implements IStorageService {
   }
 
   getUrl(relativePath: string): string {
-    return `${this.baseUrl}/uploads/${relativePath}`;
+    // Return relative URL that works in both dev and production
+    // The browser will automatically use the current domain
+    return `/uploads/${relativePath}`;
   }
 
   async exists(relativePath: string): Promise<boolean> {
