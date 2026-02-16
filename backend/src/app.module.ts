@@ -22,8 +22,6 @@ import { MaterialsModule } from './modules/materials/materials.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { RolesModule } from './modules/roles/roles.module';
-// import { TelephonyModule } from './modules/telephony/telephony.module'; // Temporarily disabled
-import { TelephonySimpleModule } from './modules/telephony-simple/telephony-simple.module';
 import { DemandDraftsModule } from './modules/demand-drafts/demand-drafts.module';
 import { DatabaseModule } from './modules/database/database.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
@@ -100,8 +98,6 @@ import { SchemaSyncService } from './database/schema-sync.service';
     VendorsModule,
     MarketingModule,
     RolesModule,
-    // TelephonyModule, // Temporarily disabled - using simple version instead
-    TelephonySimpleModule,
     DemandDraftsModule,
     DatabaseModule,
     UploadModule,

@@ -7,7 +7,7 @@ import {
   X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
-  Settings, ChevronDown, Target, Bell, Phone, Database, Table as TableIcon
+  Settings, ChevronDown, Target, Database, Table as TableIcon
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -49,41 +49,30 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'flats', label: 'Flats', icon: Home, href: '/flats' },
       ]
     },
-    { 
-      id: 'sales', 
-      label: 'Sales & CRM', 
-      icon: TrendingUp,
-      children: [
-        { id: 'sales-dashboard', label: 'Sales Dashboard', icon: BarChart3, href: '/sales' },
-        { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
-        { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
-        { id: 'bookings', label: 'Bookings', icon: Calendar, href: '/bookings' },
-      ]
-    },
-    { id: 'payments', label: 'Payments', icon: DollarSign, href: '/payments' },
     // { 
-    //   id: 'telephony', 
-    //   label: 'Telephony & IVR', 
-    //   icon: Phone,
+    //   id: 'sales', 
+    //   label: 'Sales & CRM', 
+    //   icon: TrendingUp,
     //   children: [
-    //     { id: 'telephony-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/telephony/dashboard' },
-    //     { id: 'calls', label: 'Call History', icon: Phone, href: '/telephony/calls' },
-    //     { id: 'agents', label: 'Agents', icon: Users, href: '/telephony/agents' },
-    //     { id: 'insights', label: 'AI Insights', icon: TrendingUp, href: '/telephony/insights' },
+    //     { id: 'sales-dashboard', label: 'Sales Dashboard', icon: BarChart3, href: '/sales' },
+    //     { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
+    //     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+    //     { id: 'bookings', label: 'Bookings', icon: Calendar, href: '/bookings' },
     //   ]
     // },
-    { 
-      id: 'accounting', 
-      label: 'Accounting', 
-      icon: Calculator,
-      children: [
-        { id: 'accounting-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/accounting' },
-        { id: 'accounts', label: 'Chart of Accounts', icon: BarChart3, href: '/accounting/accounts' },
-        { id: 'expenses', label: 'Expenses', icon: DollarSign, href: '/accounting/expenses' },
-        { id: 'budgets', label: 'Budgets', icon: TrendingUp, href: '/accounting/budgets' },
-        { id: 'reports', label: 'Reports', icon: BarChart3, href: '/accounting/reports' },
-      ]
-    },
+    { id: 'payments', label: 'Payments', icon: DollarSign, href: '/payments' },
+    // { 
+    //   id: 'accounting', 
+    //   label: 'Accounting', 
+    //   icon: Calculator,
+    //   children: [
+    //     { id: 'accounting-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/accounting' },
+    //     { id: 'accounts', label: 'Chart of Accounts', icon: BarChart3, href: '/accounting/accounts' },
+    //     { id: 'expenses', label: 'Expenses', icon: DollarSign, href: '/accounting/expenses' },
+    //     { id: 'budgets', label: 'Budgets', icon: TrendingUp, href: '/accounting/budgets' },
+    //     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/accounting/reports' },
+    //   ]
+    // },
     { 
       id: 'construction', 
       label: 'Construction', 
@@ -98,7 +87,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, href: '/construction/purchase-orders' },
       ]
     },
-    // { id: 'inventory', label: 'Inventory', icon: Package, href: '/inventory' },
     { 
       id: 'hr', 
       label: 'HR', 
@@ -109,7 +97,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
-    // { id: 'reports', label: 'Reports', icon: BarChart3, href: '/reports' },
     { 
       id: 'database', 
       label: 'Database', 

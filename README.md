@@ -46,11 +46,11 @@ Eastern Estate ERP is a full-stack enterprise solution that streamlines all aspe
 - **Framework:** NestJS 10.x (TypeScript)
 - **Database:** PostgreSQL 16+
 - **ORM:** TypeORM with migrations
-- **Authentication:** JWT (JSON Web Tokens)
+- **Authentication:** JWT (JSON Web Tokens) + Google OAuth 2.0 SSO
 - **Validation:** class-validator, class-transformer
 - **API Style:** RESTful
 - **File Upload:** Multer
-- **Security:** bcrypt for password hashing
+- **Security:** bcrypt for password hashing, domain-restricted SSO
 
 ### Frontend
 - **Framework:** Next.js 14.x (TypeScript)
@@ -480,6 +480,12 @@ DB_LOGGING=true
 JWT_SECRET=your-super-secret-jwt-key-change-this
 JWT_EXPIRES_IN=7d
 
+# Google OAuth (Optional - for SSO)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3001/api/v1/auth/google/callback
+FRONTEND_URL=http://localhost:3000
+
 # File Upload
 UPLOAD_DEST=./uploads
 MAX_FILE_SIZE=5242880  # 5MB
@@ -487,6 +493,8 @@ MAX_FILE_SIZE=5242880  # 5MB
 # Server
 PORT=3001
 ```
+
+> **📘 Google OAuth Setup:** See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for detailed instructions on configuring Google SSO with @eecd.in domain restriction.
 
 #### 3. Database Setup
 
@@ -496,6 +504,9 @@ createdb eastern_estate_erp
 
 # Run the schema
 psql -U postgres -d eastern_estate_erp -f ../database-schema.sql
+
+# Seed initial users (including info@eecd.in and hr@eecd.in)
+npm run seed:users
 
 # Verify tables created
 psql -U postgres -d eastern_estate_erp -c "\dt"
@@ -548,34 +559,32 @@ npm run start
 
 Frontend will run on: `http://localhost:3000`
 
-### 7. Create Admin User
+### 7. Login & Access
 
-Use the API to create your first admin user:
+The system now supports two authentication methods:
 
-```bash
-curl -X POST http://localhost:3001/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@eastern-estate.com",
-    "username": "admin",
-    "password": "Admin@123",
-    "firstName": "System",
-    "lastName": "Administrator"
-  }'
-```
+#### Option 1: Google OAuth SSO (Recommended for @eecd.in users)
+1. Navigate to `http://localhost:3000/login`
+2. Click "Sign in with Google (@eecd.in)"
+3. Select your @eecd.in Google Workspace account
+4. You'll be redirected to the dashboard
 
-Then assign the super_admin role via database:
+**Pre-configured accounts:**
+- `info@eecd.in` - Super Admin
+- `hr@eecd.in` - Admin
 
-```sql
--- Find the user ID
-SELECT id FROM users WHERE email = 'admin@eastern-estate.com';
+#### Option 2: Traditional Email/Password
+Use the seeded accounts created by `npm run seed:users`:
 
--- Assign super_admin role
-INSERT INTO user_roles (user_id, role_id)
-SELECT 
-  u.id,
-  r.id
-FROM users u, roles r
+**Test Login Credentials:**
+| Email | Password | Role |
+|-------|----------|------|
+| superadmin@easternestates.com | Password@123 | Super Admin |
+| admin@easternestates.com | Password@123 | Admin |
+| accountant@easternestates.com | Password@123 | Accountant |
+| salesmanager@easternestates.com | Password@123 | Sales Manager |
+
+> **🔐 Security Note:** Change default passwords in production. See [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md) for SSO configuration.
 WHERE u.email = 'admin@eastern-estate.com'
 AND r.name = 'super_admin';
 ```

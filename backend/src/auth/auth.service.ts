@@ -164,6 +164,36 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async googleLogin(user: any, ipAddress?: string, userAgent?: string) {
+    // User is already validated by GoogleStrategy
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      roles: user.roles.map((r: any) => r.name),
+    };
+
+    const accessToken = this.jwtService.sign(payload);
+    const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
+
+    return {
+      accessToken,
+      refreshToken: refreshToken.token,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        profileImage: user.profileImage,
+        roles: user.roles.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          displayName: r.displayName,
+        })),
+      },
+    };
+  }
+
   private async createRefreshToken(userId: string, ipAddress?: string, userAgent?: string) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days

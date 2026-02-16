@@ -54,5 +54,18 @@ export declare class AuthService {
     logout(userId: string, refreshToken?: string): Promise<{
         message: string;
     }>;
+    googleLogin(user: any, ipAddress?: string, userAgent?: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: {
+            id: any;
+            email: any;
+            username: any;
+            firstName: any;
+            lastName: any;
+            profileImage: any;
+            roles: any;
+        };
+    }>;
     private createRefreshToken;
 }

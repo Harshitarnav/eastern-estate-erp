@@ -34,7 +34,7 @@ export declare class TelephonySimpleController {
         data?: undefined;
     } | {
         success: boolean;
-        data: CallTranscription;
+        data: any;
         message?: undefined;
     }>;
     getInsights(callSid: string): Promise<{
@@ -43,7 +43,7 @@ export declare class TelephonySimpleController {
         data?: undefined;
     } | {
         success: boolean;
-        data: AiInsight;
+        data: any;
         message?: undefined;
     }>;
     getRecording(callSid: string): Promise<{
@@ -53,7 +53,7 @@ export declare class TelephonySimpleController {
     } | {
         success: boolean;
         data: {
-            url: string;
+            url: any;
             expiresIn: number;
             callSid: string;
         };

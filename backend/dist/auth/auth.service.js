@@ -141,6 +141,32 @@ let AuthService = class AuthService {
         }
         return { message: 'Logged out successfully' };
     }
+    async googleLogin(user, ipAddress, userAgent) {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            roles: user.roles.map((r) => r.name),
+        };
+        const accessToken = this.jwtService.sign(payload);
+        const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
+        return {
+            accessToken,
+            refreshToken: refreshToken.token,
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                profileImage: user.profileImage,
+                roles: user.roles.map((r) => ({
+                    id: r.id,
+                    name: r.name,
+                    displayName: r.displayName,
+                })),
+            },
+        };
+    }
     async createRefreshToken(userId, ipAddress, userAgent) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
