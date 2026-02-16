@@ -49,18 +49,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'flats', label: 'Flats', icon: Home, href: '/flats' },
       ]
     },
-    // { 
-    //   id: 'sales', 
-    //   label: 'Sales & CRM', 
-    //   icon: TrendingUp,
-    //   children: [
-    //     { id: 'sales-dashboard', label: 'Sales Dashboard', icon: BarChart3, href: '/sales' },
-    //     { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
-    //     { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
-    //     { id: 'bookings', label: 'Bookings', icon: Calendar, href: '/bookings' },
-    //   ]
-    // },
-    { id: 'payments', label: 'Payments', icon: DollarSign, href: '/payments' },
+    { 
+      id: 'sales', 
+      label: 'Sales & CRM', 
+      icon: TrendingUp,
+      children: [
+        // { id: 'sales-dashboard', label: 'Sales Dashboard', icon: BarChart3, href: '/sales' },
+        // { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
+        { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+        { id: 'bookings', label: 'Bookings', icon: Calendar, href: '/bookings' },
+      ]
+    },
+    { 
+      id: 'payments', 
+      label: 'Payments & Plans', 
+      icon: DollarSign,
+      children: [
+        { id: 'payments-list', label: 'Payments', icon: DollarSign, href: '/payments' },
+        { id: 'payment-plans', label: 'Payment Plans', icon: Calendar, href: '/payment-plans' },
+        { id: 'construction-milestones', label: 'Construction Milestones', icon: Target, href: '/construction-milestones' },
+      ]
+    },
     // { 
     //   id: 'accounting', 
     //   label: 'Accounting', 
@@ -78,13 +87,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       label: 'Construction', 
       icon: Hammer,
       children: [
-        { id: 'construction-overview', label: 'Overview', icon: LayoutDashboard, href: '/construction' },
-        { id: 'projects', label: 'Projects', icon: Building2, href: '/construction/projects' },
-        { id: 'teams', label: 'Teams', icon: Users, href: '/construction/teams' },
-        { id: 'progress', label: 'Progress Tracking', icon: TrendingUp, href: '/construction/progress' },
-        { id: 'materials', label: 'Materials', icon: Package, href: '/construction/materials' },
-        { id: 'vendors', label: 'Vendors', icon: Users, href: '/construction/vendors' },
-        { id: 'purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, href: '/construction/purchase-orders' },
+        { id: 'construction-progress-simple', label: 'Progress Log', icon: TrendingUp, href: '/construction-progress-simple' },
+        // { id: 'construction-overview', label: 'Overview', icon: LayoutDashboard, href: '/construction' },
+        // { id: 'projects', label: 'Projects', icon: Building2, href: '/construction/projects' },
+        // { id: 'teams', label: 'Teams', icon: Users, href: '/construction/teams' },
+        // { id: 'materials', label: 'Materials', icon: Package, href: '/construction/materials' },
+        // { id: 'vendors', label: 'Vendors', icon: Users, href: '/construction/vendors' },
+        // { id: 'purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, href: '/construction/purchase-orders' },
       ]
     },
     { 

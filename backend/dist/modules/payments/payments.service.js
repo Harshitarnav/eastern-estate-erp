@@ -11,22 +11,36 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var PaymentsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const payment_entity_1 = require("./entities/payment.entity");
-let PaymentsService = class PaymentsService {
-    constructor(paymentRepository) {
+const payment_completion_service_1 = require("./services/payment-completion.service");
+let PaymentsService = PaymentsService_1 = class PaymentsService {
+    constructor(paymentRepository, paymentCompletionService) {
         this.paymentRepository = paymentRepository;
+        this.paymentCompletionService = paymentCompletionService;
+        this.logger = new common_1.Logger(PaymentsService_1.name);
     }
     async create(createPaymentDto, userId) {
         if (!createPaymentDto.paymentCode) {
             createPaymentDto.paymentCode = await this.generatePaymentCode();
         }
         const payment = this.paymentRepository.create(createPaymentDto);
-        return this.paymentRepository.save(payment);
+        const savedPayment = await this.paymentRepository.save(payment);
+        if (savedPayment.status === payment_entity_1.PaymentStatus.COMPLETED) {
+            try {
+                await this.paymentCompletionService.processPaymentCompletion(savedPayment.id);
+                this.logger.log(`Payment completion workflow processed for payment ${savedPayment.id}`);
+            }
+            catch (error) {
+                this.logger.error(`Failed to process payment completion workflow: ${error.message}`);
+            }
+        }
+        return savedPayment;
     }
     async findAll(filters) {
         const query = this.paymentRepository.createQueryBuilder('payment')
@@ -183,9 +197,11 @@ let PaymentsService = class PaymentsService {
     }
 };
 exports.PaymentsService = PaymentsService;
-exports.PaymentsService = PaymentsService = __decorate([
+exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(payment_entity_1.Payment)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => payment_completion_service_1.PaymentCompletionService))),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        payment_completion_service_1.PaymentCompletionService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

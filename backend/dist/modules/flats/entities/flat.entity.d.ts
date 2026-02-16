@@ -63,6 +63,9 @@ export declare class Flat {
     isAvailable: boolean;
     availableFrom: Date;
     expectedPossession: Date;
+    constructionStage: string;
+    constructionProgress: number;
+    lastConstructionUpdate: Date;
     flatChecklist: Record<string, boolean> | null;
     dataCompletionPct: number;
     completenessStatus: DataCompletenessStatus;

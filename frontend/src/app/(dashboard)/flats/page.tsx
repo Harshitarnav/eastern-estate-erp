@@ -354,6 +354,7 @@ export default function FlatsInventoryPage() {
                       <th className="px-4 py-3 text-left">Price</th>
                       <th className="px-4 py-3 text-left">Receivables</th>
                       <th className="px-4 py-3 text-left">Sales status</th>
+                      <th className="px-4 py-3 text-left">Construction</th>
                       <th className="px-4 py-3 text-left">Completeness</th>
                       <th className="px-4 py-3 text-left">Warnings</th>
                       <th className="px-4 py-3 text-left">Actions</th>
@@ -557,6 +558,26 @@ function UnitRow({ unit, onOpen }: { unit: FlatInventoryUnit; onOpen: () => void
         >
           {STATUS_LABELS[unit.status] ?? unit.status}
         </span>
+      </td>
+      <td className="px-4 py-3">
+        {unit.constructionProgress !== undefined && unit.constructionProgress > 0 ? (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-gray-700">
+                {unit.constructionStage ? unit.constructionStage.replace('_', ' ') : 'In Progress'}
+              </span>
+              <span className="font-semibold text-gray-900">{Math.round(unit.constructionProgress)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-blue-600 h-1.5 rounded-full transition-all" 
+                style={{ width: `${unit.constructionProgress}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400">Not started</span>
+        )}
       </td>
       <td className="px-4 py-3">
         <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${badge.bg} ${badge.border} ${badge.text}`}>

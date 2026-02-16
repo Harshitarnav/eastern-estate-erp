@@ -39,6 +39,10 @@ export class FlatInventoryUnitDto {
   fundsTarget?: number;
   fundsRealized?: number;
   fundsOutstanding?: number;
+  // Construction progress fields
+  constructionStage?: string;
+  constructionProgress?: number;
+  lastConstructionUpdate?: Date;
 }
 
 export class FlatInventorySummaryDto {

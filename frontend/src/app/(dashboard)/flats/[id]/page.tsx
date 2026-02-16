@@ -380,6 +380,49 @@ export default function FlatDetailPage() {
               </dl>
           </section>
 
+          {/* Construction Progress Section */}
+          <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+            <header className="border-b border-gray-100 pb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Construction Progress</h2>
+            </header>
+            <div className="mt-4 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailItem 
+                  label="Current Stage" 
+                  value={flat.constructionStage ? flat.constructionStage.replace('_', ' ') : 'Not Started'} 
+                />
+                <DetailItem 
+                  label="Overall Progress" 
+                  value={
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold">{flat.constructionProgress || 0}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full transition-all" 
+                          style={{ width: `${flat.constructionProgress || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  } 
+                />
+              </div>
+              {flat.lastConstructionUpdate && (
+                <DetailItem 
+                  label="Last Updated" 
+                  value={new Date(flat.lastConstructionUpdate).toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })} 
+                />
+              )}
+            </div>
+          </section>
+
           <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
             <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
               <h2 className="text-lg font-semibold text-gray-900">Documents & Compliance</h2>

@@ -24,6 +24,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { DemandDraftsModule } from './modules/demand-drafts/demand-drafts.module';
 import { DatabaseModule } from './modules/database/database.module';
+import { PaymentPlansModule } from './modules/payment-plans/payment-plans.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -100,6 +101,7 @@ import { SchemaSyncService } from './database/schema-sync.service';
     RolesModule,
     DemandDraftsModule,
     DatabaseModule,
+    PaymentPlansModule,
     UploadModule,
   ],
   providers: [

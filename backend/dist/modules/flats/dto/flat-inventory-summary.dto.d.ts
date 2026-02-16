@@ -28,6 +28,9 @@ export declare class FlatInventoryUnitDto {
     fundsTarget?: number;
     fundsRealized?: number;
     fundsOutstanding?: number;
+    constructionStage?: string;
+    constructionProgress?: number;
+    lastConstructionUpdate?: Date;
 }
 export declare class FlatInventorySummaryDto {
     towerId: string;

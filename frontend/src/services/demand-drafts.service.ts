@@ -1,4 +1,4 @@
-import api from './api';
+import { apiService } from './api';
 
 export type DemandDraftStatus = 'DRAFT' | 'READY' | 'SENT' | 'FAILED';
 
@@ -20,32 +20,52 @@ export interface DemandDraft {
 }
 
 class DemandDraftsService {
+  async getDemandDrafts(): Promise<DemandDraft[]> {
+    return await apiService.get<DemandDraft[]>('/demand-drafts');
+  }
+
+  async getDemandDraft(id: string): Promise<DemandDraft> {
+    return await apiService.get<DemandDraft>(`/demand-drafts/${id}`);
+  }
+
   async list(params: { flatId?: string; customerId?: string; bookingId?: string; milestoneId?: string }) {
     const query = new URLSearchParams();
     Object.entries(params || {}).forEach(([k, v]) => {
       if (v) query.append(k, v);
     });
-    return api.get<DemandDraft[]>(`/demand-drafts?${query.toString()}`);
+    return await apiService.get<DemandDraft[]>(`/demand-drafts?${query.toString()}`);
   }
 
   async create(payload: Partial<DemandDraft>) {
-    return api.post<DemandDraft>('/demand-drafts', payload);
+    return await apiService.post<DemandDraft>('/demand-drafts', payload);
   }
 
   async update(id: string, payload: Partial<DemandDraft>) {
-    return api.patch<DemandDraft>(`/demand-drafts/${id}`, payload);
+    return await apiService.patch<DemandDraft>(`/demand-drafts/${id}`, payload);
+  }
+
+  async updateDemandDraft(id: string, payload: Partial<DemandDraft>) {
+    return await apiService.put<DemandDraft>(`/demand-drafts/${id}`, payload);
+  }
+
+  async approveDemandDraft(id: string): Promise<DemandDraft> {
+    return await apiService.put<DemandDraft>(`/demand-drafts/${id}/approve`, {});
+  }
+
+  async sendDemandDraft(id: string, fileUrl?: string): Promise<DemandDraft> {
+    return await apiService.post<DemandDraft>(`/demand-drafts/${id}/send`, { fileUrl });
   }
 
   async markSent(id: string, fileUrl?: string) {
-    return api.post<DemandDraft>(`/demand-drafts/${id}/send`, { fileUrl });
+    return await apiService.post<DemandDraft>(`/demand-drafts/${id}/send`, { fileUrl });
   }
 
   async getHtml(id: string): Promise<{ html: string }> {
-    return api.get<{ html: string }>(`/demand-drafts/${id}/html`);
+    return await apiService.get<{ html: string }>(`/demand-drafts/${id}/html`);
   }
 
   async delete(id: string) {
-    return api.delete<void>(`/demand-drafts/${id}`);
+    return await apiService.delete<void>(`/demand-drafts/${id}`);
   }
 }
 

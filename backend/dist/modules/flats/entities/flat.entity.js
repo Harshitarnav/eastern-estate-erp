@@ -203,6 +203,25 @@ __decorate([
     __metadata("design:type", Date)
 ], Flat.prototype, "expectedPossession", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'construction_stage', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], Flat.prototype, "constructionStage", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'construction_progress',
+        type: 'decimal',
+        precision: 5,
+        scale: 2,
+        default: 0,
+        transformer: decimalTransformer,
+    }),
+    __metadata("design:type", Number)
+], Flat.prototype, "constructionProgress", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'last_construction_update', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Flat.prototype, "lastConstructionUpdate", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'flat_checklist', type: 'jsonb', nullable: true }),
     __metadata("design:type", Object)
 ], Flat.prototype, "flatChecklist", void 0);
