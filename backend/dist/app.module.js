@@ -33,6 +33,7 @@ const marketing_module_1 = require("./modules/marketing/marketing.module");
 const roles_module_1 = require("./modules/roles/roles.module");
 const telephony_simple_module_1 = require("./modules/telephony-simple/telephony-simple.module");
 const demand_drafts_module_1 = require("./modules/demand-drafts/demand-drafts.module");
+const database_module_1 = require("./modules/database/database.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
 const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
@@ -108,6 +109,7 @@ exports.AppModule = AppModule = __decorate([
             roles_module_1.RolesModule,
             telephony_simple_module_1.TelephonySimpleModule,
             demand_drafts_module_1.DemandDraftsModule,
+            database_module_1.DatabaseModule,
             upload_module_1.UploadModule,
         ],
         providers: [

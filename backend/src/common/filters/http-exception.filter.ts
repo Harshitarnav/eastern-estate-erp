@@ -80,13 +80,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private getValidationErrors(message: any): string[] | undefined {
+    // Handle NestJS validation pipe errors
     if (typeof message === 'object' && Array.isArray(message.message)) {
-      return message.message.map((msg: string) => {
-        // Clean up validation messages
-        return msg
-          .replace(/^[a-z]+\s/, '') // Remove field name prefix if present
-          .replace(/^\w/, (c) => c.toUpperCase()); // Capitalize first letter
-      });
+      return message.message.map((msg: any) => {
+        // If msg is a string, return it
+        if (typeof msg === 'string') {
+          return msg;
+        }
+        // If msg is an object with constraints, extract the error messages
+        if (typeof msg === 'object' && msg.constraints) {
+          return Object.values(msg.constraints).join('. ');
+        }
+        return String(msg);
+      }).filter(Boolean);
     }
     return undefined;
   }

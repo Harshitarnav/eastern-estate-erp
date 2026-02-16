@@ -4,6 +4,12 @@ easternestate.global {
         reverse_proxy backend:3001
     }
 
+    # Serve uploaded files directly from shared volume
+    handle /uploads/* {
+        root * /srv
+        file_server
+    }
+
     handle {
         reverse_proxy frontend:3000
     }

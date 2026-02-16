@@ -45,14 +45,14 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
     constructionStartDate: tower?.constructionStartDate?.split('T')[0] || '',
     completionDate: tower?.completionDate?.split('T')[0] || '',
     reraNumber: tower?.reraNumber || '',
-    builtUpArea: tower?.builtUpArea || undefined,
-    carpetArea: tower?.carpetArea || undefined,
-    ceilingHeight: tower?.ceilingHeight || undefined,
+    builtUpArea: tower?.builtUpArea ?? undefined,
+    carpetArea: tower?.carpetArea ?? undefined,
+    ceilingHeight: tower?.ceilingHeight ?? undefined,
     numberOfLifts: tower?.numberOfLifts ?? 1,
     vastuCompliant: tower?.vastuCompliant ?? true,
     facing: tower?.facing || '',
     specialFeatures: tower?.specialFeatures || '',
-    displayOrder: tower?.displayOrder || 1,
+    displayOrder: tower?.displayOrder ?? 0,
     regenerateFlats: false,
   });
 

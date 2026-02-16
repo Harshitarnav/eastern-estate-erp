@@ -4,17 +4,53 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import EmployeeForm from '@/components/forms/EmployeeForm';
 import { employeesService } from '@/services/employees.service';
+import uploadService from '@/services/upload.service';
 
 export default function NewEmployeePage() {
     const router = useRouter();
 
     const handleSubmit = async (data: any) => {
         try {
-            await employeesService.createEmployee(data);
+            
+            // Handle profile picture upload if present
+            if (data.profilePicture && Array.isArray(data.profilePicture) && data.profilePicture.length > 0) {
+                const file = data.profilePicture[0];
+                if (file instanceof File) {
+                    try {
+                        const uploadResponse = await uploadService.uploadFile(file, 'employee-profiles');
+                        
+                        // Extract the URL from the response object
+                        if (uploadResponse && uploadResponse.url) {
+                            data.profilePicture = uploadResponse.url;
+                        } else {
+                            throw new Error('Upload response missing URL');
+                        }
+                    } catch (uploadError: any) {
+                        const errorMessage = uploadError?.message || 'Unknown error';
+                        alert(`Failed to upload profile picture: ${errorMessage}. Employee will be created without a photo.`);
+                        delete data.profilePicture;
+                    }
+                } else {
+                    delete data.profilePicture;
+                }
+            } else {
+                delete data.profilePicture;
+            }
+
+            // Clean up the data - remove any empty or invalid fields
+            const cleanedData = Object.fromEntries(
+                Object.entries(data).filter(([_, value]) => {
+                    // Keep the value if it's not null, undefined, or empty string
+                    // But keep 0 and false as valid values
+                    return value !== null && value !== undefined && value !== '';
+                })
+            );
+            const newEmployee = await employeesService.createEmployee(cleanedData);
+            
             alert('Employee added successfully!');
-            window.location.href = '/employees';
+            router.push('/employees');
+            router.refresh();
         } catch (error: any) {
-            console.error('Error adding employee:', error);
             alert(error.response?.data?.message || 'Failed to add employee');
         }
     };

@@ -31,6 +31,7 @@ export declare class Employee {
     email: string;
     phoneNumber: string;
     alternatePhone: string;
+    profilePicture: string;
     dateOfBirth: Date;
     gender: string;
     bloodGroup: string;
