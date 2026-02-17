@@ -31,9 +31,9 @@ const materials_module_1 = require("./modules/materials/materials.module");
 const vendors_module_1 = require("./modules/vendors/vendors.module");
 const marketing_module_1 = require("./modules/marketing/marketing.module");
 const roles_module_1 = require("./modules/roles/roles.module");
-const telephony_simple_module_1 = require("./modules/telephony-simple/telephony-simple.module");
 const demand_drafts_module_1 = require("./modules/demand-drafts/demand-drafts.module");
 const database_module_1 = require("./modules/database/database.module");
+const payment_plans_module_1 = require("./modules/payment-plans/payment-plans.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
 const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
@@ -41,6 +41,9 @@ const throttler_1 = require("@nestjs/throttler");
 const configuration_1 = require("./config/configuration");
 const validation_1 = require("./config/validation");
 const schema_sync_service_1 = require("./database/schema-sync.service");
+const jwt_auth_guard_1 = require("./auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("./auth/guards/roles.guard");
+const property_access_guard_1 = require("./common/guards/property-access.guard");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -107,15 +110,27 @@ exports.AppModule = AppModule = __decorate([
             vendors_module_1.VendorsModule,
             marketing_module_1.MarketingModule,
             roles_module_1.RolesModule,
-            telephony_simple_module_1.TelephonySimpleModule,
             demand_drafts_module_1.DemandDraftsModule,
             database_module_1.DatabaseModule,
+            payment_plans_module_1.PaymentPlansModule,
             upload_module_1.UploadModule,
         ],
         providers: [
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: jwt_auth_guard_1.JwtAuthGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: roles_guard_1.RolesGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: property_access_guard_1.PropertyAccessGuard,
             },
             {
                 provide: core_1.APP_INTERCEPTOR,

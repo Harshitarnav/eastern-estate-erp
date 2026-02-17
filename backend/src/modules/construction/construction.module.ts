@@ -19,10 +19,24 @@ import { TowerProgressService } from './tower-progress.service';
 import { TowerProgressController } from './tower-progress.controller';
 import { FlatProgressService } from './flat-progress.service';
 import { FlatProgressController } from './flat-progress.controller';
+import { FlatProgressSimpleController } from './controllers/flat-progress-simple.controller';
 import { DevelopmentUpdatesService } from './development-updates.service';
 import { DevelopmentUpdatesController } from './development-updates.controller';
 import { ProjectsAliasController } from './projects-alias.controller';
+import { MilestonesController } from './controllers/milestones.controller';
 import { ConstructionSchemaSyncService } from './construction.schema-sync.service';
+import { MilestoneDetectionService } from './services/milestone-detection.service';
+import { AutoDemandDraftService } from './services/auto-demand-draft.service';
+import { ConstructionWorkflowService } from './services/construction-workflow.service';
+import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
+import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
+import { PaymentSchedule } from '../payments/entities/payment-schedule.entity';
+import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
+import { Flat } from '../flats/entities/flat.entity';
+import { Customer } from '../customers/entities/customer.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import { Property } from '../properties/entities/property.entity';
+import { Tower } from '../towers/entities/tower.entity';
 
 @Module({
   imports: [
@@ -34,7 +48,16 @@ import { ConstructionSchemaSyncService } from './construction.schema-sync.servic
       ConstructionTowerProgress,
       ConstructionFlatProgress,
       ConstructionDevelopmentUpdate,
+      DemandDraft,
+      PaymentSchedule,
+      FlatPaymentPlan,
+      Flat,
+      Customer,
+      Booking,
+      Property,
+      Tower,
     ]),
+    PaymentPlansModule,
   ],
   controllers: [
     ConstructionProjectsController,
@@ -44,7 +67,9 @@ import { ConstructionSchemaSyncService } from './construction.schema-sync.servic
     ProjectAssignmentsController,
     TowerProgressController,
     FlatProgressController,
+    FlatProgressSimpleController,
     DevelopmentUpdatesController,
+    MilestonesController,
   ],
   providers: [
     ConstructionProjectsService,
@@ -55,6 +80,9 @@ import { ConstructionSchemaSyncService } from './construction.schema-sync.servic
     TowerProgressService,
     FlatProgressService,
     DevelopmentUpdatesService,
+    MilestoneDetectionService,
+    AutoDemandDraftService,
+    ConstructionWorkflowService,
   ],
   exports: [
     ConstructionProjectsService,
@@ -64,6 +92,9 @@ import { ConstructionSchemaSyncService } from './construction.schema-sync.servic
     TowerProgressService,
     FlatProgressService,
     DevelopmentUpdatesService,
+    MilestoneDetectionService,
+    AutoDemandDraftService,
+    ConstructionWorkflowService,
   ],
 })
 export class ConstructionModule {}

@@ -22,10 +22,9 @@ import { MaterialsModule } from './modules/materials/materials.module';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { RolesModule } from './modules/roles/roles.module';
-// import { TelephonyModule } from './modules/telephony/telephony.module'; // Temporarily disabled
-import { TelephonySimpleModule } from './modules/telephony-simple/telephony-simple.module';
 import { DemandDraftsModule } from './modules/demand-drafts/demand-drafts.module';
 import { DatabaseModule } from './modules/database/database.module';
+import { PaymentPlansModule } from './modules/payment-plans/payment-plans.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -33,6 +32,9 @@ import { ThrottlerGuard, ThrottlerModule, ThrottlerModuleOptions } from '@nestjs
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
 import { SchemaSyncService } from './database/schema-sync.service';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { PropertyAccessGuard } from './common/guards/property-access.guard';
 
 @Module({
   imports: [
@@ -100,16 +102,27 @@ import { SchemaSyncService } from './database/schema-sync.service';
     VendorsModule,
     MarketingModule,
     RolesModule,
-    // TelephonyModule, // Temporarily disabled - using simple version instead
-    TelephonySimpleModule,
     DemandDraftsModule,
     DatabaseModule,
+    PaymentPlansModule,
     UploadModule,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // ✅ Global auth guard - all routes require authentication by default
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // ✅ Global roles guard - enforces @Roles() decorator
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PropertyAccessGuard, // ✅ Global property access guard - enforces property-level access
     },
     {
       provide: APP_INTERCEPTOR,

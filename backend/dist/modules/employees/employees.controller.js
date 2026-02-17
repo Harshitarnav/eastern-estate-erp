@@ -16,6 +16,9 @@ exports.EmployeesController = void 0;
 const common_1 = require("@nestjs/common");
 const employees_service_1 = require("./employees.service");
 const dto_1 = require("./dto");
+const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../auth/guards/roles.guard");
+const roles_decorator_1 = require("../../auth/decorators/roles.decorator");
 let EmployeesController = class EmployeesController {
     constructor(employeesService) {
         this.employeesService = employeesService;
@@ -45,6 +48,7 @@ let EmployeesController = class EmployeesController {
 exports.EmployeesController = EmployeesController;
 __decorate([
     (0, common_1.Post)(),
+    (0, roles_decorator_1.Roles)('hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [dto_1.CreateEmployeeDto]),
@@ -72,6 +76,7 @@ __decorate([
 ], EmployeesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    (0, roles_decorator_1.Roles)('hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -80,6 +85,7 @@ __decorate([
 ], EmployeesController.prototype, "update", null);
 __decorate([
     (0, common_1.Put)(':id'),
+    (0, roles_decorator_1.Roles)('hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -88,6 +94,7 @@ __decorate([
 ], EmployeesController.prototype, "replace", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)('admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -95,6 +102,7 @@ __decorate([
 ], EmployeesController.prototype, "remove", null);
 exports.EmployeesController = EmployeesController = __decorate([
     (0, common_1.Controller)('employees'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [employees_service_1.EmployeesService])
 ], EmployeesController);
 //# sourceMappingURL=employees.controller.js.map

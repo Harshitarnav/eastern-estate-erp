@@ -14,16 +14,37 @@ const users_controller_1 = require("./users.controller");
 const user_entity_1 = require("./entities/user.entity");
 const role_entity_1 = require("./entities/role.entity");
 const permission_entity_1 = require("./entities/permission.entity");
+const user_property_access_entity_1 = require("./entities/user-property-access.entity");
+const property_role_template_entity_1 = require("./entities/property-role-template.entity");
 const users_bootstrap_1 = require("./users.bootstrap");
+const property_access_service_1 = require("./services/property-access.service");
+const property_access_controller_1 = require("./controllers/property-access.controller");
+const property_entity_1 = require("../properties/entities/property.entity");
+const notifications_module_1 = require("../notifications/notifications.module");
 let UsersModule = class UsersModule {
 };
 exports.UsersModule = UsersModule;
 exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, role_entity_1.Role, permission_entity_1.Permission])],
-        controllers: [users_controller_1.UsersController, users_controller_1.RolesController, users_controller_1.PermissionsController],
-        providers: [users_service_1.UsersService, users_bootstrap_1.UsersBootstrapService],
-        exports: [users_service_1.UsersService, typeorm_1.TypeOrmModule],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([
+                user_entity_1.User,
+                role_entity_1.Role,
+                permission_entity_1.Permission,
+                user_property_access_entity_1.UserPropertyAccess,
+                property_role_template_entity_1.PropertyRoleTemplate,
+                property_entity_1.Property,
+            ]),
+            notifications_module_1.NotificationsModule,
+        ],
+        controllers: [
+            users_controller_1.UsersController,
+            users_controller_1.RolesController,
+            users_controller_1.PermissionsController,
+            property_access_controller_1.PropertyAccessController,
+        ],
+        providers: [users_service_1.UsersService, users_bootstrap_1.UsersBootstrapService, property_access_service_1.PropertyAccessService],
+        exports: [users_service_1.UsersService, property_access_service_1.PropertyAccessService, typeorm_1.TypeOrmModule],
     })
 ], UsersModule);
 //# sourceMappingURL=users.module.js.map

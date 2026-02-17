@@ -17,12 +17,16 @@ const flat_entity_1 = require("../flats/entities/flat.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const properties_schema_sync_service_1 = require("./properties.schema-sync.service");
+const users_module_1 = require("../users/users.module");
 let PropertiesModule = class PropertiesModule {
 };
 exports.PropertiesModule = PropertiesModule;
 exports.PropertiesModule = PropertiesModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([property_entity_1.Property, tower_entity_1.Tower, flat_entity_1.Flat, customer_entity_1.Customer, booking_entity_1.Booking])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([property_entity_1.Property, tower_entity_1.Tower, flat_entity_1.Flat, customer_entity_1.Customer, booking_entity_1.Booking]),
+            users_module_1.UsersModule,
+        ],
         controllers: [properties_controller_1.PropertiesController],
         providers: [properties_service_1.PropertiesService, properties_schema_sync_service_1.PropertiesSchemaSyncService],
         exports: [properties_service_1.PropertiesService, typeorm_1.TypeOrmModule],

@@ -55,6 +55,10 @@ export interface Flat {
   paymentPlanUrl?: string;
   registrationReceiptUrls?: string[];
   paymentReceiptUrls?: string[];
+  // Construction tracking fields
+  constructionStage?: 'FOUNDATION' | 'STRUCTURE' | 'WALLS' | 'PLUMBING' | 'ELECTRICAL' | 'FINISHING' | 'COMPLETE' | null;
+  constructionProgress?: number;
+  lastConstructionUpdate?: string;
   demandLetterUrls?: string[];
   nocUrl?: string;
   handoverDocumentUrl?: string;
@@ -160,6 +164,10 @@ export interface FlatInventoryUnit {
   fundsTarget?: number;
   fundsRealized?: number;
   fundsOutstanding?: number;
+  // Construction progress fields
+  constructionStage?: string;
+  constructionProgress?: number;
+  lastConstructionUpdate?: string;
 }
 
 export interface FlatInventorySummary {

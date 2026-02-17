@@ -43,7 +43,7 @@ __decorate([
     __metadata("design:type", Date)
 ], ConstructionProject.prototype, "expectedCompletionDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'actual_completion_date', type: 'date', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'actual_end_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], ConstructionProject.prototype, "actualCompletionDate", void 0);
 __decorate([

@@ -28,10 +28,24 @@ const tower_progress_service_1 = require("./tower-progress.service");
 const tower_progress_controller_1 = require("./tower-progress.controller");
 const flat_progress_service_1 = require("./flat-progress.service");
 const flat_progress_controller_1 = require("./flat-progress.controller");
+const flat_progress_simple_controller_1 = require("./controllers/flat-progress-simple.controller");
 const development_updates_service_1 = require("./development-updates.service");
 const development_updates_controller_1 = require("./development-updates.controller");
 const projects_alias_controller_1 = require("./projects-alias.controller");
+const milestones_controller_1 = require("./controllers/milestones.controller");
 const construction_schema_sync_service_1 = require("./construction.schema-sync.service");
+const milestone_detection_service_1 = require("./services/milestone-detection.service");
+const auto_demand_draft_service_1 = require("./services/auto-demand-draft.service");
+const construction_workflow_service_1 = require("./services/construction-workflow.service");
+const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
+const demand_draft_entity_1 = require("../demand-drafts/entities/demand-draft.entity");
+const payment_schedule_entity_1 = require("../payments/entities/payment-schedule.entity");
+const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
+const flat_entity_1 = require("../flats/entities/flat.entity");
+const customer_entity_1 = require("../customers/entities/customer.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
+const property_entity_1 = require("../properties/entities/property.entity");
+const tower_entity_1 = require("../towers/entities/tower.entity");
 let ConstructionModule = class ConstructionModule {
 };
 exports.ConstructionModule = ConstructionModule;
@@ -46,7 +60,16 @@ exports.ConstructionModule = ConstructionModule = __decorate([
                 construction_tower_progress_entity_1.ConstructionTowerProgress,
                 construction_flat_progress_entity_1.ConstructionFlatProgress,
                 construction_development_update_entity_1.ConstructionDevelopmentUpdate,
+                demand_draft_entity_1.DemandDraft,
+                payment_schedule_entity_1.PaymentSchedule,
+                flat_payment_plan_entity_1.FlatPaymentPlan,
+                flat_entity_1.Flat,
+                customer_entity_1.Customer,
+                booking_entity_1.Booking,
+                property_entity_1.Property,
+                tower_entity_1.Tower,
             ]),
+            payment_plans_module_1.PaymentPlansModule,
         ],
         controllers: [
             construction_projects_controller_1.ConstructionProjectsController,
@@ -56,7 +79,9 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             project_assignments_controller_1.ProjectAssignmentsController,
             tower_progress_controller_1.TowerProgressController,
             flat_progress_controller_1.FlatProgressController,
+            flat_progress_simple_controller_1.FlatProgressSimpleController,
             development_updates_controller_1.DevelopmentUpdatesController,
+            milestones_controller_1.MilestonesController,
         ],
         providers: [
             construction_projects_service_1.ConstructionProjectsService,
@@ -67,6 +92,9 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             tower_progress_service_1.TowerProgressService,
             flat_progress_service_1.FlatProgressService,
             development_updates_service_1.DevelopmentUpdatesService,
+            milestone_detection_service_1.MilestoneDetectionService,
+            auto_demand_draft_service_1.AutoDemandDraftService,
+            construction_workflow_service_1.ConstructionWorkflowService,
         ],
         exports: [
             construction_projects_service_1.ConstructionProjectsService,
@@ -76,6 +104,9 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             tower_progress_service_1.TowerProgressService,
             flat_progress_service_1.FlatProgressService,
             development_updates_service_1.DevelopmentUpdatesService,
+            milestone_detection_service_1.MilestoneDetectionService,
+            auto_demand_draft_service_1.AutoDemandDraftService,
+            construction_workflow_service_1.ConstructionWorkflowService,
         ],
     })
 ], ConstructionModule);

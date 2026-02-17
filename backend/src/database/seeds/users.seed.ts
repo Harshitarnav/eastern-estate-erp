@@ -208,6 +208,24 @@ export class UserSeeder {
       // 4. Create Sample Users
       console.log('📝 Creating sample users...');
       const users = [
+        // === GOOGLE SSO USERS (@eecd.in domain) ===
+        {
+          email: 'info@eecd.in',
+          username: 'info',
+          firstName: 'Super',
+          lastName: 'Admin',
+          phone: '+91-9876543210',
+          role: 'super_admin',
+        },
+        {
+          email: 'hr@eecd.in',
+          username: 'hr',
+          firstName: 'HR',
+          lastName: 'Manager',
+          phone: '+91-9876543211',
+          role: 'admin',
+        },
+        // === LEGACY USERS (@easternestates.com domain - for backward compatibility) ===
         {
           email: 'superadmin@easternestates.com',
           username: 'superadmin',
