@@ -2505,3 +2505,577 @@ Congratulations! You now have a comprehensive understanding of the Eastern Estat
 - Document your work
 
 **Welcome to the team! Happy coding! 🚀**
+
+
+
+
+# 🎯 New Team Member Onboarding Flow - Eastern Estate ERP
+
+## 📊 Overview
+
+This document explains the complete flow for onboarding a new team member, including which roles have access to which steps, and how the system handles authentication, authorization, and property-level access control.
+
+---
+
+## 🔐 Role Hierarchy & Permissions
+
+### **1. Super Admin** (`super_admin`)
+- **Full System Access** - Can do everything
+- **User Count**: 1-2 (Company owners/IT heads)
+- **Permissions**:
+  - ✅ Create/Edit/Delete any user
+  - ✅ Create/Edit/Delete any employee
+  - ✅ Assign any role to anyone
+  - ✅ Grant property access to anyone
+  - ✅ Access all modules and data
+  - ✅ System settings and configurations
+
+### **2. Admin** (`admin`)
+- **Administrative Access** - Can manage users and employees
+- **User Count**: 2-5 (Operations heads, Department heads)
+- **Permissions**:
+  - ✅ Create/Edit/Delete users
+  - ✅ Create/Edit/Delete employees
+  - ✅ Assign roles (except super_admin)
+  - ✅ Grant property access
+  - ✅ Access most modules
+  - ❌ Cannot modify super_admin accounts
+  - ❌ Cannot change system settings
+
+### **3. HR Manager** (`hr_manager`)
+- **HR Operations** - Can manage employee records
+- **User Count**: 1-3 (HR department staff)
+- **Permissions**:
+  - ✅ Create/Edit employee records
+  - ✅ View all employees
+  - ✅ Manage employee documents, reviews, bonuses
+  - ❌ Cannot create user accounts (login access)
+  - ❌ Cannot assign roles
+  - ❌ Cannot grant property access
+  - ❌ Cannot delete employees
+
+### **4. Property-Level Roles** (GM Sales, GM Marketing, GM Construction)
+- **Property-Specific Access** - Can only access assigned properties
+- **User Count**: 3-10 per property
+- **Permissions**:
+  - ✅ View/Edit data for assigned properties only
+  - ✅ View employees
+  - ❌ Cannot create employees
+  - ❌ Cannot assign roles
+  - ❌ Cannot grant property access
+
+### **5. Regular Staff** (`staff`, `agent`, etc.)
+- **Basic Access** - Can view data, limited edit permissions
+- **User Count**: Unlimited
+- **Permissions**:
+  - ✅ View data for assigned properties
+  - ✅ View own employee profile
+  - ❌ Cannot edit employee records
+  - ❌ Cannot create users
+  - ❌ Very limited access
+
+---
+
+## 🚀 Complete Onboarding Flow
+
+### **Scenario: Hiring a New GM Sales for "Sunshine Apartments"**
+
+#### **Step 1: HR Manager Creates Employee Record** 
+
+**Actor**: HR Manager (Sarah)  
+**Access Required**: `hr_manager`, `admin`, or `super_admin` role  
+**Page**: Employees → Create New
+
+**What Happens:**
+```
+1. Sarah navigates to: HR → Employee Login → Create New
+2. Fills out form:
+   - Employee Code: EMP001
+   - Full Name: John Doe
+   - Email: john.doe@eecd.in
+   - Phone: +91 9876543210
+   - Department: SALES
+   - Designation: GM Sales
+   - Joining Date: 2026-02-17
+   - Employment Type: FULL_TIME
+   - Basic Salary: ₹80,000
+   - (Other fields...)
+3. Clicks "Create Employee"
+4. Backend validates:
+   ✓ HR Manager has permission (@Roles('hr_manager', 'admin', 'super_admin'))
+   ✓ Employee code is unique
+   ✓ Email domain is valid
+5. Employee record created in database
+6. Status: ✅ Employee has HR profile, ❌ NO login access yet
+```
+
+**Database State:**
+```sql
+-- employees table
+INSERT INTO employees (
+  id, employee_code, full_name, email, phone_number,
+  department, designation, user_id
+) VALUES (
+  'emp-uuid-123', 'EMP001', 'John Doe', 'john.doe@eecd.in', '+91 9876543210',
+  'SALES', 'GM Sales', NULL  -- ← NO user_id yet!
+);
+```
+
+**What John Can Do Now:**
+- ❌ NOTHING - He cannot log in to the system
+- ❌ No user account exists
+- ✅ HR can see his record in employee list
+
+---
+
+#### **Step 2: Admin Creates User Account**
+
+**Actor**: Admin (Arnav)  
+**Access Required**: `admin` or `super_admin` role  
+**Page**: Settings → Users → Create New  
+(Or directly from Settings → Team Members)
+
+**What Happens:**
+```
+1. Arnav navigates to: Settings (gear icon) → Users
+2. Clicks "Create New User"
+3. Fills out form:
+   - Email: john.doe@eecd.in  (MUST match employee email)
+   - Username: johndoe
+   - Password: TempPass123!
+   - First Name: John
+   - Last Name: Doe
+   - Phone: +91 9876543210
+   - Roles: (Leave empty for now, will assign later)
+4. Clicks "Create User"
+5. Backend validates:
+   ✓ Admin has permission (@Roles('admin', 'super_admin'))
+   ✓ Email domain is @eecd.in (enforced by EmailDomainGuard)
+   ✓ Email is unique
+   ✓ Username is unique
+6. User account created
+7. Status: ✅ User account exists, ❌ NOT linked to employee yet
+```
+
+**Database State:**
+```sql
+-- users table
+INSERT INTO users (
+  id, email, username, password_hash, first_name, last_name
+) VALUES (
+  'user-uuid-456', 'john.doe@eecd.in', 'johndoe', 
+  '$2b$12$...', 'John', 'Doe'
+);
+
+-- employees table (still no user_id!)
+employee_id: 'emp-uuid-123', user_id: NULL
+```
+
+**What John Can Do Now:**
+- ✅ Log in with john.doe@eecd.in / TempPass123!
+- ❌ Cannot access any properties (no property access)
+- ❌ Cannot view most data (no role assigned)
+- ✅ Can see basic dashboard
+- ❌ Employee record NOT linked to user account yet
+
+---
+
+#### **Step 3: Admin Links Employee to User Account**
+
+**Actor**: Admin (Arnav)  
+**Access Required**: `admin` or `super_admin` role  
+**Page**: Employees → Edit Employee
+
+**What Happens:**
+```
+1. Arnav navigates to: HR → Employee Login → Find "John Doe"
+2. Clicks "Edit" on John's employee record
+3. Scrolls to "System Access" section
+4. In "Link to User Account" dropdown:
+   - Sees all users with matching email: john.doe@eecd.in
+   - Selects: John Doe (john.doe@eecd.in)
+5. Clicks "Save"
+6. Backend updates:
+   ✓ Sets employee.userId = 'user-uuid-456'
+7. Status: ✅ Employee and User are now linked!
+```
+
+**Database State:**
+```sql
+-- employees table (NOW linked!)
+UPDATE employees 
+SET user_id = 'user-uuid-456' 
+WHERE id = 'emp-uuid-123';
+```
+
+**What John Can Do Now:**
+- ✅ Log in with john.doe@eecd.in / TempPass123!
+- ✅ See his employee profile when navigating to Employees
+- ❌ Still cannot access any properties (no property access)
+- ❌ Still very limited access (no specific role assigned)
+
+---
+
+#### **Step 4: Admin Assigns Role**
+
+**Actor**: Admin (Arnav)  
+**Access Required**: `admin` or `super_admin` role  
+**Page**: Users → Edit User → Roles
+
+**What Happens:**
+```
+1. Arnav navigates to: Settings (gear icon) → Users → Find "John Doe"
+   OR clicks "Roles" button from Users list
+2. Clicks "Edit Roles" or "Roles" button
+3. In "Assign Roles" dialog:
+   - Available roles shown:
+     * Sales Agent
+     * Sales Manager
+     * GM Sales ← Selects this
+     * GM Marketing
+     * GM Construction
+     * Property Manager
+     * etc.
+4. Selects "GM Sales" checkbox
+5. Clicks "Save"
+6. Backend validates:
+   ✓ Admin has permission to assign roles
+   ✓ Role exists in system
+7. Role assigned to user
+```
+
+**Database State:**
+```sql
+-- roles table
+role_id: 'role-gm-sales-uuid', name: 'gm_sales', display_name: 'GM Sales'
+
+-- user_roles junction table
+INSERT INTO user_roles (user_id, role_id) 
+VALUES ('user-uuid-456', 'role-gm-sales-uuid');
+```
+
+**What John Can Do Now:**
+- ✅ Log in with john.doe@eecd.in / TempPass123!
+- ✅ Has GM Sales role
+- ✅ Can access Sales & CRM modules
+- ❌ Still cannot see ANY property data (no property access)
+- ❌ Properties dropdown is empty
+- ❌ Flats list is empty
+- ❌ Customers list is empty
+
+**🚨 This is the KEY limitation**: Without property access, John has a role but NO data to work with!
+
+---
+
+#### **Step 5: Admin Grants Property Access** 
+
+**Actor**: Admin (Arnav)  
+**Access Required**: `admin` or `super_admin` role  
+**Page**: Users → Properties (button)
+
+**What Happens:**
+```
+1. Arnav navigates to: Settings (gear icon) → Users → Find "John Doe"
+2. Clicks "Properties" button next to John's name
+3. Property Access Management page opens:
+   
+   ┌─────────────────────────────────────────────────┐
+   │ Property Access for: John Doe                   │
+   │ (john.doe@eecd.in)                             │
+   ├─────────────────────────────────────────────────┤
+   │                                                 │
+   │ Current Property Access: (Empty)                │
+   │                                                 │
+   │ Grant New Access:                              │
+   │ ┌───────────────────────────────────────────┐  │
+   │ │ Property: [Sunshine Apartments ▼]         │  │
+   │ │ Role:     [GM Sales ▼]                    │  │
+   │ │                    [Grant Access Button]  │  │
+   │ └───────────────────────────────────────────┘  │
+   └─────────────────────────────────────────────────┘
+   
+4. Arnav selects:
+   - Property: Sunshine Apartments
+   - Role: GM_SALES
+5. Clicks "Grant Access"
+6. Backend validates:
+   ✓ Admin has permission (@Roles('admin', 'super_admin'))
+   ✓ Property exists
+   ✓ Role is valid
+   ✓ No duplicate access
+7. Property access granted
+8. Page refreshes, shows:
+   
+   Current Property Access:
+   ┌──────────────────┬─────────┬──────────┬──────────┐
+   │ Property         │ Role    │ Assigned │ Actions  │
+   ├──────────────────┼─────────┼──────────┼──────────┤
+   │ Sunshine Apts    │ GM Sales│ Just now │ [Revoke] │
+   └──────────────────┴─────────┴──────────┴──────────┘
+```
+
+**Database State:**
+```sql
+-- user_property_access table
+INSERT INTO user_property_access (
+  id, user_id, property_id, role, assigned_by, assigned_at
+) VALUES (
+  'access-uuid-789', 
+  'user-uuid-456',
+  'property-sunshine-uuid',
+  'GM_SALES',
+  'arnav-user-id',
+  NOW()
+);
+```
+
+**What John Can Do NOW (FULL ACCESS!):**
+- ✅ Log in with john.doe@eecd.in / TempPass123!
+- ✅ Has GM Sales role
+- ✅ Has property access to "Sunshine Apartments"
+- ✅ Can see Properties → Only "Sunshine Apartments" appears
+- ✅ Can see Towers → Only towers in Sunshine Apartments
+- ✅ Can see Flats → Only flats in Sunshine Apartments
+- ✅ Can see Customers → Only customers who booked flats in Sunshine Apartments
+- ✅ Can see Bookings → Only bookings for Sunshine Apartments
+- ✅ Can see Payments → Only payments for Sunshine Apartments flats
+- ✅ Can create new customers, bookings for Sunshine Apartments
+- ❌ Cannot see other properties (e.g., "Green Valley Residency")
+- ❌ Cannot access Admin features (Users, Roles, Settings)
+- ❌ Cannot create/edit employees
+
+---
+
+#### **Step 6: John's First Login Experience**
+
+**Actor**: New Team Member (John Doe)  
+**Access**: Just granted  
+**Email**: john.doe@eecd.in  
+**Password**: TempPass123!
+
+**Login Flow:**
+```
+1. John opens browser → https://erp.easternestates.com
+2. Sees login page
+3. Enters:
+   - Email: john.doe@eecd.in
+   - Password: TempPass123!
+4. Clicks "Sign In"
+5. Backend validates:
+   ✓ Email domain is @eecd.in (EmailDomainGuard)
+   ✓ User exists
+   ✓ Password is correct
+   ✓ User is active
+6. JWT token generated with:
+   - user.id
+   - user.roles: ['gm_sales']
+   - user.propertyAccess: [{ propertyId: 'sunshine-uuid', role: 'GM_SALES' }]
+7. Redirects to Dashboard
+```
+
+**Dashboard View:**
+```
+┌─────────────────────────────────────────────────────┐
+│  🏢 Eastern Estate ERP                              │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  📊 Dashboard                                       │
+│  ─────────────                                      │
+│                                                     │
+│  Welcome, John Doe!                                 │
+│  Role: GM Sales                                     │
+│  Properties: Sunshine Apartments                    │
+│                                                     │
+│  ┌─────────────┬─────────────┬─────────────┐       │
+│  │ Customers   │ Bookings    │ Revenue     │       │
+│  │ 156         │ 45          │ ₹4.2 Cr     │       │
+│  │ (Sunshine)  │ (Sunshine)  │ (Sunshine)  │       │
+│  └─────────────┴─────────────┴─────────────┘       │
+│                                                     │
+│  Recent Activities (Sunshine Apartments only):      │
+│  - New booking: Flat A-101                         │
+│  - Payment received: ₹5 lakhs                      │
+│  - Customer inquiry: Mr. Sharma                    │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+**Sidebar Menu (John's View):**
+```
+📊 Dashboard
+🏢 Properties          ← Only shows Sunshine Apartments
+   ├── Properties
+   ├── Towers
+   └── Flats
+👥 Sales               ← Only Sunshine Apartments data
+   ├── Customers
+   └── Bookings
+💰 Payments            ← Only Sunshine Apartments payments
+   ├── Payment Plans
+   ├── Payments
+   └── Demand Drafts
+🏗️ Construction        ← Only Sunshine Apartments construction
+   ├── Progress Log
+   └── Milestones
+⚙️ Settings            ← LIMITED ACCESS
+   ├── My Profile      ← Can edit own profile only
+   ├── Change Password
+   └── (No other settings visible)
+```
+
+---
+
+## 🔒 Access Control Flow (How It Works Internally)
+
+### **Every API Request:**
+
+```typescript
+// 1. User logs in → JWT token contains:
+{
+  id: 'user-uuid-456',
+  email: 'john.doe@eecd.in',
+  roles: ['gm_sales'],
+  propertyAccess: [
+    { propertyId: 'sunshine-uuid', role: 'GM_SALES' }
+  ]
+}
+
+// 2. User requests: GET /api/v1/flats
+Request Headers: {
+  Authorization: 'Bearer <jwt-token>'
+}
+
+// 3. Backend flow:
+JwtAuthGuard
+  ↓ Validates token
+  ↓ Attaches user to request
+  ↓
+RolesGuard (if @Roles decorator present)
+  ↓ Checks if user has required role
+  ↓ gm_sales ✓ (for endpoints requiring sales role)
+  ↓
+PropertyAccessGuard (if enabled)
+  ↓ Checks if user has access to requested propertyId
+  ↓ If propertyId in request → checks user.propertyAccess
+  ↓ If match found → Allow
+  ↓ If no match → 403 Forbidden
+  ↓
+FlatsService.findAll()
+  ↓ Filters flats by user's accessible properties
+  ↓ WHERE property_id IN ('sunshine-uuid')
+  ↓
+Returns: Only flats from Sunshine Apartments
+```
+
+### **Example: John tries to access a flat from different property:**
+
+```bash
+# John tries to access Flat B-201 from "Green Valley Residency"
+GET /api/v1/flats/flat-b-201-uuid
+
+# Backend checks:
+1. JwtAuthGuard → ✓ Valid token
+2. RolesGuard → ✓ Has gm_sales role
+3. PropertyAccessGuard → 
+   - Flat B-201 belongs to property: green-valley-uuid
+   - John's property access: ['sunshine-uuid']
+   - Match? NO ❌
+   - Result: 403 Forbidden
+
+Response:
+{
+  "statusCode": 403,
+  "message": "Access denied to property green-valley-uuid."
+}
+```
+
+---
+
+## 📋 Complete Access Matrix
+
+| Action | Super Admin | Admin | HR Manager | GM Sales | Staff |
+|--------|------------|-------|------------|----------|-------|
+| **Employees** |
+| Create Employee | ✅ | ✅ | ✅ | ❌ | ❌ |
+| View Employees | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Edit Employee | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Delete Employee | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Users** |
+| Create User | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Edit User | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Assign Roles | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Grant Property Access | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Properties** |
+| View Properties | ✅ All | ✅ All | ✅ All | ✅ Assigned Only | ✅ Assigned Only |
+| Create Property | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Edit Property | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Sales & Bookings** |
+| View Customers | ✅ All | ✅ All | ✅ All | ✅ Assigned Props | ✅ Assigned Props |
+| Create Booking | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Edit Booking | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Cancel Booking | ✅ | ✅ | ❌ | ✅ | ❌ |
+| **Payments** |
+| View Payments | ✅ All | ✅ All | ❌ | ✅ Assigned Props | ✅ Assigned Props |
+| Record Payment | ✅ | ✅ | ❌ | ✅ | ❌ |
+| Generate Demand Draft | ✅ | ✅ | ❌ | ✅ | ❌ |
+| **Construction** |
+| View Progress | ✅ All | ✅ All | ❌ | ✅ Assigned Props | ✅ Assigned Props |
+| Log Progress | ✅ | ✅ | ❌ | ✅ (GM Cons) | ❌ |
+
+---
+
+## 🎯 Quick Reference: Onboarding Checklist
+
+### **For HR Manager:**
+- [ ] Create employee record in system
+- [ ] Collect employee documents (Aadhar, PAN, etc.)
+- [ ] Set up payroll details
+- [ ] Assign reporting manager
+- [ ] Inform Admin that employee account is ready
+
+### **For Admin:**
+- [ ] Verify employee record exists
+- [ ] Create user account with @eecd.in email
+- [ ] Link employee.userId to user account
+- [ ] Assign appropriate role (GM Sales, GM Marketing, etc.)
+- [ ] Grant property access to assigned property/properties
+- [ ] Send login credentials to employee
+- [ ] Verify employee can log in and access data
+
+### **For New Employee (John):**
+- [ ] Receive email with login credentials
+- [ ] Log in to ERP at https://erp.easternestates.com
+- [ ] Change password on first login
+- [ ] Verify can see assigned property data
+- [ ] Complete profile information
+- [ ] Start working!
+
+---
+
+## 🚨 Common Issues & Solutions
+
+### **Issue 1: Employee Can Log In But Sees No Data**
+**Cause**: Property access not granted  
+**Solution**: Admin must grant property access via Users → Properties
+
+### **Issue 2: Employee Cannot Create Bookings**
+**Cause**: Role doesn't have permission  
+**Solution**: Admin must assign correct role (e.g., GM Sales, not Staff)
+
+### **Issue 3: 403 Forbidden When Accessing Data**
+**Cause**: Trying to access data from non-assigned property  
+**Solution**: Admin must grant access to that property, OR employee is trying to access wrong data
+
+### **Issue 4: Employee List Shows But Cannot Create**
+**Cause**: User doesn't have HR Manager/Admin role  
+**Solution**: This is intentional - only HR/Admin can create employees
+
+### **Issue 5: User Account Created But Employee Not Linked**
+**Cause**: Forgot to set employee.userId in Step 3  
+**Solution**: Edit employee record and link to user account
+
+---
+
+**Created**: 2026-02-17  
+**Last Updated**: 2026-02-17  
+**Status**: PRODUCTION READY ✅
