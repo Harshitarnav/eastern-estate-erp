@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { usersService, type User } from '@/services/users.service';
 import { rolesService, type Role } from '@/services/roles.service';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,10 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Building2, Shield } from 'lucide-react';
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,6 +202,24 @@ export default function UsersPage() {
                 <TableCell>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleEdit(user)}>Edit</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => router.push(`/users/${user.id}/property-access`)}
+                      title="Manage Property Access"
+                    >
+                      <Building2 className="h-4 w-4 mr-1" />
+                      Properties
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleEdit(user)}
+                      title="Manage Roles"
+                    >
+                      <Shield className="h-4 w-4 mr-1" />
+                      Roles
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => handleToggleActive(user)}>
                       {user.isActive ? 'Deactivate' : 'Activate'}
                     </Button>

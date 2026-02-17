@@ -32,6 +32,9 @@ import { ThrottlerGuard, ThrottlerModule, ThrottlerModuleOptions } from '@nestjs
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
 import { SchemaSyncService } from './database/schema-sync.service';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { RolesGuard } from './auth/guards/roles.guard';
+import { PropertyAccessGuard } from './common/guards/property-access.guard';
 
 @Module({
   imports: [
@@ -108,6 +111,18 @@ import { SchemaSyncService } from './database/schema-sync.service';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard, // ✅ Global auth guard - all routes require authentication by default
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard, // ✅ Global roles guard - enforces @Roles() decorator
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PropertyAccessGuard, // ✅ Global property access guard - enforces property-level access
     },
     {
       provide: APP_INTERCEPTOR,

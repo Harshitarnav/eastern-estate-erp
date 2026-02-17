@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -51,12 +58,16 @@ import {
   Calendar,
   DollarSign,
   Hammer,
+  Filter,
 } from 'lucide-react';
 import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.service';
 import { demandDraftsService } from '@/services/demand-drafts.service';
 import { constructionMilestonesService } from '@/services/construction-milestones.service';
+import { propertiesService } from '@/services/properties.service';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { isAdminRole } from '@/lib/roles';
 
 interface ConstructionProgress {
   id: string;
@@ -87,13 +98,20 @@ interface MilestoneWithProgress {
 
 export default function ConstructionMilestonesPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [flatPaymentPlans, setFlatPaymentPlans] = useState<FlatPaymentPlan[]>([]);
   const [demandDrafts, setDemandDrafts] = useState<any[]>([]);
   const [constructionProgressData, setConstructionProgressData] = useState<Record<string, ConstructionProgress[]>>({});
+  const [properties, setProperties] = useState<any[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedMilestone, setSelectedMilestone] = useState<MilestoneWithProgress | null>(null);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+
+  // Check if user is admin
+  const userRoles = user?.roles?.map((r: any) => typeof r === 'string' ? r : r.name) || [];
+  const isAdmin = isAdminRole(userRoles);
 
   useEffect(() => {
     loadData();
@@ -102,12 +120,14 @@ export default function ConstructionMilestonesPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [plansData, draftsData] = await Promise.all([
+      const [plansData, draftsData, propertiesData] = await Promise.all([
         paymentPlansService.getFlatPaymentPlans().catch(() => []),
         demandDraftsService.getDemandDrafts().catch(() => []),
+        propertiesService.getProperties().catch(() => ({ data: [] })),
       ]);
       setFlatPaymentPlans(Array.isArray(plansData) ? plansData : []);
       setDemandDrafts(Array.isArray(draftsData) ? draftsData : []);
+      setProperties(Array.isArray(propertiesData?.data) ? propertiesData.data : []);
 
       // Load construction progress for all flats
       const progressMap: Record<string, ConstructionProgress[]> = {};
@@ -147,6 +167,11 @@ export default function ConstructionMilestonesPage() {
 
     flatPaymentPlans
       .filter((plan) => plan.status === 'ACTIVE')
+      .filter((plan) => {
+        // Filter by selected property if not 'all'
+        if (selectedProperty === 'all') return true;
+        return plan.flat?.property?.id === selectedProperty;
+      })
       .forEach((plan) => {
         plan.milestones.forEach((milestone) => {
           const flatId = plan.flat?.id || '';
@@ -173,6 +198,22 @@ export default function ConstructionMilestonesPage() {
       });
 
     return cards;
+  };
+
+  // Group milestones by property for admin view
+  const getMilestonesByProperty = () => {
+    const allMilestones = getMilestonesWithProgress();
+    const grouped = new Map<string, MilestoneWithProgress[]>();
+    
+    allMilestones.forEach(milestone => {
+      const propertyId = milestone.propertyId;
+      if (!grouped.has(propertyId)) {
+        grouped.set(propertyId, []);
+      }
+      grouped.get(propertyId)!.push(milestone);
+    });
+    
+    return grouped;
   };
 
   const allMilestones = getMilestonesWithProgress();
@@ -286,11 +327,65 @@ export default function ConstructionMilestonesPage() {
             Track construction progress, trigger payment demands, and monitor milestones
           </p>
         </div>
-        <Button onClick={() => router.push('/construction-progress-simple')}>
-          <Hammer className="mr-2 h-4 w-4" />
-          Log Progress
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && properties.length > 0 && (
+            <Select value={selectedProperty} onValueChange={setSelectedProperty}>
+              <SelectTrigger className="w-[250px]">
+                <Filter className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Filter by property" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Properties</SelectItem>
+                {properties.map((property) => (
+                  <SelectItem key={property.id} value={property.id}>
+                    {property.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button onClick={() => router.push('/construction-progress-simple')}>
+            <Hammer className="mr-2 h-4 w-4" />
+            Log Progress
+          </Button>
+        </div>
       </div>
+
+      {/* Property Summary for Admin */}
+      {isAdmin && selectedProperty === 'all' && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from(getMilestonesByProperty().entries()).map(([propertyId, milestones]) => {
+            const property = properties.find(p => p.id === propertyId);
+            if (!property) return null;
+            
+            const pending = milestones.filter(m => m.milestone.status === 'PENDING').length;
+            const completed = milestones.filter(m => m.milestone.status === 'PAID').length;
+            
+            return (
+              <Card key={propertyId} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedProperty(propertyId)}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{property.name}</CardTitle>
+                  <CardDescription className="text-sm">{property.location}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total:</span>
+                    <span className="font-semibold">{milestones.length}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Pending:</span>
+                    <span className="font-semibold text-yellow-600">{pending}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Completed:</span>
+                    <span className="font-semibold text-green-600">{completed}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">

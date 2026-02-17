@@ -8,80 +8,71 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GoogleStrategy = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
 const passport_google_oauth20_1 = require("passport-google-oauth20");
 const config_1 = require("@nestjs/config");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
-const user_entity_1 = require("../../modules/users/entities/user.entity");
+const users_service_1 = require("../../modules/users/users.service");
 let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrategy)(passport_google_oauth20_1.Strategy, 'google') {
-    constructor(configService, usersRepository) {
-        const options = {
+    constructor(configService, usersService) {
+        super({
             clientID: configService.get('GOOGLE_CLIENT_ID'),
             clientSecret: configService.get('GOOGLE_CLIENT_SECRET'),
             callbackURL: configService.get('GOOGLE_CALLBACK_URL'),
             scope: ['email', 'profile'],
-            prompt: 'select_account',
-        };
-        super(options);
+        });
         this.configService = configService;
-        this.usersRepository = usersRepository;
+        this.usersService = usersService;
     }
     async validate(accessToken, refreshToken, profile, done) {
-        const { emails, name, photos } = profile;
+        const { id, name, emails, photos } = profile;
         if (!emails || emails.length === 0) {
-            return done(new common_1.UnauthorizedException('No email found from Google'), null);
+            return done(new common_1.UnauthorizedException('No email found in Google profile'), null);
         }
         const email = emails[0].value;
-        const emailDomain = email.split('@')[1];
-        if (emailDomain !== 'eecd.in') {
-            return done(new common_1.UnauthorizedException('Only @eecd.in domain emails are allowed'), null);
+        if (!email.endsWith('@eecd.in')) {
+            return done(new common_1.UnauthorizedException('Access denied. Only @eecd.in email addresses are allowed to access this system.'), null);
         }
-        const user = await this.usersRepository.findOne({
-            where: { email },
-            relations: ['roles', 'roles.permissions'],
-        });
+        let user = await this.usersService.findByEmail(email);
         if (!user) {
-            return done(new common_1.UnauthorizedException('You do not have access yet. Please contact HR to set up your account.'), null);
+            const firstName = name?.givenName || email.split('@')[0];
+            const lastName = name?.familyName || '';
+            user = await this.usersService.create({
+                email,
+                username: email.split('@')[0],
+                password: `google_oauth_${Date.now()}`,
+                firstName,
+                lastName,
+                roleIds: [],
+                profileImage: photos && photos.length > 0 ? photos[0].value : null,
+            }, null);
+            user = await this.usersService.findByEmail(email);
         }
-        if (!user.isActive) {
-            return done(new common_1.UnauthorizedException('Your account has been deactivated. Please contact HR.'), null);
+        else if (!user.isActive) {
+            return done(new common_1.UnauthorizedException('Your account has been deactivated. Please contact administrator.'), null);
         }
-        user.lastLoginAt = new Date();
-        if (!user.profileImage && photos && photos.length > 0) {
-            user.profileImage = photos[0].value;
+        if (!user.roles || user.roles.length === 0) {
+            user = await this.usersService.findByEmail(email);
         }
-        if (!user.firstName && name?.givenName) {
-            user.firstName = name.givenName;
-        }
-        if (!user.lastName && name?.familyName) {
-            user.lastName = name.familyName;
-        }
-        await this.usersRepository.save(user);
-        const userPayload = {
+        const userData = {
             id: user.id,
             email: user.email,
             username: user.username,
             firstName: user.firstName,
             lastName: user.lastName,
-            profileImage: user.profileImage,
-            roles: user.roles,
-            permissions: user.roles.flatMap(role => role.permissions),
+            profileImage: user.profileImage || (photos && photos.length > 0 ? photos[0].value : null),
+            googleId: id,
+            roles: user.roles || [],
         };
-        return done(null, userPayload);
+        return done(null, userData);
     }
 };
 exports.GoogleStrategy = GoogleStrategy;
 exports.GoogleStrategy = GoogleStrategy = __decorate([
     (0, common_1.Injectable)(),
-    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [config_1.ConfigService,
-        typeorm_2.Repository])
+        users_service_1.UsersService])
 ], GoogleStrategy);
 //# sourceMappingURL=google.strategy.js.map

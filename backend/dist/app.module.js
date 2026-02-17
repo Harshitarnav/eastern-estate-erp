@@ -41,6 +41,9 @@ const throttler_1 = require("@nestjs/throttler");
 const configuration_1 = require("./config/configuration");
 const validation_1 = require("./config/validation");
 const schema_sync_service_1 = require("./database/schema-sync.service");
+const jwt_auth_guard_1 = require("./auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("./auth/guards/roles.guard");
+const property_access_guard_1 = require("./common/guards/property-access.guard");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -116,6 +119,18 @@ exports.AppModule = AppModule = __decorate([
             {
                 provide: core_1.APP_GUARD,
                 useClass: throttler_1.ThrottlerGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: jwt_auth_guard_1.JwtAuthGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: roles_guard_1.RolesGuard,
+            },
+            {
+                provide: core_1.APP_GUARD,
+                useClass: property_access_guard_1.PropertyAccessGuard,
             },
             {
                 provide: core_1.APP_INTERCEPTOR,

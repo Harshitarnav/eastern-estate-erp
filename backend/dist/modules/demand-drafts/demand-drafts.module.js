@@ -13,6 +13,7 @@ const demand_draft_entity_1 = require("./entities/demand-draft.entity");
 const demand_drafts_service_1 = require("./demand-drafts.service");
 const demand_drafts_controller_1 = require("./demand-drafts.controller");
 const construction_module_1 = require("../construction/construction.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 let DemandDraftsModule = class DemandDraftsModule {
 };
 exports.DemandDraftsModule = DemandDraftsModule;
@@ -21,6 +22,7 @@ exports.DemandDraftsModule = DemandDraftsModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([demand_draft_entity_1.DemandDraft]),
             construction_module_1.ConstructionModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [demand_drafts_controller_1.DemandDraftsController],
         providers: [demand_drafts_service_1.DemandDraftsService],

@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const typeorm_1 = require("typeorm");
 const role_entity_1 = require("./role.entity");
+const user_property_access_entity_1 = require("./user-property-access.entity");
 let User = class User {
 };
 exports.User = User;
@@ -83,6 +84,22 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'timestamp', nullable: true }),
     __metadata("design:type", Date)
 ], User.prototype, "lockedUntil", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'email_domain', nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "emailDomain", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'allowed_domain', default: 'eecd.in' }),
+    __metadata("design:type", String)
+], User.prototype, "allowedDomain", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'is_domain_verified', default: false }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isDomainVerified", void 0);
+__decorate([
+    (0, typeorm_1.OneToMany)(() => user_property_access_entity_1.UserPropertyAccess, (access) => access.user),
+    __metadata("design:type", Array)
+], User.prototype, "propertyAccess", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
     __metadata("design:type", String)

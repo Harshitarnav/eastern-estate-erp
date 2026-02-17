@@ -35,6 +35,10 @@ export declare class AuthController {
         lastLoginAt: Date;
         failedLoginAttempts: number;
         lockedUntil: Date;
+        emailDomain: string;
+        allowedDomain: string;
+        isDomainVerified: boolean;
+        propertyAccess: import("../modules/users/entities/user-property-access.entity").UserPropertyAccess[];
         createdBy: string;
         updatedBy: string;
         createdAt: Date;

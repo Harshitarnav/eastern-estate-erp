@@ -15,21 +15,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DemandDraftsController = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../auth/guards/roles.guard");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const roles_constant_1 = require("../../common/constants/roles.constant");
 const demand_drafts_service_1 = require("./demand-drafts.service");
 const auto_demand_draft_service_1 = require("../construction/services/auto-demand-draft.service");
+const notifications_service_1 = require("../notifications/notifications.service");
+const notification_entity_1 = require("../notifications/entities/notification.entity");
 let DemandDraftsController = class DemandDraftsController {
-    constructor(demandDraftsService, autoDemandDraftService) {
+    constructor(demandDraftsService, autoDemandDraftService, notificationsService) {
         this.demandDraftsService = demandDraftsService;
         this.autoDemandDraftService = autoDemandDraftService;
+        this.notificationsService = notificationsService;
     }
-    async findAll(query) {
+    async findAll(query, req) {
         return await this.demandDraftsService.findAll(query);
     }
     async findOne(id) {
         return await this.demandDraftsService.findOne(id);
     }
     async create(createDto, req) {
-        return await this.demandDraftsService.create(createDto, req.user.id);
+        const draft = await this.demandDraftsService.create(createDto, req.user.id);
+        await this.notificationsService.create({
+            targetRoles: 'admin,super_admin',
+            title: 'New Demand Draft Created',
+            message: `${req.user.firstName} ${req.user.lastName} created a demand draft for ₹${createDto.amount.toLocaleString('en-IN')}`,
+            type: notification_entity_1.NotificationType.INFO,
+            category: notification_entity_1.NotificationCategory.PAYMENT,
+            actionUrl: `/demand-drafts/${draft.id}`,
+            actionLabel: 'Review Draft',
+            relatedEntityId: draft.id,
+            relatedEntityType: 'demand_draft',
+            priority: 5,
+        }, req.user.id);
+        return draft;
     }
     async update(id, updateDto, req) {
         return await this.demandDraftsService.update(id, updateDto, req.user.id);
@@ -39,10 +58,36 @@ let DemandDraftsController = class DemandDraftsController {
         return { message: 'Demand draft deleted successfully' };
     }
     async approve(id, req) {
-        return await this.autoDemandDraftService.approveDemandDraft(id, req.user.id);
+        const result = await this.autoDemandDraftService.approveDemandDraft(id, req.user.id);
+        const draft = await this.demandDraftsService.findOne(id);
+        if (draft.createdBy && draft.createdBy !== req.user.id) {
+            await this.notificationsService.create({
+                userId: draft.createdBy,
+                title: 'Demand Draft Approved',
+                message: `Your demand draft for ₹${draft.amount.toLocaleString('en-IN')} has been approved`,
+                type: notification_entity_1.NotificationType.SUCCESS,
+                category: notification_entity_1.NotificationCategory.PAYMENT,
+                actionUrl: `/demand-drafts/${id}`,
+                actionLabel: 'View Draft',
+            }, req.user.id);
+        }
+        return result;
     }
     async send(id, req) {
-        return await this.autoDemandDraftService.sendDemandDraft(id, req.user.id);
+        const result = await this.autoDemandDraftService.sendDemandDraft(id, req.user.id);
+        const draft = await this.demandDraftsService.findOne(id);
+        if (draft.createdBy && draft.createdBy !== req.user.id) {
+            await this.notificationsService.create({
+                userId: draft.createdBy,
+                title: 'Demand Draft Sent',
+                message: `Your demand draft has been sent to the customer`,
+                type: notification_entity_1.NotificationType.SUCCESS,
+                category: notification_entity_1.NotificationCategory.PAYMENT,
+                actionUrl: `/demand-drafts/${id}`,
+                actionLabel: 'View Draft',
+            }, req.user.id);
+        }
+        return result;
     }
     async preview(id) {
         const draft = await this.demandDraftsService.findOne(id);
@@ -142,8 +187,9 @@ exports.DemandDraftsController = DemandDraftsController;
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], DemandDraftsController.prototype, "findAll", null);
 __decorate([
@@ -155,6 +201,7 @@ __decorate([
 ], DemandDraftsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.SALES_TEAM),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -172,6 +219,7 @@ __decorate([
 ], DemandDraftsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -179,6 +227,7 @@ __decorate([
 ], DemandDraftsController.prototype, "remove", null);
 __decorate([
     (0, common_1.Put)(':id/approve'),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -187,6 +236,7 @@ __decorate([
 ], DemandDraftsController.prototype, "approve", null);
 __decorate([
     (0, common_1.Post)(':id/send'),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -209,8 +259,9 @@ __decorate([
 ], DemandDraftsController.prototype, "export", null);
 exports.DemandDraftsController = DemandDraftsController = __decorate([
     (0, common_1.Controller)('demand-drafts'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [demand_drafts_service_1.DemandDraftsService,
-        auto_demand_draft_service_1.AutoDemandDraftService])
+        auto_demand_draft_service_1.AutoDemandDraftService,
+        notifications_service_1.NotificationsService])
 ], DemandDraftsController);
 //# sourceMappingURL=demand-drafts.controller.js.map

@@ -7,8 +7,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { Role } from './role.entity';
+import { UserPropertyAccess } from './user-property-access.entity';
 
 @Entity('users')
 export class User {
@@ -62,6 +64,20 @@ export class User {
 
   @Column({ type: 'timestamp', nullable: true })
   lockedUntil: Date;
+
+  // Email domain fields for access control
+  @Column({ name: 'email_domain', nullable: true })
+  emailDomain: string;
+
+  @Column({ name: 'allowed_domain', default: 'eecd.in' })
+  allowedDomain: string;
+
+  @Column({ name: 'is_domain_verified', default: false })
+  isDomainVerified: boolean;
+
+  // Property access relationship
+  @OneToMany(() => UserPropertyAccess, (access) => access.user)
+  propertyAccess: UserPropertyAccess[];
 
   // @ManyToMany(() => Role, role => role.users, { eager: true })
   // @JoinTable({ name: 'user_roles' })

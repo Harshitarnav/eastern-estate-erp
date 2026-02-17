@@ -11,19 +11,25 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../../common/constants/roles.constant';
 import { DemandDraftsService } from './demand-drafts.service';
 import { AutoDemandDraftService } from '../construction/services/auto-demand-draft.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationCategory } from '../notifications/entities/notification.entity';
 
 @Controller('demand-drafts')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class DemandDraftsController {
   constructor(
     private readonly demandDraftsService: DemandDraftsService,
     private readonly autoDemandDraftService: AutoDemandDraftService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   @Get()
-  async findAll(@Query() query: any) {
+  async findAll(@Query() query: any, @Req() req: any) {
     return await this.demandDraftsService.findAll(query);
   }
 
@@ -32,9 +38,30 @@ export class DemandDraftsController {
     return await this.demandDraftsService.findOne(id);
   }
 
+  /**
+   * Create user-generated demand draft
+   * Sales team can create drafts, admin receives notification
+   */
   @Post()
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SALES_TEAM)
   async create(@Body() createDto: any, @Req() req: any) {
-    return await this.demandDraftsService.create(createDto, req.user.id);
+    const draft = await this.demandDraftsService.create(createDto, req.user.id);
+
+    // Notify admin about user-created demand draft
+    await this.notificationsService.create({
+      targetRoles: 'admin,super_admin',
+      title: 'New Demand Draft Created',
+      message: `${req.user.firstName} ${req.user.lastName} created a demand draft for ₹${createDto.amount.toLocaleString('en-IN')}`,
+      type: NotificationType.INFO,
+      category: NotificationCategory.PAYMENT,
+      actionUrl: `/demand-drafts/${draft.id}`,
+      actionLabel: 'Review Draft',
+      relatedEntityId: draft.id,
+      relatedEntityType: 'demand_draft',
+      priority: 5,
+    }, req.user.id);
+
+    return draft;
   }
 
   @Put(':id')
@@ -47,6 +74,7 @@ export class DemandDraftsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async remove(@Param('id') id: string) {
     await this.demandDraftsService.remove(id);
     return { message: 'Demand draft deleted successfully' };
@@ -54,18 +82,54 @@ export class DemandDraftsController {
 
   /**
    * Approve a demand draft (ready to send)
+   * Admin/Super Admin only
    */
   @Put(':id/approve')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async approve(@Param('id') id: string, @Req() req: any) {
-    return await this.autoDemandDraftService.approveDemandDraft(id, req.user.id);
+    const result = await this.autoDemandDraftService.approveDemandDraft(id, req.user.id);
+
+    // Notify creator
+    const draft = await this.demandDraftsService.findOne(id);
+    if (draft.createdBy && draft.createdBy !== req.user.id) {
+      await this.notificationsService.create({
+        userId: draft.createdBy,
+        title: 'Demand Draft Approved',
+        message: `Your demand draft for ₹${draft.amount.toLocaleString('en-IN')} has been approved`,
+        type: NotificationType.SUCCESS,
+        category: NotificationCategory.PAYMENT,
+        actionUrl: `/demand-drafts/${id}`,
+        actionLabel: 'View Draft',
+      }, req.user.id);
+    }
+
+    return result;
   }
 
   /**
    * Send a demand draft to customer
+   * Admin/Super Admin only
    */
   @Post(':id/send')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   async send(@Param('id') id: string, @Req() req: any) {
-    return await this.autoDemandDraftService.sendDemandDraft(id, req.user.id);
+    const result = await this.autoDemandDraftService.sendDemandDraft(id, req.user.id);
+
+    // Notify creator
+    const draft = await this.demandDraftsService.findOne(id);
+    if (draft.createdBy && draft.createdBy !== req.user.id) {
+      await this.notificationsService.create({
+        userId: draft.createdBy,
+        title: 'Demand Draft Sent',
+        message: `Your demand draft has been sent to the customer`,
+        type: NotificationType.SUCCESS,
+        category: NotificationCategory.PAYMENT,
+        actionUrl: `/demand-drafts/${id}`,
+        actionLabel: 'View Draft',
+      }, req.user.id);
+    }
+
+    return result;
   }
 
   /**

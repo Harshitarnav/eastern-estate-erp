@@ -42,8 +42,8 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      // Increment failed login attempts
-      user.failedLoginAttempts += 1;
+      // Increment failed login attempts (handle null/undefined)
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
       
       if (user.failedLoginAttempts >= 5) {
         user.lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // Lock for 30 minutes
@@ -55,7 +55,7 @@ export class AuthService {
 
     // Reset failed attempts on successful login
     user.failedLoginAttempts = 0;
-    user.lockedUntil = undefined;
+    user.lockedUntil = null;
     user.lastLoginAt = new Date();
     await this.usersRepository.save(user);
 

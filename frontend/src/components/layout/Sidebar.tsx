@@ -10,6 +10,7 @@ import {
   Settings, ChevronDown, Target, Database, Table as TableIcon
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { hasModuleAccess, isAdminRole } from '@/lib/roles';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,6 +22,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['sales', 'property-inventory']);
+
+  // Get user's roles
+  const userRoles = user?.roles?.map((r: any) => typeof r === 'string' ? r : r.name) || [];
 
   const toggleMenu = (id: string) => {
     setExpandedMenus(prev =>
@@ -36,6 +40,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const isActive = (path: string) => pathname === path;
   const isChildActive = (paths: string[]) => paths.some(path => pathname === path || pathname?.startsWith(path + '/'));
+
+  // Check if user can access a module
+  const canAccess = (moduleId: string) => {
+    return hasModuleAccess(userRoles, moduleId);
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/' },
@@ -102,7 +111,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       icon: Briefcase,
       children: [
         { id: 'hr-dashboard', label: 'HR Dashboard', icon: LayoutDashboard, href: '/hr' },
-        { id: 'employees', label: 'Employee Login', icon: Users, href: '/employees' },
+        { id: 'employees', label: 'Employees', icon: Users, href: '/employees' },
       ]
     },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
@@ -110,6 +119,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       id: 'database', 
       label: 'Database', 
       icon: Database,
+      adminOnly: true, // Only visible to admin/super_admin
       children: [
         { id: 'database-explorer', label: 'Database Explorer', icon: Database, href: '/database' },
         { id: 'database-viewer', label: 'Data Viewer', icon: TableIcon, href: '/database/viewer' },
@@ -118,6 +128,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     },
     { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
   ];
+
+  // Filter menu items based on user's role
+  const filteredMenuItems = menuItems.filter(item => {
+    // Database module is admin-only
+    if (item.adminOnly) {
+      return isAdminRole(userRoles);
+    }
+    
+    // Check if user has access to this module
+    const hasAccess = canAccess(item.id);
+    
+    // If it has children, check if user has access to any child
+    if (item.children) {
+      const hasChildAccess = item.children.some(child => canAccess(child.id));
+      return hasAccess || hasChildAccess;
+    }
+    
+    return hasAccess;
+  });
 
   return (
     <aside className={`
@@ -139,76 +168,64 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4">
           <div className="space-y-1">
-            {menuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const Icon = item.icon;
               const hasChildren = !!item.children;
               const isExpanded = expandedMenus.includes(item.id);
               const isItemActive = item.href ? isActive(item.href) : false;
               const hasActiveChild = hasChildren && isChildActive(item.children!.map(c => c.href));
 
+              // Filter children based on access
+              const filteredChildren = item.children?.filter(child => canAccess(child.id));
+
               return (
                 <div key={item.id}>
                   {hasChildren ? (
-                    <button
-                      onClick={() => toggleMenu(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        hasActiveChild 
-                          ? 'text-white' 
-                          : 'text-gray-700 hover:bg-gray-50'
-                      }`}
-                      style={hasActiveChild ? { backgroundColor: '#A8211B' } : {}}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="h-5 w-5" />
-                        <span>{item.label}</span>
-                      </div>
-                      <ChevronDown 
-                        className={`h-4 w-4 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`} 
-                      />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => toggleMenu(item.id)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                          hasActiveChild ? 'bg-red-50 text-red-900' : 'hover:bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-5 w-5" style={{ color: hasActiveChild ? '#A8211B' : undefined }} />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      </button>
+                      {isExpanded && filteredChildren && filteredChildren.length > 0 && (
+                        <div className="ml-4 mt-1 space-y-1">
+                          {filteredChildren.map((child) => {
+                            const ChildIcon = child.icon;
+                            return (
+                              <Link
+                                key={child.id}
+                                href={child.href}
+                                onClick={handleLinkClick}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                                  isActive(child.href) ? 'bg-red-50 text-red-900' : 'hover:bg-gray-100 text-gray-700'
+                                }`}
+                              >
+                                <ChildIcon className="h-4 w-4" style={{ color: isActive(child.href) ? '#A8211B' : undefined }} />
+                                <span>{child.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <Link
                       href={item.href!}
                       onClick={handleLinkClick}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        isItemActive 
-                          ? 'text-white' 
-                          : 'text-gray-700 hover:bg-gray-50'
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                        isItemActive ? 'bg-red-50 text-red-900' : 'hover:bg-gray-100 text-gray-700'
                       }`}
-                      style={isItemActive ? { backgroundColor: '#A8211B' } : {}}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span>{item.label}</span>
+                      <Icon className="h-5 w-5" style={{ color: isItemActive ? '#A8211B' : undefined }} />
+                      <span className="font-medium">{item.label}</span>
                     </Link>
-                  )}
-
-                  {/* Submenu */}
-                  {hasChildren && isExpanded && (
-                    <div className="ml-6 mt-1 space-y-1 border-l-2 pl-3" style={{ borderColor: '#F3E3C1' }}>
-                      {item.children!.map((child) => {
-                        const ChildIcon = child.icon;
-                        const isChildItemActive = isActive(child.href);
-                        
-                        return (
-                          <Link
-                            key={child.id}
-                            href={child.href}
-                            onClick={handleLinkClick}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                              isChildItemActive 
-                                ? 'text-white font-medium' 
-                                : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                            style={isChildItemActive ? { backgroundColor: '#A8211B' } : {}}
-                          >
-                            <ChildIcon className="h-4 w-4" />
-                            <span>{child.label}</span>
-                          </Link>
-                        );
-                      })}
-                    </div>
                   )}
                 </div>
               );
@@ -216,23 +233,113 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
         </nav>
 
-        {/* User Info */}
-        <div className="border-t p-4" style={{ borderColor: '#F3E3C1' }}>
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#A8211B' }}>
-              <span className="text-white font-medium text-sm">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: '#7B1E12' }}>
-                {user?.firstName} {user?.lastName}
-              </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+        {/* User Info Footer */}
+        {user && (
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center" style={{ color: '#A8211B' }}>
+                <span className="text-sm font-semibold">
+                  {user.firstName?.[0]}{user.lastName?.[0]}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </aside>
   );
 }
+//                   {hasChildren ? (
+//                     <button
+//                       onClick={() => toggleMenu(item.id)}
+//                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+//                         hasActiveChild 
+//                           ? 'text-white' 
+//                           : 'text-gray-700 hover:bg-gray-50'
+//                       }`}
+//                       style={hasActiveChild ? { backgroundColor: '#A8211B' } : {}}
+//                     >
+//                       <div className="flex items-center gap-3">
+//                         <Icon className="h-5 w-5" />
+//                         <span>{item.label}</span>
+//                       </div>
+//                       <ChevronDown 
+//                         className={`h-4 w-4 transition-transform duration-200 ${
+//                           isExpanded ? 'rotate-180' : ''
+//                         }`} 
+//                       />
+//                     </button>
+//                   ) : (
+//                     <Link
+//                       href={item.href!}
+//                       onClick={handleLinkClick}
+//                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+//                         isItemActive 
+//                           ? 'text-white' 
+//                           : 'text-gray-700 hover:bg-gray-50'
+//                       }`}
+//                       style={isItemActive ? { backgroundColor: '#A8211B' } : {}}
+//                     >
+//                       <Icon className="h-5 w-5" />
+//                       <span>{item.label}</span>
+//                     </Link>
+//                   )}
+
+//                   {/* Submenu */}
+//                   {hasChildren && isExpanded && (
+//                     <div className="ml-6 mt-1 space-y-1 border-l-2 pl-3" style={{ borderColor: '#F3E3C1' }}>
+//                       {item.children!.map((child) => {
+//                         const ChildIcon = child.icon;
+//                         const isChildItemActive = isActive(child.href);
+                        
+//                         return (
+//                           <Link
+//                             key={child.id}
+//                             href={child.href}
+//                             onClick={handleLinkClick}
+//                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+//                               isChildItemActive 
+//                                 ? 'text-white font-medium' 
+//                                 : 'text-gray-600 hover:bg-gray-50'
+//                             }`}
+//                             style={isChildItemActive ? { backgroundColor: '#A8211B' } : {}}
+//                           >
+//                             <ChildIcon className="h-4 w-4" />
+//                             <span>{child.label}</span>
+//                           </Link>
+//                         );
+//                       })}
+//                     </div>
+//                   )}
+//                 </div>
+//               );
+//             })}
+//           </div>
+//         </nav>
+
+//         {/* User Info */}
+//         <div className="border-t p-4" style={{ borderColor: '#F3E3C1' }}>
+//           <div className="flex items-center gap-3">
+//             <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#A8211B' }}>
+//               <span className="text-white font-medium text-sm">
+//                 {user?.firstName?.[0]}{user?.lastName?.[0]}
+//               </span>
+//             </div>
+//             <div className="flex-1 min-w-0">
+//               <p className="text-sm font-medium truncate" style={{ color: '#7B1E12' }}>
+//                 {user?.firstName} {user?.lastName}
+//               </p>
+//               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </aside>
+//   );
+// }

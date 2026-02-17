@@ -25,15 +25,23 @@ const booking_entity_1 = require("../bookings/entities/booking.entity");
 const dto_1 = require("./dto");
 const data_completeness_status_enum_1 = require("../../common/enums/data-completeness-status.enum");
 const flat_generation_util_1 = require("../towers/utils/flat-generation.util");
+const property_access_service_1 = require("../users/services/property-access.service");
 let PropertiesService = PropertiesService_1 = class PropertiesService {
-    constructor(propertiesRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, dataSource) {
+    constructor(propertiesRepository, towersRepository, flatsRepository, customersRepository, bookingsRepository, dataSource, propertyAccessService) {
         this.propertiesRepository = propertiesRepository;
         this.towersRepository = towersRepository;
         this.flatsRepository = flatsRepository;
         this.customersRepository = customersRepository;
         this.bookingsRepository = bookingsRepository;
         this.dataSource = dataSource;
+        this.propertyAccessService = propertyAccessService;
         this.logger = new common_1.Logger(PropertiesService_1.name);
+    }
+    async checkPropertyAccess(propertyId, userId) {
+        const hasAccess = await this.propertyAccessService.hasAccess(userId, propertyId);
+        if (!hasAccess) {
+            throw new common_1.NotFoundException(`Property not found or you don't have access`);
+        }
     }
     async create(createPropertyDto, userId) {
         const existingProperty = await this.propertiesRepository.findOne({
@@ -79,7 +87,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             await queryRunner.release();
         }
     }
-    async findAll(queryDto) {
+    async findAll(queryDto, userId) {
         const { page = 1, limit = 10, search, city, state, status, projectType, projectId, sortBy = 'createdAt', sortOrder = 'DESC', isActive, } = queryDto;
         const activeFilter = isActive ?? true;
         const queryBuilder = this.propertiesRepository
@@ -122,7 +130,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             },
         };
     }
-    async getInventorySummary(propertyId) {
+    async getInventorySummary(propertyId, userId) {
         const property = await this.propertiesRepository.findOne({
             where: { id: propertyId },
         });
@@ -286,7 +294,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         };
         return summary;
     }
-    async findOne(id) {
+    async findOne(id, userId) {
         const property = await this.propertiesRepository.findOne({
             where: { id, isActive: true },
             relations: ['towers'],
@@ -296,7 +304,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         }
         return this.mapToResponseDto(property);
     }
-    async findByCode(code) {
+    async findByCode(code, userId) {
         const property = await this.propertiesRepository.findOne({
             where: { propertyCode: code, isActive: true },
         });
@@ -305,7 +313,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         }
         return this.mapToResponseDto(property);
     }
-    async getHierarchy(id) {
+    async getHierarchy(id, userId) {
         const property = await this.propertiesRepository.findOne({
             where: { id, isActive: true },
         });
@@ -399,7 +407,10 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         const updatedProperty = await this.propertiesRepository.save(property);
         return this.mapToResponseDto(updatedProperty);
     }
-    async remove(id) {
+    async remove(id, userId) {
+        if (userId) {
+            await this.checkPropertyAccess(id, userId);
+        }
         const property = await this.propertiesRepository.findOne({
             where: { id, isActive: true },
         });
@@ -407,12 +418,15 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             throw new common_1.NotFoundException(`Property with ID ${id} not found`);
         }
         property.isActive = false;
+        property.updatedBy = userId;
         await this.propertiesRepository.save(property);
         await this.towersRepository.update({ propertyId: id }, { isActive: false });
         await this.flatsRepository.update({ propertyId: id }, { isActive: false });
-        return { message: 'Property deleted successfully' };
     }
-    async toggleActive(id) {
+    async toggleActive(id, userId) {
+        if (userId) {
+            await this.checkPropertyAccess(id, userId);
+        }
         const property = await this.propertiesRepository.findOne({
             where: { id },
         });
@@ -420,23 +434,42 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             throw new common_1.NotFoundException(`Property with ID ${id} not found`);
         }
         property.isActive = !property.isActive;
+        property.updatedBy = userId;
         const updatedProperty = await this.propertiesRepository.save(property);
         await this.towersRepository.update({ propertyId: id }, { isActive: updatedProperty.isActive });
         await this.flatsRepository.update({ propertyId: id }, { isActive: updatedProperty.isActive });
         return this.mapToResponseDto(updatedProperty);
     }
-    async getStats() {
+    async getStats(userId) {
+        let propertyIds = [];
+        if (userId) {
+            const isAdmin = await this.propertyAccessService.isGlobalAdmin(userId);
+            if (!isAdmin) {
+                propertyIds = await this.propertyAccessService.getUserPropertyIds(userId);
+                if (propertyIds.length === 0) {
+                    return {
+                        totalProperties: 0,
+                        activeProperties: 0,
+                        underConstruction: 0,
+                        completed: 0,
+                    };
+                }
+            }
+        }
+        const whereClause = propertyIds.length > 0
+            ? { isActive: true, id: (0, typeorm_2.In)(propertyIds) }
+            : { isActive: true };
         const totalProperties = await this.propertiesRepository.count({
-            where: { isActive: true },
+            where: whereClause,
         });
         const activeProperties = await this.propertiesRepository.count({
-            where: { isActive: true, status: 'Active' },
+            where: { ...whereClause, status: 'Active' },
         });
         const underConstruction = await this.propertiesRepository.count({
-            where: { isActive: true, status: 'Under Construction' },
+            where: { ...whereClause, status: 'Under Construction' },
         });
         const completed = await this.propertiesRepository.count({
-            where: { isActive: true, status: 'Completed' },
+            where: { ...whereClause, status: 'Completed' },
         });
         return {
             totalProperties,
@@ -903,6 +936,7 @@ exports.PropertiesService = PropertiesService = PropertiesService_1 = __decorate
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.DataSource])
+        typeorm_2.DataSource,
+        property_access_service_1.PropertyAccessService])
 ], PropertiesService);
 //# sourceMappingURL=properties.service.js.map

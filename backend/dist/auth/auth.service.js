@@ -45,7 +45,7 @@ let AuthService = class AuthService {
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            user.failedLoginAttempts += 1;
+            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
             if (user.failedLoginAttempts >= 5) {
                 user.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
             }
@@ -53,7 +53,7 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         user.failedLoginAttempts = 0;
-        user.lockedUntil = undefined;
+        user.lockedUntil = null;
         user.lastLoginAt = new Date();
         await this.usersRepository.save(user);
         const { password: _, ...result } = user;

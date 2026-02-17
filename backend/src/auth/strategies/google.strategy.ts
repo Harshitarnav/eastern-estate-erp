@@ -1,32 +1,21 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback, StrategyOptions } from 'passport-google-oauth20';
+import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from '../../modules/users/entities/user.entity';
-
-// Extend StrategyOptions to include the prompt parameter
-interface ExtendedStrategyOptions extends StrategyOptions {
-  prompt?: string;
-}
+import { UsersService } from '../../modules/users/users.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
     private configService: ConfigService,
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private usersService: UsersService,
   ) {
-    const options: ExtendedStrategyOptions = {
+    super({
       clientID: configService.get('GOOGLE_CLIENT_ID'),
       clientSecret: configService.get('GOOGLE_CLIENT_SECRET'),
       callbackURL: configService.get('GOOGLE_CALLBACK_URL'),
       scope: ['email', 'profile'],
-      prompt: 'select_account', // Force account selection every time
-    };
-    
-    super(options as StrategyOptions);
+    });
   }
 
   async validate(
@@ -35,72 +24,67 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: any,
     done: VerifyCallback,
   ): Promise<any> {
-    const { emails, name, photos } = profile;
+    const { id, name, emails, photos } = profile;
     
     if (!emails || emails.length === 0) {
-      return done(new UnauthorizedException('No email found from Google'), null);
+      return done(new UnauthorizedException('No email found in Google profile'), null);
     }
 
     const email = emails[0].value;
-    const emailDomain = email.split('@')[1];
-
-    // Restrict to @eecd.in domain only
-    if (emailDomain !== 'eecd.in') {
-      return done(
-        new UnauthorizedException('Only @eecd.in domain emails are allowed'),
-        null,
-      );
-    }
-
-    // Check if user exists in database (pre-registered by HR)
-    const user = await this.usersRepository.findOne({
-      where: { email },
-      relations: ['roles', 'roles.permissions'],
-    });
-
-    // If user doesn't exist, they haven't been registered by HR yet
-    if (!user) {
+    
+    // ✅ DOMAIN VALIDATION - Only allow @eecd.in emails
+    if (!email.endsWith('@eecd.in')) {
       return done(
         new UnauthorizedException(
-          'You do not have access yet. Please contact HR to set up your account.',
+          'Access denied. Only @eecd.in email addresses are allowed to access this system.'
         ),
-        null,
+        null
       );
     }
 
-    // Check if user account is active
-    if (!user.isActive) {
+    // Find or create user
+    let user = await this.usersService.findByEmail(email);
+
+    if (!user) {
+      // Auto-create user for valid domain
+      const firstName = name?.givenName || email.split('@')[0];
+      const lastName = name?.familyName || '';
+      
+      user = await this.usersService.create({
+        email,
+        username: email.split('@')[0],
+        password: `google_oauth_${Date.now()}`, // Random password, won't be used
+        firstName,
+        lastName,
+        roleIds: [], // Will be assigned 'staff' role by default in create method
+        profileImage: photos && photos.length > 0 ? photos[0].value : null,
+      }, null); // No creator for auto-created users
+      
+      // Fetch the created user with roles
+      user = await this.usersService.findByEmail(email);
+    } else if (!user.isActive) {
       return done(
-        new UnauthorizedException('Your account has been deactivated. Please contact HR.'),
-        null,
+        new UnauthorizedException('Your account has been deactivated. Please contact administrator.'),
+        null
       );
     }
 
-    // Update user's last login and Google profile info
-    user.lastLoginAt = new Date();
-    if (!user.profileImage && photos && photos.length > 0) {
-      user.profileImage = photos[0].value;
-    }
-    if (!user.firstName && name?.givenName) {
-      user.firstName = name.givenName;
-    }
-    if (!user.lastName && name?.familyName) {
-      user.lastName = name.familyName;
+    // Ensure we have user with roles for JWT payload
+    if (!user.roles || user.roles.length === 0) {
+      user = await this.usersService.findByEmail(email);
     }
 
-    await this.usersRepository.save(user);
-
-    const userPayload = {
+    const userData = {
       id: user.id,
       email: user.email,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
-      profileImage: user.profileImage,
-      roles: user.roles,
-      permissions: user.roles.flatMap(role => role.permissions),
+      profileImage: user.profileImage || (photos && photos.length > 0 ? photos[0].value : null),
+      googleId: id,
+      roles: user.roles || [],
     };
 
-    return done(null, userPayload);
+    return done(null, userData);
   }
 }
