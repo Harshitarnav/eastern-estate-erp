@@ -59,7 +59,7 @@ export default function PaymentPlansPage() {
   const [editingTemplate, setEditingTemplate] = useState<PaymentPlanTemplate | null>(null);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
-  const [templateType, setTemplateType] = useState('CONSTRUCTION_LINKED');
+  const [templateType, setTemplateType] = useState<'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT'>('CONSTRUCTION_LINKED');
   const [milestones, setMilestones] = useState<Milestone[]>([]);
 
   // Flat Payment Plan Dialog State
@@ -180,8 +180,8 @@ export default function PaymentPlansPage() {
         name: 'Booking Amount',
         description: 'Initial booking payment',
         paymentPercentage: 10,
-        constructionPhase: '',
-        phasePercentage: 0,
+        constructionPhase: null,
+        phasePercentage: null,
       },
     ]);
     setTemplateDialogOpen(true);
@@ -204,8 +204,8 @@ export default function PaymentPlansPage() {
         name: '',
         description: '',
         paymentPercentage: 0,
-        constructionPhase: '',
-        phasePercentage: 0,
+        constructionPhase: null,
+        phasePercentage: null,
       },
     ]);
   };
@@ -559,14 +559,17 @@ export default function PaymentPlansPage() {
 
             <div className="grid gap-2">
               <Label>Plan Type *</Label>
-              <Select value={templateType} onValueChange={setTemplateType}>
+              <Select 
+                value={templateType} 
+                onValueChange={(value) => setTemplateType(value as 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT')}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="CONSTRUCTION_LINKED">Construction Linked</SelectItem>
-                  <SelectItem value="TIME_BASED">Time Based</SelectItem>
-                  <SelectItem value="CUSTOM">Custom</SelectItem>
+                  <SelectItem value="TIME_LINKED">Time Linked</SelectItem>
+                  <SelectItem value="DOWN_PAYMENT">Down Payment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
