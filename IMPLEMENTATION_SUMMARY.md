@@ -261,26 +261,34 @@ When an employee is created:
 
 ## 👤 User Credentials
 
-### Test Accounts
+### Initial Admin Accounts (Production)
+
+After deployment, seed these 3 admin users using the SQL script in DEPLOYMENT.md:
 
 | Email | Password | Role | Property Access |
 |-------|----------|------|-----------------|
-| `admin@eecd.in` | `admin@easternestate` | Super Admin | All properties |
-| `info@eecd.in` | `info@easternestate` | Staff | 6 properties assigned |
-| `arnav@eecd.in` | `arnav@easternestate` | Construction Team | All properties assigned |
+| `info@eecd.in` | `info@easternestate` | Super Admin | All properties |
+| `arnav@eecd.in` | `arnav@easternestate` | Admin | All properties |
+| `hr@eecd.in` | `hr@easternestate` | HR | HR access only |
+
+⚠️ **CRITICAL:** Change all passwords immediately after first login!
 
 ### Creating New Users
 
 **Via Employee Module:**
 1. Go to HR → Employees
 2. Add new employee with `@eecd.in` email
-3. User automatically created
+3. User automatically created with default password: `{username}@easternestate`
 4. Update role in Users module
+5. User changes password on first login
 
 **Via Google OAuth:**
 1. Sign in with `@eecd.in` Google account
 2. User automatically created with `staff` role
-3. Admin updates roles as needed
+3. Admin updates roles as needed in Users module
+
+**Manual SQL (for admins):**
+See DEPLOYMENT.md for SQL commands to create users with specific roles.
 
 ---
 
