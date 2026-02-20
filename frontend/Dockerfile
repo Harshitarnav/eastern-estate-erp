@@ -4,7 +4,12 @@ WORKDIR /app
 # Install dependencies
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+# Increase timeout and add retries for network issues
+RUN npm config set fetch-timeout 300000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm ci --legacy-peer-deps
 
 # Build the Next.js app
 FROM deps AS build
@@ -19,7 +24,12 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --omit=dev --legacy-peer-deps
+# Increase timeout and add retries for network issues
+RUN npm config set fetch-timeout 300000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm ci --omit=dev --legacy-peer-deps
 
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
