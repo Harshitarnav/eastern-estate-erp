@@ -35,7 +35,8 @@ This guide covers deploying the Eastern Estate ERP to production using Docker Co
 
 ```bash
 # SSH to server
-ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
+# ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
+ssh root@143.244.135.165
 
 # Install Docker
 sudo apt update
@@ -200,7 +201,7 @@ docker compose -f docker-compose.prod.yml logs frontend --tail 50
 
 ```bash
 # SSH to server
-ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
+ssh root@143.244.135.165
 cd ~/eastern-estate-erp
 
 # Pull latest changes
@@ -554,7 +555,7 @@ QUICK REFERENCE COMMANDS (COMMENTED FOR EASY ACCESS)
 ═══════════════════════════════════════════════════════════════
 
 SSH TO SERVER:
-ssh -i ~/Downloads/ERP.pem ubuntu@3.238.49.77
+ssh root@143.244.135.165
 cd ~/eastern-estate-erp
 
 STANDARD DEPLOYMENT:
