@@ -37,7 +37,12 @@ let UsersService = class UsersService {
             throw new common_1.BadRequestException('User already exists with this email or username');
         }
         const password = await bcrypt.hash(createUserDto.password, 12);
-        const roles = await this.rolesRepository.findByIds(createUserDto.roleIds || []);
+        const roles = await this.rolesRepository.find({
+            where: {
+                id: (0, typeorm_2.In)(createUserDto.roleIds || []),
+                isActive: true
+            }
+        });
         const user = this.usersRepository.create({
             ...createUserDto,
             password,
@@ -105,6 +110,11 @@ let UsersService = class UsersService {
             relations: ['roles', 'roles.permissions'],
         });
     }
+    async getRoleByName(roleName) {
+        return await this.rolesRepository.findOne({
+            where: { name: roleName, isActive: true },
+        });
+    }
     async update(id, updateUserDto, updatedById) {
         const user = await this.findOne(id);
         if (updateUserDto.email && updateUserDto.email !== user.email) {
@@ -120,7 +130,12 @@ let UsersService = class UsersService {
             delete updateUserDto.password;
         }
         if (updateUserDto.roleIds) {
-            const roles = await this.rolesRepository.findByIds(updateUserDto.roleIds);
+            const roles = await this.rolesRepository.find({
+                where: {
+                    id: (0, typeorm_2.In)(updateUserDto.roleIds),
+                    isActive: true
+                }
+            });
             user.roles = roles;
             delete updateUserDto.roleIds;
         }
@@ -140,13 +155,14 @@ let UsersService = class UsersService {
     }
     async findAllRoles() {
         return await this.rolesRepository.find({
+            where: { isActive: true },
             relations: ['permissions'],
             order: { name: 'ASC' },
         });
     }
     async findOneRole(id) {
         const role = await this.rolesRepository.findOne({
-            where: { id },
+            where: { id, isActive: true },
             relations: ['permissions'],
         });
         if (!role) {

@@ -4,15 +4,13 @@ export declare class PropertiesController {
     private readonly propertiesService;
     constructor(propertiesService: PropertiesService);
     create(createPropertyDto: CreatePropertyDto, req: any): Promise<PropertyResponseDto>;
-    findAll(queryDto: QueryPropertyDto): Promise<PaginatedPropertyResponseDto>;
-    getStats(): Promise<any>;
-    findByCode(code: string): Promise<PropertyResponseDto>;
-    getHierarchy(id: string): Promise<PropertyHierarchyDto>;
-    getInventorySummary(id: string): Promise<PropertyInventorySummaryDto>;
-    findOne(id: string): Promise<PropertyResponseDto>;
+    findAll(queryDto: QueryPropertyDto, req: any): Promise<PaginatedPropertyResponseDto>;
+    getStats(req: any): Promise<any>;
+    findByCode(code: string, req: any): Promise<PropertyResponseDto>;
+    getHierarchy(id: string, req: any): Promise<PropertyHierarchyDto>;
+    getInventorySummary(id: string, req: any): Promise<PropertyInventorySummaryDto>;
+    findOne(id: string, req: any): Promise<PropertyResponseDto>;
     update(id: string, updatePropertyDto: UpdatePropertyDto, req: any): Promise<PropertyResponseDto>;
-    remove(id: string): Promise<{
-        message: string;
-    }>;
-    toggleActive(id: string): Promise<PropertyResponseDto>;
+    remove(id: string, req: any): Promise<void>;
+    toggleActive(id: string, req: any): Promise<PropertyResponseDto>;
 }

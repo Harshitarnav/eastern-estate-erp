@@ -1,3 +1,4 @@
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -34,6 +35,10 @@ export declare class AuthController {
         lastLoginAt: Date;
         failedLoginAttempts: number;
         lockedUntil: Date;
+        emailDomain: string;
+        allowedDomain: string;
+        isDomainVerified: boolean;
+        propertyAccess: import("../modules/users/entities/user-property-access.entity").UserPropertyAccess[];
         createdBy: string;
         updatedBy: string;
         createdAt: Date;
@@ -50,4 +55,6 @@ export declare class AuthController {
         message: string;
     }>;
     getProfile(req: any): Promise<any>;
+    googleAuth(): Promise<void>;
+    googleAuthCallback(req: any, res: Response): Promise<void>;
 }

@@ -1,4 +1,6 @@
-import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, Res, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -45,5 +47,39 @@ export class AuthController {
   @Get('me')
   async getProfile(@Request() req: any) {
     return req.user;
+  }
+
+  // Google OAuth Login
+  @Public()
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth() {
+    // Guard redirects to Google
+  }
+
+  // Google OAuth Callback
+  @Public()
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthCallback(@Request() req: any, @Res() res: Response) {
+    try {
+      // User is attached by GoogleStrategy
+      const result = await this.authService.googleLogin(
+        req.user,
+        req.ip,
+        req.headers['user-agent'],
+      );
+
+      // Redirect to frontend with tokens
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const redirectUrl = `${frontendUrl}/auth/google/callback?token=${result.accessToken}&refreshToken=${result.refreshToken}`;
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      // Redirect to frontend with error
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
+      res.redirect(`${frontendUrl}/auth/error?message=${errorMessage}`);
+    }
   }
 }

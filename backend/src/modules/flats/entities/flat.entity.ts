@@ -191,6 +191,23 @@ export class Flat {
   @Column({ type: 'date', nullable: true })
   expectedPossession: Date;
 
+  // Construction Progress Tracking
+  @Column({ name: 'construction_stage', length: 50, nullable: true })
+  constructionStage: string; // Current phase: FOUNDATION, STRUCTURE, MEP, FINISHING, HANDOVER
+
+  @Column({ 
+    name: 'construction_progress', 
+    type: 'decimal', 
+    precision: 5, 
+    scale: 2, 
+    default: 0,
+    transformer: decimalTransformer,
+  })
+  constructionProgress: number; // Overall construction completion percentage (0-100)
+
+  @Column({ name: 'last_construction_update', type: 'timestamp', nullable: true })
+  lastConstructionUpdate: Date;
+
   @Column({ name: 'flat_checklist', type: 'jsonb', nullable: true })
   flatChecklist: Record<string, boolean> | null;
 

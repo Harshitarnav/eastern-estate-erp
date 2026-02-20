@@ -1,6 +1,9 @@
 import { ConstructionProject } from './construction-project.entity';
 import { Flat } from '../../flats/entities/flat.entity';
 import { ConstructionPhase, PhaseStatus } from './construction-tower-progress.entity';
+import { DemandDraft } from '../../demand-drafts/entities/demand-draft.entity';
+import { PaymentSchedule } from '../../payments/entities/payment-schedule.entity';
+import { User } from '../../users/entities/user.entity';
 export declare class ConstructionFlatProgress {
     id: string;
     constructionProjectId: string;
@@ -15,6 +18,17 @@ export declare class ConstructionFlatProgress {
     actualEndDate: Date | null;
     status: PhaseStatus;
     notes: string | null;
+    isPaymentMilestone: boolean;
+    milestoneTriggered: boolean;
+    milestoneTriggeredAt: Date | null;
+    demandDraftId: string | null;
+    demandDraft: DemandDraft;
+    paymentScheduleId: string | null;
+    paymentSchedule: PaymentSchedule;
+    milestoneApprovedBy: string | null;
+    approver: User;
+    milestoneApprovedAt: Date | null;
+    requiresApproval: boolean;
     createdAt: Date;
     updatedAt: Date;
     get isDelayed(): boolean;

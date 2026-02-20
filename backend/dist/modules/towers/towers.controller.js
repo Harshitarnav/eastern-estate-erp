@@ -18,6 +18,9 @@ const swagger_1 = require("@nestjs/swagger");
 const towers_service_1 = require("./towers.service");
 const dto_1 = require("./dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const roles_guard_1 = require("../../auth/guards/roles.guard");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const roles_constant_1 = require("../../common/constants/roles.constant");
 const platform_express_1 = require("@nestjs/platform-express");
 let TowersController = class TowersController {
     constructor(towersService) {
@@ -58,6 +61,7 @@ exports.TowersController = TowersController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     (0, swagger_1.ApiOperation)({
         summary: 'Create a new tower',
         description: 'Creates a new tower within a property with complete details and validation',
@@ -130,6 +134,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('bulk-import'),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     (0, swagger_1.ApiOperation)({
         summary: 'Bulk import towers',
@@ -167,6 +172,7 @@ __decorate([
 __decorate([
     (0, common_1.Put)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     (0, swagger_1.ApiOperation)({
         summary: 'Update tower',
         description: 'Updates tower information with validation. Supports partial updates.',
@@ -202,6 +208,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
     (0, swagger_1.ApiOperation)({
         summary: 'Delete tower',
         description: 'Soft deletes a tower (deactivates). Historical data is preserved.',
@@ -249,7 +256,7 @@ __decorate([
 exports.TowersController = TowersController = __decorate([
     (0, swagger_1.ApiTags)('Towers'),
     (0, common_1.Controller)('towers'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, swagger_1.ApiBearerAuth)(),
     __metadata("design:paramtypes", [towers_service_1.TowersService])
 ], TowersController);

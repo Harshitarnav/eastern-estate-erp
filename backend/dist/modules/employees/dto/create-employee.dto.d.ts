@@ -1,17 +1,16 @@
-import { EmploymentType, Department } from '../entities/employee.entity';
 export declare class CreateEmployeeDto {
     employeeCode: string;
     fullName: string;
-    email?: string;
+    email: string;
     phoneNumber?: string;
     alternatePhone?: string;
     profilePicture?: string;
     dateOfBirth?: string | Date;
     gender?: string;
     currentAddress?: string;
-    department?: Department;
+    department?: string;
     designation?: string;
-    employmentType?: EmploymentType;
+    employmentType?: string;
     joiningDate?: string | Date;
     basicSalary?: number;
     houseRentAllowance?: number;

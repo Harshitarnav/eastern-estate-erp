@@ -28,6 +28,7 @@ import {
 } from './dto';
 import { DataCompletenessStatus } from '../../common/enums/data-completeness-status.enum';
 import { buildDefaultFlatPayloads, parseFloorsDescriptor } from '../towers/utils/flat-generation.util';
+import { PropertyAccessService } from '../users/services/property-access.service';
 
 @Injectable()
 export class PropertiesService {
@@ -46,7 +47,19 @@ export class PropertiesService {
     // @InjectRepository(ConstructionProject) // Removed
     // private constructionRepository: Repository<ConstructionProject>,
     private readonly dataSource: DataSource,
+    private readonly propertyAccessService: PropertyAccessService,
   ) {}
+
+  /**
+   * Check if user has access to a specific property
+   * Throws ForbiddenException if user doesn't have access
+   */
+  private async checkPropertyAccess(propertyId: string, userId: string): Promise<void> {
+    const hasAccess = await this.propertyAccessService.hasAccess(userId, propertyId);
+    if (!hasAccess) {
+      throw new NotFoundException(`Property not found or you don't have access`);
+    }
+  }
 
   async create(createPropertyDto: CreatePropertyDto, userId?: string): Promise<PropertyResponseDto> {
     const existingProperty = await this.propertiesRepository.findOne({
@@ -105,7 +118,7 @@ export class PropertiesService {
     }
   }
 
-  async findAll(queryDto: QueryPropertyDto): Promise<PaginatedPropertyResponseDto> {
+  async findAll(queryDto: QueryPropertyDto, userId?: string): Promise<PaginatedPropertyResponseDto> {
     const {
       page = 1,
       limit = 10,
@@ -182,7 +195,7 @@ export class PropertiesService {
     };
   }
 
-  async getInventorySummary(propertyId: string): Promise<PropertyInventorySummaryDto> {
+  async getInventorySummary(propertyId: string, userId?: string): Promise<PropertyInventorySummaryDto> {
     const property = await this.propertiesRepository.findOne({
       where: { id: propertyId },
     });
@@ -408,7 +421,7 @@ export class PropertiesService {
     return summary;
   }
 
-  async findOne(id: string): Promise<PropertyResponseDto> {
+  async findOne(id: string, userId?: string): Promise<PropertyResponseDto> {
     const property = await this.propertiesRepository.findOne({
       where: { id, isActive: true },
       relations: ['towers'],
@@ -421,7 +434,7 @@ export class PropertiesService {
     return this.mapToResponseDto(property);
   }
 
-  async findByCode(code: string): Promise<PropertyResponseDto> {
+  async findByCode(code: string, userId?: string): Promise<PropertyResponseDto> {
     const property = await this.propertiesRepository.findOne({
       where: { propertyCode: code, isActive: true },
     });
@@ -433,7 +446,7 @@ export class PropertiesService {
     return this.mapToResponseDto(property);
   }
 
-  async getHierarchy(id: string): Promise<PropertyHierarchyDto> {
+  async getHierarchy(id: string, userId?: string): Promise<PropertyHierarchyDto> {
     const property = await this.propertiesRepository.findOne({
       where: { id, isActive: true },
     });
@@ -554,7 +567,12 @@ export class PropertiesService {
     return this.mapToResponseDto(updatedProperty);
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string, userId?: string): Promise<void> {
+    // Check property access for non-admin users
+    if (userId) {
+      await this.checkPropertyAccess(id, userId);
+    }
+
     const property = await this.propertiesRepository.findOne({
       where: { id, isActive: true },
     });
@@ -564,15 +582,19 @@ export class PropertiesService {
     }
 
     property.isActive = false;
+    property.updatedBy = userId;
     await this.propertiesRepository.save(property);
 
     await this.towersRepository.update({ propertyId: id }, { isActive: false });
     await this.flatsRepository.update({ propertyId: id }, { isActive: false });
-
-    return { message: 'Property deleted successfully' };
   }
 
-  async toggleActive(id: string): Promise<PropertyResponseDto> {
+  async toggleActive(id: string, userId?: string): Promise<PropertyResponseDto> {
+    // Check property access for non-admin users
+    if (userId) {
+      await this.checkPropertyAccess(id, userId);
+    }
+
     const property = await this.propertiesRepository.findOne({
       where: { id },
     });
@@ -582,6 +604,7 @@ export class PropertiesService {
     }
 
     property.isActive = !property.isActive;
+    property.updatedBy = userId;
     const updatedProperty = await this.propertiesRepository.save(property);
 
     await this.towersRepository.update(
@@ -597,21 +620,42 @@ export class PropertiesService {
     return this.mapToResponseDto(updatedProperty);
   }
 
-  async getStats(): Promise<any> {
+  async getStats(userId?: string): Promise<any> {
+    // Get accessible property IDs for non-admin users
+    let propertyIds: string[] = [];
+    if (userId) {
+      const isAdmin = await this.propertyAccessService.isGlobalAdmin(userId);
+      if (!isAdmin) {
+        propertyIds = await this.propertyAccessService.getUserPropertyIds(userId);
+        if (propertyIds.length === 0) {
+          return {
+            totalProperties: 0,
+            activeProperties: 0,
+            underConstruction: 0,
+            completed: 0,
+          };
+        }
+      }
+    }
+
+    const whereClause = propertyIds.length > 0 
+      ? { isActive: true, id: In(propertyIds) }
+      : { isActive: true };
+
     const totalProperties = await this.propertiesRepository.count({
-      where: { isActive: true },
+      where: whereClause,
     });
 
     const activeProperties = await this.propertiesRepository.count({
-      where: { isActive: true, status: 'Active' },
+      where: { ...whereClause, status: 'Active' },
     });
 
     const underConstruction = await this.propertiesRepository.count({
-      where: { isActive: true, status: 'Under Construction' },
+      where: { ...whereClause, status: 'Under Construction' },
     });
 
     const completed = await this.propertiesRepository.count({
-      where: { isActive: true, status: 'Completed' },
+      where: { ...whereClause, status: 'Completed' },
     });
 
     return {

@@ -1,4 +1,5 @@
 import { Role } from './role.entity';
+import { UserPropertyAccess } from './user-property-access.entity';
 export declare class User {
     id: string;
     email: string;
@@ -17,6 +18,10 @@ export declare class User {
     lastLoginAt: Date;
     failedLoginAttempts: number;
     lockedUntil: Date;
+    emailDomain: string;
+    allowedDomain: string;
+    isDomainVerified: boolean;
+    propertyAccess: UserPropertyAccess[];
     createdBy: string;
     updatedBy: string;
     createdAt: Date;

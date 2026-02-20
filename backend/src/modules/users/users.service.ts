@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
@@ -35,8 +35,13 @@ export class UsersService {
     // Hash password
     const password = await bcrypt.hash(createUserDto.password, 12);
 
-    // Get roles
-    const roles = await this.rolesRepository.findByIds(createUserDto.roleIds || []);
+    // Get roles (only active roles)
+    const roles = await this.rolesRepository.find({
+      where: { 
+        id: In(createUserDto.roleIds || []),
+        isActive: true 
+      }
+    });
 
     const user = this.usersRepository.create({
       ...createUserDto,
@@ -121,6 +126,12 @@ export class UsersService {
     });
   }
 
+  async getRoleByName(roleName: string): Promise<Role | null> {
+    return await this.rolesRepository.findOne({
+      where: { name: roleName, isActive: true },
+    });
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto, updatedById?: string) {
     const user = await this.findOne(id);
 
@@ -139,7 +150,12 @@ export class UsersService {
     }
 
     if (updateUserDto.roleIds) {
-      const roles = await this.rolesRepository.findByIds(updateUserDto.roleIds);
+      const roles = await this.rolesRepository.find({
+        where: { 
+          id: In(updateUserDto.roleIds),
+          isActive: true 
+        }
+      });
       user.roles = roles;
       delete updateUserDto.roleIds;
     }
@@ -164,6 +180,7 @@ export class UsersService {
 
   async findAllRoles() {
     return await this.rolesRepository.find({
+      where: { isActive: true },
       relations: ['permissions'],
       order: { name: 'ASC' },
     });
@@ -171,7 +188,7 @@ export class UsersService {
 
   async findOneRole(id: string) {
     const role = await this.rolesRepository.findOne({
-      where: { id },
+      where: { id, isActive: true },
       relations: ['permissions'],
     });
 

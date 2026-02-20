@@ -1,15 +1,20 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan, MoreThan } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { PaymentCompletionService } from './services/payment-completion.service';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
+    @Inject(forwardRef(() => PaymentCompletionService))
+    private paymentCompletionService: PaymentCompletionService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment> {
@@ -19,8 +24,20 @@ export class PaymentsService {
     }
 
     const payment = this.paymentRepository.create(createPaymentDto);
+    const savedPayment = await this.paymentRepository.save(payment);
 
-    return this.paymentRepository.save(payment);
+    // Automatically process payment completion workflow
+    if (savedPayment.status === PaymentStatus.COMPLETED) {
+      try {
+        await this.paymentCompletionService.processPaymentCompletion(savedPayment.id);
+        this.logger.log(`Payment completion workflow processed for payment ${savedPayment.id}`);
+      } catch (error) {
+        this.logger.error(`Failed to process payment completion workflow: ${error.message}`);
+        // Don't fail the payment creation if workflow processing fails
+      }
+    }
+
+    return savedPayment;
   }
 
   async findAll(filters?: {

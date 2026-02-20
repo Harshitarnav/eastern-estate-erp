@@ -6,12 +6,18 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ConstructionProject } from './construction-project.entity';
 import { Flat } from '../../flats/entities/flat.entity';
 import { ConstructionPhase, PhaseStatus } from './construction-tower-progress.entity';
+import { DemandDraft } from '../../demand-drafts/entities/demand-draft.entity';
+import { PaymentSchedule } from '../../payments/entities/payment-schedule.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('construction_flat_progress')
+@Index(['isPaymentMilestone'], { where: '"is_payment_milestone" = TRUE' })
+@Index(['milestoneTriggered'])
 export class ConstructionFlatProgress {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -74,6 +80,43 @@ export class ConstructionFlatProgress {
 
   @Column({ type: 'text', nullable: true })
   notes: string | null;
+
+  // Payment Milestone Integration Fields
+  @Column({ name: 'is_payment_milestone', default: false })
+  isPaymentMilestone: boolean;
+
+  @Column({ name: 'milestone_triggered', default: false })
+  milestoneTriggered: boolean;
+
+  @Column({ name: 'milestone_triggered_at', type: 'timestamp', nullable: true })
+  milestoneTriggeredAt: Date | null;
+
+  @Column({ name: 'demand_draft_id', type: 'uuid', nullable: true })
+  demandDraftId: string | null;
+
+  @ManyToOne(() => DemandDraft, { nullable: true })
+  @JoinColumn({ name: 'demand_draft_id' })
+  demandDraft: DemandDraft;
+
+  @Column({ name: 'payment_schedule_id', type: 'uuid', nullable: true })
+  paymentScheduleId: string | null;
+
+  @ManyToOne(() => PaymentSchedule, { nullable: true })
+  @JoinColumn({ name: 'payment_schedule_id' })
+  paymentSchedule: PaymentSchedule;
+
+  @Column({ name: 'milestone_approved_by', type: 'uuid', nullable: true })
+  milestoneApprovedBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'milestone_approved_by' })
+  approver: User;
+
+  @Column({ name: 'milestone_approved_at', type: 'timestamp', nullable: true })
+  milestoneApprovedAt: Date | null;
+
+  @Column({ name: 'requires_approval', default: true })
+  requiresApproval: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

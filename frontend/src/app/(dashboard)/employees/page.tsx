@@ -347,6 +347,18 @@ export default function EmployeesPage() {
                     >
                       View Details
                     </button>
+                    {employee.userId && (
+                      <button
+                        onClick={() => router.push(`/users/${employee.userId}/property-access`)}
+                        className="px-3 py-2 border rounded-lg text-sm font-medium transition-colors"
+                        style={{ borderColor: '#3DA35D', color: '#3DA35D' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#E8F5E9')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        title="Manage Property Access"
+                      >
+                        🏢 Properties
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

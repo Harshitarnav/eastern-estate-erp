@@ -41,6 +41,10 @@ export declare class AuthService {
         lastLoginAt: Date;
         failedLoginAttempts: number;
         lockedUntil: Date;
+        emailDomain: string;
+        allowedDomain: string;
+        isDomainVerified: boolean;
+        propertyAccess: import("../modules/users/entities/user-property-access.entity").UserPropertyAccess[];
         createdBy: string;
         updatedBy: string;
         createdAt: Date;
@@ -53,6 +57,19 @@ export declare class AuthService {
     }>;
     logout(userId: string, refreshToken?: string): Promise<{
         message: string;
+    }>;
+    googleLogin(user: any, ipAddress?: string, userAgent?: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+        user: {
+            id: any;
+            email: any;
+            username: any;
+            firstName: any;
+            lastName: any;
+            profileImage: any;
+            roles: any;
+        };
     }>;
     private createRefreshToken;
 }

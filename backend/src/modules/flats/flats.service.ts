@@ -508,6 +508,10 @@ export class FlatsService {
         fundsTarget: finances.fundsTarget,
         fundsRealized: finances.fundsRealized,
         fundsOutstanding: finances.fundsOutstanding,
+        // Include construction progress fields
+        constructionStage: flat.constructionStage ?? undefined,
+        constructionProgress: flat.constructionProgress ? this.toNumber(flat.constructionProgress) : 0,
+        lastConstructionUpdate: flat.lastConstructionUpdate ?? undefined,
       };
     });
 

@@ -1,16 +1,27 @@
 import { DemandDraftsService } from './demand-drafts.service';
-import { CreateDemandDraftDto } from './dto/create-demand-draft.dto';
-import { UpdateDemandDraftDto } from './dto/update-demand-draft.dto';
+import { AutoDemandDraftService } from '../construction/services/auto-demand-draft.service';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class DemandDraftsController {
     private readonly demandDraftsService;
-    constructor(demandDraftsService: DemandDraftsService);
-    create(dto: CreateDemandDraftDto): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
-    findAll(flatId?: string, customerId?: string, bookingId?: string, milestoneId?: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto[]>;
-    findOne(id: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
-    getHtml(id: string): Promise<{
-        html: string;
+    private readonly autoDemandDraftService;
+    private readonly notificationsService;
+    constructor(demandDraftsService: DemandDraftsService, autoDemandDraftService: AutoDemandDraftService, notificationsService: NotificationsService);
+    findAll(query: any, req: any): Promise<import("./entities/demand-draft.entity").DemandDraft[]>;
+    findOne(id: string): Promise<import("./entities/demand-draft.entity").DemandDraft>;
+    create(createDto: any, req: any): Promise<import("./entities/demand-draft.entity").DemandDraft>;
+    update(id: string, updateDto: any, req: any): Promise<import("./entities/demand-draft.entity").DemandDraft>;
+    remove(id: string): Promise<{
+        message: string;
     }>;
-    update(id: string, dto: UpdateDemandDraftDto): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
-    markSent(id: string, fileUrl?: string): Promise<import("./dto/demand-draft-response.dto").DemandDraftResponseDto>;
-    remove(id: string): Promise<void>;
+    approve(id: string, req: any): Promise<import("./entities/demand-draft.entity").DemandDraft>;
+    send(id: string, req: any): Promise<import("./entities/demand-draft.entity").DemandDraft>;
+    preview(id: string): Promise<{
+        html: string;
+        metadata: any;
+    }>;
+    export(id: string): Promise<{
+        html: string;
+        filename: string;
+        contentType: string;
+    }>;
 }

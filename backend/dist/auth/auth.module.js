@@ -16,6 +16,7 @@ const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
 const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const local_strategy_1 = require("./strategies/local.strategy");
+const google_strategy_1 = require("./strategies/google.strategy");
 const user_entity_1 = require("../modules/users/entities/user.entity");
 const refresh_token_entity_1 = require("./entities/refresh-token.entity");
 const users_module_1 = require("../modules/users/users.module");
@@ -39,7 +40,7 @@ exports.AuthModule = AuthModule = __decorate([
             }),
             users_module_1.UsersModule,
         ],
-        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, local_strategy_1.LocalStrategy],
+        providers: [auth_service_1.AuthService, jwt_strategy_1.JwtStrategy, local_strategy_1.LocalStrategy, google_strategy_1.GoogleStrategy],
         controllers: [auth_controller_1.AuthController],
         exports: [auth_service_1.AuthService],
     })

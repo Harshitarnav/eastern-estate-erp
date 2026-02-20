@@ -45,7 +45,7 @@ let AuthService = class AuthService {
         }
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            user.failedLoginAttempts += 1;
+            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
             if (user.failedLoginAttempts >= 5) {
                 user.lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
             }
@@ -53,7 +53,7 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
         user.failedLoginAttempts = 0;
-        user.lockedUntil = undefined;
+        user.lockedUntil = null;
         user.lastLoginAt = new Date();
         await this.usersRepository.save(user);
         const { password: _, ...result } = user;
@@ -140,6 +140,32 @@ let AuthService = class AuthService {
             await this.refreshTokenRepository.delete({ user: { id: userId } });
         }
         return { message: 'Logged out successfully' };
+    }
+    async googleLogin(user, ipAddress, userAgent) {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            roles: user.roles.map((r) => r.name),
+        };
+        const accessToken = this.jwtService.sign(payload);
+        const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
+        return {
+            accessToken,
+            refreshToken: refreshToken.token,
+            user: {
+                id: user.id,
+                email: user.email,
+                username: user.username,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                profileImage: user.profileImage,
+                roles: user.roles.map((r) => ({
+                    id: r.id,
+                    name: r.name,
+                    displayName: r.displayName,
+                })),
+            },
+        };
     }
     async createRefreshToken(userId, ipAddress, userAgent) {
         const expiresAt = new Date();

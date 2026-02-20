@@ -14,6 +14,9 @@ const typeorm_1 = require("typeorm");
 const construction_project_entity_1 = require("./construction-project.entity");
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const construction_tower_progress_entity_1 = require("./construction-tower-progress.entity");
+const demand_draft_entity_1 = require("../../demand-drafts/entities/demand-draft.entity");
+const payment_schedule_entity_1 = require("../../payments/entities/payment-schedule.entity");
+const user_entity_1 = require("../../users/entities/user.entity");
 let ConstructionFlatProgress = class ConstructionFlatProgress {
     get isDelayed() {
         if (!this.expectedEndDate || this.status === construction_tower_progress_entity_1.PhaseStatus.COMPLETED) {
@@ -114,6 +117,53 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionFlatProgress.prototype, "notes", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'is_payment_milestone', default: false }),
+    __metadata("design:type", Boolean)
+], ConstructionFlatProgress.prototype, "isPaymentMilestone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'milestone_triggered', default: false }),
+    __metadata("design:type", Boolean)
+], ConstructionFlatProgress.prototype, "milestoneTriggered", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'milestone_triggered_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], ConstructionFlatProgress.prototype, "milestoneTriggeredAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'demand_draft_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionFlatProgress.prototype, "demandDraftId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => demand_draft_entity_1.DemandDraft, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'demand_draft_id' }),
+    __metadata("design:type", demand_draft_entity_1.DemandDraft)
+], ConstructionFlatProgress.prototype, "demandDraft", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'payment_schedule_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionFlatProgress.prototype, "paymentScheduleId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => payment_schedule_entity_1.PaymentSchedule, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'payment_schedule_id' }),
+    __metadata("design:type", payment_schedule_entity_1.PaymentSchedule)
+], ConstructionFlatProgress.prototype, "paymentSchedule", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'milestone_approved_by', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionFlatProgress.prototype, "milestoneApprovedBy", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'milestone_approved_by' }),
+    __metadata("design:type", user_entity_1.User)
+], ConstructionFlatProgress.prototype, "approver", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'milestone_approved_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], ConstructionFlatProgress.prototype, "milestoneApprovedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'requires_approval', default: true }),
+    __metadata("design:type", Boolean)
+], ConstructionFlatProgress.prototype, "requiresApproval", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], ConstructionFlatProgress.prototype, "createdAt", void 0);
@@ -122,6 +172,8 @@ __decorate([
     __metadata("design:type", Date)
 ], ConstructionFlatProgress.prototype, "updatedAt", void 0);
 exports.ConstructionFlatProgress = ConstructionFlatProgress = __decorate([
-    (0, typeorm_1.Entity)('construction_flat_progress')
+    (0, typeorm_1.Entity)('construction_flat_progress'),
+    (0, typeorm_1.Index)(['isPaymentMilestone'], { where: '"is_payment_milestone" = TRUE' }),
+    (0, typeorm_1.Index)(['milestoneTriggered'])
 ], ConstructionFlatProgress);
 //# sourceMappingURL=construction-flat-progress.entity.js.map

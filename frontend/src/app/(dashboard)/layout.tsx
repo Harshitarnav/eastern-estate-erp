@@ -8,6 +8,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import ChatButton from '@/components/layout/ChatButton';
 import { Menu, LogOut } from 'lucide-react';
+import { Toaster } from 'sonner';
 
 export default function DashboardLayout({
   children,
@@ -43,6 +44,9 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Toast Notifications */}
+      <Toaster position="top-right" richColors />
+      
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 

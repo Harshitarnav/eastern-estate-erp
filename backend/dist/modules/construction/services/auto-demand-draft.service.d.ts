@@ -1,0 +1,31 @@
+import { Repository } from 'typeorm';
+import { FlatPaymentPlanService } from '../../payment-plans/services/flat-payment-plan.service';
+import { DemandDraftTemplateService } from '../../payment-plans/services/demand-draft-template.service';
+import { DemandDraft } from '../../demand-drafts/entities/demand-draft.entity';
+import { PaymentSchedule } from '../../payments/entities/payment-schedule.entity';
+import { ConstructionFlatProgress } from '../entities/construction-flat-progress.entity';
+import { MilestoneDetectionService, MilestoneMatch } from './milestone-detection.service';
+import { Flat } from '../../flats/entities/flat.entity';
+import { Customer } from '../../customers/entities/customer.entity';
+import { Booking } from '../../bookings/entities/booking.entity';
+import { Property } from '../../properties/entities/property.entity';
+import { Tower } from '../../towers/entities/tower.entity';
+export declare class AutoDemandDraftService {
+    private readonly demandDraftRepository;
+    private readonly paymentScheduleRepository;
+    private readonly progressRepository;
+    private readonly flatRepository;
+    private readonly customerRepository;
+    private readonly bookingRepository;
+    private readonly propertyRepository;
+    private readonly towerRepository;
+    private readonly milestoneDetectionService;
+    private readonly flatPaymentPlanService;
+    private readonly templateService;
+    private readonly logger;
+    constructor(demandDraftRepository: Repository<DemandDraft>, paymentScheduleRepository: Repository<PaymentSchedule>, progressRepository: Repository<ConstructionFlatProgress>, flatRepository: Repository<Flat>, customerRepository: Repository<Customer>, bookingRepository: Repository<Booking>, propertyRepository: Repository<Property>, towerRepository: Repository<Tower>, milestoneDetectionService: MilestoneDetectionService, flatPaymentPlanService: FlatPaymentPlanService, templateService: DemandDraftTemplateService);
+    generateDemandDraft(match: MilestoneMatch, systemUserId?: string): Promise<DemandDraft>;
+    manualGenerateDemandDraft(flatPaymentPlanId: string, milestoneSequence: number, userId: string): Promise<DemandDraft>;
+    approveDemandDraft(demandDraftId: string, userId: string): Promise<DemandDraft>;
+    sendDemandDraft(demandDraftId: string, userId: string): Promise<DemandDraft>;
+}

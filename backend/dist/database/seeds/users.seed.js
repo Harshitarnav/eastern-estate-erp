@@ -160,6 +160,22 @@ class UserSeeder {
             console.log('📝 Creating sample users...');
             const users = [
                 {
+                    email: 'info@eecd.in',
+                    username: 'info',
+                    firstName: 'Super',
+                    lastName: 'Admin',
+                    phone: '+91-9876543210',
+                    role: 'super_admin',
+                },
+                {
+                    email: 'hr@eecd.in',
+                    username: 'hr',
+                    firstName: 'HR',
+                    lastName: 'Manager',
+                    phone: '+91-9876543211',
+                    role: 'admin',
+                },
+                {
                     email: 'superadmin@easternestates.com',
                     username: 'superadmin',
                     firstName: 'Super',
