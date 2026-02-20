@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, FileText, Edit, Trash2, RefreshCw, X } from 'lucide-react';
-import { paymentPlansService, PaymentPlanTemplate, FlatPaymentPlan } from '@/services/payment-plans.service';
+import { paymentPlansService, PaymentPlanTemplate, FlatPaymentPlan, PaymentMilestoneDto } from '@/services/payment-plans.service';
 import { flatsService } from '@/services/flats.service';
 import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
@@ -45,14 +45,8 @@ import { bookingsService } from '@/services/bookings.service';
 import { customersService } from '@/services/customers.service';
 import { toast } from 'sonner';
 
-interface Milestone {
-  sequence: number;
-  name: string;
-  description: string;
-  paymentPercentage: number;
-  constructionPhase?: string;
-  phasePercentage?: number;
-}
+// Use PaymentMilestoneDto from service instead of local interface
+type Milestone = PaymentMilestoneDto;
 
 export default function PaymentPlansPage() {
   const [templates, setTemplates] = useState<PaymentPlanTemplate[]>([]);
