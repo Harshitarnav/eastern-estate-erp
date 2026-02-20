@@ -115,3 +115,14 @@ frontend/public/uploads/
 
 # Scripts that might contain sensitive info
 backend/fix-*.sh
+
+# PM2 Logs
+backend/logs/
+frontend/logs/
+*.log
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development

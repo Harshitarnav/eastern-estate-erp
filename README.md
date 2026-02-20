@@ -57,7 +57,8 @@ npm run dev
 
 All comprehensive documentation is available in:
 - **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Complete system overview, features, and usage
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production deployment guide
+- **[PRODUCTION_DEPLOYMENT.md](./PRODUCTION_DEPLOYMENT.md)** - Complete production deployment guide
+- **[DEPLOY_QUICK_START.md](./DEPLOY_QUICK_START.md)** - Quick reference for production deployment
 
 ---
 
