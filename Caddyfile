@@ -1,9 +1,17 @@
 # Eastern Estate ERP - Caddy Configuration
 # Automatic HTTPS with Let's Encrypt
 
-# Main domain - Frontend
+# Main domain - Frontend + API proxy
 easternestate.global {
-    reverse_proxy frontend:3000
+    # Proxy API requests to backend
+    handle /api/* {
+        reverse_proxy backend:3001
+    }
+    
+    # Proxy everything else to frontend
+    handle {
+        reverse_proxy frontend:3000
+    }
     
     # Enable gzip compression
     encode gzip
