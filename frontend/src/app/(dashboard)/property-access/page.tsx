@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/select';
 import { Search, Shield, Building2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { apiService } from '@/services/api';
-import { propertiesService } from '@/services/properties.service';
+import { propertiesService, Property } from '@/services/properties.service';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdminRole } from '@/lib/roles';
@@ -53,13 +53,6 @@ interface User {
   lastName: string;
   roles: any[];
   isActive: boolean;
-}
-
-interface Property {
-  id: string;
-  name: string;
-  location: string;
-  propertyCode: string;
 }
 
 interface PropertyAccess {
