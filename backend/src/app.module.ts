@@ -27,6 +27,7 @@ import { DatabaseModule } from './modules/database/database.module';
 import { PaymentPlansModule } from './modules/payment-plans/payment-plans.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
+import { HealthModule } from './health/health.module';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { ThrottlerGuard, ThrottlerModule, ThrottlerModuleOptions } from '@nestjs/throttler';
 import configuration from './config/configuration';
@@ -106,6 +107,7 @@ import { PropertyAccessGuard } from './common/guards/property-access.guard';
     DatabaseModule,
     PaymentPlansModule,
     UploadModule,
+    HealthModule,
   ],
   providers: [
     {

@@ -221,6 +221,32 @@ WHERE u.email = 'arnav@eecd.in'
       AND upa.property_id = p.id
   );
 
+-- Grant HR (hr@eecd.in) access to all properties with READ_WRITE role
+INSERT INTO user_property_access (
+  user_id,
+  property_id,
+  role,
+  is_active,
+  assigned_by,
+  assigned_at
+)
+SELECT 
+  u.id,
+  p.id,
+  'READ_WRITE',
+  true,
+  (SELECT id FROM users WHERE email = 'info@eecd.in'),  -- Assigned by super admin
+  NOW()
+FROM users u
+CROSS JOIN properties p
+WHERE u.email = 'hr@eecd.in'
+  AND NOT EXISTS (
+    SELECT 1 
+    FROM user_property_access upa 
+    WHERE upa.user_id = u.id 
+      AND upa.property_id = p.id
+  );
+
 -- ============================================
 -- VERIFICATION AND SUMMARY
 -- ============================================
