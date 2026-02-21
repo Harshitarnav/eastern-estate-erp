@@ -83,7 +83,7 @@ const statuses = [
   { value: 'ON_HOLD', label: 'On Hold' },
 ];
 
-export default function ConstructionProgressSimplePage() {
+function ConstructionProgressSimplePageContent() {
   const searchParams = useSearchParams();
   const [properties, setProperties] = useState<Property[]>([]);
   const [towers, setTowers] = useState<Tower[]>([]);
@@ -588,3 +588,17 @@ export default function ConstructionProgressSimplePage() {
     </div>
   );
 }
+
+
+export default function ConstructionProgressSimplePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <ConstructionProgressSimplePageContent />
+    </Suspense>
+  );
+}
+

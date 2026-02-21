@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePropertyStore } from '@/store/propertyStore';
 import { propertiesService } from '@/services/properties.service';
@@ -28,7 +28,7 @@ import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/component
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
 
-export default function BookingsPage() {
+function BookingsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const customerId = searchParams.get('customerId');
@@ -548,3 +548,17 @@ export default function BookingsPage() {
     </div>
   );
 }
+
+
+export default function BookingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <BookingsPageContent />
+    </Suspense>
+  );
+}
+

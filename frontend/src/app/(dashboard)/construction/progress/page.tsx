@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/services/api';
 import AddProgressLogModal from '@/components/modals/AddProgressLogModal';
 
-export default function ProgressLogsPage() {
+function ProgressLogsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId') ?? '';
@@ -254,3 +254,17 @@ export default function ProgressLogsPage() {
     </div>
   );
 }
+
+
+export default function ProgressLogsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <ProgressLogsPageContent />
+    </Suspense>
+  );
+}
+
