@@ -1,0 +1,57 @@
+# Eastern Estate ERP - Caddy Configuration
+# Automatic HTTPS with Let's Encrypt
+
+# Main domain - Frontend
+easternestate.global {
+    reverse_proxy frontend:3000
+    
+    # Enable gzip compression
+    encode gzip
+    
+    # Security headers
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # Prevent MIME sniffing
+        X-Content-Type-Options "nosniff"
+        # XSS Protection
+        X-XSS-Protection "1; mode=block"
+        # Referrer Policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    # Logs
+    log {
+        output file /var/log/caddy/easternestate.log
+        format json
+    }
+}
+
+# www subdomain - Redirect to main domain
+www.easternestate.global {
+    redir https://easternestate.global{uri} permanent
+}
+
+# API subdomain - Backend
+api.easternestate.global {
+    reverse_proxy backend:3001
+    
+    # Enable gzip compression
+    encode gzip
+    
+    # CORS headers (already handled by backend, but Caddy adds extra layer)
+    header {
+        # Enable HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        # Prevent clickjacking
+        X-Frame-Options "SAMEORIGIN"
+    }
+    
+    # Logs
+    log {
+        output file /var/log/caddy/api.log
+        format json
+    }
+}
