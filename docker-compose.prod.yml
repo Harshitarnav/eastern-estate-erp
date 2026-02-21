@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:14-alpine
+    image: postgres:16-alpine
     container_name: eastern-estate-postgres
     restart: unless-stopped
     environment:
