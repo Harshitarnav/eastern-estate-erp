@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/services/api';
 import AddVendorModal from '@/components/modals/AddVendorModal';
 import VendorPaymentModal from '@/components/modals/VendorPaymentModal';
 
-export default function VendorsPage() {
+function VendorsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId');
@@ -281,3 +281,17 @@ export default function VendorsPage() {
     </div>
   );
 }
+
+
+export default function VendorsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <VendorsPageContent />
+    </Suspense>
+  );
+}
+
