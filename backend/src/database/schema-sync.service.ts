@@ -13,17 +13,32 @@ export class SchemaSyncService implements OnModuleInit {
 
     try {
       await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
+    } finally {
+      // Don't release yet — reuse for schema steps below
+    }
 
+    // Run each schema group in its own isolated transaction so that one
+    // failure does NOT roll back other groups (e.g. a bad campaigns migration
+    // must not undo the notifications table creation).
+    const runIsolated = async (
+      label: string,
+      fn: (qr: typeof queryRunner) => Promise<void>,
+    ) => {
       await queryRunner.startTransaction();
-      await this.ensureNotificationsSchema(queryRunner);
-      await this.ensureAccountingSchema(queryRunner);
-      await this.ensureVendorAndPurchaseSchema(queryRunner);
-      await this.ensureMarketingSchema(queryRunner);
+      try {
+        await fn(queryRunner);
+        await queryRunner.commitTransaction();
+      } catch (error) {
+        await queryRunner.rollbackTransaction();
+        this.logger.error(`Failed to synchronize ${label} schema`, error as Error);
+      }
+    };
 
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      this.logger.error('Failed to synchronize database schema', error as Error);
+    try {
+      await runIsolated('notifications', (qr) => this.ensureNotificationsSchema(qr));
+      await runIsolated('accounting', (qr) => this.ensureAccountingSchema(qr));
+      await runIsolated('vendor/purchase', (qr) => this.ensureVendorAndPurchaseSchema(qr));
+      await runIsolated('marketing', (qr) => this.ensureMarketingSchema(qr));
     } finally {
       await queryRunner.release();
     }
@@ -393,16 +408,32 @@ export class SchemaSyncService implements OnModuleInit {
       );
 
       if (hasCampaignNameCol.length > 0) {
+        // Old schema uses 'campaign_name' and 'campaign_type'
+        const hasCampaignTypeCol = await queryRunner.query(
+          `SELECT 1 FROM information_schema.columns
+           WHERE table_schema = current_schema()
+             AND table_name = 'campaigns'
+             AND column_name = 'campaign_type'`,
+        );
+        const typeExpr = hasCampaignTypeCol.length > 0 ? `COALESCE(campaign_type, 'OTHER')` : `'OTHER'`;
         await queryRunner.query(`
           INSERT INTO marketing_campaigns (name, description, type, status, budget, start_date, end_date)
-          SELECT campaign_name, description, COALESCE(campaign_type, 'OTHER'), COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
+          SELECT campaign_name, description, ${typeExpr}, COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
           FROM campaigns
           ON CONFLICT DO NOTHING;
         `);
       } else if (hasNameCol.length > 0) {
+        // Newer schema uses 'name'; check whether a 'type' column also exists
+        const hasTypeCol = await queryRunner.query(
+          `SELECT 1 FROM information_schema.columns
+           WHERE table_schema = current_schema()
+             AND table_name = 'campaigns'
+             AND column_name = 'type'`,
+        );
+        const typeExpr = hasTypeCol.length > 0 ? `COALESCE(type, 'OTHER')` : `'OTHER'`;
         await queryRunner.query(`
           INSERT INTO marketing_campaigns (name, description, type, status, budget, start_date, end_date)
-          SELECT name, description, COALESCE(type, 'OTHER'), COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
+          SELECT name, description, ${typeExpr}, COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
           FROM campaigns
           ON CONFLICT DO NOTHING;
         `);
