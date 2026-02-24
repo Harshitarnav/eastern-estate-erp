@@ -11,6 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateEmployeeDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
+const trimToUndefined = ({ value }) => value === '' || value === null ? undefined : value;
 class CreateEmployeeDto {
 }
 exports.CreateEmployeeDto = CreateEmployeeDto;
@@ -25,66 +27,121 @@ __decorate([
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "fullName", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsEmail)({}, { message: 'Please provide a valid email address' }),
-    (0, class_validator_1.IsNotEmpty)({ message: 'Email is required' }),
     (0, class_validator_1.Matches)(/@eecd\.in$/, {
-        message: 'Email must end with @eecd.in domain'
+        message: 'Email must end with @eecd.in domain',
     }),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "email", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "phoneNumber", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "alternatePhone", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "profilePicture", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
+    __metadata("design:type", Object)
+], CreateEmployeeDto.prototype, "dateOfBirth", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "gender", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "currentAddress", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "department", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "designation", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "employmentType", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
+    __metadata("design:type", Object)
+], CreateEmployeeDto.prototype, "joiningDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateEmployeeDto.prototype, "basicSalary", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateEmployeeDto.prototype, "houseRentAllowance", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateEmployeeDto.prototype, "transportAllowance", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Number)
+], CreateEmployeeDto.prototype, "medicalAllowance", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "bankName", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "bankAccountNumber", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "ifscCode", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "aadharNumber", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "panNumber", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "notes", void 0);

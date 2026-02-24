@@ -33,7 +33,7 @@ export class PropertyAccessController {
    */
   @Post('property-access/grant')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async grantAccess(
     @Body() grantAccessDto: GrantAccessDto,
     @Request() req: any,
@@ -65,7 +65,7 @@ export class PropertyAccessController {
    */
   @Post('property-access/bulk-grant')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async bulkGrantAccess(
     @Body() bulkGrantDto: BulkGrantAccessDto,
     @Request() req: any,
@@ -97,7 +97,7 @@ export class PropertyAccessController {
    */
   @Post('property-access/revoke')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async revokeAccess(
     @Body() body: { userId: string; propertyId: string; role?: string },
     @Request() req: any,
@@ -125,7 +125,7 @@ export class PropertyAccessController {
    * Admin/Super Admin only
    */
   @Get('property-access/all')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async getAllPropertyAccess() {
     // This would need to be implemented in the service
     return { message: 'Endpoint for listing all property access' };
@@ -136,7 +136,7 @@ export class PropertyAccessController {
    * Admin/Super Admin only
    */
   @Get(':userId/property-access')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async getUserPropertyAccess(@Param('userId') userId: string) {
     return this.propertyAccessService.getUserProperties(userId);
   }
@@ -147,7 +147,7 @@ export class PropertyAccessController {
    */
   @Post(':userId/property-access')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async grantAccessToUser(
     @Param('userId') userId: string,
     @Body() body: { propertyId: string; role: string },
@@ -181,7 +181,7 @@ export class PropertyAccessController {
    */
   @Delete(':userId/property-access/:propertyId')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async revokeAccessFromUser(
     @Param('userId') userId: string,
     @Param('propertyId') propertyId: string,

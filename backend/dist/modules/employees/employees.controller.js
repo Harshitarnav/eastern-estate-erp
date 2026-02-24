@@ -48,7 +48,7 @@ let EmployeesController = class EmployeesController {
 exports.EmployeesController = EmployeesController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('hr_manager', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [dto_1.CreateEmployeeDto]),
@@ -76,7 +76,7 @@ __decorate([
 ], EmployeesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)('hr_manager', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -85,7 +85,7 @@ __decorate([
 ], EmployeesController.prototype, "update", null);
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, roles_decorator_1.Roles)('hr_manager', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),

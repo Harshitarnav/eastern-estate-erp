@@ -101,6 +101,10 @@ export class NotificationsService {
       this.logger.log(`Created ${notifications.length} notification(s)`);
       return notifications;
     } catch (error) {
+      if (this.isMissingNotificationsTable(error)) {
+        this.logger.warn('Notifications table missing; skipping notification creation.');
+        return [];
+      }
       this.logger.error('Error creating notification:', error);
       throw error;
     }

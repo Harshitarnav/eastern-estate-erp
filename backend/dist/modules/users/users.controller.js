@@ -46,7 +46,7 @@ let UsersController = class UsersController {
 exports.UsersController = UsersController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -55,7 +55,7 @@ __decorate([
 ], UsersController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -79,7 +79,7 @@ __decorate([
 ], UsersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -87,7 +87,7 @@ __decorate([
 ], UsersController.prototype, "remove", null);
 __decorate([
     (0, common_1.Patch)(':id/toggle-active'),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -112,14 +112,14 @@ let RolesController = class RolesController {
 exports.RolesController = RolesController;
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], RolesController.prototype, "findAllRoles", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -141,7 +141,7 @@ let PermissionsController = class PermissionsController {
 exports.PermissionsController = PermissionsController;
 __decorate([
     (0, common_1.Get)(),
-    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr_manager'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin', 'hr'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)

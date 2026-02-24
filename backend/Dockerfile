@@ -31,8 +31,8 @@ RUN npm config set fetch-timeout 300000 && \
 # Copy compiled app
 COPY --from=build /app/dist ./dist
 
-# Create uploads directory for file storage
-RUN mkdir -p /app/uploads
+# Create uploads directories for file storage
+RUN mkdir -p /app/uploads/thumbnails
 
 EXPOSE 3001
 CMD ["node", "dist/main"]

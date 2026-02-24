@@ -23,13 +23,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @Roles('super_admin', 'admin', 'hr_manager')
+  @Roles('super_admin', 'admin', 'hr')
   create(@Body() createUserDto: CreateUserDto, @Request() req) {
     return this.usersService.create(createUserDto, req.user.id);
   }
 
   @Get()
-  @Roles('super_admin', 'admin', 'hr_manager')
+  @Roles('super_admin', 'admin', 'hr')
   findAll(@Query() query: any) {
     return this.usersService.findAll(query);
   }
@@ -45,13 +45,13 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('super_admin', 'admin')
+  @Roles('super_admin', 'admin', 'hr')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 
   @Patch(':id/toggle-active')
-  @Roles('super_admin', 'admin')
+  @Roles('super_admin', 'admin', 'hr')
   toggleActive(@Param('id') id: string) {
     return this.usersService.toggleActive(id);
   }
@@ -63,13 +63,13 @@ export class RolesController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles('super_admin', 'admin', 'hr_manager')
+  @Roles('super_admin', 'admin', 'hr')
   findAllRoles() {
     return this.usersService.findAllRoles();
   }
 
   @Get(':id')
-  @Roles('super_admin', 'admin', 'hr_manager')
+  @Roles('super_admin', 'admin', 'hr')
   findOneRole(@Param('id') id: string) {
     return this.usersService.findOneRole(id);
   }
@@ -81,7 +81,7 @@ export class PermissionsController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles('super_admin', 'admin', 'hr_manager')
+  @Roles('super_admin', 'admin', 'hr')
   findAllPermissions() {
     return this.usersService.findAllPermissions();
   }

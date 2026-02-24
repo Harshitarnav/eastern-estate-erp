@@ -24,8 +24,8 @@ export class EmployeesService {
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto, createdBy?: string): Promise<Employee> {
-    // Validate email domain
-    if (!createEmployeeDto.email.endsWith('@eecd.in')) {
+    // Validate email domain only when an email is provided
+    if (createEmployeeDto.email && !createEmployeeDto.email.endsWith('@eecd.in')) {
       throw new BadRequestException('Employee email must end with @eecd.in domain');
     }
 

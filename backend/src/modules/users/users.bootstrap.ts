@@ -29,7 +29,7 @@ export class UsersBootstrapService implements OnModuleInit {
   }
 
   private async ensureCoreRoles() {
-    const coreRoles = ['super_admin', 'admin', 'hr_manager'];
+    const coreRoles = ['super_admin', 'admin', 'hr'];
     const existing = await this.roleRepo.find({
       where: { name: In(coreRoles) as any },
     });

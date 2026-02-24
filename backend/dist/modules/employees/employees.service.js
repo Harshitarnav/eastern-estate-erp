@@ -29,7 +29,7 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         this.logger = new common_1.Logger(EmployeesService_1.name);
     }
     async create(createEmployeeDto, createdBy) {
-        if (!createEmployeeDto.email.endsWith('@eecd.in')) {
+        if (createEmployeeDto.email && !createEmployeeDto.email.endsWith('@eecd.in')) {
             throw new common_1.BadRequestException('Employee email must end with @eecd.in domain');
         }
         const grossSalary = (createEmployeeDto.basicSalary || 0) +
