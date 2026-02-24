@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 // Helper: treat empty string the same as undefined so @IsOptional skips validators
@@ -14,14 +14,11 @@ export class CreateEmployeeDto {
   @IsNotEmpty()
   fullName: string;
 
-  // Email is optional (not all employees need a login account at creation time).
-  // When provided it MUST be a valid @eecd.in address.
+  // Email is optional (not all employees have a company account at creation time).
+  // When provided it must be a valid email address (any domain).
   @IsOptional()
   @Transform(trimToUndefined)
   @IsEmail({}, { message: 'Please provide a valid email address' })
-  @Matches(/@eecd\.in$/, {
-    message: 'Email must end with @eecd.in domain',
-  })
   email?: string;
 
   @IsOptional()

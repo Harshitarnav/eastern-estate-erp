@@ -27,11 +27,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
-    // Log error for debugging
-    this.logger.error(
-      `${request.method} ${request.url}`,
-      exception instanceof Error ? exception.stack : exception,
-    );
+    // Log error for debugging — for validation errors (400) include the field details
+    if (status === HttpStatus.BAD_REQUEST && exception instanceof HttpException) {
+      const responseBody = exception.getResponse();
+      const details =
+        typeof responseBody === 'object' && (responseBody as any).message
+          ? JSON.stringify((responseBody as any).message)
+          : String(responseBody);
+      this.logger.error(`${request.method} ${request.url} - Validation errors: ${details}`);
+    } else {
+      this.logger.error(
+        `${request.method} ${request.url}`,
+        exception instanceof Error ? exception.stack : exception,
+      );
+    }
 
     // Clear, user-friendly error response
     const errorResponse = {
