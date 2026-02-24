@@ -36,6 +36,7 @@ const database_module_1 = require("./modules/database/database.module");
 const payment_plans_module_1 = require("./modules/payment-plans/payment-plans.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
+const health_module_1 = require("./health/health.module");
 const logging_interceptor_1 = require("./common/interceptors/logging.interceptor");
 const throttler_1 = require("@nestjs/throttler");
 const configuration_1 = require("./config/configuration");
@@ -114,6 +115,7 @@ exports.AppModule = AppModule = __decorate([
             database_module_1.DatabaseModule,
             payment_plans_module_1.PaymentPlansModule,
             upload_module_1.UploadModule,
+            health_module_1.HealthModule,
         ],
         providers: [
             {
