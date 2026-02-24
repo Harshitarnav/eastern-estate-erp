@@ -74,6 +74,9 @@ export class ImageProcessorService {
     size: number = this.THUMBNAIL_SIZE,
   ): Promise<{ path: string; size: number }> {
     try {
+      // Ensure output directory exists (handles missing thumbnails/ folder gracefully)
+      await fs.mkdir(path.dirname(outputPath), { recursive: true });
+
       await sharp(inputPath)
         .resize(size, size, {
           fit: 'cover',

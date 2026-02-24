@@ -1,7 +1,7 @@
 export declare class CreateEmployeeDto {
     employeeCode: string;
     fullName: string;
-    email: string;
+    email?: string;
     phoneNumber?: string;
     alternatePhone?: string;
     profilePicture?: string;

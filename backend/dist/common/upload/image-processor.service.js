@@ -51,6 +51,7 @@ let ImageProcessorService = ImageProcessorService_1 = class ImageProcessorServic
     }
     async generateThumbnail(inputPath, outputPath, size = this.THUMBNAIL_SIZE) {
         try {
+            await fs.mkdir(path.dirname(outputPath), { recursive: true });
             await sharp(inputPath)
                 .resize(size, size, {
                 fit: 'cover',
