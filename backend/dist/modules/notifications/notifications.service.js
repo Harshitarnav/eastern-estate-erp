@@ -89,6 +89,10 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
             return notifications;
         }
         catch (error) {
+            if (this.isMissingNotificationsTable(error)) {
+                this.logger.warn('Notifications table missing; skipping notification creation.');
+                return [];
+            }
             this.logger.error('Error creating notification:', error);
             throw error;
         }

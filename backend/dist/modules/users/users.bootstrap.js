@@ -35,7 +35,7 @@ let UsersBootstrapService = UsersBootstrapService_1 = class UsersBootstrapServic
         }
     }
     async ensureCoreRoles() {
-        const coreRoles = ['super_admin', 'admin', 'hr_manager'];
+        const coreRoles = ['super_admin', 'admin', 'hr'];
         const existing = await this.roleRepo.find({
             where: { name: (0, typeorm_2.In)(coreRoles) },
         });

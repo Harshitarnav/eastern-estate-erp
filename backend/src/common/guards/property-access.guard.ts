@@ -57,6 +57,17 @@ export class PropertyAccessGuard implements CanActivate {
       return true;
     }
 
+    // HR role bypasses property-level restrictions (manages employees/users system-wide)
+    const userRoles: string[] = (user.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    if (userRoles.includes('hr')) {
+      this.logger.debug(`User ${user.email} has HR role - bypassing property access check`);
+      request.isGlobalAdmin = false;
+      request.accessiblePropertyIds = [];
+      return true;
+    }
+
     // For non-admin users, check if they have ANY property access
     const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
     
