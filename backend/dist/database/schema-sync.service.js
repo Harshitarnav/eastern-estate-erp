@@ -24,6 +24,7 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
         try {
             await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
             await queryRunner.startTransaction();
+            await this.ensureNotificationsSchema(queryRunner);
             await this.ensureAccountingSchema(queryRunner);
             await this.ensureVendorAndPurchaseSchema(queryRunner);
             await this.ensureMarketingSchema(queryRunner);
@@ -36,6 +37,56 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
         finally {
             await queryRunner.release();
         }
+    }
+    async ensureNotificationsSchema(queryRunner) {
+        await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id                  UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id             UUID         NULL,
+        target_roles        TEXT         NULL,
+        target_departments  TEXT         NULL,
+        title               VARCHAR(500) NOT NULL,
+        message             TEXT         NOT NULL,
+        type                TEXT         NOT NULL DEFAULT 'INFO',
+        category            TEXT         NOT NULL DEFAULT 'SYSTEM',
+        action_url          TEXT         NULL,
+        action_label        VARCHAR(100) NULL,
+        related_entity_id   UUID         NULL,
+        related_entity_type VARCHAR(100) NULL,
+        is_read             BOOLEAN      NOT NULL DEFAULT false,
+        read_at             TIMESTAMP    NULL,
+        should_send_email   BOOLEAN      NOT NULL DEFAULT false,
+        email_sent          BOOLEAN      NOT NULL DEFAULT false,
+        email_sent_at       TIMESTAMP    NULL,
+        priority            INTEGER      NOT NULL DEFAULT 0,
+        expires_at          TIMESTAMP    NULL,
+        metadata            JSONB        NULL,
+        created_by          UUID         NULL,
+        created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        updated_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      );
+    `);
+        await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_user_read
+        ON notifications (user_id, is_read);
+    `);
+        await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_target_roles
+        ON notifications (target_roles);
+    `);
+        await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_target_departments
+        ON notifications (target_departments);
+    `);
+        await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_created_at
+        ON notifications (created_at);
+    `);
+        await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_notifications_category
+        ON notifications (category);
+    `);
+        this.logger.log('Notifications schema ensured');
     }
     async ensureAccountingSchema(queryRunner) {
         await queryRunner.query(`

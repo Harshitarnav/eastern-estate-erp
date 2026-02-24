@@ -46,6 +46,13 @@ let PropertyAccessGuard = PropertyAccessGuard_1 = class PropertyAccessGuard {
             request.isGlobalAdmin = true;
             return true;
         }
+        const userRoles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        if (userRoles.includes('hr')) {
+            this.logger.debug(`User ${user.email} has HR role - bypassing property access check`);
+            request.isGlobalAdmin = false;
+            request.accessiblePropertyIds = [];
+            return true;
+        }
         const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
         if (!userPropertyIds || userPropertyIds.length === 0) {
             this.logger.warn(`User ${user.email} has no property access - denying request`);

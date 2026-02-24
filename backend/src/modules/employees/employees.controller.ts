@@ -41,7 +41,7 @@ export class EmployeesController {
    * Requires: HR, Admin, or Super Admin role
    */
   @Post()
-  @Roles('hr_manager', 'admin', 'super_admin')
+  @Roles('hr', 'admin', 'super_admin')
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(createEmployeeDto);
   }
@@ -78,7 +78,7 @@ export class EmployeesController {
    * Requires: HR, Admin, or Super Admin role
    */
   @Patch(':id')
-  @Roles('hr_manager', 'admin', 'super_admin')
+  @Roles('hr', 'admin', 'super_admin')
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(id, updateEmployeeDto);
   }
@@ -88,7 +88,7 @@ export class EmployeesController {
    * Requires: HR, Admin, or Super Admin role
    */
   @Put(':id')
-  @Roles('hr_manager', 'admin', 'super_admin')
+  @Roles('hr', 'admin', 'super_admin')
   replace(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(id, updateEmployeeDto);
   }
