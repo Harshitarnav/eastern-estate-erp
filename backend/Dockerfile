@@ -4,7 +4,12 @@ WORKDIR /app
 # Install dependencies and build
 FROM base AS build
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+# Increase timeout and add retries for network issues
+RUN npm config set fetch-timeout 300000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm ci --legacy-peer-deps
 COPY tsconfig*.json ./
 COPY src ./src
 RUN npm run build
@@ -16,7 +21,12 @@ WORKDIR /app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev --legacy-peer-deps
+# Increase timeout and add retries for network issues
+RUN npm config set fetch-timeout 300000 && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm ci --omit=dev --legacy-peer-deps
 
 # Copy compiled app
 COPY --from=build /app/dist ./dist

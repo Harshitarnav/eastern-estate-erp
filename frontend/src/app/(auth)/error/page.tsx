@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, XCircle, ArrowLeft, Shield } from "lucide-react";
 
-export default function AuthErrorPage() {
+function AuthErrorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [countdown, setCountdown] = useState(10);
@@ -217,5 +217,32 @@ export default function AuthErrorPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F3E3C1] flex items-center justify-center px-4">
+        <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
+          <div className="h-2 bg-gradient-to-r from-[#A8211B] via-[#F2C94C] to-[#A8211B]" />
+          <div className="p-8 sm:p-12 space-y-6">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#A8211B] to-[#7B1E12] rounded-full flex items-center justify-center">
+                <Building2 className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <div className="text-center">
+              <h1 className="text-2xl font-black text-gray-800 mb-1">
+                Eastern Estate ERP
+              </h1>
+              <p className="text-sm text-gray-500">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <AuthErrorContent />
+    </Suspense>
   );
 }

@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Plus, FileText, Edit, Trash2, RefreshCw, X } from 'lucide-react';
-import { paymentPlansService, PaymentPlanTemplate, FlatPaymentPlan } from '@/services/payment-plans.service';
+import { paymentPlansService, PaymentPlanTemplate, FlatPaymentPlan, PaymentMilestoneDto } from '@/services/payment-plans.service';
 import { flatsService } from '@/services/flats.service';
 import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
@@ -45,14 +45,8 @@ import { bookingsService } from '@/services/bookings.service';
 import { customersService } from '@/services/customers.service';
 import { toast } from 'sonner';
 
-interface Milestone {
-  sequence: number;
-  name: string;
-  description: string;
-  paymentPercentage: number;
-  constructionPhase?: string;
-  phasePercentage?: number;
-}
+// Use PaymentMilestoneDto from service instead of local interface
+type Milestone = PaymentMilestoneDto;
 
 export default function PaymentPlansPage() {
   const [templates, setTemplates] = useState<PaymentPlanTemplate[]>([]);
@@ -65,7 +59,7 @@ export default function PaymentPlansPage() {
   const [editingTemplate, setEditingTemplate] = useState<PaymentPlanTemplate | null>(null);
   const [templateName, setTemplateName] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
-  const [templateType, setTemplateType] = useState('CONSTRUCTION_LINKED');
+  const [templateType, setTemplateType] = useState<'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT'>('CONSTRUCTION_LINKED');
   const [milestones, setMilestones] = useState<Milestone[]>([]);
 
   // Flat Payment Plan Dialog State
@@ -186,8 +180,8 @@ export default function PaymentPlansPage() {
         name: 'Booking Amount',
         description: 'Initial booking payment',
         paymentPercentage: 10,
-        constructionPhase: '',
-        phasePercentage: 0,
+        constructionPhase: null,
+        phasePercentage: null,
       },
     ]);
     setTemplateDialogOpen(true);
@@ -210,8 +204,8 @@ export default function PaymentPlansPage() {
         name: '',
         description: '',
         paymentPercentage: 0,
-        constructionPhase: '',
-        phasePercentage: 0,
+        constructionPhase: null,
+        phasePercentage: null,
       },
     ]);
   };
@@ -565,14 +559,17 @@ export default function PaymentPlansPage() {
 
             <div className="grid gap-2">
               <Label>Plan Type *</Label>
-              <Select value={templateType} onValueChange={setTemplateType}>
+              <Select 
+                value={templateType} 
+                onValueChange={(value) => setTemplateType(value as 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT')}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="CONSTRUCTION_LINKED">Construction Linked</SelectItem>
-                  <SelectItem value="TIME_BASED">Time Based</SelectItem>
-                  <SelectItem value="CUSTOM">Custom</SelectItem>
+                  <SelectItem value="TIME_LINKED">Time Linked</SelectItem>
+                  <SelectItem value="DOWN_PAYMENT">Down Payment</SelectItem>
                 </SelectContent>
               </Select>
             </div>

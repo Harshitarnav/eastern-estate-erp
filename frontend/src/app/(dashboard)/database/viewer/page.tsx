@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { databaseService } from '@/services/database.service';
 import { Card } from '@/components/ui/card';
@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
 
-export default function DatabaseViewerPage() {
+function DatabaseViewerPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -756,3 +756,17 @@ export default function DatabaseViewerPage() {
     </div>
   );
 }
+
+
+export default function DatabaseViewerPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <DatabaseViewerPageContent />
+    </Suspense>
+  );
+}
+

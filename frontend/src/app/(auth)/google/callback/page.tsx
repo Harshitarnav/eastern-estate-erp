@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { Building2, CheckCircle2, XCircle } from "lucide-react";
 
-export default function GoogleCallbackPage() {
+function GoogleCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { setUser } = useAuthStore();
@@ -134,5 +134,37 @@ export default function GoogleCallbackPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function GoogleCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#F3E3C1] flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#A8211B] to-[#7B1E12] rounded-full flex items-center justify-center">
+              <Building2 className="w-8 h-8 text-white" />
+            </div>
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-gray-800 mb-2">
+              Eastern Estate ERP
+            </h1>
+            <p className="text-sm text-gray-600">Google Authentication</p>
+          </div>
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <div className="w-12 h-12 border-4 border-[#A8211B] border-t-transparent rounded-full animate-spin"></div>
+            </div>
+            <p className="text-gray-600 font-medium">
+              Loading...
+            </p>
+          </div>
+        </div>
+      </div>
+    }>
+      <GoogleCallbackContent />
+    </Suspense>
   );
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/services/api';
 import MaterialEntryModal from '@/components/modals/MaterialEntryModal';
 import MaterialExitModal from '@/components/modals/MaterialExitModal';
 
-export default function MaterialsPage() {
+function MaterialsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId') ?? '';
@@ -303,3 +303,17 @@ export default function MaterialsPage() {
     </div>
   );
 }
+
+
+export default function MaterialsPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    }>
+      <MaterialsPageContent />
+    </Suspense>
+  );
+}
+

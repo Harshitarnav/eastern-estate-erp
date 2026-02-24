@@ -55,9 +55,8 @@ npm run dev
 
 ## 📖 Documentation
 
-All comprehensive documentation is available in:
-- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Complete system overview, features, and usage
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Production deployment guide
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete Docker deployment guide for production
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - System overview, features, and testing
 
 ---
 

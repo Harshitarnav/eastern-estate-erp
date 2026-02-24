@@ -37,15 +37,6 @@ export interface DemandDraft {
 
 class ConstructionMilestonesService {
   /**
-   * Get detected milestones for a specific flat
-   */
-  async getDetectedMilestonesForFlat(flatId: string): Promise<MilestoneMatch[]> {
-    // This would call a custom endpoint that we need to create
-    // For now, return empty array as placeholder
-    return [];
-  }
-
-  /**
    * Get construction summary for a flat
    */
   async getConstructionSummary(flatId: string): Promise<ConstructionSummary> {
