@@ -357,12 +357,30 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
     `);
         const campaignsTable = await queryRunner.query(`SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = $1`, ['campaigns']);
         if (campaignsTable.length > 0) {
-            await queryRunner.query(`
-        INSERT INTO marketing_campaigns (name, description, type, status, budget, start_date, end_date)
-        SELECT campaign_name, description, COALESCE(campaign_type, 'OTHER'), COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
-        FROM campaigns
-        ON CONFLICT DO NOTHING;
-      `);
+            const hasCampaignNameCol = await queryRunner.query(`SELECT 1 FROM information_schema.columns
+         WHERE table_schema = current_schema()
+           AND table_name = 'campaigns'
+           AND column_name = 'campaign_name'`);
+            const hasNameCol = await queryRunner.query(`SELECT 1 FROM information_schema.columns
+         WHERE table_schema = current_schema()
+           AND table_name = 'campaigns'
+           AND column_name = 'name'`);
+            if (hasCampaignNameCol.length > 0) {
+                await queryRunner.query(`
+          INSERT INTO marketing_campaigns (name, description, type, status, budget, start_date, end_date)
+          SELECT campaign_name, description, COALESCE(campaign_type, 'OTHER'), COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
+          FROM campaigns
+          ON CONFLICT DO NOTHING;
+        `);
+            }
+            else if (hasNameCol.length > 0) {
+                await queryRunner.query(`
+          INSERT INTO marketing_campaigns (name, description, type, status, budget, start_date, end_date)
+          SELECT name, description, COALESCE(type, 'OTHER'), COALESCE(status, 'PLANNED'), COALESCE(budget, 0), start_date, end_date
+          FROM campaigns
+          ON CONFLICT DO NOTHING;
+        `);
+            }
         }
     }
 };
