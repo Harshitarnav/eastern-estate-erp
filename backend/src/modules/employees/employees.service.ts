@@ -24,11 +24,6 @@ export class EmployeesService {
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto, createdBy?: string): Promise<Employee> {
-    // Validate email domain only when an email is provided
-    if (createEmployeeDto.email && !createEmployeeDto.email.endsWith('@eecd.in')) {
-      throw new BadRequestException('Employee email must end with @eecd.in domain');
-    }
-
     // Calculate gross and net salary
     const grossSalary =
       (createEmployeeDto.basicSalary || 0) +

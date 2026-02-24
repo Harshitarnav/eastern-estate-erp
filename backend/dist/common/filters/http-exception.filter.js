@@ -23,7 +23,16 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
         const message = exception instanceof common_1.HttpException
             ? exception.getResponse()
             : 'Internal server error';
-        this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : exception);
+        if (status === common_1.HttpStatus.BAD_REQUEST && exception instanceof common_1.HttpException) {
+            const responseBody = exception.getResponse();
+            const details = typeof responseBody === 'object' && responseBody.message
+                ? JSON.stringify(responseBody.message)
+                : String(responseBody);
+            this.logger.error(`${request.method} ${request.url} - Validation errors: ${details}`);
+        }
+        else {
+            this.logger.error(`${request.method} ${request.url}`, exception instanceof Error ? exception.stack : exception);
+        }
         const errorResponse = {
             statusCode: status,
             timestamp: new Date().toISOString(),
