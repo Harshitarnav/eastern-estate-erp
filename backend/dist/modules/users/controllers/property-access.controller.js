@@ -98,7 +98,7 @@ exports.PropertyAccessController = PropertyAccessController;
 __decorate([
     (0, common_1.Post)('property-access/grant'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -108,7 +108,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('property-access/bulk-grant'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -118,7 +118,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('property-access/revoke'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
@@ -127,14 +127,14 @@ __decorate([
 ], PropertyAccessController.prototype, "revokeAccess", null);
 __decorate([
     (0, common_1.Get)('property-access/all'),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], PropertyAccessController.prototype, "getAllPropertyAccess", null);
 __decorate([
     (0, common_1.Get)(':userId/property-access'),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Param)('userId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -143,7 +143,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':userId/property-access'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Param)('userId')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),
@@ -154,7 +154,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':userId/property-access/:propertyId'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Param)('userId')),
     __param(1, (0, common_1.Param)('propertyId')),
     __param(2, (0, common_1.Query)('role')),

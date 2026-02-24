@@ -45,13 +45,13 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('super_admin', 'admin')
+  @Roles('super_admin', 'admin', 'hr')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 
   @Patch(':id/toggle-active')
-  @Roles('super_admin', 'admin')
+  @Roles('super_admin', 'admin', 'hr')
   toggleActive(@Param('id') id: string) {
     return this.usersService.toggleActive(id);
   }
