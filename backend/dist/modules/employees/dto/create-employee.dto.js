@@ -30,9 +30,6 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Transform)(trimToUndefined),
     (0, class_validator_1.IsEmail)({}, { message: 'Please provide a valid email address' }),
-    (0, class_validator_1.Matches)(/@eecd\.in$/, {
-        message: 'Email must end with @eecd.in domain',
-    }),
     __metadata("design:type", String)
 ], CreateEmployeeDto.prototype, "email", void 0);
 __decorate([

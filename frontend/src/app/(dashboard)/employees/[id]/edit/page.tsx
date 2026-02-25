@@ -6,27 +6,31 @@ import { ArrowLeft } from 'lucide-react';
 import { employeesService, Employee } from '@/services/employees.service';
 import uploadService from '@/services/upload.service';
 import EmployeeForm from '@/components/forms/EmployeeForm';
+import {
+  parseApiErrors,
+  StatusBanner,
+  type Banner,
+} from '../../_utils/employeeErrorUtils';
 
 export default function EditEmployeePage() {
   const router = useRouter();
   const params = useParams();
   const employeeId = params.id as string;
-  
+
   const [initialLoading, setInitialLoading] = useState(true);
   const [initialData, setInitialData] = useState<any>(null);
+  const [banner, setBanner] = useState<Banner | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (employeeId) {
-      fetchEmployee();
-    }
+    if (employeeId) fetchEmployee();
   }, [employeeId]);
 
   const fetchEmployee = async () => {
     try {
-      const employee = await employeesService.getEmployee(employeeId);
-      
-      // Format the data for the form
-      const formattedData = {
+      const employee: Employee = await employeesService.getEmployee(employeeId);
+
+      setInitialData({
         employeeCode: employee.employeeCode,
         fullName: employee.fullName,
         email: employee.email || '',
@@ -86,94 +90,110 @@ export default function EditEmployeePage() {
         experience: employee.experience || '',
         performanceRating: employee.performanceRating || '',
         notes: employee.notes || '',
-      };
-      
-      setInitialData(formattedData);
-    } catch (error) {
-      console.error('Error fetching employee:', error);
-      alert('Failed to load employee data');
-      router.push('/employees');
+      });
+    } catch (error: any) {
+      setBanner({
+        type: 'error',
+        title: 'Could not load the employee record',
+        messages: [
+          'The employee details could not be fetched. Please check your connection and try again.',
+          'If the problem persists, the record may have been deleted.',
+        ],
+      });
+      setInitialLoading(false);
     } finally {
       setInitialLoading(false);
     }
   };
 
   const handleSubmit = async (data: any) => {
+    setBanner(null);
+    setSaving(true);
+
     try {
-      console.log('📝 Edit Employee - Form data received:', data.profilePicture);
-      
-      // Handle profile picture upload if present
+      // Handle profile picture changes
       if (data.profilePicture && Array.isArray(data.profilePicture) && data.profilePicture.length > 0) {
         const file = data.profilePicture[0];
         if (file instanceof File) {
           try {
-            console.log('📤 Uploading new profile picture:', file.name, 'Size:', file.size);
             const uploadResponse = await uploadService.uploadFile(file, 'employee-profiles');
-            console.log('📦 Upload response received:', uploadResponse);
-            
-            // Extract the URL from the response object
-            if (uploadResponse && uploadResponse.url) {
+            if (uploadResponse?.url) {
               data.profilePicture = uploadResponse.url;
-              console.log('✅ Upload successful! URL:', data.profilePicture);
             } else {
               throw new Error('Upload response missing URL');
             }
-          } catch (uploadError: any) {
-            console.error('❌ Error uploading profile picture:', uploadError);
-            const errorMessage = uploadError?.message || 'Unknown error';
-            alert(`Failed to upload profile picture: ${errorMessage}. Employee will be updated without changing the photo.`);
-            // Keep the existing profile picture URL
-            data.profilePicture = initialData.profilePicture;
+          } catch {
+            setBanner({
+              type: 'warning',
+              title: 'Profile photo could not be uploaded',
+              messages: [
+                'The employee will be saved with the existing photo.',
+                'Make sure the new image is a JPEG or PNG file smaller than 10 MB, then try updating again.',
+              ],
+            });
+            // Fall back to existing photo
+            data.profilePicture = initialData?.profilePicture || '';
           }
         }
       } else if (!data.profilePicture || data.profilePicture === '') {
-        // If profilePicture is empty, keep the existing one
-        console.log('🔄 No new picture uploaded, keeping existing:', initialData.profilePicture);
-        data.profilePicture = initialData.profilePicture;
-      } else if (typeof data.profilePicture === 'string') {
-        // If it's already a URL string, keep it
-        console.log('🔗 Profile picture is already a URL:', data.profilePicture);
+        // Keep the existing photo if the user didn't pick a new one
+        data.profilePicture = initialData?.profilePicture || '';
       }
+      // (if it's already a URL string, leave it as-is)
 
-      // Clean up the data - remove any empty or invalid fields
+      // Strip empty / null fields
       const cleanedData = Object.fromEntries(
-        Object.entries(data).filter(([_, value]) => {
-          // Keep the value if it's not null, undefined, or empty string
-          // But keep 0 and false as valid values
-          return value !== null && value !== undefined && value !== '';
-        })
+        Object.entries(data).filter(([, value]) => value !== null && value !== undefined && value !== ''),
       );
 
-      console.log('💾 Saving employee with profilePicture:', cleanedData.profilePicture);
-      const updatedEmployee = await employeesService.updateEmployee(employeeId, cleanedData);
-      console.log('✅ Employee updated:', updatedEmployee);
-      
-      alert('Employee updated successfully!');
-      // Use router.push with refresh to ensure data is reloaded
-      router.push(`/employees/${employeeId}`);
-      router.refresh();
+      await employeesService.updateEmployee(employeeId, cleanedData);
+
+      setBanner({
+        type: 'success',
+        title: '✓ Employee record updated successfully!',
+        messages: ['All changes have been saved. You will be redirected shortly…'],
+      });
+
+      setTimeout(() => {
+        router.push(`/employees/${employeeId}`);
+        router.refresh();
+      }, 1800);
     } catch (error: any) {
-      console.error('❌ Error updating employee:', error);
-      alert(error.response?.data?.message || 'Failed to update employee');
+      const messages = parseApiErrors(error);
+      setBanner({
+        type: 'error',
+        title: 'Could not save changes — please fix the following:',
+        messages,
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    router.push(`/employees/${employeeId}`);
-  };
+  const handleCancel = () => router.push(`/employees/${employeeId}`);
 
+  // Loading state
   if (initialLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#A8211B' }}></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#A8211B' }} />
       </div>
     );
   }
 
+  // Failed to load
   if (!initialData) {
     return (
       <div className="p-6">
-        <p className="text-red-600">Failed to load employee data</p>
+        {banner && <StatusBanner banner={banner} onDismiss={() => setBanner(null)} />}
+        <button
+          onClick={() => router.push('/employees')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mt-4"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span>Back to Employees</span>
+        </button>
       </div>
     );
   }
@@ -192,12 +212,18 @@ export default function EditEmployeePage() {
         Edit Employee
       </h1>
 
+      {/* Status Banner */}
+      {banner && <StatusBanner banner={banner} onDismiss={() => setBanner(null)} />}
+
       <div className="bg-white rounded-lg shadow-md p-6">
         <EmployeeForm
           initialData={initialData}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
         />
+        {saving && (
+          <p className="text-sm text-gray-500 mt-3 text-center animate-pulse">Saving changes…</p>
+        )}
       </div>
     </div>
   );
