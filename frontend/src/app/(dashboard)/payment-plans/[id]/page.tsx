@@ -1017,7 +1017,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                   ['Due Date', previewMilestone.dueDate
                     ? new Date(previewMilestone.dueDate).toLocaleDateString('en-IN')
                     : '—'],
-                ].filter(Boolean).map(([label, value]) => (
+                ].filter(Boolean).map(([label, value]: any) => (
                   <div key={label as string} className="border-b pb-2">
                     <p className="text-[11px] uppercase text-gray-400 tracking-wide">{label}</p>
                     <p className="font-semibold text-gray-800">{value}</p>

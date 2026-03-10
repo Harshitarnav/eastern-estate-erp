@@ -156,7 +156,7 @@ export function generateBookingSummaryPdf(data: BookingSummaryData): void {
     ['Parking Charges',              fmt(booking.parkingCharges)],
     ['Maintenance Deposit',          fmt(booking.maintenanceDeposit)],
     ['Other Charges',                fmt(booking.otherCharges)],
-  ].filter(([, v]) => v !== '—' && v !== '₹0');
+  ].filter(([, v]) => v !== '—' && v !== '₹0') as [string, string][];
 
   // Summary band
   const bandW = PW - ML - MR;

@@ -20,6 +20,7 @@ export interface User {
 export interface Role {
   id: string;
   name: string;
+  displayName?: string;
   description?: string;
   permissions?: Permission[];
 }
@@ -53,6 +54,7 @@ export interface UpdateUserDto {
   gender?: 'Male' | 'Female' | 'Other';
   profileImage?: string;
   roleIds?: string[];
+  password?: string;
 }
 
 export interface UserFilters {

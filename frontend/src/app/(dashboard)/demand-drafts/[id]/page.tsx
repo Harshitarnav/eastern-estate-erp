@@ -248,7 +248,7 @@ export default function DemandDraftDetailPage() {
         const flat = await flatsService.getFlat(draft.flatId);
         const area = flat.carpetArea || flat.builtUpArea || flat.superBuiltUpArea;
         updates.flatArea = area ? `${area} sq ft` : '';
-        updates.flatType = flat.flatType || (flat as any).type || '';
+        updates.flatType = flat.type || '';
       } catch { /* non-critical */ }
     }
 

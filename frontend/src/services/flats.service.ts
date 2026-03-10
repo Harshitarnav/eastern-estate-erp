@@ -55,6 +55,8 @@ export interface Flat {
   paymentPlanUrl?: string;
   registrationReceiptUrls?: string[];
   paymentReceiptUrls?: string[];
+  // Booking link (populated when flat is booked)
+  bookingId?: string;
   // Construction tracking fields
   constructionStage?: 'FOUNDATION' | 'STRUCTURE' | 'WALLS' | 'PLUMBING' | 'ELECTRICAL' | 'FINISHING' | 'COMPLETE' | null;
   constructionProgress?: number;
