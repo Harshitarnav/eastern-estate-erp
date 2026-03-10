@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { FlatPaymentPlanService } from '../services/flat-payment-plan.service';
 import { CreateFlatPaymentPlanDto } from '../dto/create-flat-payment-plan.dto';
@@ -47,6 +47,26 @@ export class FlatPaymentPlanController {
       updates,
       req.user.id
     );
+  }
+
+  /** Bulk-replace all milestones */
+  @Put(':id/milestones')
+  async updateMilestones(
+    @Param('id') id: string,
+    @Body() body: { milestones: FlatPaymentMilestone[] },
+    @Req() req: any
+  ) {
+    return await this.flatPaymentPlanService.updateMilestones(id, body.milestones, req.user.id);
+  }
+
+  /** Patch plan-level fields (totalAmount, status) */
+  @Patch(':id')
+  async updatePlan(
+    @Param('id') id: string,
+    @Body() body: { totalAmount?: number; status?: string },
+    @Req() req: any
+  ) {
+    return await this.flatPaymentPlanService.updatePlan(id, body as any, req.user.id);
   }
 
   @Put(':id/cancel')

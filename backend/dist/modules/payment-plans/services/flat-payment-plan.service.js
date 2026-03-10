@@ -130,6 +130,36 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         plan.updatedBy = userId;
         return await this.flatPaymentPlanRepository.save(plan);
     }
+    async updateMilestones(planId, milestones, userId) {
+        const plan = await this.findOne(planId);
+        plan.milestones = milestones;
+        const paidAmount = milestones
+            .filter(m => m.status === 'PAID')
+            .reduce((sum, m) => sum + Number(m.amount), 0);
+        plan.paidAmount = paidAmount;
+        plan.balanceAmount = plan.totalAmount - paidAmount;
+        const allPaid = milestones.length > 0 && milestones.every(m => m.status === 'PAID');
+        if (allPaid) {
+            plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED;
+        }
+        else if (plan.status === flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED) {
+            plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE;
+        }
+        plan.updatedBy = userId;
+        return await this.flatPaymentPlanRepository.save(plan);
+    }
+    async updatePlan(planId, updates, userId) {
+        const plan = await this.findOne(planId);
+        if (updates.totalAmount !== undefined) {
+            plan.totalAmount = updates.totalAmount;
+            plan.balanceAmount = updates.totalAmount - plan.paidAmount;
+        }
+        if (updates.status !== undefined) {
+            plan.status = updates.status;
+        }
+        plan.updatedBy = userId;
+        return await this.flatPaymentPlanRepository.save(plan);
+    }
     async cancel(id, userId) {
         const plan = await this.findOne(id);
         plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.CANCELLED;

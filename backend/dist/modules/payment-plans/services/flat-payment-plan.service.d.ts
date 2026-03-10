@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { FlatPaymentPlan, FlatPaymentMilestone } from '../entities/flat-payment-plan.entity';
+import { FlatPaymentPlan, FlatPaymentMilestone, FlatPaymentPlanStatus } from '../entities/flat-payment-plan.entity';
 import { CreateFlatPaymentPlanDto } from '../dto/create-flat-payment-plan.dto';
 import { PaymentPlanTemplateService } from './payment-plan-template.service';
 import { Flat } from '../../flats/entities/flat.entity';
@@ -18,5 +18,10 @@ export declare class FlatPaymentPlanService {
     findByFlatId(flatId: string): Promise<FlatPaymentPlan | null>;
     findByBookingId(bookingId: string): Promise<FlatPaymentPlan | null>;
     updateMilestone(planId: string, milestoneSequence: number, updates: Partial<FlatPaymentMilestone>, userId: string): Promise<FlatPaymentPlan>;
+    updateMilestones(planId: string, milestones: FlatPaymentMilestone[], userId: string): Promise<FlatPaymentPlan>;
+    updatePlan(planId: string, updates: {
+        totalAmount?: number;
+        status?: FlatPaymentPlanStatus;
+    }, userId: string): Promise<FlatPaymentPlan>;
     cancel(id: string, userId: string): Promise<FlatPaymentPlan>;
 }

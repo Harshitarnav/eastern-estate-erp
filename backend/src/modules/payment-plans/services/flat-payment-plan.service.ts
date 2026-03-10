@@ -180,6 +180,61 @@ export class FlatPaymentPlanService {
   }
 
   /**
+   * Bulk-replace all milestones in a flat payment plan.
+   * Re-derives paidAmount / balanceAmount automatically.
+   */
+  async updateMilestones(
+    planId: string,
+    milestones: FlatPaymentMilestone[],
+    userId: string,
+  ): Promise<FlatPaymentPlan> {
+    const plan = await this.findOne(planId);
+
+    plan.milestones = milestones;
+
+    // Recalculate paid and balance amounts
+    const paidAmount = milestones
+      .filter(m => m.status === 'PAID')
+      .reduce((sum, m) => sum + Number(m.amount), 0);
+
+    plan.paidAmount = paidAmount;
+    plan.balanceAmount = plan.totalAmount - paidAmount;
+
+    const allPaid = milestones.length > 0 && milestones.every(m => m.status === 'PAID');
+    if (allPaid) {
+      plan.status = FlatPaymentPlanStatus.COMPLETED;
+    } else if (plan.status === FlatPaymentPlanStatus.COMPLETED) {
+      plan.status = FlatPaymentPlanStatus.ACTIVE;
+    }
+
+    plan.updatedBy = userId;
+    return await this.flatPaymentPlanRepository.save(plan);
+  }
+
+  /**
+   * Patch plan-level fields (totalAmount, status).
+   * Recomputes balanceAmount when totalAmount changes.
+   */
+  async updatePlan(
+    planId: string,
+    updates: { totalAmount?: number; status?: FlatPaymentPlanStatus },
+    userId: string,
+  ): Promise<FlatPaymentPlan> {
+    const plan = await this.findOne(planId);
+
+    if (updates.totalAmount !== undefined) {
+      plan.totalAmount = updates.totalAmount;
+      plan.balanceAmount = updates.totalAmount - plan.paidAmount;
+    }
+    if (updates.status !== undefined) {
+      plan.status = updates.status;
+    }
+
+    plan.updatedBy = userId;
+    return await this.flatPaymentPlanRepository.save(plan);
+  }
+
+  /**
    * Cancel flat payment plan
    */
   async cancel(id: string, userId: string): Promise<FlatPaymentPlan> {

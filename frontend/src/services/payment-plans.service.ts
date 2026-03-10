@@ -128,6 +128,16 @@ class PaymentPlansService {
     return await apiService.put(`/flat-payment-plans/${planId}/milestones/${sequence}`, updates);
   }
 
+  /** Bulk-replace the full milestones array for a plan */
+  async updateMilestonesBulk(planId: string, milestones: FlatPaymentMilestone[]): Promise<FlatPaymentPlan> {
+    return await apiService.put(`/flat-payment-plans/${planId}/milestones`, { milestones });
+  }
+
+  /** Patch plan-level header fields (totalAmount, status) */
+  async updatePlan(planId: string, updates: { totalAmount?: number; status?: string }): Promise<FlatPaymentPlan> {
+    return await apiService.patch(`/flat-payment-plans/${planId}`, updates);
+  }
+
   async cancelFlatPaymentPlan(id: string): Promise<FlatPaymentPlan> {
     return await apiService.put(`/flat-payment-plans/${id}/cancel`, {});
   }
