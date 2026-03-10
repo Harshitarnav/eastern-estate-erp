@@ -60,7 +60,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
             throw new common_1.ConflictException('Customer with this email or phone already exists');
         }
         const customerCode = await this.generateCustomerCode();
-        const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, ...rest } = createCustomerDto;
+        const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, designation, bankName, hasApprovedLoan, approvedLoanAmount, needsHomeLoan, annualIncome, type, kycStatus, ...rest } = createCustomerDto;
         const safeFirst = (firstName || '').trim();
         const safeLast = (lastName || '').trim();
         const fullName = [safeFirst, safeLast].filter(Boolean).join(' ') || 'Customer';
@@ -72,17 +72,29 @@ let CustomersService = CustomersService_1 = class CustomersService {
             phoneNumber = 'UNKNOWN';
         }
         const metadata = {};
-        if (isVIP !== undefined) {
+        if (isVIP !== undefined)
             metadata.isVIP = isVIP;
-        }
-        if (propertyId) {
+        if (propertyId)
             metadata.propertyId = propertyId;
-        }
+        if (designation)
+            metadata.designation = designation;
+        if (bankName)
+            metadata.bankName = bankName;
+        if (hasApprovedLoan !== undefined)
+            metadata.hasApprovedLoan = hasApprovedLoan;
+        if (approvedLoanAmount !== undefined)
+            metadata.approvedLoanAmount = approvedLoanAmount;
+        if (needsHomeLoan !== undefined)
+            metadata.needsHomeLoan = needsHomeLoan;
+        if (annualIncome !== undefined)
+            metadata.annualIncome = annualIncome;
         const customer = this.customersRepository.create({
             ...rest,
             customerCode,
             fullName,
             phoneNumber,
+            customerType: type,
+            kycStatus: kycStatus,
             metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
         });
         const savedCustomer = await this.customersRepository.save(customer);
@@ -229,9 +241,31 @@ let CustomersService = CustomersService_1 = class CustomersService {
         if (updateCustomerDto.isActive !== undefined) {
             customer.isActive = updateCustomerDto.isActive;
         }
-        if (updateCustomerDto.isVIP !== undefined) {
-            customer.metadata = customer.metadata || {};
-            customer.metadata.isVIP = updateCustomerDto.isVIP;
+        if (updateCustomerDto.type !== undefined && updateCustomerDto.type !== '') {
+            customer.customerType = updateCustomerDto.type;
+        }
+        if (updateCustomerDto.kycStatus !== undefined && updateCustomerDto.kycStatus !== '') {
+            customer.kycStatus = updateCustomerDto.kycStatus;
+        }
+        const metaPatch = {};
+        if (updateCustomerDto.isVIP !== undefined)
+            metaPatch.isVIP = updateCustomerDto.isVIP;
+        if (updateCustomerDto.designation !== undefined)
+            metaPatch.designation = updateCustomerDto.designation;
+        if (updateCustomerDto.bankName !== undefined)
+            metaPatch.bankName = updateCustomerDto.bankName;
+        if (updateCustomerDto.hasApprovedLoan !== undefined)
+            metaPatch.hasApprovedLoan = updateCustomerDto.hasApprovedLoan;
+        if (updateCustomerDto.approvedLoanAmount !== undefined)
+            metaPatch.approvedLoanAmount = updateCustomerDto.approvedLoanAmount;
+        if (updateCustomerDto.needsHomeLoan !== undefined)
+            metaPatch.needsHomeLoan = updateCustomerDto.needsHomeLoan;
+        if (updateCustomerDto.annualIncome !== undefined)
+            metaPatch.annualIncome = updateCustomerDto.annualIncome;
+        if (updateCustomerDto.propertyId !== undefined)
+            metaPatch.propertyId = updateCustomerDto.propertyId;
+        if (Object.keys(metaPatch).length > 0) {
+            customer.metadata = { ...(customer.metadata || {}), ...metaPatch };
         }
         assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
         const updatedCustomer = await this.customersRepository.save(customer);

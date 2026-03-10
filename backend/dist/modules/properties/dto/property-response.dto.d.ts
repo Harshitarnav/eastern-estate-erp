@@ -42,6 +42,13 @@ export declare class PropertyResponseDto {
     projectId?: string;
     projectCode?: string;
     projectName?: string;
+    gstin?: string;
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    branch?: string;
+    upiId?: string;
     towers?: number;
     totalFlats?: number;
     soldFlats?: number;

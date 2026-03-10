@@ -10,6 +10,8 @@ import { Customer } from '../../customers/entities/customer.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Property } from '../../properties/entities/property.entity';
 import { Tower } from '../../towers/entities/tower.entity';
+import { SettingsService } from '../../settings/settings.service';
+import { MailService } from '../../../common/mail/mail.service';
 export declare class AutoDemandDraftService {
     private readonly demandDraftRepository;
     private readonly paymentScheduleRepository;
@@ -22,8 +24,10 @@ export declare class AutoDemandDraftService {
     private readonly milestoneDetectionService;
     private readonly flatPaymentPlanService;
     private readonly templateService;
+    private readonly settingsService;
+    private readonly mailService;
     private readonly logger;
-    constructor(demandDraftRepository: Repository<DemandDraft>, paymentScheduleRepository: Repository<PaymentSchedule>, progressRepository: Repository<ConstructionFlatProgress>, flatRepository: Repository<Flat>, customerRepository: Repository<Customer>, bookingRepository: Repository<Booking>, propertyRepository: Repository<Property>, towerRepository: Repository<Tower>, milestoneDetectionService: MilestoneDetectionService, flatPaymentPlanService: FlatPaymentPlanService, templateService: DemandDraftTemplateService);
+    constructor(demandDraftRepository: Repository<DemandDraft>, paymentScheduleRepository: Repository<PaymentSchedule>, progressRepository: Repository<ConstructionFlatProgress>, flatRepository: Repository<Flat>, customerRepository: Repository<Customer>, bookingRepository: Repository<Booking>, propertyRepository: Repository<Property>, towerRepository: Repository<Tower>, milestoneDetectionService: MilestoneDetectionService, flatPaymentPlanService: FlatPaymentPlanService, templateService: DemandDraftTemplateService, settingsService: SettingsService, mailService: MailService);
     generateDemandDraft(match: MilestoneMatch, systemUserId?: string): Promise<DemandDraft>;
     manualGenerateDemandDraft(flatPaymentPlanId: string, milestoneSequence: number, userId: string): Promise<DemandDraft>;
     approveDemandDraft(demandDraftId: string, userId: string): Promise<DemandDraft>;

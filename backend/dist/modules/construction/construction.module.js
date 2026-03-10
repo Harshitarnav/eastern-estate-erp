@@ -38,6 +38,8 @@ const milestone_detection_service_1 = require("./services/milestone-detection.se
 const auto_demand_draft_service_1 = require("./services/auto-demand-draft.service");
 const construction_workflow_service_1 = require("./services/construction-workflow.service");
 const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
+const settings_module_1 = require("../settings/settings.module");
+const mail_module_1 = require("../../common/mail/mail.module");
 const demand_draft_entity_1 = require("../demand-drafts/entities/demand-draft.entity");
 const payment_schedule_entity_1 = require("../payments/entities/payment-schedule.entity");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
@@ -70,6 +72,8 @@ exports.ConstructionModule = ConstructionModule = __decorate([
                 tower_entity_1.Tower,
             ]),
             payment_plans_module_1.PaymentPlansModule,
+            settings_module_1.SettingsModule,
+            mail_module_1.MailModule,
         ],
         controllers: [
             construction_projects_controller_1.ConstructionProjectsController,

@@ -1,13 +1,12 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreatePaymentDto } from './create-payment.dto';
-import { IsEnum, IsOptional, IsUUID, IsDate } from 'class-validator';
-import { Type } from 'class-transformer';
-import { PaymentStatus } from '../entities/payment.entity';
+import { IsOptional, IsUUID, IsString } from 'class-validator';
 
 export class UpdatePaymentDto extends PartialType(CreatePaymentDto) {
+  // status is already an optional @IsString() in the base DTO via PartialType, but keep explicit override
   @IsOptional()
-  @IsEnum(PaymentStatus)
-  status?: PaymentStatus;
+  @IsString()
+  status?: string;
 
   @IsOptional()
   @IsUUID()

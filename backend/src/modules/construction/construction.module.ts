@@ -29,6 +29,8 @@ import { MilestoneDetectionService } from './services/milestone-detection.servic
 import { AutoDemandDraftService } from './services/auto-demand-draft.service';
 import { ConstructionWorkflowService } from './services/construction-workflow.service';
 import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
+import { SettingsModule } from '../settings/settings.module';
+import { MailModule } from '../../common/mail/mail.module';
 import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 import { PaymentSchedule } from '../payments/entities/payment-schedule.entity';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
@@ -58,6 +60,8 @@ import { Tower } from '../towers/entities/tower.entity';
       Tower,
     ]),
     PaymentPlansModule,
+    SettingsModule,
+    MailModule,
   ],
   controllers: [
     ConstructionProjectsController,

@@ -17,6 +17,14 @@ export class BookingResponseDto {
   // tokenPaidDate?: string; // Column doesn't exist in DB
   // tokenReceiptNumber?: string; // Column doesn't exist in DB
   tokenPaymentMode?: string;
+  rtgsNumber?: string;
+  utrNumber?: string;
+  chequeNumber?: string;
+  chequeDate?: string;
+  paymentBank?: string;
+  paymentBranch?: string;
+  paymentPlan?: string;
+  towerId?: string;
   agreementNumber?: string;
   agreementDate?: string;
   agreementSignedDate?: string;
@@ -81,6 +89,14 @@ export class BookingResponseDto {
     // dto.tokenPaidDate = booking.tokenPaidDate?.toString(); // Column doesn't exist in DB
     // dto.tokenReceiptNumber = booking.tokenReceiptNumber; // Column doesn't exist in DB
     dto.tokenPaymentMode = booking.tokenPaymentMode;
+    dto.rtgsNumber = booking.rtgsNumber;
+    dto.utrNumber = booking.utrNumber;
+    dto.chequeNumber = booking.chequeNumber;
+    dto.chequeDate = booking.chequeDate?.toString();
+    dto.paymentBank = booking.paymentBank;
+    dto.paymentBranch = booking.paymentBranch;
+    dto.paymentPlan = booking.paymentPlan;
+    dto.towerId = booking.towerId;
     dto.agreementNumber = booking.agreementNumber;
     dto.agreementDate = booking.agreementDate?.toString();
     dto.agreementSignedDate = booking.agreementSignedDate?.toString();

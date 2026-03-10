@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CustomerForm from '@/components/forms/CustomerForm';
 import { customersService } from '@/services/customers.service';
 import { propertiesService } from '@/services/properties.service';
-import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -43,11 +44,11 @@ export default function NewCustomerPage() {
       };
 
       await customersService.createCustomer(customerData);
-      alert('Customer created successfully!');
-      window.location.href = '/customers';
+      toast.success('Customer created successfully!');
+      router.push('/customers');
     } catch (error: any) {
       console.error('Error creating customer:', error);
-      alert(error.response?.data?.message || 'Failed to create customer');
+      showApiError(error, 'Failed to create customer');
     } finally {
       setLoading(false);
     }

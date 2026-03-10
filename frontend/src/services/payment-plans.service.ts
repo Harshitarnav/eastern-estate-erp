@@ -68,6 +68,41 @@ export interface DemandDraftTemplate {
   updatedAt: string;
 }
 
+export interface LedgerRow {
+  date: string | null;
+  description: string;
+  type: 'DEMAND' | 'PAYMENT';
+  debit: number;
+  credit: number;
+  balance: number;
+  milestoneSequence?: number;
+  demandDraftId?: string | null;
+  paymentId?: string | null;
+  reference?: string;
+  status?: string;
+}
+
+export interface LedgerResponse {
+  plan: {
+    id: string;
+    totalAmount: number;
+    paidAmount: number;
+    balanceAmount: number;
+    status: string;
+  };
+  customer: { id: string; fullName: string; phone?: string; email?: string } | null;
+  flat: { id: string; flatNumber: string; property?: string; tower?: string } | null;
+  booking: { id: string; bookingNumber: string; bookingDate?: string } | null;
+  rows: LedgerRow[];
+  summary: {
+    totalDemanded: number;
+    totalPaid: number;
+    balance: number;
+    overdueCount: number;
+    pendingMilestones: number;
+  };
+}
+
 export interface CreateFlatPaymentPlanDto {
   flatId: string;
   bookingId: string;
@@ -128,8 +163,23 @@ class PaymentPlansService {
     return await apiService.put(`/flat-payment-plans/${planId}/milestones/${sequence}`, updates);
   }
 
+  /** Bulk-replace the full milestones array for a plan */
+  async updateMilestonesBulk(planId: string, milestones: FlatPaymentMilestone[]): Promise<FlatPaymentPlan> {
+    return await apiService.put(`/flat-payment-plans/${planId}/milestones`, { milestones });
+  }
+
+  /** Patch plan-level header fields (totalAmount, status) */
+  async updatePlan(planId: string, updates: { totalAmount?: number; status?: string }): Promise<FlatPaymentPlan> {
+    return await apiService.patch(`/flat-payment-plans/${planId}`, updates);
+  }
+
   async cancelFlatPaymentPlan(id: string): Promise<FlatPaymentPlan> {
     return await apiService.put(`/flat-payment-plans/${id}/cancel`, {});
+  }
+
+  /** Unit-wise ledger — demands + payments + running balance */
+  async getLedger(bookingId: string): Promise<LedgerResponse> {
+    return await apiService.get(`/flat-payment-plans/ledger/booking/${bookingId}`);
   }
 
   // Demand Draft Templates

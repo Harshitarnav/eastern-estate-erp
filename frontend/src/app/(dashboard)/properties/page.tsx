@@ -7,7 +7,7 @@ import { Modal, DeleteConfirmDialog, AlertDialog } from '@/components/modals/Mod
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
-import { Building2, Plus, Calendar, TrendingUp, Home, Sparkles, AlertTriangle, IndianRupee, Loader2 } from 'lucide-react';
+import { Building2, Plus, Calendar, TrendingUp, Home, Sparkles, AlertTriangle, IndianRupee, Loader2, Eye } from 'lucide-react';
 import { propertiesService, Property as ApiProperty, PropertyInventorySummary, TowerInventorySummary, TowerUnitStagePreview } from '@/services/properties.service';
 import { formatCurrency } from '@/utils/formatters';
 
@@ -434,6 +434,23 @@ export default function PropertiesPage() {
         </div>
       ),
     },
+    {
+      key: 'id',
+      label: '',
+      width: '56px',
+      render: (_: any, row: PropertyRow) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/properties/${row.id}`);
+          }}
+          title="View property details"
+          className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-[#A8211B] transition-colors"
+        >
+          <Eye className="w-4 h-4" />
+        </button>
+      ),
+    },
   ];
 
   const heroBadge = error ? (
@@ -574,6 +591,16 @@ export default function PropertiesPage() {
               style={{ borderColor: `${brandPalette.secondary}30`, color: brandPalette.secondary }}
             >
               Close
+            </button>
+            <button
+              onClick={() => {
+                setShowDetails(false);
+                router.push(`/properties/${selectedProperty?.id}`);
+              }}
+              className="px-4 py-2 rounded-full text-sm font-semibold border transition-colors"
+              style={{ borderColor: brandPalette.secondary, color: brandPalette.secondary }}
+            >
+              View Details
             </button>
             <button
               onClick={() => {

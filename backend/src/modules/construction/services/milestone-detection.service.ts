@@ -10,7 +10,7 @@ import { ConstructionPhase } from '../entities/construction-tower-progress.entit
 export interface MilestoneMatch {
   flatPaymentPlan: FlatPaymentPlan;
   milestoneSequence: number;
-  constructionProgress: ConstructionFlatProgress;
+  constructionProgress: ConstructionFlatProgress | null;
   milestoneName: string;
   amount: number;
 }

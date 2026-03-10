@@ -15,10 +15,18 @@ import {
   CheckCircle,
   Clock,
   Loader2,
+  LayoutList,
+  Download,
 } from 'lucide-react';
 import { bookingsService, Booking } from '@/services/bookings.service';
+import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.service';
+import { paymentsService } from '@/services/payments.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette } from '@/utils/brand';
+import DocumentsPanel from '@/components/documents/DocumentsPanel';
+import { DocumentEntityType } from '@/services/documents.service';
+import { generateBookingSummaryPdf } from '@/lib/generate-booking-pdf';
+import { toast } from 'sonner';
 
 export default function BookingViewPage() {
   const router = useRouter();
@@ -28,6 +36,8 @@ export default function BookingViewPage() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [paymentPlan, setPaymentPlan] = useState<FlatPaymentPlan | null | undefined>(undefined); // undefined = not yet fetched
+  const [payments, setPayments] = useState<any[]>([]);
 
   useEffect(() => {
     if (bookingId) {
@@ -41,11 +51,47 @@ export default function BookingViewPage() {
       const response = await bookingsService.getBooking(bookingId);
       setBooking(response);
       setError('');
+      // Silently look up the payment plan for this booking
+      try {
+        const plan = await paymentPlansService.getFlatPaymentPlanByBookingId(bookingId);
+        setPaymentPlan(plan);
+      } catch {
+        setPaymentPlan(null);
+      }
+      // Silently load payments for this booking
+      try {
+        const pmts = await paymentsService.getPayments({ bookingId, limit: 50 });
+        setPayments(pmts.data ?? pmts ?? []);
+      } catch {
+        setPayments([]);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch booking');
       console.error('Error fetching booking:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!booking) return;
+    try {
+      const milestones = paymentPlan?.milestones?.map((m: any) => ({
+        name:    m.name ?? m.milestoneName ?? m.stage ?? 'Milestone',
+        amount:  m.amount ?? m.dueAmount ?? 0,
+        dueDate: m.dueDate ?? m.targetDate,
+        status:  m.status,
+      }));
+      generateBookingSummaryPdf({
+        booking,
+        customerName,
+        customerPhone,
+        customerEmail,
+        milestones,
+      });
+      toast.success('Booking summary PDF downloaded');
+    } catch {
+      toast.error('Failed to generate PDF');
     }
   };
 
@@ -148,10 +194,16 @@ export default function BookingViewPage() {
             {booking.status}
           </span>
         </div>
-        <BrandPrimaryButton onClick={() => router.push(`/bookings/${bookingId}/edit`)}>
-          <Edit className="w-4 h-4" />
-          Edit Booking
-        </BrandPrimaryButton>
+        <div className="flex gap-2">
+          <BrandSecondaryButton onClick={handleDownloadPdf}>
+            <Download className="w-4 h-4" />
+            Download Summary
+          </BrandSecondaryButton>
+          <BrandPrimaryButton onClick={() => router.push(`/bookings/${bookingId}/edit`)}>
+            <Edit className="w-4 h-4" />
+            Edit Booking
+          </BrandPrimaryButton>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -513,6 +565,64 @@ export default function BookingViewPage() {
               <p className="text-gray-700 whitespace-pre-wrap">{booking.specialTerms}</p>
             </div>
           )}
+          {/* Payments Made */}
+          <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold" style={{ color: brandPalette.secondary }}>
+                Payments Received
+              </h2>
+              <button
+                onClick={() => router.push(`/payments/new?bookingId=${bookingId}&customerId=${booking.customerId}`)}
+                className="text-xs px-3 py-1.5 rounded-lg border flex items-center gap-1.5 hover:bg-green-50"
+                style={{ borderColor: '#16A34A', color: '#16A34A' }}>
+                <DollarSign className="w-3.5 h-3.5" /> Add Payment
+              </button>
+            </div>
+            {payments.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">No payments recorded yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {payments.map((p: any) => (
+                  <div key={p.id}
+                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                    style={{ borderColor: `${brandPalette.neutral}40` }}
+                    onClick={() => router.push(`/payments/${p.id}`)}>
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">
+                        ₹{Number(p.amount).toLocaleString('en-IN')}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        {p.paymentMethod ? ` · ${p.paymentMethod.replace(/_/g,' ')}` : ''}
+                        {p.paymentCode ? ` · ${p.paymentCode}` : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {p.receiptNumber && (
+                        <span className="text-xs text-gray-400">#{p.receiptNumber}</span>
+                      )}
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        p.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        p.status === 'PENDING'   ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-500'
+                      }`}>
+                        {p.status ?? 'PENDING'}
+                      </span>
+                      <CreditCard className="w-4 h-4 text-gray-300" />
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => router.push(`/ledger/${bookingId}`)}
+                    className="text-xs text-gray-400 hover:text-gray-600 hover:underline">
+                    View full ledger →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {booking.documents && booking.documents.length > 0 && (
             <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
               <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
@@ -577,6 +687,18 @@ export default function BookingViewPage() {
             </div>
           </div>
 
+          {/* Documents */}
+          <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+            <DocumentsPanel
+              entityType={DocumentEntityType.BOOKING}
+              entityId={bookingId}
+              customerId={booking.customerId}
+              bookingId={bookingId}
+              fetchMode="booking"
+              title="Documents"
+            />
+          </div>
+
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
             <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
@@ -591,6 +713,40 @@ export default function BookingViewPage() {
                 <Edit className="w-4 h-4" />
                 Edit Booking
               </button>
+              {/* Payment Plan shortcut */}
+              {paymentPlan ? (
+                <button
+                  onClick={() => router.push(`/payment-plans/${paymentPlan.id}`)}
+                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                  style={{ borderColor: '#16A34A', color: '#16A34A' }}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  View Payment Plan
+                </button>
+              ) : paymentPlan === null ? (
+                <button
+                  onClick={() => router.push('/payment-plans')}
+                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                  style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  Create Payment Plan
+                </button>
+              ) : null /* still loading */ }
+              {/* Ledger shortcut — only shown when a payment plan exists */}
+              {paymentPlan && (
+                <button
+                  onClick={() => router.push(`/ledger/${bookingId}`)}
+                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-orange-50 flex items-center gap-2"
+                  style={{ borderColor: '#C2410C', color: '#C2410C' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  View Ledger
+                </button>
+              )}
               <button
                 onClick={() => router.push('/bookings')}
                 className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"

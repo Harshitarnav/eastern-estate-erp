@@ -5,6 +5,7 @@ import { FlatPaymentPlan } from '../../payment-plans/entities/flat-payment-plan.
 import { DemandDraft } from '../../demand-drafts/entities/demand-draft.entity';
 import { Customer } from '../../customers/entities/customer.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
+import { SettingsService } from '../../settings/settings.service';
 export declare class ConstructionWorkflowService {
     private flatRepository;
     private flatPaymentPlanRepository;
@@ -12,12 +13,12 @@ export declare class ConstructionWorkflowService {
     private progressRepository;
     private customerRepository;
     private bookingRepository;
+    private readonly settingsService;
     private readonly logger;
-    constructor(flatRepository: Repository<Flat>, flatPaymentPlanRepository: Repository<FlatPaymentPlan>, demandDraftRepository: Repository<DemandDraft>, progressRepository: Repository<ConstructionFlatProgress>, customerRepository: Repository<Customer>, bookingRepository: Repository<Booking>);
+    constructor(flatRepository: Repository<Flat>, flatPaymentPlanRepository: Repository<FlatPaymentPlan>, demandDraftRepository: Repository<DemandDraft>, progressRepository: Repository<ConstructionFlatProgress>, customerRepository: Repository<Customer>, bookingRepository: Repository<Booking>, settingsService: SettingsService);
     processConstructionUpdate(flatId: string, phase: string, phaseProgress: number, overallProgress: number): Promise<void>;
     private updateFlatConstructionStatus;
     private checkAndUpdateMilestones;
     private generateDemandDraft;
-    private generateDemandDraftContent;
     getPendingDemandDrafts(): Promise<DemandDraft[]>;
 }

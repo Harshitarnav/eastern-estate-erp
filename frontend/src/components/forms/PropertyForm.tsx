@@ -121,6 +121,14 @@ export default function PropertyForm({
       expectedRevenue: initialData.expectedRevenue ?? '',
       isActive: initialData.isActive ?? true,
       isFeatured: initialData.isFeatured ?? false,
+      // Project-level legal & bank
+      gstin: initialData.gstin ?? '',
+      bankName: initialData.bankName ?? '',
+      accountName: initialData.accountName ?? '',
+      accountNumber: initialData.accountNumber ?? '',
+      ifscCode: initialData.ifscCode ?? '',
+      branch: initialData.branch ?? '',
+      upiId: initialData.upiId ?? '',
     };
   }, [initialData]);
 
@@ -393,17 +401,72 @@ export default function PropertyForm({
           type: 'number',
           placeholder: '250000000',
         },
+      ],
+    },
+    {
+      title: 'Legal & Tax',
+      description: 'Project-specific GSTIN and RERA details. Leave blank to use company-wide defaults.',
+      fields: [
+        {
+          name: 'gstin',
+          label: 'GSTIN (Project)',
+          type: 'text' as const,
+          placeholder: '09AAAAA0000A1Z5',
+          helperText: '15-character GST number for this project entity',
+        },
         {
           name: 'reraNumber',
           label: 'RERA Number',
-          type: 'text',
+          type: 'text' as const,
           placeholder: 'JRERA-RAN-2024-XXX',
         },
         {
           name: 'reraStatus',
           label: 'RERA Status',
-          type: 'text',
+          type: 'text' as const,
           placeholder: 'Registered / CNT Free',
+        },
+      ],
+    },
+    {
+      title: 'Project Bank Account',
+      description: 'Bank details for this project\'s payment collection. Leave blank to use company-wide bank details.',
+      fields: [
+        {
+          name: 'bankName',
+          label: 'Bank Name',
+          type: 'text' as const,
+          placeholder: 'HDFC Bank',
+        },
+        {
+          name: 'accountName',
+          label: 'Account Name',
+          type: 'text' as const,
+          placeholder: 'Eastern Estate Pvt Ltd — Diamond City',
+        },
+        {
+          name: 'accountNumber',
+          label: 'Account Number',
+          type: 'text' as const,
+          placeholder: '50100123456789',
+        },
+        {
+          name: 'ifscCode',
+          label: 'IFSC Code',
+          type: 'text' as const,
+          placeholder: 'HDFC0001234',
+        },
+        {
+          name: 'branch',
+          label: 'Branch',
+          type: 'text' as const,
+          placeholder: 'Hazratganj, Lucknow',
+        },
+        {
+          name: 'upiId',
+          label: 'UPI ID',
+          type: 'text' as const,
+          placeholder: 'diamondcity@hdfcbank',
         },
       ],
     },

@@ -12,7 +12,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatePaymentDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
-const payment_entity_1 = require("../entities/payment.entity");
 class CreatePaymentDto {
 }
 exports.CreatePaymentDto = CreatePaymentDto;
@@ -42,14 +41,16 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "vendorId", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(payment_entity_1.PaymentType),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "paymentType", void 0);
 __decorate([
-    (0, class_validator_1.IsEnum)(payment_entity_1.PaymentMethod),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "paymentMethod", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "paymentCategory", void 0);
@@ -96,7 +97,7 @@ __decorate([
 ], CreatePaymentDto.prototype, "upiId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(payment_entity_1.PaymentStatus),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreatePaymentDto.prototype, "status", void 0);
 __decorate([

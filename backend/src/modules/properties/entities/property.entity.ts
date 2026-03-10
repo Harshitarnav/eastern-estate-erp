@@ -220,6 +220,31 @@ export class Property {
   })
   dataCompletenessStatus: DataCompletenessStatus;
 
+  // ── Project-level legal & bank details (override company-wide defaults) ───────
+  /** Project-specific GSTIN — e.g. different legal entity per project */
+  @Column({ nullable: true, length: 50 })
+  gstin: string;
+
+  /** Bank details for this project's payment collection account */
+  @Column({ name: 'bank_name', nullable: true, length: 255 })
+  bankName: string;
+
+  @Column({ name: 'account_name', nullable: true, length: 255 })
+  accountName: string;
+
+  @Column({ name: 'account_number', nullable: true, length: 100 })
+  accountNumber: string;
+
+  @Column({ name: 'ifsc_code', nullable: true, length: 50 })
+  ifscCode: string;
+
+  @Column({ nullable: true, length: 255 })
+  branch: string;
+
+  @Column({ name: 'upi_id', nullable: true, length: 255 })
+  upiId: string;
+  // ─────────────────────────────────────────────────────────────────────────────
+
   @Column({ name: 'project_id', type: 'uuid', nullable: true })
   projectId: string | null;
 

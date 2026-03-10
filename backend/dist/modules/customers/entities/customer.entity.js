@@ -161,7 +161,7 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "aadharNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'customer_type', length: 50, nullable: true, select: false, insert: false, update: false }),
+    (0, typeorm_1.Column)({ name: 'customer_type', length: 50, nullable: true }),
     __metadata("design:type", String)
 ], Customer.prototype, "customerType", void 0);
 __decorate([
@@ -223,7 +223,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Customer.prototype, "totalPurchases", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'kyc_status', length: 50, nullable: true, select: false, insert: false, update: false }),
+    (0, typeorm_1.Column)({ name: 'kyc_status', length: 50, nullable: true }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Customer.prototype, "kycStatus", void 0);
@@ -240,7 +240,7 @@ __decorate([
     __metadata("design:type", String)
 ], Customer.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true, select: false, insert: false, update: false }),
+    (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
     __metadata("design:type", Object)
 ], Customer.prototype, "metadata", void 0);
 __decorate([

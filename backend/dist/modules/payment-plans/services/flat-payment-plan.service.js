@@ -21,12 +21,14 @@ const payment_plan_template_service_1 = require("./payment-plan-template.service
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const booking_entity_1 = require("../../bookings/entities/booking.entity");
 const customer_entity_1 = require("../../customers/entities/customer.entity");
+const payment_entity_1 = require("../../payments/entities/payment.entity");
 let FlatPaymentPlanService = class FlatPaymentPlanService {
-    constructor(flatPaymentPlanRepository, flatRepository, bookingRepository, customerRepository, templateService) {
+    constructor(flatPaymentPlanRepository, flatRepository, bookingRepository, customerRepository, paymentRepository, templateService) {
         this.flatPaymentPlanRepository = flatPaymentPlanRepository;
         this.flatRepository = flatRepository;
         this.bookingRepository = bookingRepository;
         this.customerRepository = customerRepository;
+        this.paymentRepository = paymentRepository;
         this.templateService = templateService;
     }
     async create(createDto, userId) {
@@ -130,11 +132,164 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         plan.updatedBy = userId;
         return await this.flatPaymentPlanRepository.save(plan);
     }
+    async updateMilestones(planId, milestones, userId) {
+        const plan = await this.findOne(planId);
+        plan.milestones = milestones;
+        const paidAmount = milestones
+            .filter(m => m.status === 'PAID')
+            .reduce((sum, m) => sum + Number(m.amount), 0);
+        plan.paidAmount = paidAmount;
+        plan.balanceAmount = plan.totalAmount - paidAmount;
+        const allPaid = milestones.length > 0 && milestones.every(m => m.status === 'PAID');
+        if (allPaid) {
+            plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED;
+        }
+        else if (plan.status === flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED) {
+            plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE;
+        }
+        plan.updatedBy = userId;
+        return await this.flatPaymentPlanRepository.save(plan);
+    }
+    async updatePlan(planId, updates, userId) {
+        const plan = await this.findOne(planId);
+        if (updates.totalAmount !== undefined) {
+            plan.totalAmount = updates.totalAmount;
+            plan.balanceAmount = updates.totalAmount - plan.paidAmount;
+        }
+        if (updates.status !== undefined) {
+            plan.status = updates.status;
+        }
+        plan.updatedBy = userId;
+        return await this.flatPaymentPlanRepository.save(plan);
+    }
     async cancel(id, userId) {
         const plan = await this.findOne(id);
         plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.CANCELLED;
         plan.updatedBy = userId;
         return await this.flatPaymentPlanRepository.save(plan);
+    }
+    async getLedger(bookingId) {
+        const plan = await this.flatPaymentPlanRepository.findOne({
+            where: { bookingId },
+            relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'customer'],
+        });
+        if (!plan) {
+            throw new common_1.NotFoundException(`No payment plan found for booking ${bookingId}`);
+        }
+        const payments = await this.paymentRepository.find({
+            where: { bookingId },
+            order: { paymentDate: 'ASC' },
+        });
+        const events = [];
+        for (const m of plan.milestones) {
+            if (m.status !== 'PENDING' || m.dueDate) {
+                const dateKey = m.dueDate ?? '9999-12-31';
+                events.push({ sortKey: dateKey, type: 'DEMAND', milestone: m });
+            }
+        }
+        for (const p of payments) {
+            const dateKey = p.paymentDate
+                ? new Date(p.paymentDate).toISOString().split('T')[0]
+                : '9999-12-31';
+            events.push({ sortKey: dateKey, type: 'PAYMENT', payment: p });
+        }
+        events.sort((a, b) => {
+            if (a.sortKey < b.sortKey)
+                return -1;
+            if (a.sortKey > b.sortKey)
+                return 1;
+            if (a.type === 'DEMAND' && b.type === 'PAYMENT')
+                return -1;
+            if (a.type === 'PAYMENT' && b.type === 'DEMAND')
+                return 1;
+            return 0;
+        });
+        let runningBalance = 0;
+        const rows = [];
+        for (const ev of events) {
+            if (ev.type === 'DEMAND') {
+                const m = ev.milestone;
+                const debit = Number(m.amount) || 0;
+                runningBalance += debit;
+                rows.push({
+                    date: m.dueDate ?? null,
+                    description: m.name,
+                    type: 'DEMAND',
+                    debit,
+                    credit: 0,
+                    balance: runningBalance,
+                    milestoneSequence: m.sequence,
+                    demandDraftId: m.demandDraftId ?? null,
+                    status: m.status,
+                });
+            }
+            else {
+                const p = ev.payment;
+                const credit = Number(p.amount) || 0;
+                runningBalance -= credit;
+                rows.push({
+                    date: p.paymentDate
+                        ? new Date(p.paymentDate).toISOString().split('T')[0]
+                        : null,
+                    description: `Payment received — ${p.paymentMethod?.replace(/_/g, ' ') ?? ''}`,
+                    type: 'PAYMENT',
+                    debit: 0,
+                    credit,
+                    balance: runningBalance,
+                    paymentId: p.id,
+                    reference: p.paymentCode,
+                    status: p.status,
+                });
+            }
+        }
+        const totalDemanded = rows
+            .filter(r => r.type === 'DEMAND')
+            .reduce((s, r) => s + r.debit, 0);
+        const totalPaid = rows
+            .filter(r => r.type === 'PAYMENT')
+            .reduce((s, r) => s + r.credit, 0);
+        const overdueCount = plan.milestones.filter(m => m.status === 'OVERDUE').length;
+        const pendingMilestones = plan.milestones.filter(m => m.status === 'PENDING').length;
+        return {
+            plan: {
+                id: plan.id,
+                totalAmount: Number(plan.totalAmount),
+                paidAmount: Number(plan.paidAmount),
+                balanceAmount: Number(plan.balanceAmount),
+                status: plan.status,
+            },
+            customer: plan.customer
+                ? {
+                    id: plan.customer.id,
+                    fullName: plan.customer.fullName,
+                    phone: plan.customer.phoneNumber ?? null,
+                    email: plan.customer.email,
+                }
+                : null,
+            flat: plan.flat
+                ? {
+                    id: plan.flat.id,
+                    flatNumber: plan.flat.flatNumber,
+                    property: plan.flat.property?.name ?? undefined,
+                    tower: plan.flat.tower?.name ?? undefined,
+                }
+                : null,
+            booking: plan.booking
+                ? {
+                    id: plan.booking.id,
+                    bookingNumber: plan.booking.bookingNumber,
+                    bookingDate: plan.booking.bookingDate,
+                }
+                : null,
+            rows,
+            summary: {
+                totalDemanded,
+                totalPaid,
+                balance: totalDemanded - totalPaid,
+                overdueCount,
+                pendingMilestones,
+            },
+        };
     }
 };
 exports.FlatPaymentPlanService = FlatPaymentPlanService;
@@ -144,7 +299,9 @@ exports.FlatPaymentPlanService = FlatPaymentPlanService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __param(2, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
     __param(3, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
+    __param(4, (0, typeorm_1.InjectRepository)(payment_entity_1.Payment)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

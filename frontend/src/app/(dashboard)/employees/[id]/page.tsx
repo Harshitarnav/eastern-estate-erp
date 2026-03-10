@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { employeesService, Employee } from '@/services/employees.service';
 import { rolesService, Role } from '@/services/roles.service';
+import DocumentsPanel from '@/components/documents/DocumentsPanel';
+import { DocumentEntityType } from '@/services/documents.service';
 
 export default function EmployeeDetailPage() {
   const router = useRouter();
@@ -449,6 +451,15 @@ export default function EmployeeDetailPage() {
                 <span className="font-semibold text-orange-600">{employee.totalLateArrival || 0}</span>
               </div>
             </div>
+          </div>
+
+          {/* Employee Documents */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <DocumentsPanel
+              entityType={DocumentEntityType.EMPLOYEE}
+              entityId={params.id as string}
+              title="Employee Documents"
+            />
           </div>
 
           {/* Bank Details Card */}

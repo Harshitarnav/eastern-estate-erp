@@ -25,6 +25,8 @@ import { propertiesService } from '@/services/properties.service';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -112,10 +114,10 @@ export default function CustomersPage() {
 
     try {
       await customersService.deleteCustomer(id);
-      alert(`Customer "${name}" has been successfully deactivated.`);
+      toast.success(`Customer "${name}" has been successfully deactivated.`);
       fetchCustomers();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to deactivate customer');
+      showApiError(err, 'Failed to deactivate customer');
     }
   };
 

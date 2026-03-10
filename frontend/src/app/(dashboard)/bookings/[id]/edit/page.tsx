@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import BookingForm from '@/components/forms/BookingForm';
 import { bookingsService } from '@/services/bookings.service';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 export default function BookingEditPage() {
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function BookingEditPage() {
         status: booking.status || 'TOKEN_PAID',
         customerId: booking.customerId || '',
         propertyId: booking.propertyId || '',
-        towerId: booking.towerId || '',
+        towerId: booking.towerId || undefined,   // optional UUID — must be undefined (not '') when absent
         flatId: booking.flatId || '',
         totalAmount: booking.totalAmount || 0,
         tokenAmount: booking.tokenAmount || 0,
@@ -47,13 +49,19 @@ export default function BookingEditPage() {
         tokenPaidDate: booking.tokenPaidDate ? new Date(booking.tokenPaidDate).toISOString().split('T')[0] : '',
         tokenReceiptNumber: booking.tokenReceiptNumber || '',
         tokenPaymentMode: booking.tokenPaymentMode || '',
+        rtgsNumber: booking.rtgsNumber || '',
+        utrNumber: booking.utrNumber || '',
+        chequeNumber: booking.chequeNumber || '',
+        chequeDate: booking.chequeDate ? new Date(booking.chequeDate).toISOString().split('T')[0] : '',
+        paymentBank: booking.paymentBank || '',
+        paymentBranch: booking.paymentBranch || '',
         agreementNumber: booking.agreementNumber || '',
         agreementDate: booking.agreementDate ? new Date(booking.agreementDate).toISOString().split('T')[0] : '',
         agreementSignedDate: booking.agreementSignedDate ? new Date(booking.agreementSignedDate).toISOString().split('T')[0] : '',
         expectedPossessionDate: booking.expectedPossessionDate ? new Date(booking.expectedPossessionDate).toISOString().split('T')[0] : '',
         actualPossessionDate: booking.actualPossessionDate ? new Date(booking.actualPossessionDate).toISOString().split('T')[0] : '',
         registrationDate: booking.registrationDate ? new Date(booking.registrationDate).toISOString().split('T')[0] : '',
-        isHomeLoan: booking.isHomeLoan || false,
+        isHomeLoan: booking.isHomeLoan ? 'true' : 'false',
         bankName: booking.bankName || '',
         loanAmount: booking.loanAmount || 0,
         loanApplicationNumber: booking.loanApplicationNumber || '',
@@ -85,7 +93,7 @@ export default function BookingEditPage() {
       const payload = {
         customerId: data.customerId,
         propertyId: data.propertyId,
-        towerId: data.towerId,
+        towerId: data.towerId || undefined,   // send undefined (not '') so @IsUUID skips validation
         flatId: data.flatId,
         bookingNumber: data.bookingNumber,
         bookingDate: data.bookingDate,
@@ -105,6 +113,12 @@ export default function BookingEditPage() {
         tokenPaidDate: data.tokenPaidDate || null,
         tokenReceiptNumber: data.tokenReceiptNumber || null,
         tokenPaymentMode: data.tokenPaymentMode || null,
+        rtgsNumber: data.rtgsNumber || null,
+        utrNumber: data.utrNumber || null,
+        chequeNumber: data.chequeNumber || null,
+        chequeDate: data.chequeDate || null,
+        paymentBank: data.paymentBank || null,
+        paymentBranch: data.paymentBranch || null,
         agreementNumber: data.agreementNumber || null,
         agreementDate: data.agreementDate || null,
         agreementSignedDate: data.agreementSignedDate || null,
@@ -130,10 +144,10 @@ export default function BookingEditPage() {
         paidAmount: parseFloat(data.paidAmount) || 0,
       };
       await bookingsService.updateBooking(bookingId, payload);
-      alert('Booking updated successfully!');
-      window.location.href = '/bookings';
+      toast.success('Booking updated successfully!');
+      router.push('/bookings');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to update booking');
+      showApiError(err, 'Failed to update booking');
     }
   };
 

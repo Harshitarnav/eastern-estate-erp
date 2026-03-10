@@ -7,7 +7,8 @@ import {
   X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
-  Settings, ChevronDown, Target, Database, Table as TableIcon
+  Settings, ChevronDown, Target, Database, Table as TableIcon,
+  FileText, AlertTriangle
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { hasModuleAccess, isAdminRole } from '@/lib/roles';
@@ -76,6 +77,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       children: [
         { id: 'payments-list', label: 'Payments', icon: DollarSign, href: '/payments' },
         { id: 'payment-plans', label: 'Payment Plans', icon: Calendar, href: '/payment-plans' },
+        { id: 'demand-drafts', label: 'Demand Drafts', icon: FileText, href: '/demand-drafts' },
         { id: 'construction-milestones', label: 'Construction Milestones', icon: Target, href: '/construction-milestones' },
       ]
     },
@@ -114,6 +116,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'employees', label: 'Employees', icon: Users, href: '/employees' },
       ]
     },
+    {
+      id: 'reports',
+      label: 'Reports',
+      icon: BarChart3,
+      children: [
+        { id: 'reports-outstanding', label: 'Outstanding Report', icon: AlertTriangle, href: '/reports/outstanding' },
+        { id: 'reports-collection', label: 'Collection Report', icon: TrendingUp, href: '/reports/collection' },
+        { id: 'reports-inventory', label: 'Stock Inventory', icon: Package, href: '/reports/inventory' },
+      ]
+    },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
     { 
       id: 'database', 
@@ -126,7 +138,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'database-relationships', label: 'Relationships', icon: BarChart3, href: '/database/relationships' },
       ]
     },
-    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+    {
+      id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
+      children: [
+        { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
+        { id: 'settings-users',   label: 'User Management', icon: Users, href: '/settings/users' },
+      ]
+    },
   ];
 
   // Filter menu items based on user's role

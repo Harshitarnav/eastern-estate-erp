@@ -8,7 +8,15 @@ export declare class FlatPaymentPlanController {
     findAll(): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan[]>;
     findByFlatId(flatId: string): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
     findByBookingId(bookingId: string): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
+    getLedger(bookingId: string): Promise<import("../services/flat-payment-plan.service").LedgerResponse>;
     findOne(id: string): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
     updateMilestone(id: string, sequence: string, updates: Partial<FlatPaymentMilestone>, req: any): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
+    updateMilestones(id: string, body: {
+        milestones: FlatPaymentMilestone[];
+    }, req: any): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
+    updatePlan(id: string, body: {
+        totalAmount?: number;
+        status?: string;
+    }, req: any): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
     cancel(id: string, req: any): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
 }

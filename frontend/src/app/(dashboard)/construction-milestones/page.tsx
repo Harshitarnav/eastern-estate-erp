@@ -277,6 +277,30 @@ export default function ConstructionMilestonesPage() {
     }
   };
 
+  const handleTriggerDemandDraft = async (item: MilestoneWithProgress) => {
+    const key = `trigger-${item.flatPaymentPlanId}-${item.milestone.sequence}`;
+    setActionLoading(key);
+    try {
+      const draft = await constructionMilestonesService.triggerDemandDraft(
+        item.flatPaymentPlanId,
+        item.milestone.sequence,
+      );
+      toast.success(
+        `Demand draft generated for ${item.flatNumber} – ${item.milestone.name}`,
+      );
+      router.push(`/demand-drafts/${draft.id}`);
+    } catch (error: any) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Failed to generate demand draft';
+      toast.error(msg);
+      console.error(error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const viewProgressDetails = (milestone: MilestoneWithProgress) => {
     setSelectedMilestone(milestone);
     setProgressDialogOpen(true);
@@ -626,11 +650,12 @@ export default function ConstructionMilestonesPage() {
                           ₹{item.milestone.amount?.toLocaleString('en-IN') || 'TBD'}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 flex-wrap">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => viewProgressDetails(item)}
+                              title="View progress details"
                             >
                               <Eye className="h-3 w-3" />
                             </Button>
@@ -638,8 +663,27 @@ export default function ConstructionMilestonesPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => navigateToProgressLog(item.propertyId, item.towerId, item.flatId)}
+                              title="Log more progress"
                             >
                               <Hammer className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs px-2"
+                              onClick={() => handleTriggerDemandDraft(item)}
+                              disabled={
+                                actionLoading ===
+                                `trigger-${item.flatPaymentPlanId}-${item.milestone.sequence}`
+                              }
+                              title="Generate demand draft for this milestone"
+                            >
+                              {actionLoading ===
+                              `trigger-${item.flatPaymentPlanId}-${item.milestone.sequence}` ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : (
+                                <FileText className="h-3 w-3 mr-1" />
+                              )}
+                              Generate Draft
                             </Button>
                           </div>
                         </TableCell>

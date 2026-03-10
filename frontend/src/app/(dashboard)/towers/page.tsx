@@ -12,6 +12,7 @@ import {
   Target,
   Loader2,
   FileSpreadsheet,
+  FileText,
   X,
 } from 'lucide-react';
 import {
@@ -26,6 +27,8 @@ import { TowerForm } from '@/components/forms/TowerForm';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import DocumentsPanel from '@/components/documents/DocumentsPanel';
+import { DocumentEntityType } from '@/services/documents.service';
 
 
 const completenessBadgeStyles: Record<string, { label: string; bg: string; border: string; text: string }> = {
@@ -76,6 +79,7 @@ export default function TowersInventoryPage() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [editingTower, setEditingTower] = useState<Tower | null>(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
+  const [expandedDocsTower, setExpandedDocsTower] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -326,7 +330,26 @@ export default function TowersInventoryPage() {
           >
             Edit Tower
           </button>
+          <button
+            onClick={() => setExpandedDocsTower(expandedDocsTower === tower.id ? null : tower.id)}
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            {expandedDocsTower === tower.id ? 'Hide Docs' : 'Docs'}
+          </button>
         </div>
+
+        {/* Tower Documents — expanded inline */}
+        {expandedDocsTower === tower.id && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <DocumentsPanel
+              entityType={DocumentEntityType.TOWER}
+              entityId={tower.id}
+              fetchMode="entity"
+              title={`${tower.name} Documents`}
+            />
+          </div>
+        )}
       </div>
     );
   };

@@ -75,9 +75,9 @@ export class CustomerResponseDto {
     dto.panNumber = customer.panNumber;
     dto.aadharNumber = customer.aadharNumber;
     dto.needsHomeLoan = (customer as any).needsHomeLoan ?? false;
-    dto.hasApprovedLoan = (customer as any).hasApprovedLoan ?? false;
-    dto.bankName = (customer as any).bankName;
-    dto.approvedLoanAmount = (customer as any).approvedLoanAmount;
+    dto.hasApprovedLoan = customer.metadata?.hasApprovedLoan ?? false;
+    dto.bankName = customer.metadata?.bankName || (customer as any).bankName;
+    dto.approvedLoanAmount = customer.metadata?.approvedLoanAmount ?? (customer as any).approvedLoanAmount;
     dto.totalBookings = customer.totalBookings;
     dto.totalPurchases = Number(customer.totalPurchases) || 0;
     dto.totalSpent = customer.totalSpent || Number(customer.totalPurchases) || 0;

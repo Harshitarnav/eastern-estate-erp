@@ -33,11 +33,20 @@ let FlatPaymentPlanController = class FlatPaymentPlanController {
     async findByBookingId(bookingId) {
         return await this.flatPaymentPlanService.findByBookingId(bookingId);
     }
+    async getLedger(bookingId) {
+        return await this.flatPaymentPlanService.getLedger(bookingId);
+    }
     async findOne(id) {
         return await this.flatPaymentPlanService.findOne(id);
     }
     async updateMilestone(id, sequence, updates, req) {
         return await this.flatPaymentPlanService.updateMilestone(id, parseInt(sequence), updates, req.user.id);
+    }
+    async updateMilestones(id, body, req) {
+        return await this.flatPaymentPlanService.updateMilestones(id, body.milestones, req.user.id);
+    }
+    async updatePlan(id, body, req) {
+        return await this.flatPaymentPlanService.updatePlan(id, body, req.user.id);
     }
     async cancel(id, req) {
         return await this.flatPaymentPlanService.cancel(id, req.user.id);
@@ -73,6 +82,13 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], FlatPaymentPlanController.prototype, "findByBookingId", null);
 __decorate([
+    (0, common_1.Get)('ledger/booking/:bookingId'),
+    __param(0, (0, common_1.Param)('bookingId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlatPaymentPlanController.prototype, "getLedger", null);
+__decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -89,6 +105,24 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], FlatPaymentPlanController.prototype, "updateMilestone", null);
+__decorate([
+    (0, common_1.Put)(':id/milestones'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], FlatPaymentPlanController.prototype, "updateMilestones", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], FlatPaymentPlanController.prototype, "updatePlan", null);
 __decorate([
     (0, common_1.Put)(':id/cancel'),
     __param(0, (0, common_1.Param)('id')),

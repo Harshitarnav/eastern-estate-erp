@@ -19,6 +19,10 @@ export declare class CreateCustomerDto {
     panNumber?: string;
     aadharNumber?: string;
     needsHomeLoan?: boolean;
+    hasApprovedLoan?: boolean;
+    approvedLoanAmount?: number;
+    designation?: string;
+    bankName?: string;
     notes?: string;
     isActive?: boolean;
     isVIP?: boolean;

@@ -17,7 +17,6 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [paymentMode, setPaymentMode] = useState('');
-  const [paymentType, setPaymentType] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -164,6 +163,7 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       label: 'Payment Mode *',
       type: 'select',
       required: true,
+      onChange: (v: string) => setPaymentMode(v),  // ← keeps cheque/UPI/bank fields unlocked
       options: [
         { value: 'CASH', label: 'Cash' },
         { value: 'CHEQUE', label: 'Cheque' },
@@ -241,6 +241,8 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
   ];
 
   // Tab 4: Installment Details
+  // All fields here are optional — no need to lock them behind payment type selection.
+  // Users who are recording an installment payment will simply fill these in; others leave them blank.
   const installmentFields: FormField[] = [
     {
       name: 'installmentNumber',
@@ -248,14 +250,12 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       type: 'number',
       required: false,
       placeholder: 'e.g., 1, 2, 3...',
-      disabled: paymentType !== 'INSTALLMENT',
     },
     {
       name: 'dueDate',
       label: 'Due Date',
       type: 'date',
       required: false,
-      disabled: paymentType !== 'INSTALLMENT',
     },
     {
       name: 'lateFee',
@@ -263,7 +263,6 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       type: 'number',
       required: false,
       placeholder: 'e.g., 5000',
-      disabled: paymentType !== 'INSTALLMENT',
     },
   ];
 

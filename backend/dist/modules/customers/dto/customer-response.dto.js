@@ -33,9 +33,9 @@ class CustomerResponseDto {
         dto.panNumber = customer.panNumber;
         dto.aadharNumber = customer.aadharNumber;
         dto.needsHomeLoan = customer.needsHomeLoan ?? false;
-        dto.hasApprovedLoan = customer.hasApprovedLoan ?? false;
-        dto.bankName = customer.bankName;
-        dto.approvedLoanAmount = customer.approvedLoanAmount;
+        dto.hasApprovedLoan = customer.metadata?.hasApprovedLoan ?? false;
+        dto.bankName = customer.metadata?.bankName || customer.bankName;
+        dto.approvedLoanAmount = customer.metadata?.approvedLoanAmount ?? customer.approvedLoanAmount;
         dto.totalBookings = customer.totalBookings;
         dto.totalPurchases = Number(customer.totalPurchases) || 0;
         dto.totalSpent = customer.totalSpent || Number(customer.totalPurchases) || 0;

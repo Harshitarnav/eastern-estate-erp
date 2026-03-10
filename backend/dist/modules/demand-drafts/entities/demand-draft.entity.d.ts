@@ -14,6 +14,8 @@ export declare class DemandDraft {
     status: DemandDraftStatus;
     fileUrl: string | null;
     content: string | null;
+    title: string | null;
+    dueDate: Date | null;
     metadata: any;
     generatedAt: Date | null;
     sentAt: Date | null;

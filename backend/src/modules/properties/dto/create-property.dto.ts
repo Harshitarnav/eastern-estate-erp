@@ -177,4 +177,35 @@ export class CreatePropertyDto {
   @IsUUID('4')
   @IsOptional()
   projectId?: string;
+
+  // ── Project-level legal & bank details ───────────────────────────────────
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  gstin?: string;
+
+  @IsString()
+  @IsOptional()
+  bankName?: string;
+
+  @IsString()
+  @IsOptional()
+  accountName?: string;
+
+  @IsString()
+  @IsOptional()
+  accountNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  ifscCode?: string;
+
+  @IsString()
+  @IsOptional()
+  branch?: string;
+
+  @IsString()
+  @IsOptional()
+  upiId?: string;
 }

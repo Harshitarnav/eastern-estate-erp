@@ -110,6 +110,28 @@ export class CreateCustomerDto {
   @IsOptional()
   needsHomeLoan?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  hasApprovedLoan?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  approvedLoanAmount?: number;
+
+  // designation is stored in customer's metadata JSONB
+  @IsString()
+  @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
+  designation?: string;
+
+  // bankName stores the customer's home-loan bank (stored in metadata)
+  @IsString()
+  @IsOptional()
+  @Transform(CreateCustomerDto.toOptionalString)
+  bankName?: string;
+
   @IsString()
   @IsOptional()
   @Transform(CreateCustomerDto.toOptionalString)

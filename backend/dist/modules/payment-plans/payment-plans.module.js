@@ -18,9 +18,11 @@ const demand_draft_template_service_1 = require("./services/demand-draft-templat
 const payment_plan_template_controller_1 = require("./controllers/payment-plan-template.controller");
 const flat_payment_plan_controller_1 = require("./controllers/flat-payment-plan.controller");
 const demand_draft_template_controller_1 = require("./controllers/demand-draft-template.controller");
+const payment_plans_schema_sync_service_1 = require("./payment-plans.schema-sync.service");
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
+const payment_entity_1 = require("../payments/entities/payment.entity");
 let PaymentPlansModule = class PaymentPlansModule {
 };
 exports.PaymentPlansModule = PaymentPlansModule;
@@ -34,6 +36,7 @@ exports.PaymentPlansModule = PaymentPlansModule = __decorate([
                 flat_entity_1.Flat,
                 booking_entity_1.Booking,
                 customer_entity_1.Customer,
+                payment_entity_1.Payment,
             ]),
         ],
         controllers: [
@@ -45,6 +48,7 @@ exports.PaymentPlansModule = PaymentPlansModule = __decorate([
             payment_plan_template_service_1.PaymentPlanTemplateService,
             flat_payment_plan_service_1.FlatPaymentPlanService,
             demand_draft_template_service_1.DemandDraftTemplateService,
+            payment_plans_schema_sync_service_1.PaymentPlansSchemaSyncService,
         ],
         exports: [
             payment_plan_template_service_1.PaymentPlanTemplateService,

@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -15,6 +15,9 @@ import { Customer } from '../../customers/entities/customer.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Property } from '../../properties/entities/property.entity';
 import { Tower } from '../../towers/entities/tower.entity';
+import { buildDemandDraftHtml } from '../../../common/utils/demand-draft-html.builder';
+import { SettingsService } from '../../settings/settings.service';
+import { MailService } from '../../../common/mail/mail.service';
 
 /**
  * Auto Demand Draft Generation Service
@@ -46,6 +49,8 @@ export class AutoDemandDraftService {
     private readonly milestoneDetectionService: MilestoneDetectionService,
     private readonly flatPaymentPlanService: FlatPaymentPlanService,
     private readonly templateService: DemandDraftTemplateService,
+    private readonly settingsService: SettingsService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -79,12 +84,6 @@ export class AutoDemandDraftService {
   async generateDemandDraft(match: MilestoneMatch, systemUserId?: string): Promise<DemandDraft> {
     const { flatPaymentPlan, milestoneSequence, constructionProgress, amount } = match;
 
-    // Get template
-    const template = await this.templateService.findFirstActive();
-    if (!template) {
-      throw new NotFoundException('No active demand draft template found');
-    }
-
     // Load all required data
     const flat = await this.flatRepository.findOne({
       where: { id: flatPaymentPlan.flatId },
@@ -114,46 +113,115 @@ export class AutoDemandDraftService {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
 
-    // Create payment schedule entry
-    const paymentSchedule = this.paymentScheduleRepository.create({
-      bookingId: flatPaymentPlan.bookingId,
-      scheduleNumber: `${flatPaymentPlan.bookingId.substring(0, 8)}-${milestoneSequence}`,
-      installmentNumber: milestoneSequence,
-      totalInstallments: flatPaymentPlan.milestones.length,
-      milestone: milestone.name,
-      description: milestone.description,
-      dueDate,
-      amount,
-      status: ScheduleStatus.PENDING,
-      paidAmount: 0,
-    });
-    const savedSchedule = await this.paymentScheduleRepository.save(paymentSchedule);
+    const dueDateStr = dueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    const todayStr   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    const amountFmt  = Number(amount).toLocaleString('en-IN');
+    const bookingRef = booking?.bookingNumber ?? flatPaymentPlan.bookingId.substring(0, 8).toUpperCase();
+    const refNumber  = `DD-${bookingRef}-${String(milestoneSequence).padStart(2, '0')}`;
 
-    // Prepare template data
-    const templateData = {
+    // Store templateData for record keeping / template override
+    const templateData: Record<string, any> = {
       customerName: customer.fullName,
       propertyName: flat.property?.name || 'N/A',
-      towerName: flat.tower?.name || 'N/A',
+      towerName: flat.tower?.name || '',
       flatNumber: flat.flatNumber,
       milestoneName: milestone.name,
-      milestoneDescription: milestone.description,
-      amount: amount.toLocaleString('en-IN'),
-      dueDate: dueDate.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: 'long', 
-        year: 'numeric' 
-      }),
-      bankName: 'State Bank of India',
-      accountName: 'Eastern Estate Pvt Ltd',
-      accountNumber: '1234567890',
-      ifscCode: 'SBIN0001234',
-      branch: 'Kolkata Main Branch',
+      milestoneDescription: milestone.description || '',
+      milestoneSeq: milestoneSequence,
+      amount: amountFmt,
+      totalAmount: Number(flatPaymentPlan.totalAmount).toLocaleString('en-IN'),
+      paidAmount: Number(flatPaymentPlan.paidAmount).toLocaleString('en-IN'),
+      balanceAfterPayment: Number(Math.max(0, flatPaymentPlan.balanceAmount - amount)).toLocaleString('en-IN'),
+      dueDate: dueDateStr,
+      dateIssued: todayStr,
+      refNumber,
+      bookingNumber: booking?.bookingNumber || '',
+      constructionPhase: milestone.constructionPhase || '',
+      phasePercentage: milestone.phasePercentage,
+      bankName: '[Bank Name — to be filled]',
+      accountName: 'Eastern Estate',
+      accountNumber: '[Account Number — to be filled]',
+      ifscCode: '[IFSC Code — to be filled]',
       customerEmail: customer.email || '',
       customerPhone: customer.phoneNumber || '',
     };
 
-    // Render template
-    const { subject, htmlContent } = this.templateService.renderTemplate(template, templateData);
+    // Fetch company settings for bank details
+    let companySettings: Awaited<ReturnType<SettingsService['get']>> | null = null;
+    try {
+      companySettings = await this.settingsService.get();
+    } catch {
+      this.logger.warn('Could not load company settings — bank details will show placeholder');
+    }
+
+    // Build canonical HTML using the shared builder (always used as primary)
+    let htmlContent: string = buildDemandDraftHtml({
+      refNumber,
+      dateIssued: todayStr,
+      customerName: customer.fullName,
+      customerEmail: customer.email || undefined,
+      customerPhone: customer.phoneNumber || undefined,
+      propertyName: flat.property?.name || '',
+      towerName: flat.tower?.name || undefined,
+      flatNumber: flat.flatNumber,
+      bookingNumber: booking?.bookingNumber || undefined,
+      milestoneSeq: milestoneSequence,
+      milestoneName: milestone.name,
+      milestoneDescription: milestone.description || undefined,
+      constructionPhase: milestone.constructionPhase || undefined,
+      phasePercentage: milestone.phasePercentage ?? undefined,
+      amount: amountFmt,
+      dueDate: dueDateStr,
+      totalAmount: String(flatPaymentPlan.totalAmount),
+      paidAmount: String(flatPaymentPlan.paidAmount),
+      balanceAfterPayment: String(Math.max(0, flatPaymentPlan.balanceAmount - amount)),
+      // Property-level overrides → company settings fallback
+      bankName: flat.property?.bankName || companySettings?.bankName || undefined,
+      accountName: flat.property?.accountName || companySettings?.accountName || undefined,
+      accountNumber: flat.property?.accountNumber || companySettings?.accountNumber || undefined,
+      ifscCode: flat.property?.ifscCode || companySettings?.ifscCode || undefined,
+      branch: flat.property?.branch || companySettings?.branch || undefined,
+    });
+
+    const subject = `Payment Demand – ${flat.flatNumber}${flat.tower?.name ? ` / ${flat.tower.name}` : ''} – ${milestone.name}`;
+    let usedTemplateId: string | null = null;
+
+    // If a DB template exists, use it instead (overrides canonical builder)
+    try {
+      const template = await this.templateService.findFirstActive();
+      if (template) {
+        const rendered = this.templateService.renderTemplate(template, templateData);
+        htmlContent = rendered.htmlContent;
+        usedTemplateId = template.id;
+      }
+    } catch {
+      // Template table may not exist yet — canonical HTML already built above
+    }
+
+    // Try to create a payment schedule entry; skip silently if it fails
+    let savedScheduleId: string | null = null;
+    try {
+      const paymentSchedule = this.paymentScheduleRepository.create({
+        bookingId: flatPaymentPlan.bookingId,
+        scheduleNumber: `${flatPaymentPlan.bookingId.substring(0, 8)}-${milestoneSequence}`,
+        installmentNumber: milestoneSequence,
+        totalInstallments: flatPaymentPlan.milestones.length,
+        milestone: milestone.name,
+        description: milestone.description,
+        dueDate,
+        amount,
+        status: ScheduleStatus.PENDING,
+        paidAmount: 0,
+      });
+      const savedSchedule = await this.paymentScheduleRepository.save(paymentSchedule);
+      savedScheduleId = savedSchedule.id;
+    } catch (err) {
+      this.logger.warn('Could not create payment schedule entry (non-fatal):', err?.message);
+    }
+
+    // Build the draft title
+    const towerLabel = flat.tower?.name ? `${flat.tower.name} / ` : '';
+    const draftTitle = `${flat.flatNumber} / ${towerLabel}${milestone.name}`;
 
     // Create demand draft
     const demandDraft = this.demandDraftRepository.create({
@@ -161,19 +229,21 @@ export class AutoDemandDraftService {
       customerId: flatPaymentPlan.customerId,
       bookingId: flatPaymentPlan.bookingId,
       milestoneId: milestone.name,
+      title: draftTitle,
       amount,
       status: DemandDraftStatus.DRAFT,
       content: htmlContent,
+      dueDate,
       metadata: {
         subject,
         templateData,
       },
-      paymentScheduleId: savedSchedule.id,
+      paymentScheduleId: savedScheduleId,
       flatPaymentPlanId: flatPaymentPlan.id,
-      constructionCheckpointId: constructionProgress.id,
+      constructionCheckpointId: constructionProgress?.id ?? null,
       autoGenerated: true,
       requiresReview: true,
-      templateId: template.id,
+      templateId: usedTemplateId,
       templateData,
       generatedAt: new Date(),
       createdBy: systemUserId || null,
@@ -188,20 +258,24 @@ export class AutoDemandDraftService {
       {
         status: 'TRIGGERED',
         dueDate: dueDate.toISOString(),
-        paymentScheduleId: savedSchedule.id,
+        paymentScheduleId: savedScheduleId,
         demandDraftId: savedDemandDraft.id,
-        constructionCheckpointId: constructionProgress.id,
+        constructionCheckpointId: constructionProgress?.id ?? null,
       },
       systemUserId || 'SYSTEM',
     );
 
-    // Mark construction checkpoint as triggered
-    constructionProgress.isPaymentMilestone = true;
-    constructionProgress.milestoneTriggered = true;
-    constructionProgress.milestoneTriggeredAt = new Date();
-    constructionProgress.demandDraftId = savedDemandDraft.id;
-    constructionProgress.paymentScheduleId = savedSchedule.id;
-    await this.progressRepository.save(constructionProgress);
+    // Mark construction checkpoint as triggered (only if we have one)
+    if (constructionProgress) {
+      constructionProgress.isPaymentMilestone = true;
+      constructionProgress.milestoneTriggered = true;
+      constructionProgress.milestoneTriggeredAt = new Date();
+      constructionProgress.demandDraftId = savedDemandDraft.id;
+      if (savedScheduleId) {
+        constructionProgress.paymentScheduleId = savedScheduleId;
+      }
+      await this.progressRepository.save(constructionProgress);
+    }
 
     this.logger.log(
       `Generated demand draft ${savedDemandDraft.id} for flat ${flat.flatNumber}, milestone: ${milestone.name}`
@@ -226,7 +300,10 @@ export class AutoDemandDraftService {
     }
 
     if (milestone.status !== 'PENDING') {
-      throw new Error(`Milestone is already ${milestone.status}`);
+      throw new BadRequestException(
+        `This milestone has already been ${milestone.status.toLowerCase()}. ` +
+        `A demand draft may have already been generated for it. Check the Demand Drafts page.`
+      );
     }
 
     // For construction-linked milestones, verify construction progress
@@ -237,33 +314,29 @@ export class AutoDemandDraftService {
       );
 
       if (!canTrigger) {
-        throw new Error(
-          `Construction progress has not reached required level for this milestone. ` +
-          `Required: ${milestone.phasePercentage}% of ${milestone.constructionPhase}`
+        throw new BadRequestException(
+          `Construction has not reached the required level for this milestone yet. ` +
+          `Required: ${milestone.phasePercentage ?? 100}% of ${milestone.constructionPhase}. ` +
+          `Please log the construction progress first and then generate the demand draft.`
         );
       }
     }
 
-    // Get construction progress (or create a dummy one for token payments)
+    // Get construction progress record (optional – token/down-payment milestones may not have one)
     let constructionProgress: ConstructionFlatProgress | null = null;
-    
+
     if (milestone.constructionPhase) {
       constructionProgress = await this.progressRepository.findOne({
-        where: { 
-          flatId: paymentPlan.flatId, 
-          phase: milestone.constructionPhase as ConstructionPhase
+        where: {
+          flatId: paymentPlan.flatId,
+          phase: milestone.constructionPhase as ConstructionPhase,
         },
       });
+      // Not fatal – draft can still be generated without the progress record link
       if (!constructionProgress) {
-        throw new NotFoundException('Construction progress record not found');
-      }
-    } else {
-      // For token/down payment, create a temporary progress record
-      constructionProgress = await this.progressRepository.findOne({
-        where: { flatId: paymentPlan.flatId },
-      });
-      if (!constructionProgress) {
-        throw new NotFoundException('No construction progress found for this flat');
+        this.logger.warn(
+          `No construction progress record found for flat ${paymentPlan.flatId}, phase ${milestone.constructionPhase}. Draft will be created without checkpoint link.`
+        );
       }
     }
 
@@ -312,11 +385,45 @@ export class AutoDemandDraftService {
     }
 
     if (demandDraft.status !== DemandDraftStatus.READY) {
-      throw new Error('Demand draft must be in READY status to send');
+      throw new BadRequestException(
+        `Demand draft is currently in "${demandDraft.status}" status. ` +
+        `Please approve it first (set to READY) before sending.`
+      );
     }
 
-    // TODO: Implement actual email/notification sending logic here
-    // For now, just mark as sent
+    // Fetch customer email
+    let customerEmail: string | null = null;
+    if (demandDraft.customerId) {
+      const customer = await this.customerRepository.findOne({ where: { id: demandDraft.customerId } });
+      customerEmail = customer?.email ?? null;
+    }
+
+    // Send email
+    const emailSubject =
+      (demandDraft.metadata as any)?.subject ||
+      demandDraft.title ||
+      `Payment Demand Notice — ₹${demandDraft.amount?.toLocaleString('en-IN')}`;
+
+    if (customerEmail) {
+      try {
+        const result = await this.mailService.sendMail({
+          to: customerEmail,
+          subject: emailSubject,
+          html: demandDraft.content || '<p>Please contact us for your payment demand details.</p>',
+        });
+        if (result.skipped) {
+          this.logger.warn(`Email skipped (SMTP not configured) for draft ${demandDraftId}`);
+        } else {
+          this.logger.log(`Email sent to ${customerEmail} for draft ${demandDraftId}`);
+        }
+      } catch (mailErr: any) {
+        // Don't block the status update if email fails — log and continue
+        this.logger.error(`Email delivery failed for draft ${demandDraftId}: ${mailErr?.message}`);
+      }
+    } else {
+      this.logger.warn(`Draft ${demandDraftId} has no customer email — skipping email send`);
+    }
+
     demandDraft.status = DemandDraftStatus.SENT;
     demandDraft.sentAt = new Date();
     demandDraft.updatedBy = userId;
