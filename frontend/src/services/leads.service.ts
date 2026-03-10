@@ -12,7 +12,7 @@ export interface Lead {
   state?: string;
   pincode?: string;
   status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'NEGOTIATION' | 'WON' | 'LOST' | 'ON_HOLD';
-  source: 'WEBSITE' | 'WALK_IN' | 'REFERRAL' | 'SOCIAL_MEDIA' | 'EMAIL' | 'PHONE' | 'ADVERTISEMENT' | 'BROKER' | 'EXHIBITION' | 'OTHER';
+  source: 'WEBSITE' | 'WALK_IN' | 'REFERRAL' | 'SOCIAL_MEDIA' | 'EMAIL' | 'PHONE' | 'ADVERTISEMENT' | 'BROKER' | 'EXHIBITION' | '99ACRES' | 'MAGICBRICKS' | 'OTHER';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   leadScore: number;
   notes?: string;

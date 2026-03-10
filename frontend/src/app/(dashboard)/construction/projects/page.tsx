@@ -33,7 +33,6 @@ export default function ConstructionProjectsPage() {
         ? propertiesRes.data 
         : (propertiesRes.data?.data || []);
       
-      console.log('Loaded construction projects:', projectsData);
       setProjects(projectsData);
       setProperties(propertiesData);
     } catch (error) {

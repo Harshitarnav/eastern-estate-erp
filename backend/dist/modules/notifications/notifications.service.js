@@ -259,7 +259,7 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
           </p>
         </div>
       `;
-            this.logger.log(`Would send email to ${user.email}: ${notification.title}`);
+            await this.emailService.sendEmail(user.email, notification.title, emailHtml);
             notification.emailSent = true;
             notification.emailSentAt = new Date();
             await this.notificationRepository.save(notification);

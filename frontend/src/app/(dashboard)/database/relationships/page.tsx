@@ -48,11 +48,7 @@ export default function DatabaseRelationshipsPage() {
   const fetchRelationships = async () => {
     try {
       setLoading(true);
-      console.log('Fetching relationships...');
       const data = await databaseService.getTableRelationships();
-      console.log('Raw relationships data:', data);
-      console.log('Number of relationships:', data?.length || 0);
-      console.log('Sample relationship:', data?.[0]);
       
       setRelationships(data || []);
       setFilteredRelationships(data || []);
@@ -66,7 +62,6 @@ export default function DatabaseRelationshipsPage() {
         });
       }
       const uniqueTablesArray = Array.from(tables).sort();
-      console.log('Unique tables:', uniqueTablesArray);
       setUniqueTables(uniqueTablesArray);
     } catch (error: any) {
       console.error('Failed to fetch relationships:', error);

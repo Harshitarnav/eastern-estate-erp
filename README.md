@@ -30,14 +30,14 @@ npm install
 # Install frontend dependencies
 cd ../frontend
 npm install
+# Note: TypeScript JSX errors in your IDE will disappear once you run
+# `npm install` here AND start the dev server (which generates .next/types/routes.d.ts)
 
 # Setup database
 createdb eastern_estate_erp
-cd ../backend
-npm run migration:run
 
 # Start development servers
-# Terminal 1 - Backend
+# Terminal 1 - Backend (schema is auto-synced on startup via SchemaSyncService)
 cd backend
 npm run start:dev
 
@@ -233,15 +233,21 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 
 ### Database Migrations
 
+This project uses `SchemaSyncService` — the schema is **automatically created/updated** when the backend starts. No manual migration step is needed on a fresh install.
+
+To seed initial users and data after the backend is running:
+
 ```bash
-# Create new migration
-npm run migration:create -- -n MigrationName
+cd backend
+npm run seed:users
+```
 
-# Run migrations
-npm run migration:run
+For supplemental SQL migrations (run manually with `psql` after the schema exists):
 
-# Revert migration
-npm run migration:revert
+```bash
+# Example: add foreign key constraints
+psql -h localhost -U postgres -d eastern_estate_erp \
+  -f src/database/migrations/add-foreign-keys.sql
 ```
 
 ### Code Generation

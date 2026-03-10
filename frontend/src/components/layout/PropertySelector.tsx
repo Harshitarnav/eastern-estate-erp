@@ -39,37 +39,23 @@ export function PropertySelector() {
 
   // Determine if user is admin - check multiple possible formats
   const isAdmin = (() => {
-    console.log('[PropertySelector] User object:', user);
-    console.log('[PropertySelector] User roles:', user?.roles);
-    
     if (!user?.roles || !Array.isArray(user.roles)) {
-      console.log('[PropertySelector] No roles found, defaulting to admin=true');
       return true; // Default to admin for now
     }
     
-    const result = user.roles.some((role: any) => {
-      console.log('[PropertySelector] Checking role:', role);
-      
+    return user.roles.some((role: any) => {
       // Handle both role object and string
       const roleName = typeof role === 'string' ? role : (role?.name || role?.roleName || '');
       const normalizedRole = roleName.toUpperCase().replace(/[-_\s]/g, '');
       
-      console.log('[PropertySelector] Normalized role:', normalizedRole);
-      
       // Check for admin roles
-      const isAdminRole = (
+      return (
         normalizedRole.includes('ADMIN') ||
         normalizedRole.includes('SUPERADMIN') || 
         normalizedRole.includes('SALESGM') ||
         normalizedRole === 'GM'
       );
-      
-      console.log('[PropertySelector] Is admin role?', isAdminRole);
-      return isAdminRole;
     });
-    
-    console.log('[PropertySelector] Final isAdmin result:', result);
-    return result;
   })();
 
   // Load properties on mount
@@ -79,25 +65,16 @@ export function PropertySelector() {
 
   // Set multi-select mode based on user role
   useEffect(() => {
-    console.log('[PropertySelector] Setting multi-select mode:', isAdmin);
     if (isAdmin !== undefined) {
       setMultiSelectMode(isAdmin);
-      console.log('[PropertySelector] Multi-select mode set to:', isAdmin);
     }
   }, [isAdmin, setMultiSelectMode]);
-
-  // Log current state
-  console.log('[PropertySelector] Current isMultiSelectMode:', isMultiSelectMode);
-  console.log('[PropertySelector] Selected properties:', selectedProperties);
 
   const loadProperties = async () => {
     try {
       setLoading(true);
       const data = await propertiesService.getProperties();
       const propertyList = Array.isArray(data) ? data : data.data || [];
-      
-      console.log('[PropertySelector] Loaded properties:', propertyList.length);
-      console.log('[PropertySelector] Properties data:', propertyList);
       
       const mappedProperties = propertyList.map(p => ({
         id: p.id,
@@ -107,8 +84,6 @@ export function PropertySelector() {
       }));
       
       setProperties(mappedProperties);
-      console.log('[PropertySelector] Mapped properties:', mappedProperties);
-      console.log('[PropertySelector] Current selectedProperties before auto-select:', selectedProperties);
       // NOTE: Auto-select disabled to allow "All properties" (no filter) view.
     } catch (error) {
       console.error('[PropertySelector] Failed to load properties:', error);
@@ -130,13 +105,6 @@ export function PropertySelector() {
         : getSelectedPropertyNames();
       
   const allSelected = selectedProperties.length === properties.length && properties.length > 0;
-
-  console.log('[PropertySelector] Display state:', {
-    loading,
-    propertiesCount: properties.length,
-    selectedCount: selectedProperties.length,
-    displayText
-  });
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

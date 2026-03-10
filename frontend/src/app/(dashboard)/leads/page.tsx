@@ -492,15 +492,6 @@ export default function LeadsListPage() {
     });
   }, [user?.roles]);
 
-  // Debug: Log user roles and admin status
-  useEffect(() => {
-    console.log('🔍 User Role Debug:', {
-      roles: user?.roles,
-      isAdmin,
-      userName: user?.firstName + ' ' + user?.lastName,
-    });
-  }, [user, isAdmin]);
-
   useEffect(() => {
     loadLeads();
     loadUsers();

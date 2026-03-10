@@ -70,184 +70,150 @@ export interface JournalEntryLine {
 // Accounts Service
 export const accountsService = {
   getAll: async (params?: { accountType?: string; isActive?: boolean }) => {
-    const response = await api.get('/accounting/accounts', { params });
-    return response.data;
+    return await api.get('/accounting/accounts', { params });
   },
 
   getById: async (id: string) => {
-    const response = await api.get(`/accounting/accounts/${id}`);
-    return response.data;
+    return await api.get(`/accounting/accounts/${id}`);
   },
 
   getOne: async (id: string) => {
-    const response = await api.get(`/accounting/accounts/${id}`);
-    return response.data;
+    return await api.get(`/accounting/accounts/${id}`);
   },
 
   getByCode: async (code: string) => {
-    const response = await api.get(`/accounting/accounts/code/${code}`);
-    return response.data;
+    return await api.get(`/accounting/accounts/code/${code}`);
   },
 
   getHierarchy: async () => {
-    const response = await api.get('/accounting/accounts/hierarchy');
-    return response.data;
+    return await api.get('/accounting/accounts/hierarchy');
   },
 
   getBalanceSheet: async () => {
-    const response = await api.get('/accounting/accounts/balance-sheet');
-    return response.data;
+    return await api.get('/accounting/accounts/balance-sheet');
   },
 
   getProfitLoss: async () => {
-    const response = await api.get('/accounting/accounts/profit-loss');
-    return response.data;
+    return await api.get('/accounting/accounts/profit-loss');
   },
 
   create: async (data: Partial<Account>) => {
-    const response = await api.post('/accounting/accounts', data);
-    return response.data;
+    return await api.post('/accounting/accounts', data);
   },
 
   update: async (id: string, data: Partial<Account>) => {
-    const response = await api.patch(`/accounting/accounts/${id}`, data);
-    return response.data;
+    return await api.patch(`/accounting/accounts/${id}`, data);
   },
 
   delete: async (id: string) => {
-    const response = await api.delete(`/accounting/accounts/${id}`);
-    return response.data;
+    return await api.delete(`/accounting/accounts/${id}`);
   },
 };
 
 // Expenses Service
 export const expensesService = {
   getAll: async (params?: { category?: string; status?: string; startDate?: string; endDate?: string }) => {
-    const response = await api.get('/accounting/expenses', { params });
-    return response.data;
+    return await api.get('/accounting/expenses', { params });
   },
 
   getById: async (id: string) => {
-    const response = await api.get(`/accounting/expenses/${id}`);
-    return response.data;
+    return await api.get(`/accounting/expenses/${id}`);
   },
 
   getOne: async (id: string) => {
-    const response = await api.get(`/accounting/expenses/${id}`);
-    return response.data;
+    return await api.get(`/accounting/expenses/${id}`);
   },
 
   getSummary: async (params?: { startDate?: string; endDate?: string }) => {
-    const response = await api.get('/accounting/expenses/summary', { params });
-    return response.data;
+    return await api.get('/accounting/expenses/summary', { params });
   },
 
   create: async (data: Partial<Expense>) => {
-    const response = await api.post('/accounting/expenses', data);
-    return response.data;
+    return await api.post('/accounting/expenses', data);
   },
 
   update: async (id: string, data: Partial<Expense>) => {
-    const response = await api.patch(`/accounting/expenses/${id}`, data);
-    return response.data;
+    return await api.patch(`/accounting/expenses/${id}`, data);
   },
 
   approve: async (id: string, notes?: string) => {
-    const response = await api.post(`/accounting/expenses/${id}/approve`, { notes });
-    return response.data;
+    return await api.post(`/accounting/expenses/${id}/approve`, { notes });
   },
 
   reject: async (id: string, rejectionReason: string) => {
-    const response = await api.post(`/accounting/expenses/${id}/reject`, { rejectionReason });
-    return response.data;
+    return await api.post(`/accounting/expenses/${id}/reject`, { rejectionReason });
   },
 
   markAsPaid: async (id: string) => {
-    const response = await api.post(`/accounting/expenses/${id}/paid`);
-    return response.data;
+    return await api.post(`/accounting/expenses/${id}/paid`);
   },
 
   delete: async (id: string) => {
-    const response = await api.delete(`/accounting/expenses/${id}`);
-    return response.data;
+    return await api.delete(`/accounting/expenses/${id}`);
   },
 };
 
 // Budgets Service
 export const budgetsService = {
   getAll: async (params?: { fiscalYear?: number; status?: string }) => {
-    const response = await api.get('/accounting/budgets', { params });
-    return response.data;
+    return await api.get('/accounting/budgets', { params });
   },
 
   getById: async (id: string) => {
-    const response = await api.get(`/accounting/budgets/${id}`);
-    return response.data;
+    return await api.get(`/accounting/budgets/${id}`);
   },
 
   getOne: async (id: string) => {
-    const response = await api.get(`/accounting/budgets/${id}`);
-    return response.data;
+    return await api.get(`/accounting/budgets/${id}`);
   },
 
   getVarianceReport: async (fiscalYear?: number) => {
-    const response = await api.get('/accounting/budgets/variance-report', {
+    return await api.get('/accounting/budgets/variance-report', {
       params: { fiscalYear },
     });
-    return response.data;
   },
 
   create: async (data: Partial<Budget>) => {
-    const response = await api.post('/accounting/budgets', data);
-    return response.data;
+    return await api.post('/accounting/budgets', data);
   },
 
   update: async (id: string, data: Partial<Budget>) => {
-    const response = await api.patch(`/accounting/budgets/${id}`, data);
-    return response.data;
+    return await api.patch(`/accounting/budgets/${id}`, data);
   },
 
   delete: async (id: string) => {
-    const response = await api.delete(`/accounting/budgets/${id}`);
-    return response.data;
+    return await api.delete(`/accounting/budgets/${id}`);
   },
 };
 
 // Journal Entries Service
 export const journalEntriesService = {
   getAll: async (params?: { status?: string; startDate?: string; endDate?: string }) => {
-    const response = await api.get('/journal-entries', { params });
-    return response.data;
+    return await api.get('/journal-entries', { params });
   },
 
   getOne: async (id: string) => {
-    const response = await api.get(`/journal-entries/${id}`);
-    return response.data;
+    return await api.get(`/journal-entries/${id}`);
   },
 
   create: async (data: { entryDate: string; description: string; lines: Partial<JournalEntryLine>[] }) => {
-    const response = await api.post('/journal-entries', data);
-    return response.data;
+    return await api.post('/journal-entries', data);
   },
 
   update: async (id: string, data: Partial<JournalEntry>) => {
-    const response = await api.patch(`/journal-entries/${id}`, data);
-    return response.data;
+    return await api.patch(`/journal-entries/${id}`, data);
   },
 
   post: async (id: string) => {
-    const response = await api.post(`/journal-entries/${id}/post`);
-    return response.data;
+    return await api.post(`/journal-entries/${id}/post`);
   },
 
   void: async (id: string, voidReason: string) => {
-    const response = await api.post(`/journal-entries/${id}/void`, { voidReason });
-    return response.data;
+    return await api.post(`/journal-entries/${id}/void`, { voidReason });
   },
 
   delete: async (id: string) => {
-    const response = await api.delete(`/journal-entries/${id}`);
-    return response.data;
+    return await api.delete(`/journal-entries/${id}`);
   },
 };
 

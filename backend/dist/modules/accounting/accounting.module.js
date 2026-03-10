@@ -15,10 +15,14 @@ const journal_entry_line_entity_1 = require("./entities/journal-entry-line.entit
 const expense_entity_1 = require("./entities/expense.entity");
 const budget_entity_1 = require("./entities/budget.entity");
 const fiscal_year_entity_1 = require("./entities/fiscal-year.entity");
+const bank_account_entity_1 = require("./entities/bank-account.entity");
+const bank_statement_entity_1 = require("./entities/bank-statement.entity");
+const accounting_service_1 = require("./accounting.service");
 const accounts_service_1 = require("./accounts.service");
 const expenses_service_1 = require("./expenses.service");
 const budgets_service_1 = require("./budgets.service");
 const journal_entries_service_1 = require("./journal-entries.service");
+const accounting_controller_1 = require("./accounting.controller");
 const accounts_controller_1 = require("./accounts.controller");
 const expenses_controller_1 = require("./expenses.controller");
 const budgets_controller_1 = require("./budgets.controller");
@@ -36,21 +40,26 @@ exports.AccountingModule = AccountingModule = __decorate([
                 expense_entity_1.Expense,
                 budget_entity_1.Budget,
                 fiscal_year_entity_1.FiscalYear,
+                bank_account_entity_1.BankAccount,
+                bank_statement_entity_1.BankStatement,
             ]),
         ],
         controllers: [
+            accounting_controller_1.AccountingController,
             accounts_controller_1.AccountsController,
             expenses_controller_1.ExpensesController,
             budgets_controller_1.BudgetsController,
             journal_entries_controller_1.JournalEntriesController,
         ],
         providers: [
+            accounting_service_1.AccountingService,
             accounts_service_1.AccountsService,
             expenses_service_1.ExpensesService,
             budgets_service_1.BudgetsService,
             journal_entries_service_1.JournalEntriesService,
         ],
         exports: [
+            accounting_service_1.AccountingService,
             accounts_service_1.AccountsService,
             expenses_service_1.ExpensesService,
             budgets_service_1.BudgetsService,

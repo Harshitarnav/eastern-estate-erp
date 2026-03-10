@@ -18,9 +18,9 @@ const users_service_1 = require("../../modules/users/users.service");
 let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrategy)(passport_google_oauth20_1.Strategy, 'google') {
     constructor(configService, usersService) {
         super({
-            clientID: configService.get('GOOGLE_CLIENT_ID'),
-            clientSecret: configService.get('GOOGLE_CLIENT_SECRET'),
-            callbackURL: configService.get('GOOGLE_CALLBACK_URL'),
+            clientID: configService.get('GOOGLE_CLIENT_ID') ?? '',
+            clientSecret: configService.get('GOOGLE_CLIENT_SECRET') ?? '',
+            callbackURL: configService.get('GOOGLE_CALLBACK_URL') ?? '',
             scope: ['email', 'profile'],
         });
         this.configService = configService;

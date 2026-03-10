@@ -95,7 +95,7 @@ let AuthService = class AuthService {
         if (existingUser) {
             throw new common_1.BadRequestException('User already exists with this email or username');
         }
-        const saltRounds = parseInt(this.configService.get('BCRYPT_ROUNDS') || '12');
+        const saltRounds = this.configService.get('security.bcryptRounds') ?? 12;
         const password = await bcrypt.hash(registerDto.password, saltRounds);
         const user = this.usersRepository.create({
             email: registerDto.email,
@@ -171,8 +171,8 @@ let AuthService = class AuthService {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 7);
         const token = this.jwtService.sign({ sub: userId, type: 'refresh' }, {
-            secret: this.configService.get('JWT_REFRESH_SECRET'),
-            expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION') || '7d',
+            secret: this.configService.get('jwt.refreshSecret'),
+            expiresIn: (this.configService.get('jwt.refreshExpiration') ?? '7d'),
         });
         const refreshToken = this.refreshTokenRepository.create({
             user: { id: userId },

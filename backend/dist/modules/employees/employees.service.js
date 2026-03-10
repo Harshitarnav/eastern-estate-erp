@@ -138,13 +138,21 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         if (updateEmployeeDto.basicSalary !== undefined ||
             updateEmployeeDto.houseRentAllowance !== undefined ||
             updateEmployeeDto.transportAllowance !== undefined ||
-            updateEmployeeDto.medicalAllowance !== undefined) {
-            const grossSalary = (updateEmployeeDto.basicSalary ?? employee.basicSalary) +
-                (updateEmployeeDto.houseRentAllowance ?? employee.houseRentAllowance) +
-                (updateEmployeeDto.transportAllowance ?? employee.transportAllowance) +
-                (updateEmployeeDto.medicalAllowance ?? employee.medicalAllowance);
+            updateEmployeeDto.medicalAllowance !== undefined ||
+            updateEmployeeDto.otherAllowances !== undefined) {
+            const grossSalary = (updateEmployeeDto.basicSalary ?? employee.basicSalary ?? 0) +
+                (updateEmployeeDto.houseRentAllowance ?? employee.houseRentAllowance ?? 0) +
+                (updateEmployeeDto.transportAllowance ?? employee.transportAllowance ?? 0) +
+                (updateEmployeeDto.medicalAllowance ?? employee.medicalAllowance ?? 0) +
+                (updateEmployeeDto.otherAllowances ?? employee.otherAllowances ?? 0);
             updateEmployeeDto['grossSalary'] = grossSalary;
-            updateEmployeeDto['netSalary'] = grossSalary;
+            if (updateEmployeeDto.netSalary === undefined) {
+                const pfDeduction = updateEmployeeDto.pfDeduction ?? employee.pfDeduction ?? 0;
+                const esiDeduction = updateEmployeeDto.esiDeduction ?? employee.esiDeduction ?? 0;
+                const taxDeduction = updateEmployeeDto.taxDeduction ?? employee.taxDeduction ?? 0;
+                const otherDeductions = updateEmployeeDto.otherDeductions ?? employee.otherDeductions ?? 0;
+                updateEmployeeDto['netSalary'] = grossSalary - pfDeduction - esiDeduction - taxDeduction - otherDeductions;
+            }
         }
         Object.assign(employee, updateEmployeeDto);
         return this.employeesRepository.save(employee);

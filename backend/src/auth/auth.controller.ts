@@ -71,13 +71,13 @@ export class AuthController {
       );
 
       // Redirect to frontend with tokens
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const redirectUrl = `${frontendUrl}/auth/google/callback?token=${result.accessToken}&refreshToken=${result.refreshToken}`;
       
       res.redirect(redirectUrl);
     } catch (error) {
       // Redirect to frontend with error
-      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
       res.redirect(`${frontendUrl}/auth/error?message=${errorMessage}`);
     }

@@ -7,7 +7,7 @@ export declare class EmailService {
     constructor(configService: ConfigService);
     private initializeTransporter;
     private loadTemplate;
-    private sendEmail;
+    sendEmail(to: string, subject: string, html: string): Promise<boolean>;
     sendBookingConfirmationToCustomer(booking: any, customer: any, flat: any, property: any): Promise<void>;
     sendBookingNotificationToAdmin(booking: any, customer: any, flat: any, property: any): Promise<void>;
     private formatCurrency;

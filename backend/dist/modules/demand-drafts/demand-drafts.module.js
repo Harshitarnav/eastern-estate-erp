@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const demand_draft_entity_1 = require("./entities/demand-draft.entity");
 const demand_drafts_service_1 = require("./demand-drafts.service");
 const demand_drafts_controller_1 = require("./demand-drafts.controller");
+const demand_drafts_schema_sync_service_1 = require("./demand-drafts.schema-sync.service");
 const construction_module_1 = require("../construction/construction.module");
 const notifications_module_1 = require("../notifications/notifications.module");
 let DemandDraftsModule = class DemandDraftsModule {
@@ -25,7 +26,7 @@ exports.DemandDraftsModule = DemandDraftsModule = __decorate([
             notifications_module_1.NotificationsModule,
         ],
         controllers: [demand_drafts_controller_1.DemandDraftsController],
-        providers: [demand_drafts_service_1.DemandDraftsService],
+        providers: [demand_drafts_service_1.DemandDraftsService, demand_drafts_schema_sync_service_1.DemandDraftsSchemaSyncService],
         exports: [demand_drafts_service_1.DemandDraftsService],
     })
 ], DemandDraftsModule);

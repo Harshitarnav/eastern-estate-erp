@@ -164,7 +164,6 @@ export default function ChatButton() {
     try {
       setLoading(true);
       const group = await chatService.createDirectChat(employeeId);
-      console.log('Direct chat response:', group);
       
       if (!group || !group.id) {
         console.error('Invalid group response:', group);

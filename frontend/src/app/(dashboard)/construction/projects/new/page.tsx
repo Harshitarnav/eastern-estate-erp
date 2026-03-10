@@ -91,19 +91,14 @@ export default function NewConstructionProjectPage() {
         budgetAllocated: parseFloat(formData.budgetAllocated) || 0,
       };
 
-      console.log('Submitting construction project:', submitData);
-      const response = await api.post('/construction-projects', submitData);
-      console.log('Project created successfully:', response.data);
+      await api.post('/construction-projects', submitData);
       alert('Construction project created successfully!');
       // Force a hard reload to ensure data is refreshed
       window.location.href = '/construction/projects';
     } catch (error: any) {
-      console.error('Failed to create project:', error);
-      console.error('Error details:', error.response?.data);
-      const errorMessage = error.response?.data?.message 
-        || (Array.isArray(error.response?.data?.message) 
-          ? error.response.data.message.join(', ') 
-          : 'Failed to create project');
+      const errorMessage = Array.isArray(error.response?.data?.message)
+        ? error.response.data.message.join(', ')
+        : (error.response?.data?.message || 'Failed to create project');
       alert(`Error: ${errorMessage}`);
       setLoading(false);
     }
@@ -284,7 +279,7 @@ export default function NewConstructionProjectPage() {
               <option value="">Select Project Manager</option>
               {((employees || [])).map(employee => (
                 <option key={employee.id} value={employee.id}>
-                  {employee.firstName} {employee.lastName} - {employee.position}
+                  {employee.fullName} - {employee.designation}
                 </option>
               ))}
             </select>

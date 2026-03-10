@@ -810,7 +810,6 @@ function PropertyFormDemo() {
   ];
 
   const handleSubmit = async (values: Record<string, any>) => {
-    console.log('Form submitted:', values);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
   };

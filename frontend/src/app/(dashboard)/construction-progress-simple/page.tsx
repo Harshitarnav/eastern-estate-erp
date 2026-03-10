@@ -180,7 +180,6 @@ function ConstructionProgressSimplePageContent() {
     try {
       setLoading(true);
       const response = await propertiesService.getProperties();
-      console.log('Properties loaded:', response);
       
       // Handle both array response and paginated response
       const propertiesData = Array.isArray(response) ? response : (response?.data || []);
@@ -202,7 +201,6 @@ function ConstructionProgressSimplePageContent() {
     try {
       setLoadingTowers(true);
       const towersData = await towersService.getTowersByProperty(propertyId);
-      console.log('Towers loaded for property:', propertyId, towersData);
       
       setTowers(Array.isArray(towersData) ? towersData : []);
       
@@ -222,7 +220,6 @@ function ConstructionProgressSimplePageContent() {
     try {
       setLoadingFlats(true);
       const flatsData = await flatsService.getFlatsByTower(towerId);
-      console.log('Flats loaded for tower:', towerId, flatsData);
       
       setFlats(Array.isArray(flatsData) ? flatsData : []);
       
@@ -241,7 +238,6 @@ function ConstructionProgressSimplePageContent() {
   const loadProgressHistory = async (flatId: string) => {
     try {
       const history = await apiService.get(`/construction/flat-progress/flat/${flatId}`);
-      console.log('Progress history loaded for flat:', flatId, history);
       setProgressHistory(Array.isArray(history) ? history : []);
     } catch (error) {
       console.error('Failed to load progress history:', error);

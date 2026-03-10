@@ -52,10 +52,7 @@ export const databaseService = {
    */
   async getTables(): Promise<string[]> {
     const response = await api.get('/database/tables');
-    console.log('getTables API response:', response);
-    console.log('response.data:', response.data);
-    console.log('response.data.data:', response.data.data);
-    return response.data.data || response.data || [];
+    return response.data || [];
   },
 
   /**
@@ -63,10 +60,7 @@ export const databaseService = {
    */
   async getTablesOverview(): Promise<TableOverview[]> {
     const response = await api.get('/database/tables/overview');
-    console.log('Raw API response:', response);
-    console.log('response.data:', response.data);
-    console.log('response.data.data:', response.data.data);
-    return response.data.data || response.data;
+    return response.data || [];
   },
 
   /**
@@ -74,10 +68,7 @@ export const databaseService = {
    */
   async getDatabaseStats(): Promise<DatabaseStats> {
     const response = await api.get('/database/stats');
-    console.log('Stats raw response:', response);
-    console.log('Stats response.data:', response.data);
-    console.log('Stats response.data.data:', response.data.data);
-    return response.data.data || response.data;
+    return response.data;
   },
 
   /**
@@ -85,7 +76,7 @@ export const databaseService = {
    */
   async getTableRelationships(): Promise<TableRelationship[]> {
     const response = await api.get('/database/relationships');
-    return response.data.data || response.data;
+    return response.data || [];
   },
 
   /**
@@ -93,7 +84,7 @@ export const databaseService = {
    */
   async getTableInfo(tableName: string): Promise<TableInfo> {
     const response = await api.get(`/database/tables/${tableName}`);
-    return response.data.data || response.data;
+    return response.data;
   },
 
   /**
@@ -111,8 +102,8 @@ export const databaseService = {
   ): Promise<{ data: any[]; meta: any }> {
     const response = await api.get(`/database/tables/${tableName}/data`, { params });
     return {
-      data: response.data.data || response.data,
-      meta: response.data.meta || response.meta,
+      data: response.data || [],
+      meta: response.meta,
     };
   },
 
@@ -121,7 +112,7 @@ export const databaseService = {
    */
   async executeQuery(sql: string): Promise<{ success: boolean; data?: any[]; error?: string; rowCount?: number }> {
     const response = await api.post('/database/query', { sql });
-    return response.data.data || response.data;
+    return response;
   },
 
   /**
@@ -129,7 +120,7 @@ export const databaseService = {
    */
   async getPrimaryKeys(tableName: string): Promise<string[]> {
     const response = await api.get(`/database/tables/${tableName}/primary-keys`);
-    return response.data.data || response.data;
+    return response.data || [];
   },
 
   /**
@@ -144,7 +135,7 @@ export const databaseService = {
       primaryKey,
       data,
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -157,7 +148,7 @@ export const databaseService = {
     const response = await api.post(`/database/tables/${tableName}/records`, {
       data,
     });
-    return response.data;
+    return response;
   },
 
   /**
@@ -170,6 +161,6 @@ export const databaseService = {
     const response = await api.delete(`/database/tables/${tableName}/records`, {
       data: { primaryKey },
     });
-    return response.data;
+    return response;
   },
 };
