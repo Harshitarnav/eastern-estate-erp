@@ -11,7 +11,8 @@
 4. [Payment Plan Flow — CLP Setup](#4-payment-plan-flow--clp-setup)
 5. [Demand Draft Flow — Raising a Payment Demand](#5-demand-draft-flow--raising-a-payment-demand)
 6. [Receiving a Payment](#6-receiving-a-payment)
-7. [Construction Progress Logging](#7-construction-progress-logging)
+7. [Unit-wise Ledger](#7-unit-wise-ledger)
+8. [Construction Progress Logging](#8-construction-progress-logging)
 8. [HR — Managing Employees](#8-hr--managing-employees)
 9. [Notifications](#9-notifications)
 10. [Common Questions & Gotchas](#10-common-questions--gotchas)
@@ -223,7 +224,42 @@ When a customer actually pays against a demand:
 
 ---
 
-## 7. Construction Progress Logging
+## 7. Unit-wise Ledger
+
+The **Unit-wise Ledger** is a per-flat account statement that shows every demand notice issued and every payment received, in chronological order, with a running outstanding balance.
+
+### How to open the ledger
+- From a **Booking detail page** → Quick Actions → **"View Ledger"** (appears once a Payment Plan exists)
+- From a **Payment Plan page** → Unit Details card → **"View Ledger"** button
+
+### What you see
+
+| Column | Meaning |
+|--------|---------|
+| **Date** | Due date of a demand OR payment date of a receipt |
+| **Description** | Milestone name (demand) or "Payment received — method" |
+| **Demanded ₹** | Amount charged in a demand notice (amber colour) |
+| **Paid ₹** | Amount received (green colour) |
+| **Balance ₹** | Running outstanding after each row |
+| **Status** | PENDING / TRIGGERED / OVERDUE / PAID for demands; payment status for receipts |
+| **Link** | Direct link to the demand draft or payment receipt |
+
+### Summary cards at the top
+- **Agreement Value** — total amount per the booking
+- **Total Demanded** — sum of all demand notices raised so far
+- **Total Paid** — sum of all payments recorded
+- **Outstanding Balance** — what is still owed
+
+### Alerts
+- 🔴 Red alert if any milestones are **overdue**
+- 🔵 Blue notice showing how many milestones are upcoming
+
+### Export to PDF
+Click **"Export PDF"** (top-right) to download a branded A4 ledger statement you can print or email to the customer.
+
+---
+
+## 8. Construction Progress Logging
 
 ```
 Sidebar: Construction → Progress Log

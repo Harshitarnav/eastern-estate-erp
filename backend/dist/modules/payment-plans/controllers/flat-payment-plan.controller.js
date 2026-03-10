@@ -33,6 +33,9 @@ let FlatPaymentPlanController = class FlatPaymentPlanController {
     async findByBookingId(bookingId) {
         return await this.flatPaymentPlanService.findByBookingId(bookingId);
     }
+    async getLedger(bookingId) {
+        return await this.flatPaymentPlanService.getLedger(bookingId);
+    }
     async findOne(id) {
         return await this.flatPaymentPlanService.findOne(id);
     }
@@ -78,6 +81,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], FlatPaymentPlanController.prototype, "findByBookingId", null);
+__decorate([
+    (0, common_1.Get)('ledger/booking/:bookingId'),
+    __param(0, (0, common_1.Param)('bookingId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlatPaymentPlanController.prototype, "getLedger", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),

@@ -76,13 +76,16 @@
 
 ---
 
-### 5. 🔲 Unit-wise Ledger
+### 5. ✅ Unit-wise Ledger
 **What:** Per-unit statement — all milestones demanded + all payments received + running balance.  
 **Scope:**
-- [ ] Backend: `GET /payment-plans/ledger/:flatId` — joins FlatPaymentPlan + Payments
-- [ ] Frontend: Ledger page under booking detail or flat detail
-- [ ] Columns: Date | Description | Demand Amount | Payment Amount | Balance
-- [ ] Export to PDF
+- [x] Backend: `GET /flat-payment-plans/ledger/booking/:bookingId` — joins FlatPaymentPlan milestones + Payments
+- [x] Frontend: `/ledger/[bookingId]` page — chronological table with colour-coded rows
+- [x] Columns: Date | Description | Demanded (₹) | Paid (₹) | Balance (₹) | Status | Links
+- [x] Summary cards: Agreement Value, Total Demanded, Total Paid, Outstanding Balance
+- [x] Overdue / pending milestone alerts
+- [x] Export to PDF (jspdf + autotable, branded header)
+- [x] "View Ledger" button on Booking detail Quick Actions + Payment Plan page
 
 ---
 

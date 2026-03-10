@@ -7,6 +7,50 @@ import { PaymentPlanTemplateService } from './payment-plan-template.service';
 import { Flat } from '../../flats/entities/flat.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
+import { Payment } from '../../payments/entities/payment.entity';
+
+export interface LedgerRow {
+  date: string | null;
+  description: string;
+  type: 'DEMAND' | 'PAYMENT';
+  /** Amount demanded (debit side) */
+  debit: number;
+  /** Amount paid (credit side) */
+  credit: number;
+  /** Running balance after this row */
+  balance: number;
+  /** Milestone sequence if this is a demand row */
+  milestoneSequence?: number;
+  /** Demand draft ID if exists */
+  demandDraftId?: string | null;
+  /** Payment ID if this is a payment row */
+  paymentId?: string | null;
+  /** Payment code / receipt number for reference */
+  reference?: string;
+  /** Row status (milestone status or payment status) */
+  status?: string;
+}
+
+export interface LedgerResponse {
+  plan: {
+    id: string;
+    totalAmount: number;
+    paidAmount: number;
+    balanceAmount: number;
+    status: string;
+  };
+  customer: { id: string; fullName: string; phone?: string; email?: string } | null;
+  flat: { id: string; flatNumber: string; property?: string; tower?: string } | null;
+  booking: { id: string; bookingNumber: string; bookingDate?: Date } | null;
+  rows: LedgerRow[];
+  summary: {
+    totalDemanded: number;
+    totalPaid: number;
+    balance: number;
+    overdueCount: number;
+    pendingMilestones: number;
+  };
+}
 
 @Injectable()
 export class FlatPaymentPlanService {
@@ -19,6 +63,8 @@ export class FlatPaymentPlanService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
     private readonly templateService: PaymentPlanTemplateService,
   ) {}
 
@@ -242,5 +288,153 @@ export class FlatPaymentPlanService {
     plan.status = FlatPaymentPlanStatus.CANCELLED;
     plan.updatedBy = userId;
     return await this.flatPaymentPlanRepository.save(plan);
+  }
+
+  /**
+   * Generate a unit-wise ledger for a booking.
+   * Combines milestone demands (debit) with actual payment receipts (credit)
+   * into a chronological statement with running balance.
+   */
+  async getLedger(bookingId: string): Promise<LedgerResponse> {
+    // 1. Load the payment plan for this booking
+    const plan = await this.flatPaymentPlanRepository.findOne({
+      where: { bookingId },
+      relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'customer'],
+    });
+    if (!plan) {
+      throw new NotFoundException(`No payment plan found for booking ${bookingId}`);
+    }
+
+    // 2. Load all payments linked to this booking
+    const payments = await this.paymentRepository.find({
+      where: { bookingId },
+      order: { paymentDate: 'ASC' },
+    });
+
+    // 3. Build raw event list (demands + payments)
+    type RawEvent =
+      | { sortKey: string; type: 'DEMAND'; milestone: FlatPaymentMilestone }
+      | { sortKey: string; type: 'PAYMENT'; payment: Payment };
+
+    const events: RawEvent[] = [];
+
+    // Milestone demand rows — only include milestones that have been triggered/demanded
+    for (const m of plan.milestones) {
+      // Include all non-PENDING milestones in the ledger (TRIGGERED, OVERDUE, PAID)
+      // Also include PENDING milestones that have a due date (scheduled)
+      if (m.status !== 'PENDING' || m.dueDate) {
+        const dateKey = m.dueDate ?? '9999-12-31'; // PENDING w/ no date go last
+        events.push({ sortKey: dateKey, type: 'DEMAND', milestone: m });
+      }
+    }
+
+    // Payment rows
+    for (const p of payments) {
+      const dateKey = p.paymentDate
+        ? new Date(p.paymentDate).toISOString().split('T')[0]
+        : '9999-12-31';
+      events.push({ sortKey: dateKey, type: 'PAYMENT', payment: p });
+    }
+
+    // 4. Sort chronologically
+    events.sort((a, b) => {
+      if (a.sortKey < b.sortKey) return -1;
+      if (a.sortKey > b.sortKey) return 1;
+      // Demands before payments on the same day
+      if (a.type === 'DEMAND' && b.type === 'PAYMENT') return -1;
+      if (a.type === 'PAYMENT' && b.type === 'DEMAND') return 1;
+      return 0;
+    });
+
+    // 5. Build ledger rows with running balance
+    let runningBalance = 0;
+    const rows: LedgerRow[] = [];
+
+    for (const ev of events) {
+      if (ev.type === 'DEMAND') {
+        const m = ev.milestone;
+        const debit = Number(m.amount) || 0;
+        runningBalance += debit;
+        rows.push({
+          date: m.dueDate ?? null,
+          description: m.name,
+          type: 'DEMAND',
+          debit,
+          credit: 0,
+          balance: runningBalance,
+          milestoneSequence: m.sequence,
+          demandDraftId: m.demandDraftId ?? null,
+          status: m.status,
+        });
+      } else {
+        const p = ev.payment;
+        const credit = Number(p.amount) || 0;
+        runningBalance -= credit;
+        rows.push({
+          date: p.paymentDate
+            ? new Date(p.paymentDate).toISOString().split('T')[0]
+            : null,
+          description: `Payment received — ${p.paymentMethod?.replace(/_/g, ' ') ?? ''}`,
+          type: 'PAYMENT',
+          debit: 0,
+          credit,
+          balance: runningBalance,
+          paymentId: p.id,
+          reference: p.paymentCode,
+          status: p.status,
+        });
+      }
+    }
+
+    // 6. Summary
+    const totalDemanded = rows
+      .filter(r => r.type === 'DEMAND')
+      .reduce((s, r) => s + r.debit, 0);
+    const totalPaid = rows
+      .filter(r => r.type === 'PAYMENT')
+      .reduce((s, r) => s + r.credit, 0);
+    const overdueCount = plan.milestones.filter(m => m.status === 'OVERDUE').length;
+    const pendingMilestones = plan.milestones.filter(m => m.status === 'PENDING').length;
+
+    return {
+      plan: {
+        id: plan.id,
+        totalAmount: Number(plan.totalAmount),
+        paidAmount: Number(plan.paidAmount),
+        balanceAmount: Number(plan.balanceAmount),
+        status: plan.status,
+      },
+      customer: plan.customer
+        ? {
+            id: plan.customer.id,
+            fullName: plan.customer.fullName,
+            phone: (plan.customer as any).phoneNumber ?? null,
+            email: plan.customer.email,
+          }
+        : null,
+      flat: plan.flat
+        ? {
+            id: plan.flat.id,
+            flatNumber: plan.flat.flatNumber,
+            property: (plan.flat as any).property?.name ?? undefined,
+            tower: (plan.flat as any).tower?.name ?? undefined,
+          }
+        : null,
+      booking: plan.booking
+        ? {
+            id: plan.booking.id,
+            bookingNumber: plan.booking.bookingNumber,
+            bookingDate: plan.booking.bookingDate,
+          }
+        : null,
+      rows,
+      summary: {
+        totalDemanded,
+        totalPaid,
+        balance: totalDemanded - totalPaid,
+        overdueCount,
+        pendingMilestones,
+      },
+    };
   }
 }

@@ -12,6 +12,7 @@ import { DemandDraftTemplateController } from './controllers/demand-draft-templa
 import { Flat } from '../flats/entities/flat.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Customer } from '../customers/entities/customer.entity';
+import { Payment } from '../payments/entities/payment.entity';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { Customer } from '../customers/entities/customer.entity';
       Flat,
       Booking,
       Customer,
+      Payment,
     ]),
   ],
   controllers: [

@@ -21,6 +21,7 @@ const demand_draft_template_controller_1 = require("./controllers/demand-draft-t
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
+const payment_entity_1 = require("../payments/entities/payment.entity");
 let PaymentPlansModule = class PaymentPlansModule {
 };
 exports.PaymentPlansModule = PaymentPlansModule;
@@ -34,6 +35,7 @@ exports.PaymentPlansModule = PaymentPlansModule = __decorate([
                 flat_entity_1.Flat,
                 booking_entity_1.Booking,
                 customer_entity_1.Customer,
+                payment_entity_1.Payment,
             ]),
         ],
         controllers: [

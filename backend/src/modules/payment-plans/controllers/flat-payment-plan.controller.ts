@@ -29,6 +29,12 @@ export class FlatPaymentPlanController {
     return await this.flatPaymentPlanService.findByBookingId(bookingId);
   }
 
+  /** Unit-wise ledger: demands + payments with running balance for a booking */
+  @Get('ledger/booking/:bookingId')
+  async getLedger(@Param('bookingId') bookingId: string) {
+    return await this.flatPaymentPlanService.getLedger(bookingId);
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return await this.flatPaymentPlanService.findOne(id);
