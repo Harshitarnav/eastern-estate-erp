@@ -66,7 +66,7 @@
 
 ---
 
-### 4. 🔲 Review / Preview Step Before Submission
+### 4. ✅ Review / Preview Step Before Submission
 **What:** Confirm screen before finalizing: demand invoice generation, new payment entry, new booking.  
 **Scope:**
 - [ ] Demand draft: show filled invoice preview → Confirm / Edit back

@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import CustomerForm from '@/components/forms/CustomerForm';
 import { customersService } from '@/services/customers.service';
 import { propertiesService } from '@/services/properties.service';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 export default function CustomerEditPage() {
   const router = useRouter();
@@ -100,11 +102,11 @@ export default function CustomerEditPage() {
         propertyId: data.propertyId || undefined,
         kycStatus: data.kycStatus || 'PENDING',
       });
-      alert('Customer updated successfully!');
-      window.location.href = '/customers';
+      toast.success('Customer updated successfully!');
+      router.push('/customers');
     } catch (error: any) {
       console.error('Error updating customer:', error);
-      alert(error.response?.data?.message || 'Failed to update customer');
+      showApiError(error, 'Failed to update customer');
     }
   };
 

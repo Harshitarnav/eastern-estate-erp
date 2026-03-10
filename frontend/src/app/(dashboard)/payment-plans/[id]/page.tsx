@@ -46,6 +46,14 @@ import {
 import { paymentPlansService, FlatPaymentPlan, FlatPaymentMilestone } from '@/services/payment-plans.service';
 import { demandDraftsService } from '@/services/demand-drafts.service';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 const CONSTRUCTION_PHASES = ['FOUNDATION', 'STRUCTURE', 'MEP', 'FINISHING', 'HANDOVER'] as const;
 const MILESTONE_STATUSES = ['PENDING', 'TRIGGERED', 'PAID', 'OVERDUE'] as const;
@@ -80,6 +88,8 @@ export default function PaymentPlanDetailPage() {
   const [generatingInvoiceFor, setGeneratingInvoiceFor] = useState<number | null>(null); // milestone sequence
   // Map of demandDraftId → current status (fetched after load)
   const [draftStatusMap, setDraftStatusMap] = useState<Record<string, string>>({});
+  // Preview-before-generate state
+  const [previewMilestone, setPreviewMilestone] = useState<FlatPaymentMilestone | null>(null);
 
   // Editable copies
   const [editedMilestones, setEditedMilestones] = useState<FlatPaymentMilestone[]>([]);
@@ -848,7 +858,7 @@ export default function PaymentPlanDetailPage() {
                               variant="outline"
                               size="sm"
                               disabled={generatingInvoiceFor === milestone.sequence}
-                              onClick={() => generateInvoice(milestone)}
+                              onClick={() => setPreviewMilestone(milestone)}
                               className="h-7 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
                             >
                               {generatingInvoiceFor === milestone.sequence ? (
@@ -902,6 +912,81 @@ export default function PaymentPlanDetailPage() {
           </Button>
         </div>
       )}
+
+      {/* ── Preview Before Generate Invoice Dialog ──────────────────────────── */}
+      <Dialog open={!!previewMilestone} onOpenChange={(open) => { if (!open) setPreviewMilestone(null); }}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Demand Invoice</DialogTitle>
+            <DialogDescription>
+              Review the details below. A demand draft will be created and you'll be taken to
+              its edit page where you can make further adjustments before sending.
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewMilestone && plan && (
+            <div className="space-y-4 py-2">
+              {/* Key details grid */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {[
+                  ['Customer',   plan.customer?.fullName ?? '—'],
+                  ['Property',   plan.flat?.property?.name ?? '—'],
+                  ['Tower',      plan.flat?.tower?.name ?? '—'],
+                  ['Flat / Unit', plan.flat?.flatNumber ?? '—'],
+                  ['Booking No', plan.booking?.bookingNumber ?? '—'],
+                  ['Milestone',  previewMilestone.name],
+                  previewMilestone.constructionPhase
+                    ? ['Phase', `${previewMilestone.constructionPhase}${previewMilestone.phasePercentage != null ? ` (${previewMilestone.phasePercentage}%)` : ''}`]
+                    : null,
+                  ['Due Date', previewMilestone.dueDate
+                    ? new Date(previewMilestone.dueDate).toLocaleDateString('en-IN')
+                    : '—'],
+                ].filter(Boolean).map(([label, value]) => (
+                  <div key={label as string} className="border-b pb-2">
+                    <p className="text-[11px] uppercase text-gray-400 tracking-wide">{label}</p>
+                    <p className="font-semibold text-gray-800">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Amount highlight */}
+              <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-red-700">Demand Amount</span>
+                <span className="text-2xl font-bold" style={{ color: '#A8211B' }}>
+                  ₹{Number(previewMilestone.amount).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              {/* Draft title preview */}
+              <div className="text-xs text-gray-500 bg-gray-50 rounded px-3 py-2">
+                <span className="font-medium">Draft title will be: </span>
+                {[plan.flat?.flatNumber, plan.flat?.tower?.name].filter(Boolean).join(' / ')}
+                {previewMilestone.name ? ` – ${previewMilestone.name}` : ''}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewMilestone(null)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={generatingInvoiceFor === previewMilestone?.sequence}
+              onClick={() => {
+                if (previewMilestone) {
+                  setPreviewMilestone(null);
+                  generateInvoice(previewMilestone);
+                }
+              }}
+              style={{ backgroundColor: '#A8211B', color: '#fff' }}
+            >
+              {generatingInvoiceFor === previewMilestone?.sequence
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating…</>
+                : <><FilePlus className="mr-2 h-4 w-4" /> Create Invoice</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -37,9 +37,11 @@ export default function EditPaymentPage() {
       setFormData({
         paymentDate: data.paymentDate ? data.paymentDate.split('T')[0] : '',
         amount: data.amount,
-        paymentMode: data.paymentMode || 'CASH',
+        // Backend entity property is `paymentMethod` (column: payment_mode); fallback to paymentMode for legacy
+        paymentMode: (data as any).paymentMethod || (data as any).paymentMode || 'CASH',
         status: data.status,
-        transactionId: data.transactionId || '',
+        // Backend entity property is `transactionReference` (column: transaction_id); fallback to transactionId
+        transactionId: (data as any).transactionReference || (data as any).transactionId || '',
         receiptNumber: data.receiptNumber || '',
         remarks: data.remarks || ''
       });
@@ -57,7 +59,19 @@ export default function EditPaymentPage() {
     setError('');
 
     try {
-      await paymentsService.updatePayment(id, formData);
+      // Map frontend field names to backend DTO property names:
+      //   paymentMode   → paymentMethod  (entity column: payment_mode)
+      //   transactionId → transactionReference (entity column: transaction_id)
+      const payload = {
+        paymentDate:          formData.paymentDate,
+        amount:               formData.amount,
+        paymentMethod:        formData.paymentMode,        // ← renamed
+        status:               formData.status,
+        transactionReference: formData.transactionId,      // ← renamed
+        receiptNumber:        formData.receiptNumber,
+        remarks:              formData.remarks,
+      };
+      await paymentsService.updatePayment(id, payload);
       window.location.href = '/payments';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update payment');

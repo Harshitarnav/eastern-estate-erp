@@ -2,31 +2,37 @@ import api from './api';
 
 export interface Payment {
   id: string;
-  paymentNumber: string;
+  // Backend entity uses `paymentCode` (column: payment_number). `paymentNumber` kept for compat.
+  paymentCode?: string;
+  paymentNumber?: string;
   receiptNumber?: string;
   bookingId: string;
   customerId: string;
   paymentType: string;
   amount: number;
   paymentDate: string;
-  paymentMode: string;
+  // Backend entity uses `paymentMethod` (column: payment_mode). `paymentMode` kept for compat.
+  paymentMethod?: string;
+  paymentMode?: string;
   status: string;
   bankName?: string;
   chequeNumber?: string;
+  // Backend entity uses `transactionReference` (column: transaction_id). `transactionId` kept for compat.
+  transactionReference?: string;
   transactionId?: string;
   upiId?: string;
   installmentNumber?: number;
-  tdsAmount: number;
-  gstAmount: number;
-  netAmount: number;
-  receiptGenerated: boolean;
-  isVerified: boolean;
+  tdsAmount?: number;
+  gstAmount?: number;
+  netAmount?: number;
+  receiptGenerated?: boolean;
+  isVerified?: boolean;
   notes?: string;
   remarks?: string;
   tags?: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
   booking?: any;
   customer?: any;
 }

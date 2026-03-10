@@ -1,13 +1,12 @@
-import { PaymentType, PaymentMethod, PaymentStatus } from '../entities/payment.entity';
 export declare class CreatePaymentDto {
     paymentCode?: string;
     bookingId?: string;
     customerId?: string;
     employeeId?: string;
     vendorId?: string;
-    paymentType: PaymentType;
-    paymentMethod: PaymentMethod;
-    paymentCategory: string;
+    paymentType: string;
+    paymentMethod?: string;
+    paymentCategory?: string;
     amount: number;
     paymentDate: Date;
     bankName?: string;
@@ -16,7 +15,7 @@ export declare class CreatePaymentDto {
     chequeNumber?: string;
     chequeDate?: Date;
     upiId?: string;
-    status?: PaymentStatus;
+    status?: string;
     receiptNumber?: string;
     receiptUrl?: string;
     notes?: string;

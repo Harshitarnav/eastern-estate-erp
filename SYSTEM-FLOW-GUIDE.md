@@ -82,9 +82,10 @@ Sidebar: Sales & CRM → Customers / Bookings
    - **Flat** (the unit being purchased)
 3. Fill in financial details: Agreement Value, Booking Amount, Discount, etc.
 4. Set the Booking Date and Agreement Date.
-5. Save. The booking gets a **Booking Number** (e.g. `BK-0012`).
+5. Click **Submit** — a **Review Screen** appears showing every detail you filled in (customer name, flat, all amounts, co-applicant, nominees, notes, etc.).
+6. If anything is wrong, click **← Edit Details** to go back and fix it. The form retains all your filled values.
+7. Once satisfied, click **Confirm & Create Booking**. The booking is saved and you land on the detail page.
 
-> After saving a booking you land on the **Booking Detail** page.  
 > From the **Quick Actions** panel (right side), you can immediately jump to creating a Payment Plan.
 
 ---
@@ -131,7 +132,9 @@ A Demand Draft is the official payment demand notice sent to the customer when a
 1. Open the **Payment Plan** for the booking.
 2. In the milestones table, find the milestone you want to raise a demand for.
 3. Click **Gen. Invoice** on that row.
-4. The system creates a demand draft and opens it automatically.
+4. A **Preview dialog** appears showing: customer, property/tower/flat, milestone name, phase, due date, and the demand amount in large bold text.
+5. Review carefully. Click **Cancel** to go back, or **Create Invoice** to confirm.
+6. The system creates the demand draft and opens it automatically.
 
 ### Step 2 — Review the Draft
 - The notice is pre-filled with customer name, unit details, amount, and due date.
@@ -196,7 +199,8 @@ When a customer actually pays against a demand:
 1. Go to **Payments** → **+ New Payment**
 2. Select the **Booking** and the **Customer**.
 3. Enter: Amount Received, Payment Date, Payment Method (Cash / NEFT / Cheque / UPI), Bank Name, Cheque No / UTR as applicable.
-4. Save. The payment is recorded and a Receipt Number can be assigned.
+4. Click **Submit** — a **Review Screen** appears showing: customer name, booking number, amount breakdown (TDS, GST, Net), payment mode, and bank/cheque details.
+5. Click **← Edit Details** to go back and fix anything, or **Confirm & Save Payment** to record it.
 
 > The payment plan balance updates automatically once the payment is linked to a milestone.
 

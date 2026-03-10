@@ -60,7 +60,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
             throw new common_1.ConflictException('Customer with this email or phone already exists');
         }
         const customerCode = await this.generateCustomerCode();
-        const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, ...rest } = createCustomerDto;
+        const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, designation, bankName, hasApprovedLoan, approvedLoanAmount, ...rest } = createCustomerDto;
         const safeFirst = (firstName || '').trim();
         const safeLast = (lastName || '').trim();
         const fullName = [safeFirst, safeLast].filter(Boolean).join(' ') || 'Customer';
@@ -77,6 +77,18 @@ let CustomersService = CustomersService_1 = class CustomersService {
         }
         if (propertyId) {
             metadata.propertyId = propertyId;
+        }
+        if (designation) {
+            metadata.designation = designation;
+        }
+        if (bankName) {
+            metadata.bankName = bankName;
+        }
+        if (hasApprovedLoan !== undefined) {
+            metadata.hasApprovedLoan = hasApprovedLoan;
+        }
+        if (approvedLoanAmount !== undefined) {
+            metadata.approvedLoanAmount = approvedLoanAmount;
         }
         const customer = this.customersRepository.create({
             ...rest,
@@ -232,6 +244,22 @@ let CustomersService = CustomersService_1 = class CustomersService {
         if (updateCustomerDto.isVIP !== undefined) {
             customer.metadata = customer.metadata || {};
             customer.metadata.isVIP = updateCustomerDto.isVIP;
+        }
+        if (updateCustomerDto.designation !== undefined) {
+            customer.metadata = customer.metadata || {};
+            customer.metadata.designation = updateCustomerDto.designation;
+        }
+        if (updateCustomerDto.bankName !== undefined) {
+            customer.metadata = customer.metadata || {};
+            customer.metadata.bankName = updateCustomerDto.bankName;
+        }
+        if (updateCustomerDto.hasApprovedLoan !== undefined) {
+            customer.metadata = customer.metadata || {};
+            customer.metadata.hasApprovedLoan = updateCustomerDto.hasApprovedLoan;
+        }
+        if (updateCustomerDto.approvedLoanAmount !== undefined) {
+            customer.metadata = customer.metadata || {};
+            customer.metadata.approvedLoanAmount = updateCustomerDto.approvedLoanAmount;
         }
         assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
         const updatedCustomer = await this.customersRepository.save(customer);

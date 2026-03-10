@@ -74,7 +74,7 @@ export class CustomersService {
     const customerCode = await this.generateCustomerCode();
 
     // Map firstName and lastName to fullName
-    const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, ...rest } =
+    const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, designation, bankName, hasApprovedLoan, approvedLoanAmount, ...rest } =
       createCustomerDto;
 
     // Build a safe full name even if pieces are missing
@@ -98,6 +98,18 @@ export class CustomersService {
     }
     if (propertyId) {
       metadata.propertyId = propertyId;
+    }
+    if (designation) {
+      metadata.designation = designation;
+    }
+    if (bankName) {
+      metadata.bankName = bankName;
+    }
+    if (hasApprovedLoan !== undefined) {
+      metadata.hasApprovedLoan = hasApprovedLoan;
+    }
+    if (approvedLoanAmount !== undefined) {
+      metadata.approvedLoanAmount = approvedLoanAmount;
     }
 
     const customer = this.customersRepository.create({
@@ -312,6 +324,23 @@ export class CustomersService {
     if (updateCustomerDto.isVIP !== undefined) {
       customer.metadata = customer.metadata || {};
       customer.metadata.isVIP = updateCustomerDto.isVIP;
+    }
+    // designation and bankName are stored in the metadata JSONB field
+    if (updateCustomerDto.designation !== undefined) {
+      customer.metadata = customer.metadata || {};
+      customer.metadata.designation = updateCustomerDto.designation;
+    }
+    if (updateCustomerDto.bankName !== undefined) {
+      customer.metadata = customer.metadata || {};
+      customer.metadata.bankName = updateCustomerDto.bankName;
+    }
+    if (updateCustomerDto.hasApprovedLoan !== undefined) {
+      customer.metadata = customer.metadata || {};
+      customer.metadata.hasApprovedLoan = updateCustomerDto.hasApprovedLoan;
+    }
+    if (updateCustomerDto.approvedLoanAmount !== undefined) {
+      customer.metadata = customer.metadata || {};
+      customer.metadata.approvedLoanAmount = updateCustomerDto.approvedLoanAmount;
     }
     assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
 

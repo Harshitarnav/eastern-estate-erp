@@ -53,7 +53,13 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   const fetchFlats = async (propertyId: string) => {
     try {
-      const res = await flatsService.getFlats({ propertyId, isAvailable: true, limit: 200, sortBy: 'flatNumber', sortOrder: 'ASC' });
+      // When editing an existing booking (initialData?.flatId is set), fetch ALL flats so the
+      // already-booked flat (isAvailable: false) still appears in the dropdown.
+      // For new bookings, only show available flats.
+      const isEditing = !!initialData?.flatId;
+      const query: any = { propertyId, limit: 200, sortBy: 'flatNumber', sortOrder: 'ASC' };
+      if (!isEditing) query.isAvailable = true;
+      const res = await flatsService.getFlats(query);
       setFlats(res.data);
     } catch (error) {
       console.error('Error fetching flats:', error);
@@ -288,6 +294,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       label: 'Home Loan Required?',
       type: 'select',
       required: false,
+      onChange: (v: string) => setIsHomeLoan(v === 'true'),  // ← unlocks loan fields below
       options: [
         { value: 'false', label: 'No' },
         { value: 'true', label: 'Yes' },

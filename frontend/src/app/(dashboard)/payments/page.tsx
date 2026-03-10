@@ -20,6 +20,8 @@ import { paymentsService, Payment, PaymentFilters } from '@/services/payments.se
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 export default function PaymentsPage() {
   const router = useRouter();
@@ -89,7 +91,7 @@ export default function PaymentsPage() {
       await paymentsService.deletePayment(id);
       fetchPayments();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete payment');
+      showApiError(err, 'Failed to delete payment');
     }
   };
 
@@ -98,7 +100,7 @@ export default function PaymentsPage() {
       await paymentsService.verifyPayment(id, 'current-user-id'); // TODO: inject actual user ID
       fetchPayments();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to verify payment');
+      showApiError(err, 'Failed to verify payment');
     }
   };
 
@@ -330,10 +332,11 @@ export default function PaymentsPage() {
                 >
                   <div>
                     <h3 className="text-lg font-semibold" style={{ color: brandPalette.secondary }}>
-                      {payment.paymentNumber}
+                      {payment.paymentCode || payment.paymentNumber}
                     </h3>
                     <p className="text-xs uppercase tracking-wide text-gray-600">
-                      {payment.paymentMode?.replace(/_/g, ' ') || 'N/A'} {payment.paymentMode && getPaymentModeIcon(payment.paymentMode)}
+                      {(payment.paymentMethod || payment.paymentMode)?.replace(/_/g, ' ') || 'N/A'}{' '}
+                      {(payment.paymentMethod || payment.paymentMode) && getPaymentModeIcon(payment.paymentMethod || payment.paymentMode || '')}
                     </p>
                   </div>
                   <span
@@ -395,7 +398,7 @@ export default function PaymentsPage() {
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(payment.id, payment.paymentNumber)}
+                      onClick={() => handleDelete(payment.id, payment.paymentCode || payment.paymentNumber || payment.id)}
                       className="px-3 py-2 border rounded-lg text-sm font-medium transition-colors hover:bg-red-50"
                       style={{ borderColor: '#FCA5A5', color: '#B91C1C' }}
                     >

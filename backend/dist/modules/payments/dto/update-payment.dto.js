@@ -13,13 +13,12 @@ exports.UpdatePaymentDto = void 0;
 const mapped_types_1 = require("@nestjs/mapped-types");
 const create_payment_dto_1 = require("./create-payment.dto");
 const class_validator_1 = require("class-validator");
-const payment_entity_1 = require("../entities/payment.entity");
 class UpdatePaymentDto extends (0, mapped_types_1.PartialType)(create_payment_dto_1.CreatePaymentDto) {
 }
 exports.UpdatePaymentDto = UpdatePaymentDto;
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(payment_entity_1.PaymentStatus),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdatePaymentDto.prototype, "status", void 0);
 __decorate([
