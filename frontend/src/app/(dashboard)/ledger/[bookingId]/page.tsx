@@ -13,6 +13,11 @@ import {
   Clock,
   IndianRupee,
   Eye,
+  Phone,
+  Mail,
+  MessageSquare,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +95,95 @@ function SummaryCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+// ── Share Panel ───────────────────────────────────────────────────────────────
+function SharePanel({ ledger, onExport, exporting }: {
+  ledger: LedgerResponse;
+  onExport: () => void;
+  exporting: boolean;
+}) {
+  const [copiedPhone, setCopiedPhone] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
+
+  const phone   = ledger.customer?.phone ?? '';
+  const email   = ledger.customer?.email ?? '';
+  const name    = ledger.customer?.fullName ?? 'Customer';
+  const unit    = [ledger.flat?.property, ledger.flat?.tower, ledger.flat?.flatNumber].filter(Boolean).join(' › ');
+  const balance = ledger.summary?.balance ?? 0;
+
+  const copy = (text: string, setCopied: (v: boolean) => void) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const waText = encodeURIComponent(
+    `Dear ${name},\n\nPlease find your payment statement for Unit ${unit}.\n\n` +
+    `Outstanding Balance: ₹${Number(balance).toLocaleString('en-IN')}\n\n` +
+    `Please download the attached ledger PDF shared by our accounts team.\n\nThank you,\nEastern Estate`,
+  );
+  const waLink = phone
+    ? `https://wa.me/91${phone.replace(/\D/g, '').slice(-10)}?text=${waText}`
+    : null;
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 flex-wrap">
+      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Share with customer</span>
+      {/* Phone */}
+      {phone && (
+        <div className="flex items-center gap-1.5">
+          <Phone className="h-3.5 w-3.5 text-gray-400" />
+          <span className="text-sm text-gray-700">{phone}</span>
+          <button
+            onClick={() => copy(phone, setCopiedPhone)}
+            className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700"
+            title="Copy phone"
+          >
+            {copiedPhone ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      )}
+      {/* Email */}
+      {email && (
+        <div className="flex items-center gap-1.5">
+          <Mail className="h-3.5 w-3.5 text-gray-400" />
+          <span className="text-sm text-gray-700">{email}</span>
+          <button
+            onClick={() => copy(email, setCopiedEmail)}
+            className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700"
+            title="Copy email"
+          >
+            {copiedEmail ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      )}
+      {/* WhatsApp */}
+      {waLink && (
+        <a
+          href={waLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366] hover:bg-[#1ebe5d] text-white text-xs font-medium transition-colors"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          WhatsApp
+        </a>
+      )}
+      {/* Download PDF */}
+      <Button
+        size="sm"
+        onClick={onExport}
+        disabled={exporting}
+        variant="outline"
+        className="ml-auto border-[#A8211B] text-[#A8211B] hover:bg-[#A8211B] hover:text-white"
+      >
+        {exporting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}
+        Download PDF
+      </Button>
+    </div>
   );
 }
 
@@ -196,19 +290,6 @@ export default function LedgerPage() {
                 <Eye className="h-4 w-4 mr-1.5" /> Payment Plan
               </Button>
             )}
-            <Button
-              size="sm"
-              onClick={handleExportPdf}
-              disabled={exporting}
-              className="bg-[#A8211B] hover:bg-[#8b1a15] text-white"
-            >
-              {exporting ? (
-                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4 mr-1.5" />
-              )}
-              Export PDF
-            </Button>
           </div>
         </div>
       </div>
@@ -247,6 +328,9 @@ export default function LedgerPage() {
           }
         />
       </div>
+
+      {/* ── Share Panel ── */}
+      <SharePanel ledger={ledger} onExport={handleExportPdf} exporting={exporting} />
 
       {/* ── Flags ── */}
       {(summary.overdueCount > 0 || summary.pendingMilestones > 0) && (

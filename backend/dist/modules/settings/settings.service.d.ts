@@ -8,4 +8,10 @@ export declare class SettingsService implements OnModuleInit {
     onModuleInit(): Promise<void>;
     get(): Promise<CompanySettings>;
     update(dto: Partial<CompanySettings>): Promise<CompanySettings>;
+    testEmail(to: string, subject?: string, body?: string): Promise<{
+        success: boolean;
+        message: string;
+        detail?: string;
+        messageId?: string;
+    }>;
 }

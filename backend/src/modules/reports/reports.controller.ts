@@ -8,6 +8,14 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   /**
+   * Dashboard summary — all KPIs in one call.
+   */
+  @Get('dashboard')
+  async getDashboard() {
+    return this.reportsService.getDashboard();
+  }
+
+  /**
    * Unit / Tower-wise outstanding report.
    * Query params: propertyId?, towerId?, status?
    */

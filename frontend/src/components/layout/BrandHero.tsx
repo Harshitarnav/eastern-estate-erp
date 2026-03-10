@@ -59,7 +59,7 @@ export function BrandSecondaryButton({ children, className, ...props }: BrandBut
       {...props}
       className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold border transition-transform hover:-translate-y-0.5 ${className ?? ''}`}
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#010101',
         borderColor: 'rgba(255,255,255,0.35)',
         color: brandPalette.surface,
       }}

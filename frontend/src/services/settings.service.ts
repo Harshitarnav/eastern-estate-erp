@@ -29,10 +29,20 @@ export interface CompanySettings {
   smtpFrom?: string;
 }
 
+export interface TestEmailResult {
+  success: boolean;
+  message: string;
+  detail?: string;
+  messageId?: string;
+}
+
 export const settingsService = {
   getCompanySettings: (): Promise<CompanySettings> =>
     apiService.get('/settings/company'),
 
   updateCompanySettings: (data: Partial<CompanySettings>): Promise<CompanySettings> =>
     apiService.patch('/settings/company', data),
+
+  testEmail: (to: string, subject?: string, message?: string): Promise<TestEmailResult> =>
+    apiService.post('/settings/company/test-email', { to, subject, message }),
 };

@@ -156,6 +156,24 @@ class UsersService extends BaseCachedService {
       `cache_${this.cachePrefix}_.*`
     );
   }
+
+  /**
+   * Get all roles
+   */
+  async getRoles(): Promise<Role[]> {
+    return this.get<Role[]>('/roles');
+  }
+
+  /**
+   * Reset password (admin sets a new password for a user)
+   */
+  async resetPassword(id: string, newPassword: string): Promise<void> {
+    await this.patch<void>(
+      `${this.baseUrl}/${id}`,
+      { password: newPassword },
+      `cache_${this.cachePrefix}_.*`
+    );
+  }
 }
 
 export const usersService = new UsersService();

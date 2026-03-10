@@ -87,11 +87,50 @@ export interface InventoryReportResult {
         bookedValue: number;
     };
 }
+export interface DashboardSummary {
+    totalAgreementValue: number;
+    totalCollected: number;
+    totalOutstanding: number;
+    thisMonthCollection: number;
+    thisMonthPaymentCount: number;
+    totalFlats: number;
+    availableFlats: number;
+    bookedFlats: number;
+    soldFlats: number;
+    onHoldFlats: number;
+    availablePercent: number;
+    totalCustomers: number;
+    activeBookings: number;
+    activeLeads: number;
+    overdueMilestoneUnits: number;
+    totalInventoryValue: number;
+    bookedInventoryValue: number;
+    recentPayments: Array<{
+        id: string;
+        customerName: string;
+        amount: number;
+        paymentDate: string;
+        flatNumber: string;
+        property: string;
+        paymentMethod: string;
+    }>;
+    overdueUnits: Array<{
+        bookingId: string;
+        customerName: string;
+        flatNumber: string;
+        property: string;
+        outstanding: number;
+        overdueDays: number | null;
+        overdueMilestones: number;
+    }>;
+    statusBreakdown: Record<string, number>;
+}
 export declare class ReportsService {
     private readonly planRepo;
     private readonly paymentRepo;
     private readonly flatRepo;
     constructor(planRepo: Repository<FlatPaymentPlan>, paymentRepo: Repository<Payment>, flatRepo: Repository<Flat>);
+    getDashboard(): Promise<DashboardSummary>;
     getOutstandingReport(filters: {
         propertyId?: string;
         towerId?: string;

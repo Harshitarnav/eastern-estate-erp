@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Save, Building2, CreditCard, Shield, Mail, Loader2,
-  Info, ExternalLink, AlertTriangle,
+  Info, ExternalLink, AlertTriangle, Send, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { settingsService, CompanySettings } from '@/services/settings.service';
+import { settingsService, CompanySettings, TestEmailResult } from '@/services/settings.service';
+import { useAuthStore } from '@/store/authStore';
 
 const EMPTY: CompanySettings = {
   companyName: 'Eastern Estate',
@@ -92,9 +93,16 @@ function InfoBanner({ text }: { text: string }) {
 
 export default function CompanySettingsPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [form, setForm] = useState<CompanySettings>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // ── SMTP test state ────────────────────────────────────────────────────────
+  const [testTo, setTestTo]           = useState('');
+  const [testMsg, setTestMsg]         = useState('');
+  const [testing, setTesting]         = useState(false);
+  const [testResult, setTestResult]   = useState<TestEmailResult | null>(null);
 
   useEffect(() => {
     settingsService.getCompanySettings()
@@ -102,6 +110,33 @@ export default function CompanySettingsPage() {
       .catch(() => toast.error('Failed to load settings'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Pre-fill test recipient with logged-in user's email
+  useEffect(() => {
+    if (user?.email && !testTo) setTestTo(user.email);
+  }, [user]);  // eslint-disable-line
+
+  const handleTestEmail = async () => {
+    if (!testTo.trim()) { toast.error('Enter a recipient email'); return; }
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await settingsService.testEmail(
+        testTo.trim(),
+        undefined,
+        testMsg.trim() || undefined,
+      );
+      setTestResult(result);
+      if (result.success) toast.success('Test email sent! Check your inbox.');
+      else toast.error('Test failed — see details below.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? 'Test failed';
+      setTestResult({ success: false, message: 'Test failed', detail: msg });
+      toast.error(msg);
+    } finally {
+      setTesting(false);
+    }
+  };
 
   const set = (key: keyof CompanySettings) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -286,6 +321,86 @@ export default function CompanySettingsPage() {
               hint='Appears as the "From" name in customer emails'
             />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── 5. SMTP Test ──────────────────────────────────────────────── */}
+      <Card className="border-dashed border-2 border-gray-200">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Send className="h-5 w-5 text-[#A8211B]" />
+            <CardTitle className="text-base">Test SMTP Connection</CardTitle>
+          </div>
+          <CardDescription>
+            Send a real test email to verify your SMTP settings are working.
+            <strong className="text-amber-700"> Save your settings first</strong>, then test.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="testTo">Send test to (email address) *</Label>
+              <Input
+                id="testTo"
+                type="email"
+                value={testTo}
+                onChange={(e) => { setTestTo(e.target.value); setTestResult(null); }}
+                placeholder="your@email.com"
+              />
+              <p className="text-xs text-muted-foreground">Pre-filled with your account email. Change if needed.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="testMsg">Optional note (appears in the email body)</Label>
+              <Input
+                id="testMsg"
+                value={testMsg}
+                onChange={(e) => { setTestMsg(e.target.value); setTestResult(null); }}
+                placeholder="e.g. Testing SMTP for Eastern Estate ERP"
+              />
+            </div>
+          </div>
+
+          <Button
+            onClick={handleTestEmail}
+            disabled={testing || !testTo.trim()}
+            variant="outline"
+            className="border-[#A8211B] text-[#A8211B] hover:bg-[#A8211B]/5"
+          >
+            {testing
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending…</>
+              : <><Send className="h-4 w-4 mr-2" />Send Test Email</>
+            }
+          </Button>
+
+          {/* Result banner */}
+          {testResult && (
+            <div className={`flex items-start gap-3 rounded-xl p-4 border text-sm ${
+              testResult.success
+                ? 'bg-green-50 border-green-200 text-green-900'
+                : 'bg-red-50 border-red-200 text-red-900'
+            }`}>
+              {testResult.success
+                ? <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                : <XCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+              }
+              <div className="space-y-1">
+                <p className="font-semibold">{testResult.message}</p>
+                {testResult.detail && (
+                  <p className={testResult.success ? 'text-green-700' : 'text-red-700'}>
+                    {testResult.detail}
+                  </p>
+                )}
+                {testResult.messageId && (
+                  <p className="text-xs text-green-600 font-mono">Message ID: {testResult.messageId}</p>
+                )}
+                {!testResult.success && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Tip: Check Settings → Help &amp; Guides → SMTP Email Setup for step-by-step instructions.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

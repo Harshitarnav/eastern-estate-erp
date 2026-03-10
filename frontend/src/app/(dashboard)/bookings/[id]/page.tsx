@@ -16,6 +16,7 @@ import {
   Clock,
   Loader2,
   LayoutList,
+  Download,
 } from 'lucide-react';
 import { bookingsService, Booking } from '@/services/bookings.service';
 import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.service';
@@ -24,6 +25,8 @@ import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/Br
 import { brandPalette } from '@/utils/brand';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
+import { generateBookingSummaryPdf } from '@/lib/generate-booking-pdf';
+import { toast } from 'sonner';
 
 export default function BookingViewPage() {
   const router = useRouter();
@@ -67,6 +70,28 @@ export default function BookingViewPage() {
       console.error('Error fetching booking:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = () => {
+    if (!booking) return;
+    try {
+      const milestones = paymentPlan?.milestones?.map((m: any) => ({
+        name:    m.name ?? m.milestoneName ?? m.stage ?? 'Milestone',
+        amount:  m.amount ?? m.dueAmount ?? 0,
+        dueDate: m.dueDate ?? m.targetDate,
+        status:  m.status,
+      }));
+      generateBookingSummaryPdf({
+        booking,
+        customerName,
+        customerPhone,
+        customerEmail,
+        milestones,
+      });
+      toast.success('Booking summary PDF downloaded');
+    } catch {
+      toast.error('Failed to generate PDF');
     }
   };
 
@@ -169,10 +194,16 @@ export default function BookingViewPage() {
             {booking.status}
           </span>
         </div>
-        <BrandPrimaryButton onClick={() => router.push(`/bookings/${bookingId}/edit`)}>
-          <Edit className="w-4 h-4" />
-          Edit Booking
-        </BrandPrimaryButton>
+        <div className="flex gap-2">
+          <BrandSecondaryButton onClick={handleDownloadPdf}>
+            <Download className="w-4 h-4" />
+            Download Summary
+          </BrandSecondaryButton>
+          <BrandPrimaryButton onClick={() => router.push(`/bookings/${bookingId}/edit`)}>
+            <Edit className="w-4 h-4" />
+            Edit Booking
+          </BrandPrimaryButton>
+        </div>
       </div>
 
       {/* Stats Cards */}

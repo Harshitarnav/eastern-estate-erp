@@ -33,6 +33,9 @@ let SettingsController = class SettingsController {
         const { smtpPass: _omit, ...safe } = s;
         return safe;
     }
+    async testEmail(body) {
+        return this.settingsService.testEmail(body.to, body.subject, body.message);
+    }
 };
 exports.SettingsController = SettingsController;
 __decorate([
@@ -49,6 +52,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], SettingsController.prototype, "updateCompanySettings", null);
+__decorate([
+    (0, common_1.Post)('company/test-email'),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], SettingsController.prototype, "testEmail", null);
 exports.SettingsController = SettingsController = __decorate([
     (0, common_1.Controller)('settings'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

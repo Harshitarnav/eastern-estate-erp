@@ -1,5 +1,44 @@
 import { apiService } from './api';
 
+export interface DashboardSummary {
+  totalAgreementValue: number;
+  totalCollected: number;
+  totalOutstanding: number;
+  thisMonthCollection: number;
+  thisMonthPaymentCount: number;
+  totalFlats: number;
+  availableFlats: number;
+  bookedFlats: number;
+  soldFlats: number;
+  onHoldFlats: number;
+  availablePercent: number;
+  totalCustomers: number;
+  activeBookings: number;
+  activeLeads: number;
+  overdueMilestoneUnits: number;
+  totalInventoryValue: number;
+  bookedInventoryValue: number;
+  recentPayments: Array<{
+    id: string;
+    customerName: string;
+    amount: number;
+    paymentDate: string;
+    flatNumber: string;
+    property: string;
+    paymentMethod: string;
+  }>;
+  overdueUnits: Array<{
+    bookingId: string;
+    customerName: string;
+    flatNumber: string;
+    property: string;
+    outstanding: number;
+    overdueDays: number | null;
+    overdueMilestones: number;
+  }>;
+  statusBreakdown: Record<string, number>;
+}
+
 export interface OutstandingRow {
   planId: string;
   bookingId: string;
@@ -119,6 +158,10 @@ class ReportsService {
     flatType?: string;
   }): Promise<InventoryReport> {
     return apiService.get('/reports/inventory', { params: filters ?? {} });
+  }
+
+  async getDashboard(): Promise<DashboardSummary> {
+    return apiService.get('/reports/dashboard');
   }
 }
 

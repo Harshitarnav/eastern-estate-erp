@@ -20,6 +20,9 @@ let ReportsController = class ReportsController {
     constructor(reportsService) {
         this.reportsService = reportsService;
     }
+    async getDashboard() {
+        return this.reportsService.getDashboard();
+    }
     async getOutstanding(propertyId, towerId, status) {
         return this.reportsService.getOutstandingReport({
             propertyId: propertyId || undefined,
@@ -46,6 +49,12 @@ let ReportsController = class ReportsController {
     }
 };
 exports.ReportsController = ReportsController;
+__decorate([
+    (0, common_1.Get)('dashboard'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "getDashboard", null);
 __decorate([
     (0, common_1.Get)('outstanding'),
     __param(0, (0, common_1.Query)('propertyId')),

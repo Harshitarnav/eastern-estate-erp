@@ -142,6 +142,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
       children: [
         { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
+        { id: 'settings-users',   label: 'User Management', icon: Users, href: '/settings/users' },
       ]
     },
   ];

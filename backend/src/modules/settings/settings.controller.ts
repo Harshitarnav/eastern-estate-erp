@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -30,5 +30,15 @@ export class SettingsController {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { smtpPass: _omit, ...safe } = s as any;
     return safe;
+  }
+
+  /**
+   * Send a test email using the current SMTP configuration.
+   * Body: { to: string, subject?: string, message?: string }
+   */
+  @Post('company/test-email')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  async testEmail(@Body() body: { to: string; subject?: string; message?: string }) {
+    return this.settingsService.testEmail(body.to, body.subject, body.message);
   }
 }

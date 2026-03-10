@@ -25,6 +25,148 @@ let ReportsService = class ReportsService {
         this.paymentRepo = paymentRepo;
         this.flatRepo = flatRepo;
     }
+    async getDashboard() {
+        const em = this.flatRepo.manager;
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        const [flatStats, crmCounts, paymentStats, thisMonthStats, recentPaymentsRaw, plans,] = await Promise.all([
+            em.query(`
+        SELECT
+          status,
+          COUNT(*)::int           AS count,
+          COALESCE(SUM(final_price), 0)::float AS value
+        FROM flats
+        WHERE is_active = true
+        GROUP BY status
+      `),
+            em.query(`
+        SELECT
+          (SELECT COUNT(*)::int FROM customers)                        AS "totalCustomers",
+          (SELECT COUNT(*)::int FROM bookings WHERE status NOT IN ('CANCELLED')) AS "activeBookings",
+          (SELECT COUNT(*)::int FROM leads    WHERE status NOT IN ('LOST','CLOSED') LIMIT 1) AS "activeLeads"
+      `),
+            em.query(`
+        SELECT
+          COALESCE(SUM(amount), 0)::float  AS "totalCollected",
+          COUNT(*)::int                    AS "totalPayments"
+        FROM payments
+        WHERE status NOT IN ('CANCELLED','FAILED')
+      `),
+            em.query(`
+        SELECT
+          COALESCE(SUM(amount), 0)::float AS "thisMonthCollection",
+          COUNT(*)::int                   AS "thisMonthPaymentCount"
+        FROM payments
+        WHERE status NOT IN ('CANCELLED','FAILED')
+          AND payment_date >= $1
+          AND payment_date <= $2
+      `, [monthStart, monthEnd]),
+            em.query(`
+        SELECT
+          p.id,
+          COALESCE(c.full_name, '—')       AS "customerName",
+          p.amount::float                   AS amount,
+          p.payment_date::text              AS "paymentDate",
+          COALESCE(f.flat_number, '—')      AS "flatNumber",
+          COALESCE(prop.name, '—')          AS property,
+          COALESCE(p.payment_method, '—')   AS "paymentMethod"
+        FROM payments p
+        LEFT JOIN customers c   ON c.id  = p.customer_id
+        LEFT JOIN bookings  bk  ON bk.id = p.booking_id
+        LEFT JOIN flats     f   ON f.id  = bk.flat_id
+        LEFT JOIN properties prop ON prop.id = f.property_id
+        WHERE p.status NOT IN ('CANCELLED','FAILED')
+        ORDER BY p.payment_date DESC NULLS LAST, p.created_at DESC
+        LIMIT 5
+      `),
+            this.planRepo
+                .createQueryBuilder('plan')
+                .leftJoinAndSelect('plan.flat', 'flat')
+                .leftJoinAndSelect('flat.property', 'property')
+                .leftJoinAndSelect('flat.tower', 'tower')
+                .leftJoinAndSelect('plan.customer', 'customer')
+                .leftJoinAndSelect('plan.booking', 'booking')
+                .where('plan.status != :cancelled', { cancelled: 'CANCELLED' })
+                .getMany(),
+        ]);
+        const statusBreakdown = {};
+        let totalFlats = 0;
+        let totalInventoryValue = 0;
+        let bookedInventoryValue = 0;
+        for (const row of flatStats) {
+            const s = String(row.status ?? 'UNKNOWN');
+            statusBreakdown[s] = Number(row.count);
+            totalFlats += Number(row.count);
+            totalInventoryValue += Number(row.value ?? 0);
+            if (!['AVAILABLE', 'ON_HOLD'].includes(s)) {
+                bookedInventoryValue += Number(row.value ?? 0);
+            }
+        }
+        const availableFlats = statusBreakdown['AVAILABLE'] ?? 0;
+        const bookedFlats = statusBreakdown['BOOKED'] ?? 0;
+        const soldFlats = statusBreakdown['SOLD'] ?? 0;
+        const onHoldFlats = statusBreakdown['ON_HOLD'] ?? 0;
+        const today = new Date();
+        let totalAgreementValue = 0;
+        let totalOutstanding = 0;
+        const overdueRows = [];
+        for (const plan of plans) {
+            totalAgreementValue += Number(plan.totalAmount ?? 0);
+            totalOutstanding += Number(plan.balanceAmount ?? 0);
+            const milestones = plan.milestones ?? [];
+            const overdueMilestones = milestones.filter((m) => m.status === 'OVERDUE');
+            if (overdueMilestones.length > 0) {
+                let oldestDays = null;
+                const dueDates = overdueMilestones
+                    .filter((m) => m.dueDate)
+                    .map((m) => new Date(m.dueDate).getTime());
+                if (dueDates.length > 0) {
+                    oldestDays = Math.floor((today.getTime() - Math.min(...dueDates)) / 86_400_000);
+                }
+                overdueRows.push({
+                    bookingId: plan.bookingId,
+                    customerName: plan.customer?.fullName ?? '—',
+                    flatNumber: plan.flat?.flatNumber ?? '—',
+                    property: plan.flat?.property?.name ?? '—',
+                    outstanding: Number(plan.balanceAmount ?? 0),
+                    overdueDays: oldestDays,
+                    overdueMilestones: overdueMilestones.length,
+                });
+            }
+        }
+        overdueRows.sort((a, b) => (b.overdueDays ?? 0) - (a.overdueDays ?? 0));
+        return {
+            totalAgreementValue,
+            totalCollected: Number(paymentStats[0]?.totalCollected ?? 0),
+            totalOutstanding,
+            thisMonthCollection: Number(thisMonthStats[0]?.thisMonthCollection ?? 0),
+            thisMonthPaymentCount: Number(thisMonthStats[0]?.thisMonthPaymentCount ?? 0),
+            totalFlats,
+            availableFlats,
+            bookedFlats,
+            soldFlats,
+            onHoldFlats,
+            availablePercent: totalFlats > 0 ? Math.round((availableFlats / totalFlats) * 100) : 0,
+            totalCustomers: Number(crmCounts[0]?.totalCustomers ?? 0),
+            activeBookings: Number(crmCounts[0]?.activeBookings ?? 0),
+            activeLeads: Number(crmCounts[0]?.activeLeads ?? 0),
+            overdueMilestoneUnits: overdueRows.length,
+            totalInventoryValue,
+            bookedInventoryValue,
+            recentPayments: (recentPaymentsRaw ?? []).map((r) => ({
+                id: r.id,
+                customerName: r.customerName,
+                amount: Number(r.amount),
+                paymentDate: r.paymentDate ? String(r.paymentDate).split('T')[0] : '—',
+                flatNumber: r.flatNumber,
+                property: r.property,
+                paymentMethod: r.paymentMethod,
+            })),
+            overdueUnits: overdueRows.slice(0, 5),
+            statusBreakdown,
+        };
+    }
     async getOutstandingReport(filters) {
         const qb = this.planRepo
             .createQueryBuilder('plan')
