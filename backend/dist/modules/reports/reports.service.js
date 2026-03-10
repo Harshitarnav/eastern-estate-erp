@@ -65,7 +65,7 @@ let ReportsService = class ReportsService {
             em.query(`
         SELECT
           p.id,
-          COALESCE(c.full_name, '—')       AS "customerName",
+          COALESCE(c.full_name, TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')), '—') AS "customerName",
           p.amount::float                   AS amount,
           p.payment_date::text              AS "paymentDate",
           COALESCE(f.flat_number, '—')      AS "flatNumber",
@@ -336,8 +336,8 @@ let ReportsService = class ReportsService {
         flat.base_price                           AS "basePrice",
         flat.final_price                          AS "finalPrice",
         flat.status                               AS "status",
-        cust.full_name                            AS "customerName",
-        cust.phone_number                         AS "customerPhone",
+        COALESCE(cust.full_name, TRIM(COALESCE(cust.first_name,'') || ' ' || COALESCE(cust.last_name,''))) AS "customerName",
+        COALESCE(cust.phone_number, cust.phone)   AS "customerPhone",
         bk.booking_number                         AS "bookingNumber",
         bk.booking_date::text                     AS "bookingDate"
       FROM   flats flat

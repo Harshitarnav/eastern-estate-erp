@@ -38,6 +38,23 @@ let LeadsSchemaSyncService = LeadsSchemaSyncService_1 = class LeadsSchemaSyncSer
             await queryRunner.query(`
         DO $$
         BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'leads'
+               AND column_name = 'assigned_to'
+               AND data_type = 'character varying'
+          ) THEN
+            -- Clear any non-UUID values first to avoid cast errors
+            UPDATE leads SET assigned_to = NULL
+             WHERE assigned_to IS NOT NULL
+               AND assigned_to !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+            ALTER TABLE leads ALTER COLUMN assigned_to TYPE uuid USING assigned_to::uuid;
+          END IF;
+        END $$;
+      `);
+            await queryRunner.query(`
+        DO $$
+        BEGIN
           IF NOT EXISTS (
             SELECT 1 FROM pg_indexes
             WHERE schemaname = current_schema()

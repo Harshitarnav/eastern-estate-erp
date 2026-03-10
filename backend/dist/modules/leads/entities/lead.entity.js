@@ -250,7 +250,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Lead.prototype, "reminderSentAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'assigned_to', type: 'varchar', nullable: true }),
+    (0, typeorm_1.Column)({ name: 'assigned_to', type: 'uuid', nullable: true }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", String)
 ], Lead.prototype, "assignedTo", void 0);

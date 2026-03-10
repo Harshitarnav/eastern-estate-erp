@@ -44,6 +44,8 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
             await runIsolated('marketing', (qr) => this.ensureMarketingSchema(qr));
             await runIsolated('documents', (qr) => this.ensureDocumentsSchema(qr));
             await runIsolated('company_settings', (qr) => this.ensureCompanySettingsSchema(qr));
+            await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
+            await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
         }
         finally {
             await queryRunner.release();
@@ -483,6 +485,154 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
       CREATE INDEX IF NOT EXISTS idx_documents_booking
         ON documents (booking_id) WHERE booking_id IS NOT NULL;
     `);
+    }
+    async ensureCustomersSchema(queryRunner) {
+        await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS customer_code VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS full_name     VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS email         VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS phone_number  VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS alternate_phone VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS date_of_birth DATE,
+        ADD COLUMN IF NOT EXISTS gender        VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS occupation    VARCHAR(100);
+    `);
+        await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS company_name  VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS address_line1 TEXT,
+        ADD COLUMN IF NOT EXISTS address_line2 TEXT,
+        ADD COLUMN IF NOT EXISTS city          VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS state         VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS pincode       VARCHAR(10),
+        ADD COLUMN IF NOT EXISTS country       VARCHAR(100) DEFAULT 'India';
+    `);
+        await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS pan_number    VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS aadhar_number VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS customer_type VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS kyc_status    VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS kyc_documents JSONB;
+    `);
+        await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS notes         TEXT,
+        ADD COLUMN IF NOT EXISTS metadata      JSONB,
+        ADD COLUMN IF NOT EXISTS requirement_type VARCHAR,
+        ADD COLUMN IF NOT EXISTS property_preference VARCHAR,
+        ADD COLUMN IF NOT EXISTS tentative_purchase_timeframe VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS lead_source   VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS assigned_sales_person VARCHAR(255);
+    `);
+        await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS credit_limit        DECIMAL(15,2),
+        ADD COLUMN IF NOT EXISTS outstanding_balance DECIMAL(15,2),
+        ADD COLUMN IF NOT EXISTS total_bookings      INTEGER,
+        ADD COLUMN IF NOT EXISTS total_purchases     DECIMAL(15,2);
+    `);
+        await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+    `);
+        await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'first_name'
+        ) THEN
+          UPDATE customers
+             SET full_name = TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,''))
+           WHERE (full_name IS NULL OR full_name = '')
+             AND (first_name IS NOT NULL OR last_name IS NOT NULL);
+        END IF;
+      END $$;
+    `);
+        await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'phone'
+        ) THEN
+          UPDATE customers
+             SET phone_number = phone
+           WHERE phone_number IS NULL AND phone IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+        await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'address'
+        ) THEN
+          UPDATE customers
+             SET address_line1 = address
+           WHERE address_line1 IS NULL AND address IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+        await queryRunner.query(`
+      UPDATE customers
+         SET customer_code = 'CUST-' || SUBSTRING(id::text, 1, 8)
+       WHERE customer_code IS NULL;
+    `);
+        await queryRunner.query(`
+      UPDATE customers
+         SET full_name = COALESCE(
+               NULLIF(TRIM(full_name), ''),
+               SPLIT_PART(email, '@', 1),
+               'Customer'
+             )
+       WHERE full_name IS NULL OR full_name = '';
+    `);
+        this.logger.log('Customers schema ensured — all columns up to date');
+    }
+    async ensurePaymentsSchema(queryRunner) {
+        await queryRunner.query(`
+      ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS payment_number   VARCHAR UNIQUE,
+        ADD COLUMN IF NOT EXISTS payment_type     VARCHAR,
+        ADD COLUMN IF NOT EXISTS payment_mode     VARCHAR,
+        ADD COLUMN IF NOT EXISTS bank_name        VARCHAR,
+        ADD COLUMN IF NOT EXISTS transaction_id   VARCHAR,
+        ADD COLUMN IF NOT EXISTS cheque_number    VARCHAR,
+        ADD COLUMN IF NOT EXISTS cheque_date      DATE,
+        ADD COLUMN IF NOT EXISTS utr_number       VARCHAR,
+        ADD COLUMN IF NOT EXISTS payment_status   VARCHAR DEFAULT 'PENDING',
+        ADD COLUMN IF NOT EXISTS receipt_number   VARCHAR,
+        ADD COLUMN IF NOT EXISTS notes            TEXT,
+        ADD COLUMN IF NOT EXISTS milestone_id     UUID,
+        ADD COLUMN IF NOT EXISTS is_active        BOOLEAN DEFAULT TRUE;
+    `);
+        await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'payments' AND column_name = 'type'
+        ) THEN
+          UPDATE payments SET payment_type = type WHERE payment_type IS NULL AND type IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+        await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'payments' AND column_name = 'payment_method'
+        ) THEN
+          UPDATE payments SET payment_mode = payment_method WHERE payment_mode IS NULL AND payment_method IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+        this.logger.log('Payments schema ensured — all columns up to date');
     }
 };
 exports.SchemaSyncService = SchemaSyncService;
