@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { Flat } from '../flats/entities/flat.entity';
 export interface OutstandingRow {
     planId: string;
     bookingId: string;
@@ -56,10 +57,41 @@ export interface CollectionReportResult {
         byStatus: Record<string, number>;
     };
 }
+export interface InventoryRow {
+    flatId: string;
+    property: string;
+    propertyId: string;
+    tower: string;
+    towerId: string;
+    flatNumber: string;
+    flatType: string;
+    floor: number | null;
+    carpetArea: number | null;
+    builtUpArea: number | null;
+    basePrice: number | null;
+    finalPrice: number | null;
+    status: string;
+    customerName: string | null;
+    customerPhone: string | null;
+    bookingNumber: string | null;
+    bookingDate: string | null;
+}
+export interface InventoryReportResult {
+    rows: InventoryRow[];
+    summary: {
+        total: number;
+        byStatus: Record<string, number>;
+        byType: Record<string, number>;
+        availablePercent: number;
+        totalValue: number;
+        bookedValue: number;
+    };
+}
 export declare class ReportsService {
     private readonly planRepo;
     private readonly paymentRepo;
-    constructor(planRepo: Repository<FlatPaymentPlan>, paymentRepo: Repository<Payment>);
+    private readonly flatRepo;
+    constructor(planRepo: Repository<FlatPaymentPlan>, paymentRepo: Repository<Payment>, flatRepo: Repository<Flat>);
     getOutstandingReport(filters: {
         propertyId?: string;
         towerId?: string;
@@ -72,4 +104,10 @@ export declare class ReportsService {
         endDate?: string;
         paymentMethod?: string;
     }): Promise<CollectionReportResult>;
+    getInventoryReport(filters: {
+        propertyId?: string;
+        towerId?: string;
+        status?: string;
+        flatType?: string;
+    }): Promise<InventoryReportResult>;
 }

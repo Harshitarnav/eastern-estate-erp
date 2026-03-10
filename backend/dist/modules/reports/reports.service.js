@@ -18,10 +18,12 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
 const payment_entity_1 = require("../payments/entities/payment.entity");
+const flat_entity_1 = require("../flats/entities/flat.entity");
 let ReportsService = class ReportsService {
-    constructor(planRepo, paymentRepo) {
+    constructor(planRepo, paymentRepo, flatRepo) {
         this.planRepo = planRepo;
         this.paymentRepo = paymentRepo;
+        this.flatRepo = flatRepo;
     }
     async getOutstandingReport(filters) {
         const qb = this.planRepo
@@ -156,13 +158,116 @@ let ReportsService = class ReportsService {
             },
         };
     }
+    async getInventoryReport(filters) {
+        const conditions = ['flat.is_active = true'];
+        const params = [];
+        let idx = 1;
+        if (filters.propertyId) {
+            conditions.push(`prop.id = $${idx++}`);
+            params.push(filters.propertyId);
+        }
+        if (filters.towerId) {
+            conditions.push(`tower.id = $${idx++}`);
+            params.push(filters.towerId);
+        }
+        if (filters.status) {
+            conditions.push(`flat.status = $${idx++}`);
+            params.push(filters.status);
+        }
+        if (filters.flatType) {
+            conditions.push(`flat.type = $${idx++}`);
+            params.push(filters.flatType);
+        }
+        const whereClause = conditions.join(' AND ');
+        const sql = `
+      SELECT
+        flat.id                                   AS "flatId",
+        COALESCE(prop.name, '—')                  AS "property",
+        COALESCE(prop.id::text, '')               AS "propertyId",
+        COALESCE(tower.name, '—')                 AS "tower",
+        COALESCE(tower.id::text, '')              AS "towerId",
+        flat.flat_number                          AS "flatNumber",
+        COALESCE(flat.type, '—')                  AS "flatType",
+        flat.floor                                AS "floor",
+        flat.carpet_area                          AS "carpetArea",
+        flat.built_up_area                        AS "builtUpArea",
+        flat.base_price                           AS "basePrice",
+        flat.final_price                          AS "finalPrice",
+        flat.status                               AS "status",
+        cust.full_name                            AS "customerName",
+        cust.phone_number                         AS "customerPhone",
+        bk.booking_number                         AS "bookingNumber",
+        bk.booking_date::text                     AS "bookingDate"
+      FROM   flats flat
+      LEFT JOIN properties  prop  ON prop.id  = flat.property_id
+      LEFT JOIN towers      tower ON tower.id = flat.tower_id
+      LEFT JOIN customers   cust  ON cust.id  = flat.customer_id
+      LEFT JOIN LATERAL (
+        SELECT booking_number, booking_date
+        FROM   bookings
+        WHERE  flat_id = flat.id
+          AND  status NOT IN ('CANCELLED')
+        ORDER BY created_at DESC
+        LIMIT  1
+      ) bk ON true
+      WHERE  ${whereClause}
+      ORDER BY prop.name ASC, tower.name ASC, flat.floor ASC NULLS LAST, flat.flat_number ASC
+    `;
+        const raw = await this.flatRepo.manager.query(sql, params);
+        const rows = raw.map((r) => ({
+            flatId: r.flatId,
+            property: r.property ?? '—',
+            propertyId: r.propertyId ?? '',
+            tower: r.tower ?? '—',
+            towerId: r.towerId ?? '',
+            flatNumber: r.flatNumber,
+            flatType: r.flatType ?? '—',
+            floor: r.floor != null ? Number(r.floor) : null,
+            carpetArea: r.carpetArea != null ? Number(r.carpetArea) : null,
+            builtUpArea: r.builtUpArea != null ? Number(r.builtUpArea) : null,
+            basePrice: r.basePrice != null ? Number(r.basePrice) : null,
+            finalPrice: r.finalPrice != null ? Number(r.finalPrice) : null,
+            status: r.status,
+            customerName: r.customerName ?? null,
+            customerPhone: r.customerPhone ?? null,
+            bookingNumber: r.bookingNumber ?? null,
+            bookingDate: r.bookingDate ? r.bookingDate.split('T')[0] : null,
+        }));
+        const byStatus = {};
+        const byType = {};
+        let totalValue = 0;
+        let bookedValue = 0;
+        for (const r of rows) {
+            byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+            byType[r.flatType] = (byType[r.flatType] ?? 0) + 1;
+            if (r.finalPrice)
+                totalValue += r.finalPrice;
+            if (r.status !== 'AVAILABLE' && r.status !== 'ON_HOLD' && r.finalPrice) {
+                bookedValue += r.finalPrice;
+            }
+        }
+        const available = byStatus['AVAILABLE'] ?? 0;
+        return {
+            rows,
+            summary: {
+                total: rows.length,
+                byStatus,
+                byType,
+                availablePercent: rows.length > 0 ? Math.round((available / rows.length) * 100) : 0,
+                totalValue,
+                bookedValue,
+            },
+        };
+    }
 };
 exports.ReportsService = ReportsService;
 exports.ReportsService = ReportsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(flat_payment_plan_entity_1.FlatPaymentPlan)),
     __param(1, (0, typeorm_1.InjectRepository)(payment_entity_1.Payment)),
+    __param(2, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], ReportsService);
 //# sourceMappingURL=reports.service.js.map

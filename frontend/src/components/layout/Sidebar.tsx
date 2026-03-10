@@ -123,6 +123,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       children: [
         { id: 'reports-outstanding', label: 'Outstanding Report', icon: AlertTriangle, href: '/reports/outstanding' },
         { id: 'reports-collection', label: 'Collection Report', icon: TrendingUp, href: '/reports/collection' },
+        { id: 'reports-inventory', label: 'Stock Inventory', icon: Package, href: '/reports/inventory' },
       ]
     },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },

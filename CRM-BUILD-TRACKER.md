@@ -119,12 +119,20 @@
 
 ---
 
-### 8. 🔲 Stock Inventory Report
+### 8. ✅ Stock Inventory Report
 **What:** Property/tower-wise flat availability summary.  
 **Scope:**
-- [ ] Group flats by: Available | Booked | Agreement Signed | Registered | Cancelled
-- [ ] Filter by property, tower, BHK type
-- [ ] Export to PDF + Excel
+- [x] Group flats by: Available | Booked | On Hold | Blocked | Sold | Under Construction
+- [x] Filter by property, tower, status, BHK type
+- [x] Summary cards: Total, Available, Booked, Sold, On Hold, Available %
+- [x] Status breakdown strip + BHK type breakdown
+- [x] Value cards: Total Inventory Value + Booked/Sold Value
+- [x] Table: Property | Tower | Unit # | Type | Floor | Carpet Area | Price | Status | Customer | Booking # | Booked On
+- [x] Click row → navigates to flat detail page
+- [x] Export to PDF (branded A4 landscape, jspdf + autotable)
+- [x] Export to Excel (xlsx)
+- [x] Reports index card added
+- [x] Sidebar "Stock Inventory" added under Reports
 
 ---
 

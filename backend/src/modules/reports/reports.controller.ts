@@ -44,4 +44,23 @@ export class ReportsController {
       paymentMethod: paymentMethod || undefined,
     });
   }
+
+  /**
+   * Stock inventory report.
+   * Query params: propertyId?, towerId?, status?, flatType?
+   */
+  @Get('inventory')
+  async getInventory(
+    @Query('propertyId') propertyId?: string,
+    @Query('towerId') towerId?: string,
+    @Query('status') status?: string,
+    @Query('flatType') flatType?: string,
+  ) {
+    return this.reportsService.getInventoryReport({
+      propertyId: propertyId || undefined,
+      towerId: towerId || undefined,
+      status: status || undefined,
+      flatType: flatType || undefined,
+    });
+  }
 }

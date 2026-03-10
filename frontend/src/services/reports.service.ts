@@ -59,6 +59,40 @@ export interface CollectionReport {
   };
 }
 
+// ── Inventory report ──────────────────────────────────────────────────────────
+
+export interface InventoryRow {
+  flatId: string;
+  property: string;
+  propertyId: string;
+  tower: string;
+  towerId: string;
+  flatNumber: string;
+  flatType: string;
+  floor: number | null;
+  carpetArea: number | null;
+  builtUpArea: number | null;
+  basePrice: number | null;
+  finalPrice: number | null;
+  status: string;
+  customerName: string | null;
+  customerPhone: string | null;
+  bookingNumber: string | null;
+  bookingDate: string | null;
+}
+
+export interface InventoryReport {
+  rows: InventoryRow[];
+  summary: {
+    total: number;
+    byStatus: Record<string, number>;
+    byType: Record<string, number>;
+    availablePercent: number;
+    totalValue: number;
+    bookedValue: number;
+  };
+}
+
 class ReportsService {
   async getOutstanding(filters?: {
     propertyId?: string;
@@ -76,6 +110,15 @@ class ReportsService {
     paymentMethod?: string;
   }): Promise<CollectionReport> {
     return apiService.get('/reports/collection', { params: filters ?? {} });
+  }
+
+  async getInventory(filters?: {
+    propertyId?: string;
+    towerId?: string;
+    status?: string;
+    flatType?: string;
+  }): Promise<InventoryReport> {
+    return apiService.get('/reports/inventory', { params: filters ?? {} });
   }
 }
 

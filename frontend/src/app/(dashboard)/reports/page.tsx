@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, TrendingUp, ArrowRight } from 'lucide-react';
+import { AlertTriangle, TrendingUp, ArrowRight, Package } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const REPORTS = [
@@ -21,6 +21,14 @@ const REPORTS = [
     icon: <TrendingUp className="h-6 w-6 text-green-600" />,
     href: '/reports/collection',
     color: 'border-green-100 hover:border-green-300 hover:bg-green-50/30',
+  },
+  {
+    id: 'inventory',
+    title: 'Stock Inventory Report',
+    description: 'Property/tower-wise flat availability — Available, Booked, Sold, On Hold. Filter by BHK type.',
+    icon: <Package className="h-6 w-6 text-blue-600" />,
+    href: '/reports/inventory',
+    color: 'border-blue-100 hover:border-blue-300 hover:bg-blue-50/30',
   },
 ];
 

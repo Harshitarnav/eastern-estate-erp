@@ -36,6 +36,14 @@ let ReportsController = class ReportsController {
             paymentMethod: paymentMethod || undefined,
         });
     }
+    async getInventory(propertyId, towerId, status, flatType) {
+        return this.reportsService.getInventoryReport({
+            propertyId: propertyId || undefined,
+            towerId: towerId || undefined,
+            status: status || undefined,
+            flatType: flatType || undefined,
+        });
+    }
 };
 exports.ReportsController = ReportsController;
 __decorate([
@@ -58,6 +66,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getCollection", null);
+__decorate([
+    (0, common_1.Get)('inventory'),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Query)('towerId')),
+    __param(2, (0, common_1.Query)('status')),
+    __param(3, (0, common_1.Query)('flatType')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], ReportsController.prototype, "getInventory", null);
 exports.ReportsController = ReportsController = __decorate([
     (0, common_1.Controller)('reports'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

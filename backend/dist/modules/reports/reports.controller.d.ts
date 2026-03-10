@@ -4,4 +4,5 @@ export declare class ReportsController {
     constructor(reportsService: ReportsService);
     getOutstanding(propertyId?: string, towerId?: string, status?: string): Promise<import("./reports.service").OutstandingReportResult>;
     getCollection(propertyId?: string, towerId?: string, startDate?: string, endDate?: string, paymentMethod?: string): Promise<import("./reports.service").CollectionReportResult>;
+    getInventory(propertyId?: string, towerId?: string, status?: string, flatType?: string): Promise<import("./reports.service").InventoryReportResult>;
 }

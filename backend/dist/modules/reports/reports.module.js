@@ -13,12 +13,13 @@ const reports_service_1 = require("./reports.service");
 const reports_controller_1 = require("./reports.controller");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
 const payment_entity_1 = require("../payments/entities/payment.entity");
+const flat_entity_1 = require("../flats/entities/flat.entity");
 let ReportsModule = class ReportsModule {
 };
 exports.ReportsModule = ReportsModule;
 exports.ReportsModule = ReportsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([flat_payment_plan_entity_1.FlatPaymentPlan, payment_entity_1.Payment])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([flat_payment_plan_entity_1.FlatPaymentPlan, payment_entity_1.Payment, flat_entity_1.Flat])],
         controllers: [reports_controller_1.ReportsController],
         providers: [reports_service_1.ReportsService],
         exports: [reports_service_1.ReportsService],

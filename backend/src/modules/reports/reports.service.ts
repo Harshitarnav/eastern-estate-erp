@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { Flat } from '../flats/entities/flat.entity';
 
 // ─── Outstanding report ───────────────────────────────────────────────────────
 
@@ -69,6 +70,40 @@ export interface CollectionReportResult {
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
+// ─── Inventory report ─────────────────────────────────────────────────────────
+
+export interface InventoryRow {
+  flatId: string;
+  property: string;
+  propertyId: string;
+  tower: string;
+  towerId: string;
+  flatNumber: string;
+  flatType: string;
+  floor: number | null;
+  carpetArea: number | null;
+  builtUpArea: number | null;
+  basePrice: number | null;
+  finalPrice: number | null;
+  status: string;
+  customerName: string | null;
+  customerPhone: string | null;
+  bookingNumber: string | null;
+  bookingDate: string | null;
+}
+
+export interface InventoryReportResult {
+  rows: InventoryRow[];
+  summary: {
+    total: number;
+    byStatus: Record<string, number>;
+    byType: Record<string, number>;
+    availablePercent: number;
+    totalValue: number;
+    bookedValue: number;
+  };
+}
+
 @Injectable()
 export class ReportsService {
   constructor(
@@ -76,6 +111,8 @@ export class ReportsService {
     private readonly planRepo: Repository<FlatPaymentPlan>,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
+    @InjectRepository(Flat)
+    private readonly flatRepo: Repository<Flat>,
   ) {}
 
   async getOutstandingReport(filters: {
@@ -238,6 +275,122 @@ export class ReportsService {
         totalAmount,
         byMethod,
         byStatus,
+      },
+    };
+  }
+
+  async getInventoryReport(filters: {
+    propertyId?: string;
+    towerId?: string;
+    status?: string;
+    flatType?: string;
+  }): Promise<InventoryReportResult> {
+    // Build parameterised raw SQL — Flat has no TypeORM relation to Customer/Booking
+    const conditions: string[] = ['flat.is_active = true'];
+    const params: any[] = [];
+    let idx = 1;
+
+    if (filters.propertyId) {
+      conditions.push(`prop.id = $${idx++}`);
+      params.push(filters.propertyId);
+    }
+    if (filters.towerId) {
+      conditions.push(`tower.id = $${idx++}`);
+      params.push(filters.towerId);
+    }
+    if (filters.status) {
+      conditions.push(`flat.status = $${idx++}`);
+      params.push(filters.status);
+    }
+    if (filters.flatType) {
+      conditions.push(`flat.type = $${idx++}`);
+      params.push(filters.flatType);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const sql = `
+      SELECT
+        flat.id                                   AS "flatId",
+        COALESCE(prop.name, '—')                  AS "property",
+        COALESCE(prop.id::text, '')               AS "propertyId",
+        COALESCE(tower.name, '—')                 AS "tower",
+        COALESCE(tower.id::text, '')              AS "towerId",
+        flat.flat_number                          AS "flatNumber",
+        COALESCE(flat.type, '—')                  AS "flatType",
+        flat.floor                                AS "floor",
+        flat.carpet_area                          AS "carpetArea",
+        flat.built_up_area                        AS "builtUpArea",
+        flat.base_price                           AS "basePrice",
+        flat.final_price                          AS "finalPrice",
+        flat.status                               AS "status",
+        cust.full_name                            AS "customerName",
+        cust.phone_number                         AS "customerPhone",
+        bk.booking_number                         AS "bookingNumber",
+        bk.booking_date::text                     AS "bookingDate"
+      FROM   flats flat
+      LEFT JOIN properties  prop  ON prop.id  = flat.property_id
+      LEFT JOIN towers      tower ON tower.id = flat.tower_id
+      LEFT JOIN customers   cust  ON cust.id  = flat.customer_id
+      LEFT JOIN LATERAL (
+        SELECT booking_number, booking_date
+        FROM   bookings
+        WHERE  flat_id = flat.id
+          AND  status NOT IN ('CANCELLED')
+        ORDER BY created_at DESC
+        LIMIT  1
+      ) bk ON true
+      WHERE  ${whereClause}
+      ORDER BY prop.name ASC, tower.name ASC, flat.floor ASC NULLS LAST, flat.flat_number ASC
+    `;
+
+    const raw: any[] = await this.flatRepo.manager.query(sql, params);
+
+    const rows: InventoryRow[] = raw.map((r) => ({
+      flatId: r.flatId,
+      property: r.property ?? '—',
+      propertyId: r.propertyId ?? '',
+      tower: r.tower ?? '—',
+      towerId: r.towerId ?? '',
+      flatNumber: r.flatNumber,
+      flatType: r.flatType ?? '—',
+      floor: r.floor != null ? Number(r.floor) : null,
+      carpetArea: r.carpetArea != null ? Number(r.carpetArea) : null,
+      builtUpArea: r.builtUpArea != null ? Number(r.builtUpArea) : null,
+      basePrice: r.basePrice != null ? Number(r.basePrice) : null,
+      finalPrice: r.finalPrice != null ? Number(r.finalPrice) : null,
+      status: r.status,
+      customerName: r.customerName ?? null,
+      customerPhone: r.customerPhone ?? null,
+      bookingNumber: r.bookingNumber ?? null,
+      bookingDate: r.bookingDate ? r.bookingDate.split('T')[0] : null,
+    }));
+
+    const byStatus: Record<string, number> = {};
+    const byType: Record<string, number> = {};
+    let totalValue = 0;
+    let bookedValue = 0;
+
+    for (const r of rows) {
+      byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+      byType[r.flatType] = (byType[r.flatType] ?? 0) + 1;
+      if (r.finalPrice) totalValue += r.finalPrice;
+      if (r.status !== 'AVAILABLE' && r.status !== 'ON_HOLD' && r.finalPrice) {
+        bookedValue += r.finalPrice;
+      }
+    }
+
+    const available = byStatus['AVAILABLE'] ?? 0;
+
+    return {
+      rows,
+      summary: {
+        total: rows.length,
+        byStatus,
+        byType,
+        availablePercent: rows.length > 0 ? Math.round((available / rows.length) * 100) : 0,
+        totalValue,
+        bookedValue,
       },
     };
   }
