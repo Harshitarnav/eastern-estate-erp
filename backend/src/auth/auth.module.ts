@@ -19,9 +19,11 @@ import { UsersModule } from '../modules/users/users.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
+        secret: configService.get<string>('jwt.secret'),
         signOptions: {
-          expiresIn: configService.get('JWT_EXPIRATION') || '24h',
+          // Cast required: @nestjs/jwt v11 expects branded `StringValue` from `ms`,
+          // but ConfigService returns plain `string`. Values are valid at runtime.
+          expiresIn: (configService.get<string>('jwt.expiration') ?? '24h') as unknown as number,
         },
       }),
       inject: [ConfigService],

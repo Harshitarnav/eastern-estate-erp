@@ -95,10 +95,7 @@ function DatabaseViewerPageContent() {
   const fetchTables = async () => {
     try {
       setLoadingTables(true);
-      console.log('Fetching tables for viewer...');
       const data = await databaseService.getTables();
-      console.log('Tables fetched:', data);
-      console.log('Tables array:', Array.isArray(data), 'Length:', data?.length);
       setTables(data || []);
     } catch (error: any) {
       console.error('Failed to fetch tables:', error);

@@ -29,7 +29,6 @@ let LeadsController = class LeadsController {
         return this.leadsService.create(createLeadDto);
     }
     async findAll(query, req) {
-        console.log('[LeadsController] findAll query:', query, 'user:', req.user?.id);
         return this.leadsService.findAll(query, req.user);
     }
     async getStatistics() {

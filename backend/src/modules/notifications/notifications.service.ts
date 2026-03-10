@@ -318,9 +318,11 @@ export class NotificationsService {
         </div>
       `;
 
-      // Use the email service's sendEmail method (we'll need to expose it)
-      // For now, we'll just log it
-      this.logger.log(`Would send email to ${user.email}: ${notification.title}`);
+      await this.emailService.sendEmail(
+        user.email,
+        notification.title,
+        emailHtml,
+      );
 
       // Update notification as email sent
       notification.emailSent = true;

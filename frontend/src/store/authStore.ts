@@ -20,13 +20,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     try {
-      console.log('Login attempt:', email);
       const response = await authService.login({ email, password });
-      console.log('Login response received:', response);
       set({ user: response.user, isAuthenticated: true });
-      console.log('Auth state updated successfully');
     } catch (error) {
-      console.error('Login failed in authStore:', error);
       throw error;
     }
   },

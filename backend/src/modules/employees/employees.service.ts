@@ -181,21 +181,33 @@ export class EmployeesService {
   ): Promise<Employee> {
     const employee = await this.findOne(id);
 
-    // Recalculate salary if any salary component changed
+    // Recalculate grossSalary when any salary component changes.
+    // netSalary is only auto-set to grossSalary when the caller did NOT explicitly
+    // provide it (i.e. the HR team entered a post-deduction value manually).
     if (
       updateEmployeeDto.basicSalary !== undefined ||
       updateEmployeeDto.houseRentAllowance !== undefined ||
       updateEmployeeDto.transportAllowance !== undefined ||
-      updateEmployeeDto.medicalAllowance !== undefined
+      updateEmployeeDto.medicalAllowance !== undefined ||
+      updateEmployeeDto.otherAllowances !== undefined
     ) {
       const grossSalary =
-        (updateEmployeeDto.basicSalary ?? employee.basicSalary) +
-        (updateEmployeeDto.houseRentAllowance ?? employee.houseRentAllowance) +
-        (updateEmployeeDto.transportAllowance ?? employee.transportAllowance) +
-        (updateEmployeeDto.medicalAllowance ?? employee.medicalAllowance);
+        (updateEmployeeDto.basicSalary ?? employee.basicSalary ?? 0) +
+        (updateEmployeeDto.houseRentAllowance ?? employee.houseRentAllowance ?? 0) +
+        (updateEmployeeDto.transportAllowance ?? employee.transportAllowance ?? 0) +
+        (updateEmployeeDto.medicalAllowance ?? employee.medicalAllowance ?? 0) +
+        (updateEmployeeDto.otherAllowances ?? employee.otherAllowances ?? 0);
 
       updateEmployeeDto['grossSalary'] = grossSalary;
-      updateEmployeeDto['netSalary'] = grossSalary;
+
+      // Only auto-set netSalary if the caller didn't supply it explicitly
+      if (updateEmployeeDto.netSalary === undefined) {
+        const pfDeduction = updateEmployeeDto.pfDeduction ?? employee.pfDeduction ?? 0;
+        const esiDeduction = updateEmployeeDto.esiDeduction ?? employee.esiDeduction ?? 0;
+        const taxDeduction = updateEmployeeDto.taxDeduction ?? employee.taxDeduction ?? 0;
+        const otherDeductions = updateEmployeeDto.otherDeductions ?? employee.otherDeductions ?? 0;
+        updateEmployeeDto['netSalary'] = grossSalary - pfDeduction - esiDeduction - taxDeduction - otherDeductions;
+      }
     }
 
     Object.assign(employee, updateEmployeeDto);

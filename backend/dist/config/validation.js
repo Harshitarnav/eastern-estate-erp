@@ -35,5 +35,16 @@ exports.validationSchema = Joi.object({
     MINIO_SECRET_KEY: Joi.string().required(),
     MINIO_USE_SSL: Joi.boolean().truthy('true').falsy('false').default(false),
     MINIO_BUCKET: Joi.string().required(),
+    EMAIL_HOST: Joi.string().hostname().default('smtp.gmail.com'),
+    EMAIL_PORT: Joi.number().port().default(587),
+    EMAIL_SECURE: Joi.boolean().truthy('true').falsy('false').default(false),
+    EMAIL_USER: Joi.string().allow('').optional(),
+    EMAIL_PASSWORD: Joi.string().allow('').optional(),
+    EMAIL_FROM: Joi.string().allow('').default('noreply@easternestates.com'),
+    ADMIN_EMAIL: Joi.string().allow('').default('admin@easternestates.com'),
+    GOOGLE_CLIENT_ID: Joi.string().allow('').optional(),
+    GOOGLE_CLIENT_SECRET: Joi.string().allow('').optional(),
+    GOOGLE_CALLBACK_URL: Joi.string().uri().allow('').optional(),
+    FRONTEND_URL: Joi.string().uri().allow('').default('http://localhost:3000'),
 });
 //# sourceMappingURL=validation.js.map

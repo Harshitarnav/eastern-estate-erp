@@ -10,8 +10,6 @@ export default function NewBookingPage() {
 
     const handleSubmit = async (data: any) => {
         try {
-            console.log('Form data received:', data);
-            
             // Transform form data to match API requirements
             const bookingData = {
                 customerId: data.customerId,
@@ -58,8 +56,6 @@ export default function NewBookingPage() {
                 notes: data.notes || null,
                 specialTerms: data.specialTerms || null,
             };
-            
-            console.log('Transformed booking data:', bookingData);
             
             await bookingsService.createBooking(bookingData);
             alert('Booking created successfully!');

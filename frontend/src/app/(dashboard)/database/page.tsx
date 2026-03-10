@@ -46,13 +46,9 @@ export default function DatabasePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      console.log('Fetching database info...');
       
       const tablesResponse = await databaseService.getTablesOverview();
-      console.log('Tables response:', tablesResponse);
-      
       const statsResponse = await databaseService.getDatabaseStats();
-      console.log('Stats response:', statsResponse);
       
       setTables(tablesResponse);
       setFilteredTables(tablesResponse);

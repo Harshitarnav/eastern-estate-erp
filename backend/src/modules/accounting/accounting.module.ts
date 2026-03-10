@@ -6,10 +6,14 @@ import { JournalEntryLine } from './entities/journal-entry-line.entity';
 import { Expense } from './entities/expense.entity';
 import { Budget } from './entities/budget.entity';
 import { FiscalYear } from './entities/fiscal-year.entity';
+import { BankAccount } from './entities/bank-account.entity';
+import { BankStatement } from './entities/bank-statement.entity';
+import { AccountingService } from './accounting.service';
 import { AccountsService } from './accounts.service';
 import { ExpensesService } from './expenses.service';
 import { BudgetsService } from './budgets.service';
 import { JournalEntriesService } from './journal-entries.service';
+import { AccountingController } from './accounting.controller';
 import { AccountsController } from './accounts.controller';
 import { ExpensesController } from './expenses.controller';
 import { BudgetsController } from './budgets.controller';
@@ -24,21 +28,26 @@ import { JournalEntriesController } from './journal-entries.controller';
       Expense,
       Budget,
       FiscalYear,
+      BankAccount,
+      BankStatement,
     ]),
   ],
   controllers: [
+    AccountingController,
     AccountsController,
     ExpensesController,
     BudgetsController,
     JournalEntriesController,
   ],
   providers: [
+    AccountingService,
     AccountsService,
     ExpensesService,
     BudgetsService,
     JournalEntriesService,
   ],
   exports: [
+    AccountingService,
     AccountsService,
     ExpensesService,
     BudgetsService,

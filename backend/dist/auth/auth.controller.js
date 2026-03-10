@@ -45,12 +45,12 @@ let AuthController = class AuthController {
     async googleAuthCallback(req, res) {
         try {
             const result = await this.authService.googleLogin(req.user, req.ip, req.headers['user-agent']);
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
             const redirectUrl = `${frontendUrl}/auth/google/callback?token=${result.accessToken}&refreshToken=${result.refreshToken}`;
             res.redirect(redirectUrl);
         }
         catch (error) {
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
             const errorMessage = encodeURIComponent(error.message || 'Authentication failed');
             res.redirect(`${frontendUrl}/auth/error?message=${errorMessage}`);
         }

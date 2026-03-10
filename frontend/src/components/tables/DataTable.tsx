@@ -930,7 +930,7 @@ export function DataTableDemo() {
         <DataTable
           data={easternEstateProjects}
           columns={columns}
-          onRowClick={(row) => console.log('View project:', row)}
+          onRowClick={(row) => {}}
           onEdit={(row) => alert(`Edit: ${row.name}`)}
           onDelete={(row) => alert(`Delete: ${row.name}`)}
           onBulkDelete={(rows) => alert(`Bulk delete ${rows.length} projects`)}

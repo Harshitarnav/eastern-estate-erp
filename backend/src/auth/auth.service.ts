@@ -107,7 +107,7 @@ export class AuthService {
     }
 
     // Hash password
-    const saltRounds = parseInt(this.configService.get('BCRYPT_ROUNDS') || '12');
+    const saltRounds = this.configService.get<number>('security.bcryptRounds') ?? 12;
     const password = await bcrypt.hash(registerDto.password, saltRounds);
 
     // Create user
@@ -201,8 +201,10 @@ export class AuthService {
     const token = this.jwtService.sign(
       { sub: userId, type: 'refresh' },
       {
-        secret: this.configService.get('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION') || '7d',
+        secret: this.configService.get<string>('jwt.refreshSecret'),
+        // Cast required: @nestjs/jwt v11 expects branded `StringValue` from `ms`,
+        // but ConfigService returns plain `string`. Value is valid at runtime.
+        expiresIn: (this.configService.get<string>('jwt.refreshExpiration') ?? '7d') as unknown as number,
       },
     );
 

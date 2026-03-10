@@ -25,7 +25,7 @@ export default function FloatingActionButton({
     {
       icon: <Phone className="w-5 h-5" />,
       label: 'Quick Call',
-      onClick: () => console.log('Quick call'),
+      onClick: () => {},
       color: 'bg-green-500 hover:bg-green-600',
     },
     {
@@ -39,7 +39,7 @@ export default function FloatingActionButton({
     {
       icon: <Search className="w-5 h-5" />,
       label: 'Search',
-      onClick: () => console.log('Search'),
+      onClick: () => {},
       color: 'bg-purple-500 hover:bg-purple-600',
     },
   ];

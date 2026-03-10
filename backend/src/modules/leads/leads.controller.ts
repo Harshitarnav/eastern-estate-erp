@@ -52,7 +52,6 @@ export class LeadsController {
   */
   @Get()
   async findAll(@Query() query: QueryLeadDto, @Req() req: Request): Promise<PaginatedLeadsResponse> {
-    console.log('[LeadsController] findAll query:', query, 'user:', (req.user as any)?.id);
     return this.leadsService.findAll(query, req.user as any);
   }
 

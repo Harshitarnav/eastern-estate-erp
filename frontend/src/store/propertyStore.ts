@@ -56,26 +56,17 @@ export const usePropertyStore = create<PropertyStore>()(
         const state = get();
         const current = state.selectedProperties;
         
-        console.log('[Store] toggleProperty called with id:', id);
-        console.log('[Store] Current isMultiSelectMode:', state.isMultiSelectMode);
-        console.log('[Store] Current selectedProperties:', current);
-        
         if (state.isMultiSelectMode) {
           // Multi-select: toggle
           if (current.includes(id)) {
-            console.log('[Store] Removing property from selection');
             set({ selectedProperties: current.filter(p => p !== id) });
           } else {
-            console.log('[Store] Adding property to selection');
             set({ selectedProperties: [...current, id] });
           }
         } else {
           // Single select: replace
-          console.log('[Store] Single-select mode: replacing selection');
           set({ selectedProperties: [id] });
         }
-        
-        console.log('[Store] New selectedProperties:', get().selectedProperties);
       },
 
       selectAll: () => {

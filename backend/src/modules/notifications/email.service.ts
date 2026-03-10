@@ -103,7 +103,7 @@ export class EmailService {
      * @param html - HTML content
      * @returns Promise<boolean> - True if sent successfully, false otherwise
      */
-    private async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+    async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
         if (!this.transporter) {
             this.logger.warn('Email transporter not initialized. Skipping email send.');
             return false;
