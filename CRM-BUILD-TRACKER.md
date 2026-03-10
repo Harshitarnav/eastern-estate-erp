@@ -89,13 +89,18 @@
 
 ---
 
-### 6. 🔲 Outstanding + Payment Collection Reports
+### 6. ✅ Outstanding + Payment Collection Reports
 **What:** Tower/unit wise summary of what's due vs what's collected.  
 **Scope:**
-- [ ] Outstanding Report: flat | customer | total amount | paid | balance | overdue days
-- [ ] Collection Report: grouped by property → tower → flat, with date filters
-- [ ] Both exportable as PDF + Excel
-- [ ] Backend: aggregation queries on `FlatPaymentPlan` + `Payment`
+- [x] Backend: `ReportsModule` with `/reports/outstanding` and `/reports/collection` endpoints
+- [x] Outstanding Report: flat | customer | demanded | paid | outstanding | overdue milestones | oldest overdue days
+- [x] Collection Report: all payments, filterable by property, method & date range
+- [x] Summary cards on each report page (totals, by-method breakdown)
+- [x] PDF export (branded A4 landscape, jspdf + autotable)
+- [x] Excel export (xlsx library)
+- [x] Reports index page `/reports` with card navigation
+- [x] Sidebar "Reports" section (Outstanding + Collection) visible to SUPER_ADMIN, ADMIN, SALES_TEAM
+- [x] "Ledger" quick-link on each row of the Outstanding report
 
 ---
 

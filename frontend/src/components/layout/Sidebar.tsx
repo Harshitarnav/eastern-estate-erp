@@ -8,7 +8,7 @@ import {
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
   Settings, ChevronDown, Target, Database, Table as TableIcon,
-  FileText
+  FileText, AlertTriangle
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { hasModuleAccess, isAdminRole } from '@/lib/roles';
@@ -114,6 +114,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       children: [
         { id: 'hr-dashboard', label: 'HR Dashboard', icon: LayoutDashboard, href: '/hr' },
         { id: 'employees', label: 'Employees', icon: Users, href: '/employees' },
+      ]
+    },
+    {
+      id: 'reports',
+      label: 'Reports',
+      icon: BarChart3,
+      children: [
+        { id: 'reports-outstanding', label: 'Outstanding Report', icon: AlertTriangle, href: '/reports/outstanding' },
+        { id: 'reports-collection', label: 'Collection Report', icon: TrendingUp, href: '/reports/collection' },
       ]
     },
     { id: 'marketing', label: 'Marketing', icon: MessageSquare, href: '/marketing' },
