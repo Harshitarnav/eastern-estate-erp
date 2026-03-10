@@ -41,6 +41,7 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('marketing', (qr) => this.ensureMarketingSchema(qr));
       await runIsolated('documents', (qr) => this.ensureDocumentsSchema(qr));
       await runIsolated('company_settings', (qr) => this.ensureCompanySettingsSchema(qr));
+      await runIsolated('customers_full_name', (qr) => this.ensureCustomersFullNameColumn(qr));
     } finally {
       await queryRunner.release();
     }
@@ -529,6 +530,40 @@ export class SchemaSyncService implements OnModuleInit {
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_documents_booking
         ON documents (booking_id) WHERE booking_id IS NOT NULL;
+    `);
+  }
+
+  /**
+   * Ensures the customers table has a full_name column.
+   * The production DB was created with first_name / last_name columns; the
+   * entity was later refactored to use full_name.  This migration:
+   *   1. Adds full_name VARCHAR if it doesn't exist.
+   *   2. Back-fills it from first_name + ' ' + last_name where full_name is empty.
+   */
+  private async ensureCustomersFullNameColumn(queryRunner: QueryRunner) {
+    // Add full_name column if missing
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS full_name VARCHAR NULL;
+    `);
+
+    // Back-fill from first_name / last_name if those columns still exist
+    // and full_name is not yet populated — safe to run repeatedly.
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers'
+             AND column_name = 'first_name'
+        ) THEN
+          UPDATE customers
+             SET full_name = TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,''))
+           WHERE (full_name IS NULL OR full_name = '')
+             AND (first_name IS NOT NULL OR last_name IS NOT NULL);
+        END IF;
+      END;
+      $$;
     `);
   }
 }

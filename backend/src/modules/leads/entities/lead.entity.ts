@@ -252,7 +252,7 @@ export class Lead {
   reminderSentAt: Date;
 
   // Assignment
-  @Column({ name: 'assigned_to', type: 'varchar', nullable: true })
+  @Column({ name: 'assigned_to', type: 'uuid', nullable: true })
   @Index()
   assignedTo: string;
 

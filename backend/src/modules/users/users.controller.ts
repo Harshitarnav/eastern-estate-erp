@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
@@ -40,6 +41,11 @@ export class UsersController {
   }
 
   @Patch(':id')
+  patch(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
+    return this.usersService.update(id, updateUserDto, req.user.id);
+  }
+
+  @Put(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Request() req) {
     return this.usersService.update(id, updateUserDto, req.user.id);
   }

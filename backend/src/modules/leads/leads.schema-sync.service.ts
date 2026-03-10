@@ -30,6 +30,26 @@ export class LeadsSchemaSyncService implements OnModuleInit {
         ALTER TABLE leads ADD COLUMN IF NOT EXISTS assignment_history JSONB;
       `);
 
+      // Convert assigned_to from varchar to uuid so it can JOIN with users.id
+      // Safe to run repeatedly — DO block checks actual column type first
+      await queryRunner.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'leads'
+               AND column_name = 'assigned_to'
+               AND data_type = 'character varying'
+          ) THEN
+            -- Clear any non-UUID values first to avoid cast errors
+            UPDATE leads SET assigned_to = NULL
+             WHERE assigned_to IS NOT NULL
+               AND assigned_to !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+            ALTER TABLE leads ALTER COLUMN assigned_to TYPE uuid USING assigned_to::uuid;
+          END IF;
+        END $$;
+      `);
+
       await queryRunner.query(`
         DO $$
         BEGIN
