@@ -37,7 +37,7 @@
 
 ---
 
-### 2. 🔲 Demand Invoice PDF
+### 2. ✅ Demand Invoice PDF
 **What:** Generate a formatted PDF demand invoice matching the Assotech sample.  
 **Scope:**
 - [ ] Invoice number auto-sequencing (e.g., `PP1TX/25/00001/A`)

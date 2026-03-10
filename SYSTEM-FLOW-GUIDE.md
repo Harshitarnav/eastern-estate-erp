@@ -140,6 +140,18 @@ A Demand Draft is the official payment demand notice sent to the customer when a
   - Use the Title, Amount, and Due Date fields at the top to update those values.
 - Click **Save Changes** when done.
 
+### Step 2b — Download as PDF Invoice
+- Click the red **Download PDF Invoice** button (available at any status).
+- A dialog opens with pre-filled fields from the system:
+  - **Invoice Number** — enter your own format (e.g. `EE/25-26/0001`)
+  - **GSTIN** — company's GST registration number
+  - **GST Rate** — default 18% (split automatically as 9% CGST + 9% SGST)
+  - **Customer Address / PAN / Phone** — pre-filled from the customer record, editable
+  - **Flat Area & Type** — pre-filled from the flat record, editable
+  - **Bank Details** — fill in once, stays until dialog is reopened
+  - **TDS Note** — default note about 1% TDS, editable
+- Click **Generate & Download PDF** → a properly formatted A4 PDF is saved to your computer.
+
 ### Step 3 — Approve the Draft
 - Once the content looks correct, click **Approve Draft**.
 - Status changes from **DRAFT** → **READY**.

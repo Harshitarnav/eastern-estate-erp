@@ -43,8 +43,13 @@ import {
   X,
   Trash2,
   Info,
+  FileDown,
 } from 'lucide-react';
 import { demandDraftsService, DemandDraft } from '@/services/demand-drafts.service';
+import { customersService } from '@/services/customers.service';
+import { bookingsService } from '@/services/bookings.service';
+import { paymentPlansService } from '@/services/payment-plans.service';
+import { generateDemandInvoicePdf, DemandInvoiceData } from '@/lib/generate-demand-invoice-pdf';
 import { toast } from 'sonner';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -77,6 +82,25 @@ export default function DemandDraftDetailPage() {
   // Dialogs
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // PDF invoice dialog
+  const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfFields, setPdfFields] = useState({
+    invoiceNumber: '',
+    gstin: '',
+    gstRate: '18',
+    bankName: '',
+    bankAccountNumber: '',
+    bankIfsc: '',
+    bankBranch: '',
+    tdNote: 'TDS @ 1% u/s 194-IA applicable if total consideration exceeds ₹50 Lakh.',
+    customerAddress: '',
+    customerPan: '',
+    customerPhone: '',
+    flatArea: '',
+    flatType: '',
+  });
 
   useEffect(() => {
     if (draftId) loadDraft();
@@ -193,6 +217,105 @@ export default function DemandDraftDetailPage() {
     }
   };
 
+  /** Open PDF dialog and pre-fill customer / booking / flat data */
+  const openPdfDialog = async () => {
+    if (!draft) return;
+    // Seed with what we already know from metadata
+    const m = draft.metadata ?? {};
+    const updates: Partial<typeof pdfFields> = {};
+
+    // Pre-fill from customer if available
+    if (draft.customerId) {
+      try {
+        const customer = await customersService.getCustomer(draft.customerId);
+        const addrParts = [
+          customer.addressLine1,
+          customer.addressLine2,
+          customer.city,
+          customer.state,
+          customer.pincode,
+        ].filter(Boolean);
+        updates.customerAddress = addrParts.join(', ') || customer.address || '';
+        updates.customerPan     = customer.panNumber || '';
+        updates.customerPhone   = customer.phone || customer.phoneNumber || '';
+      } catch { /* non-critical */ }
+    }
+
+    // Pre-fill flat area / type from flat if available
+    if (draft.flatId) {
+      try {
+        const { flatsService } = await import('@/services/flats.service');
+        const flat = await flatsService.getFlat(draft.flatId);
+        updates.flatArea = flat.area ? `${flat.area} sq ft` : '';
+        updates.flatType = flat.type || flat.flatType || '';
+      } catch { /* non-critical */ }
+    }
+
+    setPdfFields(prev => ({ ...prev, ...updates }));
+    setPdfDialogOpen(true);
+  };
+
+  const handleGeneratePdf = async () => {
+    if (!draft) return;
+    setGeneratingPdf(true);
+    try {
+      const m = draft.metadata ?? {};
+
+      // Fetch booking number
+      let bookingNumber = '';
+      if (draft.bookingId) {
+        try {
+          const booking = await bookingsService.getBooking(draft.bookingId);
+          bookingNumber = booking.bookingNumber || '';
+        } catch { /* non-critical */ }
+      }
+
+      // Fetch paid amount from the payment plan
+      let totalPaid = 0;
+      if (m.flatPaymentPlanId) {
+        try {
+          const plan = await paymentPlansService.getFlatPaymentPlan(m.flatPaymentPlanId);
+          totalPaid = plan.paidAmount ?? 0;
+        } catch { /* non-critical */ }
+      }
+
+      const invoiceData: DemandInvoiceData = {
+        invoiceNumber:      pdfFields.invoiceNumber,
+        gstin:              pdfFields.gstin,
+        gstRate:            parseFloat(pdfFields.gstRate) || 18,
+        bankName:           pdfFields.bankName,
+        bankAccountNumber:  pdfFields.bankAccountNumber,
+        bankIfsc:           pdfFields.bankIfsc,
+        bankBranch:         pdfFields.bankBranch,
+        tdNote:             pdfFields.tdNote,
+        invoiceDate:        draft.createdAt,
+        dueDate:            draft.dueDate ? draft.dueDate.toString() : '',
+        bookingNumber,
+        milestoneName:      m.milestoneName || draft.milestoneId || '',
+        customerName:       m.customerName || '',
+        customerAddress:    pdfFields.customerAddress,
+        customerPan:        pdfFields.customerPan,
+        customerPhone:      pdfFields.customerPhone,
+        propertyName:       m.propertyName || '',
+        towerName:          m.towerName || '',
+        flatNumber:         m.flatNumber || '',
+        flatArea:           pdfFields.flatArea,
+        flatType:           pdfFields.flatType,
+        baseAmount:         Number(draft.amount),
+        totalPaid,
+      };
+
+      generateDemandInvoicePdf(invoiceData);
+      toast.success('PDF downloaded!');
+      setPdfDialogOpen(false);
+    } catch (err: any) {
+      toast.error('Failed to generate PDF');
+      console.error(err);
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -294,9 +417,17 @@ export default function DemandDraftDetailPage() {
             )}
 
             {!isEditing && (
-              <Button variant="outline" onClick={handleDownload}>
-                <Download className="mr-2 h-4 w-4" /> Download HTML
-              </Button>
+              <>
+                <Button
+                  onClick={openPdfDialog}
+                  className="bg-red-700 hover:bg-red-800"
+                >
+                  <FileDown className="mr-2 h-4 w-4" /> Download PDF Invoice
+                </Button>
+                <Button variant="outline" onClick={handleDownload}>
+                  <Download className="mr-2 h-4 w-4" /> Download HTML
+                </Button>
+              </>
             )}
           </div>
 
@@ -480,6 +611,153 @@ export default function DemandDraftDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── PDF Invoice Dialog ── */}
+      <Dialog open={pdfDialogOpen} onOpenChange={setPdfDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileDown className="h-5 w-5 text-red-700" />
+              Download PDF Invoice
+            </DialogTitle>
+            <DialogDescription>
+              Fill in the details below. All fields can be changed — nothing is saved permanently.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            {/* Invoice & Tax */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Invoice & Tax</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="invNo">Invoice Number</Label>
+                  <Input id="invNo" placeholder="e.g. EE/25-26/0001"
+                    value={pdfFields.invoiceNumber}
+                    onChange={e => setPdfFields(p => ({ ...p, invoiceNumber: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="gstin">Company GSTIN</Label>
+                  <Input id="gstin" placeholder="e.g. 09AAAAA0000A1Z5"
+                    value={pdfFields.gstin}
+                    onChange={e => setPdfFields(p => ({ ...p, gstin: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="gst">GST Rate (%)</Label>
+                  <Input id="gst" type="number" placeholder="18"
+                    value={pdfFields.gstRate}
+                    onChange={e => setPdfFields(p => ({ ...p, gstRate: e.target.value }))} />
+                  <p className="text-xs text-muted-foreground">
+                    Split equally as CGST + SGST (e.g. 18% → 9% + 9%)
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Customer */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Customer Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1">
+                  <Label htmlFor="addr">Address</Label>
+                  <Input id="addr" placeholder="Full address"
+                    value={pdfFields.customerAddress}
+                    onChange={e => setPdfFields(p => ({ ...p, customerAddress: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="pan">PAN Number</Label>
+                  <Input id="pan" placeholder="ABCDE1234F"
+                    value={pdfFields.customerPan}
+                    onChange={e => setPdfFields(p => ({ ...p, customerPan: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input id="phone" placeholder="+91 XXXXX XXXXX"
+                    value={pdfFields.customerPhone}
+                    onChange={e => setPdfFields(p => ({ ...p, customerPhone: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            {/* Unit */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Unit Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="area">Flat Area</Label>
+                  <Input id="area" placeholder="e.g. 1200 sq ft"
+                    value={pdfFields.flatArea}
+                    onChange={e => setPdfFields(p => ({ ...p, flatArea: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="ftype">Flat Type</Label>
+                  <Input id="ftype" placeholder="e.g. 3BHK"
+                    value={pdfFields.flatType}
+                    onChange={e => setPdfFields(p => ({ ...p, flatType: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            {/* Bank */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Bank / Payment Details</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="bname">Bank Name</Label>
+                  <Input id="bname" placeholder="e.g. HDFC Bank"
+                    value={pdfFields.bankName}
+                    onChange={e => setPdfFields(p => ({ ...p, bankName: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="bacc">Account Number</Label>
+                  <Input id="bacc" placeholder="Account number"
+                    value={pdfFields.bankAccountNumber}
+                    onChange={e => setPdfFields(p => ({ ...p, bankAccountNumber: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="bifsc">IFSC Code</Label>
+                  <Input id="bifsc" placeholder="e.g. HDFC0001234"
+                    value={pdfFields.bankIfsc}
+                    onChange={e => setPdfFields(p => ({ ...p, bankIfsc: e.target.value }))} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="bbranch">Branch</Label>
+                  <Input id="bbranch" placeholder="e.g. Noida Sector 18"
+                    value={pdfFields.bankBranch}
+                    onChange={e => setPdfFields(p => ({ ...p, bankBranch: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+
+            {/* TDS Note */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Footer Note</p>
+              <div className="space-y-1">
+                <Label htmlFor="tdn">TDS / Legal Note</Label>
+                <Input id="tdn"
+                  value={pdfFields.tdNote}
+                  onChange={e => setPdfFields(p => ({ ...p, tdNote: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => setPdfDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGeneratePdf}
+              disabled={generatingPdf}
+              className="bg-red-700 hover:bg-red-800"
+            >
+              {generatingPdf
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</>
+                : <><FileDown className="mr-2 h-4 w-4" /> Generate & Download PDF</>
+              }
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Send Dialog ── */}
       <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
