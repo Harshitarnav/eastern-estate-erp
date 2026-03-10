@@ -342,24 +342,6 @@ export default function UserManagementPage() {
     { mode: ModalMode; user?: User } | null
   >(null);
 
-  // Block non-super-admins before rendering anything
-  if (currentUser && !isSuperAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-        <div className="rounded-full bg-red-100 p-4">
-          <Lock className="h-8 w-8 text-[#A8211B]" />
-        </div>
-        <h2 className="text-xl font-semibold text-gray-800">Access Restricted</h2>
-        <p className="text-sm text-muted-foreground max-w-xs">
-          User Management is only accessible to Super Admins. Contact your Super Admin to manage user accounts.
-        </p>
-        <Button variant="outline" onClick={() => router.push('/settings')}>
-          Back to Settings
-        </Button>
-      </div>
-    );
-  }
-
   const LIMIT = 20;
 
   const load = useCallback(async () => {
@@ -416,6 +398,24 @@ export default function UserManagementPage() {
   };
 
   const totalPages = Math.ceil(total / LIMIT);
+
+  // ── Access guard — render after all hooks (Rules of Hooks requirement) ─────
+  if (currentUser && !isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+        <div className="rounded-full bg-red-100 p-4">
+          <Lock className="h-8 w-8 text-[#A8211B]" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-800">Access Restricted</h2>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          User Management is only accessible to Super Admins. Contact your Super Admin to manage user accounts.
+        </p>
+        <Button variant="outline" onClick={() => router.push('/settings')}>
+          Back to Settings
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
