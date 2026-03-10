@@ -604,7 +604,38 @@ export class SchemaSyncService implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
     `);
 
-    // ── 7. Data migration: back-fill full_name from first_name / last_name ────
+    // ── 7. Drop NOT NULL from legacy columns the entity no longer writes to ───
+    // The original production DB had first_name/last_name/phone as NOT NULL.
+    // The entity now uses full_name and phone_number instead, so inserts fail
+    // unless we remove those old constraints.  Safe: existing data is untouched.
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'first_name'
+             AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE customers ALTER COLUMN first_name DROP NOT NULL;
+        END IF;
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'last_name'
+             AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE customers ALTER COLUMN last_name DROP NOT NULL;
+        END IF;
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'phone'
+             AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE customers ALTER COLUMN phone DROP NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    // ── 9. Data migration: back-fill full_name from first_name / last_name ────
     await queryRunner.query(`
       DO $$
       BEGIN
@@ -620,7 +651,7 @@ export class SchemaSyncService implements OnModuleInit {
       END $$;
     `);
 
-    // ── 8. Data migration: back-fill phone_number from phone ─────────────────
+    // ── 10. Data migration: back-fill phone_number from phone ────────────────
     await queryRunner.query(`
       DO $$
       BEGIN
@@ -635,7 +666,7 @@ export class SchemaSyncService implements OnModuleInit {
       END $$;
     `);
 
-    // ── 9. Data migration: back-fill address_line1 from address ───────────────
+    // ── 11. Data migration: back-fill address_line1 from address ─────────────
     await queryRunner.query(`
       DO $$
       BEGIN
@@ -650,14 +681,14 @@ export class SchemaSyncService implements OnModuleInit {
       END $$;
     `);
 
-    // ── 10. Ensure customer_code is populated for legacy rows ─────────────────
+    // ── 12. Ensure customer_code is populated for legacy rows ─────────────────
     await queryRunner.query(`
       UPDATE customers
          SET customer_code = 'CUST-' || SUBSTRING(id::text, 1, 8)
        WHERE customer_code IS NULL;
     `);
 
-    // ── 11. Ensure full_name is populated (fallback: use email prefix) ─────────
+    // ── 13. Ensure full_name is populated (fallback: use email prefix) ─────────
     await queryRunner.query(`
       UPDATE customers
          SET full_name = COALESCE(
