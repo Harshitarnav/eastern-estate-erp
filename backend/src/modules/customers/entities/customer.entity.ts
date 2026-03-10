@@ -128,8 +128,7 @@ export class Customer {
   @Column({ name: 'aadhar_number', length: 20, nullable: true })
   aadharNumber: string;
 
-  // Optional/absent columns guarded to avoid select errors on older schemas
-  @Column({ name: 'customer_type', length: 50, nullable: true, select: false, insert: false, update: false })
+  @Column({ name: 'customer_type', length: 50, nullable: true })
   customerType: string;
 
   get type(): CustomerType {
@@ -192,7 +191,7 @@ export class Customer {
     return this.totalPurchases || 0;
   }
 
-  @Column({ name: 'kyc_status', length: 50, nullable: true, select: false, insert: false, update: false })
+  @Column({ name: 'kyc_status', length: 50, nullable: true })
   @Index()
   kycStatus: string;
 
@@ -205,7 +204,7 @@ export class Customer {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ type: 'jsonb', nullable: true, select: false, insert: false, update: false })
+  @Column({ type: 'jsonb', nullable: true })
   metadata: any;
 
   @CreateDateColumn({ name: 'created_at' })

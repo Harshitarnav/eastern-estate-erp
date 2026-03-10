@@ -12,6 +12,14 @@ export declare class BookingResponseDto {
     paidAmount: number;
     balanceAmount: number;
     tokenPaymentMode?: string;
+    rtgsNumber?: string;
+    utrNumber?: string;
+    chequeNumber?: string;
+    chequeDate?: string;
+    paymentBank?: string;
+    paymentBranch?: string;
+    paymentPlan?: string;
+    towerId?: string;
     agreementNumber?: string;
     agreementDate?: string;
     agreementSignedDate?: string;

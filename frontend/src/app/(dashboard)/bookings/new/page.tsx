@@ -94,6 +94,12 @@ export default function NewBookingPage() {
         tokenPaidDate: pendingData.tokenPaidDate || null,
         tokenReceiptNumber: pendingData.tokenReceiptNumber || null,
         tokenPaymentMode: pendingData.tokenPaymentMode || null,
+        rtgsNumber: pendingData.rtgsNumber || null,
+        utrNumber: pendingData.utrNumber || null,
+        chequeNumber: pendingData.chequeNumber || null,
+        chequeDate: pendingData.chequeDate || null,
+        paymentBank: pendingData.paymentBank || null,
+        paymentBranch: pendingData.paymentBranch || null,
         agreementNumber: pendingData.agreementNumber || null,
         agreementDate: pendingData.agreementDate || null,
         agreementSignedDate: pendingData.agreementSignedDate || null,
@@ -283,9 +289,15 @@ export default function NewBookingPage() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-base font-semibold mb-4" style={{ color: '#7B1E12' }}>Token Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {pendingData.tokenPaidDate      && <ReviewRow label="Token Paid Date"   value={fmtDate(pendingData.tokenPaidDate)} />}
-                {pendingData.tokenReceiptNumber && <ReviewRow label="Token Receipt No"  value={pendingData.tokenReceiptNumber} />}
+                {pendingData.tokenPaidDate      && <ReviewRow label="Token Paid Date"    value={fmtDate(pendingData.tokenPaidDate)} />}
+                {pendingData.tokenReceiptNumber && <ReviewRow label="Token Receipt No"   value={pendingData.tokenReceiptNumber} />}
                 {pendingData.tokenPaymentMode   && <ReviewRow label="Token Payment Mode" value={pendingData.tokenPaymentMode} />}
+                {pendingData.chequeNumber       && <ReviewRow label="Cheque No"          value={pendingData.chequeNumber} />}
+                {pendingData.chequeDate         && <ReviewRow label="Cheque Date"        value={fmtDate(pendingData.chequeDate)} />}
+                {pendingData.rtgsNumber         && <ReviewRow label="RTGS Ref No"        value={pendingData.rtgsNumber} />}
+                {pendingData.utrNumber          && <ReviewRow label="UTR Number"         value={pendingData.utrNumber} />}
+                {pendingData.paymentBank        && <ReviewRow label="Bank"               value={pendingData.paymentBank} />}
+                {pendingData.paymentBranch      && <ReviewRow label="Branch"             value={pendingData.paymentBranch} />}
               </div>
             </div>
           )}

@@ -74,8 +74,14 @@ export class CustomersService {
     const customerCode = await this.generateCustomerCode();
 
     // Map firstName and lastName to fullName
-    const { firstName, lastName, phone, alternatePhone, isVIP, propertyId, designation, bankName, hasApprovedLoan, approvedLoanAmount, ...rest } =
-      createCustomerDto;
+    const {
+      firstName, lastName, phone, alternatePhone,
+      isVIP, propertyId, designation, bankName,
+      hasApprovedLoan, approvedLoanAmount,
+      needsHomeLoan, annualIncome,
+      type, kycStatus,
+      ...rest
+    } = createCustomerDto;
 
     // Build a safe full name even if pieces are missing
     const safeFirst = (firstName || '').trim();
@@ -91,32 +97,24 @@ export class CustomersService {
       phoneNumber = 'UNKNOWN';
     }
 
-    // Handle isVIP and other metadata fields
+    // Build metadata for fields stored in JSONB
     const metadata: any = {};
-    if (isVIP !== undefined) {
-      metadata.isVIP = isVIP;
-    }
-    if (propertyId) {
-      metadata.propertyId = propertyId;
-    }
-    if (designation) {
-      metadata.designation = designation;
-    }
-    if (bankName) {
-      metadata.bankName = bankName;
-    }
-    if (hasApprovedLoan !== undefined) {
-      metadata.hasApprovedLoan = hasApprovedLoan;
-    }
-    if (approvedLoanAmount !== undefined) {
-      metadata.approvedLoanAmount = approvedLoanAmount;
-    }
+    if (isVIP !== undefined) metadata.isVIP = isVIP;
+    if (propertyId) metadata.propertyId = propertyId;
+    if (designation) metadata.designation = designation;
+    if (bankName) metadata.bankName = bankName;
+    if (hasApprovedLoan !== undefined) metadata.hasApprovedLoan = hasApprovedLoan;
+    if (approvedLoanAmount !== undefined) metadata.approvedLoanAmount = approvedLoanAmount;
+    if (needsHomeLoan !== undefined) metadata.needsHomeLoan = needsHomeLoan;
+    if (annualIncome !== undefined) metadata.annualIncome = annualIncome;
 
     const customer = this.customersRepository.create({
       ...rest,
       customerCode,
       fullName,
       phoneNumber,
+      customerType: type as string,
+      kycStatus: kycStatus as string,
       metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
     });
     const savedCustomer = await this.customersRepository.save(customer);
@@ -321,27 +319,32 @@ export class CustomersService {
     if (updateCustomerDto.isActive !== undefined) {
       customer.isActive = updateCustomerDto.isActive;
     }
-    if (updateCustomerDto.isVIP !== undefined) {
-      customer.metadata = customer.metadata || {};
-      customer.metadata.isVIP = updateCustomerDto.isVIP;
+
+    // Handle type (maps to customerType column — now writable)
+    if (updateCustomerDto.type !== undefined && updateCustomerDto.type !== ('' as any)) {
+      customer.customerType = updateCustomerDto.type as string;
     }
-    // designation and bankName are stored in the metadata JSONB field
-    if (updateCustomerDto.designation !== undefined) {
-      customer.metadata = customer.metadata || {};
-      customer.metadata.designation = updateCustomerDto.designation;
+
+    // Handle kycStatus (now writable)
+    if (updateCustomerDto.kycStatus !== undefined && updateCustomerDto.kycStatus !== ('' as any)) {
+      customer.kycStatus = updateCustomerDto.kycStatus as string;
     }
-    if (updateCustomerDto.bankName !== undefined) {
-      customer.metadata = customer.metadata || {};
-      customer.metadata.bankName = updateCustomerDto.bankName;
+
+    // Update metadata JSONB — merge patch so existing keys are preserved
+    const metaPatch: any = {};
+    if (updateCustomerDto.isVIP !== undefined) metaPatch.isVIP = updateCustomerDto.isVIP;
+    if (updateCustomerDto.designation !== undefined) metaPatch.designation = updateCustomerDto.designation;
+    if (updateCustomerDto.bankName !== undefined) metaPatch.bankName = updateCustomerDto.bankName;
+    if (updateCustomerDto.hasApprovedLoan !== undefined) metaPatch.hasApprovedLoan = updateCustomerDto.hasApprovedLoan;
+    if (updateCustomerDto.approvedLoanAmount !== undefined) metaPatch.approvedLoanAmount = updateCustomerDto.approvedLoanAmount;
+    if (updateCustomerDto.needsHomeLoan !== undefined) metaPatch.needsHomeLoan = updateCustomerDto.needsHomeLoan;
+    if (updateCustomerDto.annualIncome !== undefined) metaPatch.annualIncome = updateCustomerDto.annualIncome;
+    if (updateCustomerDto.propertyId !== undefined) metaPatch.propertyId = updateCustomerDto.propertyId;
+
+    if (Object.keys(metaPatch).length > 0) {
+      customer.metadata = { ...(customer.metadata || {}), ...metaPatch };
     }
-    if (updateCustomerDto.hasApprovedLoan !== undefined) {
-      customer.metadata = customer.metadata || {};
-      customer.metadata.hasApprovedLoan = updateCustomerDto.hasApprovedLoan;
-    }
-    if (updateCustomerDto.approvedLoanAmount !== undefined) {
-      customer.metadata = customer.metadata || {};
-      customer.metadata.approvedLoanAmount = updateCustomerDto.approvedLoanAmount;
-    }
+
     assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
 
     const updatedCustomer = await this.customersRepository.save(customer);

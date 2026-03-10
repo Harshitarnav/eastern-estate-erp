@@ -428,7 +428,52 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     },
   ];
 
-  // Tab 7: Notes & Additional Info
+  // Tab 7: Payment Reference Details
+  const paymentRefFields: FormField[] = [
+    {
+      name: 'chequeNumber',
+      label: 'Cheque Number',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., 123456',
+    },
+    {
+      name: 'chequeDate',
+      label: 'Cheque Date',
+      type: 'date',
+      required: false,
+    },
+    {
+      name: 'rtgsNumber',
+      label: 'RTGS Reference Number',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., RTGS123456',
+    },
+    {
+      name: 'utrNumber',
+      label: 'UTR Number',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., UTR123456789',
+    },
+    {
+      name: 'paymentBank',
+      label: 'Payment Bank',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., HDFC Bank',
+    },
+    {
+      name: 'paymentBranch',
+      label: 'Payment Branch',
+      type: 'text',
+      required: false,
+      placeholder: 'e.g., Connaught Place, New Delhi',
+    },
+  ];
+
+  // Tab 8: Notes & Additional Info
   const notesFields: FormField[] = [
     {
       name: 'notes',
@@ -453,6 +498,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     { id: 'agreement', label: 'Agreement', fields: agreementFields },
     { id: 'loan', label: 'Home Loan', fields: loanFields },
     { id: 'nominees', label: 'Nominees', fields: nomineeFields },
+    { id: 'paymentRef', label: 'Payment Ref', fields: paymentRefFields },
     { id: 'notes', label: 'Notes', fields: notesFields },
   ];
 
