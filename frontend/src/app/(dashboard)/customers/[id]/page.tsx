@@ -20,6 +20,8 @@ import {
 import { customersService, Customer } from '@/services/customers.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import DocumentsPanel from '@/components/documents/DocumentsPanel';
+import { DocumentEntityType } from '@/services/documents.service';
 
 export default function CustomerViewPage() {
   const router = useRouter();
@@ -282,11 +284,11 @@ export default function CustomerViewPage() {
             </div>
           </div>
 
-          {/* KYC Documents */}
+          {/* KYC Numbers (static data) */}
           {(customer.panNumber || customer.aadharNumber) && (
             <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
               <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
-                KYC Documents
+                KYC Numbers
               </h2>
               <div className="grid grid-cols-2 gap-4">
                 {customer.panNumber && (
@@ -304,6 +306,17 @@ export default function CustomerViewPage() {
               </div>
             </div>
           )}
+
+          {/* KYC & Customer Documents */}
+          <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+            <DocumentsPanel
+              entityType={DocumentEntityType.CUSTOMER}
+              entityId={customerId}
+              customerId={customerId}
+              fetchMode="customer"
+              title="KYC & Documents"
+            />
+          </div>
 
           {/* Notes */}
           {customer.notes && (

@@ -5,6 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, CheckCircle, XCircle, Download, Loader2 } from 'lucide-react';
 import { paymentsService } from '@/services/payments.service';
 import { flatsService } from '@/services/flats.service';
+import DocumentsPanel from '@/components/documents/DocumentsPanel';
+import { DocumentEntityType } from '@/services/documents.service';
 import { generateReceiptPdf, ReceiptData } from '@/lib/generate-receipt-pdf';
 import {
   Dialog,
@@ -355,6 +357,17 @@ export default function ViewPaymentPage() {
             <p className="text-gray-800">{new Date(payment.updatedAt).toLocaleString('en-IN')}</p>
           </div>
         </div>
+      </div>
+
+      {/* ── Payment Proof Documents ─────────────────────────────────────────── */}
+      <div className="bg-white rounded-lg shadow-md p-6 mt-4">
+        <DocumentsPanel
+          entityType={DocumentEntityType.PAYMENT}
+          entityId={id}
+          customerId={payment.customerId || undefined}
+          bookingId={payment.bookingId || undefined}
+          title="Payment Proof & Documents"
+        />
       </div>
 
       {/* ── Generate Receipt Dialog ─────────────────────────────────────────── */}

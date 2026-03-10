@@ -26,6 +26,7 @@ import { DemandDraftsModule } from './modules/demand-drafts/demand-drafts.module
 import { DatabaseModule } from './modules/database/database.module';
 import { PaymentPlansModule } from './modules/payment-plans/payment-plans.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
 import { HealthModule } from './health/health.module';
@@ -108,6 +109,7 @@ import { PropertyAccessGuard } from './common/guards/property-access.guard';
     DatabaseModule,
     PaymentPlansModule,
     ReportsModule,
+    DocumentsModule,
     UploadModule,
     HealthModule,
   ],

@@ -104,14 +104,18 @@
 
 ---
 
-### 7. 🔲 Document Management (per Booking / Customer)
-**What:** Upload + view categorized documents per booking.  
+### 7. ✅ Document Management (per Booking / Customer / Payment / Employee)
+**What:** Upload + view categorized documents on any ERP record.  
 **Scope:**
-- [ ] Categories: Agreement Copy | KYC (Aadhar, PAN, Photo) | Bank Documents | Other
-- [ ] Upload via existing S3 service
-- [ ] Viewer/download per document
-- [ ] Visible on Booking detail page + Customer detail page
-- [ ] KYC status indicator (Pending / In Progress / Verified)
+- [x] `documents` DB table (auto-created by SchemaSyncService on startup)
+- [x] Backend: `DocumentsModule` with upload (multipart), list, delete endpoints
+- [x] 11 document categories: Agreement, KYC (Aadhar/PAN/Photo/Other), Bank, Loan, Payment Proof, Possession Letter, NOC, Other
+- [x] `DocumentsPanel` reusable React component: drag-to-upload, category dropdown, notes, view/download/delete per file
+- [x] KYC doc count badge on panel header (e.g. "KYC: 2/4")
+- [x] Integrated on **Booking** detail page (right sidebar)
+- [x] Integrated on **Customer** detail page (replaces static KYC section)
+- [x] Integrated on **Payment** detail page (payment proof section)
+- [x] Integrated on **Employee** detail page (employee documents section)
 
 ---
 

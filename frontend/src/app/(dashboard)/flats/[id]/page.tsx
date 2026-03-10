@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Building2, Loader2, MapPin, RefreshCw, ShieldAlert } from 'lucide-react';
+import {
+  ArrowLeft, Building2, CheckCircle, ChevronRight, ExternalLink,
+  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload,
+} from 'lucide-react';
 import { flatsService, Flat } from '@/services/flats.service';
 import { customersService, Customer } from '@/services/customers.service';
 import { demandDraftsService, DemandDraft } from '@/services/demand-drafts.service';
+import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.service';
 import { BrandHero, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { formatCurrency } from '@/utils/formatters';
+import { DocumentEntityType, DocumentCategory, documentsService, ErpDocument } from '@/services/documents.service';
 
 const CHECKLIST_LABELS: Record<string, string> = {
   has_area: 'Area details captured',
@@ -30,6 +35,9 @@ export default function FlatDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [customerError, setCustomerError] = useState<string | null>(null);
   const [loadingCustomer, setLoadingCustomer] = useState(false);
+  const [paymentPlan, setPaymentPlan] = useState<FlatPaymentPlan | null>(null);
+  const [flatDocs, setFlatDocs] = useState<ErpDocument[]>([]);
+  const [docUploading, setDocUploading] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<DemandDraft[]>([]);
   const [draftLoading, setDraftLoading] = useState(false);
   const [draftForm, setDraftForm] = useState({
@@ -79,6 +87,15 @@ export default function FlatDetailPage() {
           place: prev.place || inferredPlace,
         }));
         await loadDrafts(data?.id);
+        // Load flat docs and payment plan in parallel
+        try {
+          const [docs, plan] = await Promise.allSettled([
+            documentsService.getByEntity(DocumentEntityType.FLAT, data.id),
+            paymentPlansService.getFlatPaymentPlanByFlatId(data.id),
+          ]);
+          if (docs.status === 'fulfilled') setFlatDocs(docs.value);
+          if (plan.status === 'fulfilled') setPaymentPlan(plan.value);
+        } catch { /* non-fatal */ }
       } catch (err: any) {
         const message =
           err?.response?.data?.message ??
@@ -265,6 +282,27 @@ export default function FlatDetailPage() {
     }
   };
 
+  const handleDocUpload = async (label: string, category: DocumentCategory, file: File) => {
+    if (!flat) return;
+    setDocUploading(label);
+    try {
+      await documentsService.upload(file, {
+        name: label,
+        category,
+        entityType: DocumentEntityType.FLAT,
+        entityId: flat.id,
+        customerId: flat.customerId || undefined,
+        bookingId: flat.bookingId || undefined,
+      });
+      const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
+      setFlatDocs(updated);
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? 'Upload failed. Please try again.');
+    } finally {
+      setDocUploading(null);
+    }
+  };
+
   const checklistEntries = useMemo(() => {
     if (!flat?.flatChecklist) {
       return [];
@@ -424,23 +462,59 @@ export default function FlatDetailPage() {
           </section>
 
           <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
-            <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
+            <header className="border-b border-gray-100 pb-4">
               <h2 className="text-lg font-semibold text-gray-900">Documents & Compliance</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                {flatDocs.length > 0 ? `${flatDocs.length} document${flatDocs.length === 1 ? '' : 's'} uploaded` : 'Click Upload next to each item to attach files.'}
+              </p>
             </header>
-            <div className="mt-4 grid gap-3">
-              <DetailItem label="Sale Agreement" value={flat.saleAgreementUrl} isLink />
-              <DetailItem label="Allotment Letter" value={flat.allotmentLetterUrl} isLink />
-              <DetailItem label="Possession Letter" value={flat.possessionLetterUrl} isLink />
-              <DetailItem label="Payment Plan" value={flat.paymentPlanUrl} isLink />
-              <DetailList label="Registration Receipts" values={list(flat.registrationReceiptUrls)} />
-              <DetailList label="Payment Receipts" values={list(flat.paymentReceiptUrls)} />
-              <DetailList label="Demand Letters" values={list(flat.demandLetterUrls)} />
-              <DetailItem label="NOC / No Dues" value={flat.nocUrl} isLink />
-              <DetailItem label="RERA Certificate" value={flat.reraCertificateUrl} isLink />
-              <DetailList label="KYC Docs" values={list(flat.kycDocsUrls)} />
-              <DetailItem label="Snag / Defect List" value={flat.snagListUrl} isLink />
-              <DetailItem label="Handover Checklist" value={flat.handoverChecklistUrl} isLink />
-              <DetailList label="Other Documents" values={list(flat.otherDocuments)} />
+            <div className="mt-4 divide-y divide-gray-100">
+              {(
+                [
+                  { label: 'Sale Agreement',    category: DocumentCategory.AGREEMENT },
+                  { label: 'Allotment Letter',  category: DocumentCategory.OTHER },
+                  { label: 'Possession Letter', category: DocumentCategory.POSSESSION_LETTER },
+                  { label: 'Payment Plan',      category: DocumentCategory.OTHER },
+                  { label: 'NOC / No Dues',     category: DocumentCategory.NOC },
+                  { label: 'RERA Certificate',  category: DocumentCategory.OTHER },
+                  { label: 'Snag / Defect List',category: DocumentCategory.OTHER },
+                  { label: 'Handover Checklist',category: DocumentCategory.OTHER },
+                ] as { label: string; category: DocumentCategory }[]
+              ).map(({ label, category }) => (
+                <DocRow
+                  key={label}
+                  label={label}
+                  category={category}
+                  docs={flatDocs}
+                  uploading={docUploading === label}
+                  onUpload={(file) => handleDocUpload(label, category, file)}
+                  onDelete={async (docId) => {
+                    await documentsService.remove(docId);
+                    const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
+                    setFlatDocs(updated);
+                  }}
+                />
+              ))}
+            </div>
+            <div className="mt-4 border-t pt-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Other Documents</p>
+              <DocUploadOther
+                flatId={flat.id}
+                customerId={flat.customerId || undefined}
+                bookingId={flat.bookingId || undefined}
+                docs={flatDocs.filter((d) =>
+                  !['Sale Agreement','Allotment Letter','Possession Letter','Payment Plan',
+                     'NOC / No Dues','RERA Certificate','Snag / Defect List','Handover Checklist'].includes(d.name)
+                )}
+                onUpload={async (file, name) => { await handleDocUpload(name, DocumentCategory.OTHER, file); }}
+                onDelete={async (docId) => {
+                  await documentsService.remove(docId);
+                  const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
+                  setFlatDocs(updated);
+                }}
+                uploading={docUploading !== null && !['Sale Agreement','Allotment Letter','Possession Letter','Payment Plan',
+                  'NOC / No Dues','RERA Certificate','Snag / Defect List','Handover Checklist'].includes(docUploading)}
+              />
             </div>
           </section>
 
@@ -560,7 +634,175 @@ export default function FlatDetailPage() {
           </div>
 
           <div className="lg:col-span-2 space-y-6">
+            {/* ── Payment Schedule ── */}
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Payment Schedule</h2>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {paymentPlan
+                      ? `${paymentPlan.milestones?.length ?? 0} milestones · ${formatCurrency(paymentPlan.totalAmount)}`
+                      : 'No payment plan linked yet.'}
+                  </p>
+                </div>
+                {paymentPlan && (
+                  <button
+                    onClick={() => router.push(`/payment-plans/${paymentPlan.id}`)}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                    Full Plan
+                  </button>
+                )}
+              </header>
+              <div className="mt-4">
+                {!paymentPlan ? (
+                  flat.bookingId ? (
+                    <button
+                      onClick={() => router.push(`/payment-plans/new?bookingId=${flat.bookingId}`)}
+                      className="inline-flex items-center gap-2 rounded-full border border-dashed border-gray-300 px-4 py-2 text-sm font-semibold text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Create Payment Plan
+                    </button>
+                  ) : (
+                    <p className="text-sm text-gray-500">Assign a booking to this flat to create a payment plan.</p>
+                  )
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 text-xs uppercase tracking-wide text-gray-500">
+                          <th className="pb-2 text-left font-semibold">#</th>
+                          <th className="pb-2 text-left font-semibold">Milestone</th>
+                          <th className="pb-2 text-right font-semibold">Amount</th>
+                          <th className="pb-2 text-center font-semibold">Status</th>
+                          <th className="pb-2 text-center font-semibold">Demand</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {(paymentPlan.milestones || []).map((m) => {
+                          const statusColors: Record<string, string> = {
+                            PAID: 'bg-emerald-100 text-emerald-700',
+                            TRIGGERED: 'bg-blue-100 text-blue-700',
+                            OVERDUE: 'bg-red-100 text-red-700',
+                            PENDING: 'bg-gray-100 text-gray-600',
+                          };
+                          return (
+                            <tr key={m.sequence} className="hover:bg-gray-50/50">
+                              <td className="py-2 text-gray-400">{m.sequence}</td>
+                              <td className="py-2 text-gray-800 font-medium max-w-[140px]">
+                                <span className="line-clamp-2">{m.name}</span>
+                                {m.dueDate && (
+                                  <span className="block text-xs text-gray-400 mt-0.5">
+                                    Due {new Date(m.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 text-right font-semibold tabular-nums">{formatCurrency(m.amount)}</td>
+                              <td className="py-2 text-center">
+                                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[m.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                  {m.status}
+                                </span>
+                              </td>
+                              <td className="py-2 text-center">
+                                {m.demandDraftId ? (
+                                  <button
+                                    onClick={() => router.push(`/demand-drafts/${m.demandDraftId}`)}
+                                    className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    View
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-gray-400">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t border-gray-200">
+                          <td colSpan={2} className="pt-3 text-xs font-semibold uppercase text-gray-500">Total</td>
+                          <td className="pt-3 text-right font-bold tabular-nums" style={{ color: brandPalette.primary }}>
+                            {formatCurrency(paymentPlan.totalAmount)}
+                          </td>
+                          <td colSpan={2} className="pt-3 text-right text-xs text-gray-500">
+                            Paid {formatCurrency(paymentPlan.paidAmount)} · Bal {formatCurrency(paymentPlan.balanceAmount)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* ── Demand Drafts (read-only list) ── */}
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
+              <header className="flex items-center justify-between border-b border-gray-100 pb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">Demand Drafts</h2>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Drafts generated from the payment plan milestones.
+                  </p>
+                </div>
+                <button
+                  onClick={() => router.push('/demand-drafts')}
+                  className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900"
+                >
+                  <ChevronRight className="h-3 w-3" />
+                  All Drafts
+                </button>
+              </header>
+              <div className="mt-4 space-y-2">
+                {draftLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading drafts…
+                  </div>
+                ) : drafts.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-4 py-5 text-center text-sm text-gray-500">
+                    No demand drafts yet. Generate one from the payment plan.
+                  </div>
+                ) : (
+                  drafts.map((draft) => {
+                    const statusStyle: Record<string, string> = {
+                      DRAFT: 'bg-gray-100 text-gray-600',
+                      READY: 'bg-blue-100 text-blue-700',
+                      SENT: 'bg-emerald-100 text-emerald-700',
+                    };
+                    return (
+                      <div
+                        key={draft.id}
+                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => router.push(`/demand-drafts/${draft.id}`)}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-gray-900">
+                            {(draft as any).title || (draft as any).milestoneId || 'Demand Draft'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatCurrency(draft.amount ?? 0)}
+                            {draft.dueDate ? ` · Due ${new Date(draft.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}` : ''}
+                          </p>
+                        </div>
+                        <div className="ml-3 flex items-center gap-2 flex-shrink-0">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusStyle[draft.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                            {draft.status}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+
+            {/* ── old section start placeholder (now replaced) ── */}
+            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm hidden">
               <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Demand Drafts</h2>
                 <p className="mt-1 text-sm text-gray-600">Generate, edit, and mark demand drafts for this flat.</p>
@@ -873,21 +1115,60 @@ export default function FlatDetailPage() {
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Documents & Compliance</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  {flatDocs.length > 0 ? `${flatDocs.length} document${flatDocs.length === 1 ? '' : 's'} uploaded` : 'Click Upload next to each item to attach files.'}
+                </p>
               </header>
-              <div className="mt-4 space-y-3">
-                <DetailItem label="Sale Agreement" value={flat.saleAgreementUrl} isLink />
-                <DetailItem label="Allotment Letter" value={flat.allotmentLetterUrl} isLink />
-                <DetailItem label="Possession Letter" value={flat.possessionLetterUrl} isLink />
-                <DetailItem label="Payment Plan" value={flat.paymentPlanUrl} isLink />
-                <DetailList label="Registration Receipts" values={list(flat.registrationReceiptUrls)} />
-                <DetailList label="Payment Receipts" values={list(flat.paymentReceiptUrls)} />
-                <DetailList label="Demand Letters" values={list(flat.demandLetterUrls)} />
-                <DetailItem label="NOC / No Dues" value={flat.nocUrl} isLink />
-                <DetailItem label="RERA Certificate" value={flat.reraCertificateUrl} isLink />
-                <DetailList label="KYC Docs" values={list(flat.kycDocsUrls)} />
-                <DetailItem label="Snag / Defect List" value={flat.snagListUrl} isLink />
-                <DetailItem label="Handover Checklist" value={flat.handoverChecklistUrl} isLink />
-                <DetailList label="Other Documents" values={list(flat.otherDocuments)} />
+              <div className="mt-4 divide-y divide-gray-100">
+                {(
+                  [
+                    { label: 'Sale Agreement',    category: DocumentCategory.AGREEMENT },
+                    { label: 'Allotment Letter',  category: DocumentCategory.OTHER },
+                    { label: 'Possession Letter', category: DocumentCategory.POSSESSION_LETTER },
+                    { label: 'Payment Plan',      category: DocumentCategory.OTHER },
+                    { label: 'NOC / No Dues',     category: DocumentCategory.NOC },
+                    { label: 'RERA Certificate',  category: DocumentCategory.OTHER },
+                    { label: 'Snag / Defect List',category: DocumentCategory.OTHER },
+                    { label: 'Handover Checklist',category: DocumentCategory.OTHER },
+                  ] as { label: string; category: DocumentCategory }[]
+                ).map(({ label, category }) => (
+                  <DocRow
+                    key={label}
+                    label={label}
+                    category={category}
+                    docs={flatDocs}
+                    uploading={docUploading === label}
+                    onUpload={(file) => handleDocUpload(label, category, file)}
+                    onDelete={async (docId) => {
+                      await documentsService.remove(docId);
+                      const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
+                      setFlatDocs(updated);
+                    }}
+                  />
+                ))}
+              </div>
+              {/* Other / additional uploads */}
+              <div className="mt-4 border-t pt-4">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Other Documents</p>
+                <DocUploadOther
+                  flatId={flat.id}
+                  customerId={flat.customerId || undefined}
+                  bookingId={flat.bookingId || undefined}
+                  docs={flatDocs.filter((d) =>
+                    !['Sale Agreement','Allotment Letter','Possession Letter','Payment Plan',
+                       'NOC / No Dues','RERA Certificate','Snag / Defect List','Handover Checklist'].includes(d.name)
+                  )}
+                  onUpload={async (file, name) => {
+                    await handleDocUpload(name, DocumentCategory.OTHER, file);
+                  }}
+                  onDelete={async (docId) => {
+                    await documentsService.remove(docId);
+                    const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
+                    setFlatDocs(updated);
+                  }}
+                  uploading={docUploading !== null && !['Sale Agreement','Allotment Letter','Possession Letter','Payment Plan',
+                    'NOC / No Dues','RERA Certificate','Snag / Defect List','Handover Checklist'].includes(docUploading)}
+                />
               </div>
             </section>
 
@@ -931,6 +1212,183 @@ export default function FlatDetailPage() {
   );
 }
 
+// ── Inline document row with upload ────────────────────────────────────────
+function DocRow({
+  label,
+  docs,
+  uploading,
+  onUpload,
+  onDelete,
+}: {
+  label: string;
+  category: DocumentCategory;
+  docs: ErpDocument[];
+  uploading: boolean;
+  onUpload: (file: File) => void;
+  onDelete: (docId: string) => Promise<void>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const matching = docs.filter((d) => d.name === label);
+
+  return (
+    <div className="flex items-start justify-between gap-3 py-3">
+      <div className="flex min-w-0 flex-1 items-start gap-2">
+        {matching.length > 0 ? (
+          <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
+        ) : (
+          <div className="mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 border-gray-300" />
+        )}
+        <div className="min-w-0">
+          <span className="text-sm font-medium text-gray-800">{label}</span>
+          {matching.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-2">
+              {matching.map((doc) => (
+                <div key={doc.id} className="flex items-center gap-1">
+                  <a
+                    href={doc.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {doc.fileName || 'View file'}
+                  </a>
+                  <button
+                    onClick={() => onDelete(doc.id)}
+                    className="text-xs text-red-400 hover:text-red-600 ml-1"
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-shrink-0 items-center gap-2">
+        {matching.length === 0 && (
+          <span className="text-xs text-gray-400">Not uploaded</span>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUpload(f);
+            e.target.value = '';
+          }}
+        />
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:text-gray-900 disabled:opacity-50"
+        >
+          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+          {matching.length > 0 ? 'Replace' : 'Upload'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Other documents upload ──────────────────────────────────────────────────
+function DocUploadOther({
+  docs,
+  uploading,
+  onUpload,
+  onDelete,
+}: {
+  flatId: string;
+  customerId?: string;
+  bookingId?: string;
+  docs: ErpDocument[];
+  uploading: boolean;
+  onUpload: (file: File, name: string) => Promise<void>;
+  onDelete: (docId: string) => Promise<void>;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [docName, setDocName] = useState('');
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) {
+      setPendingFile(f);
+      setDocName(f.name.replace(/\.[^.]+$/, ''));
+    }
+    e.target.value = '';
+  };
+
+  const handleConfirm = async () => {
+    if (!pendingFile || !docName.trim()) return;
+    await onUpload(pendingFile, docName.trim());
+    setPendingFile(null);
+    setDocName('');
+  };
+
+  return (
+    <div className="space-y-3">
+      {docs.map((doc) => (
+        <div key={doc.id} className="flex items-center justify-between text-sm">
+          <a
+            href={doc.fileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            {doc.name || doc.fileName}
+          </a>
+          <button
+            onClick={() => onDelete(doc.id)}
+            className="text-xs text-red-400 hover:text-red-600"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      {pendingFile ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={docName}
+            onChange={(e) => setDocName(e.target.value)}
+            placeholder="Document name…"
+            className="flex-1 rounded-lg border px-3 py-1.5 text-sm"
+          />
+          <button
+            onClick={handleConfirm}
+            disabled={uploading || !docName.trim()}
+            className="rounded-full bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+          </button>
+          <button
+            onClick={() => { setPendingFile(null); setDocName(''); }}
+            className="rounded-full border px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <>
+          <input ref={inputRef} type="file" className="hidden" onChange={handleFileSelect} />
+          <button
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex items-center gap-2 rounded-full border border-dashed border-gray-300 px-4 py-2 text-xs font-semibold text-gray-500 hover:border-gray-400 hover:text-gray-700"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Upload Other Document
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Detail helpers ──────────────────────────────────────────────────────────
 function DetailItem({ label, value, isLink }: { label: string; value: React.ReactNode; isLink?: boolean }) {
   return (
     <div className="space-y-1 text-sm">

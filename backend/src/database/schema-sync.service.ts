@@ -39,6 +39,7 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('accounting', (qr) => this.ensureAccountingSchema(qr));
       await runIsolated('vendor/purchase', (qr) => this.ensureVendorAndPurchaseSchema(qr));
       await runIsolated('marketing', (qr) => this.ensureMarketingSchema(qr));
+      await runIsolated('documents', (qr) => this.ensureDocumentsSchema(qr));
     } finally {
       await queryRunner.release();
     }
@@ -440,5 +441,41 @@ export class SchemaSyncService implements OnModuleInit {
       }
       // If neither column exists the old table has an unknown schema; skip migration silently.
     }
+  }
+
+  // ── Documents table ─────────────────────────────────────────────────────────
+  private async ensureDocumentsSchema(queryRunner: QueryRunner) {
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS documents (
+        id            UUID          PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name          VARCHAR(255)  NOT NULL,
+        category      VARCHAR(50)   NOT NULL DEFAULT 'OTHER',
+        entity_type   VARCHAR(50)   NOT NULL,
+        entity_id     UUID          NOT NULL,
+        customer_id   UUID          NULL,
+        booking_id    UUID          NULL,
+        file_url      TEXT          NOT NULL,
+        file_name     VARCHAR(255)  NOT NULL,
+        mime_type     VARCHAR(100)  NULL,
+        file_size     BIGINT        NULL,
+        notes         TEXT          NULL,
+        uploaded_by   UUID          NULL,
+        created_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_documents_entity
+        ON documents (entity_type, entity_id);
+    `);
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_documents_customer
+        ON documents (customer_id) WHERE customer_id IS NOT NULL;
+    `);
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_documents_booking
+        ON documents (booking_id) WHERE booking_id IS NOT NULL;
+    `);
   }
 }

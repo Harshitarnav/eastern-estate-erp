@@ -10,4 +10,5 @@ export declare class SchemaSyncService implements OnModuleInit {
     private ensureVendorAndPurchaseSchema;
     private ensureVendorColumns;
     private ensureMarketingSchema;
+    private ensureDocumentsSchema;
 }
