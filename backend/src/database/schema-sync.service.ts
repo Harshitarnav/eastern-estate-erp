@@ -41,7 +41,8 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('marketing', (qr) => this.ensureMarketingSchema(qr));
       await runIsolated('documents', (qr) => this.ensureDocumentsSchema(qr));
       await runIsolated('company_settings', (qr) => this.ensureCompanySettingsSchema(qr));
-      await runIsolated('customers_full_name', (qr) => this.ensureCustomersFullNameColumn(qr));
+      await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
+      await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
     } finally {
       await queryRunner.release();
     }
@@ -534,36 +535,191 @@ export class SchemaSyncService implements OnModuleInit {
   }
 
   /**
-   * Ensures the customers table has a full_name column.
-   * The production DB was created with first_name / last_name columns; the
-   * entity was later refactored to use full_name.  This migration:
-   *   1. Adds full_name VARCHAR if it doesn't exist.
-   *   2. Back-fills it from first_name + ' ' + last_name where full_name is empty.
+   * Comprehensive customers table schema migration.
+   * The production DB was created from an older entity definition.
+   * This migration safely adds ALL columns the current Customer entity expects,
+   * preserving every existing row and copying data from old column names where applicable.
+   * Safe to run on every boot — all statements use ADD COLUMN IF NOT EXISTS.
    */
-  private async ensureCustomersFullNameColumn(queryRunner: QueryRunner) {
-    // Add full_name column if missing
+  private async ensureCustomersSchema(queryRunner: QueryRunner) {
+    // ── 1. Core identity columns ─────────────────────────────────────────────
     await queryRunner.query(`
       ALTER TABLE customers
-        ADD COLUMN IF NOT EXISTS full_name VARCHAR NULL;
+        ADD COLUMN IF NOT EXISTS customer_code VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS full_name     VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS email         VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS phone_number  VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS alternate_phone VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS date_of_birth DATE,
+        ADD COLUMN IF NOT EXISTS gender        VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS occupation    VARCHAR(100);
     `);
 
-    // Back-fill from first_name / last_name if those columns still exist
-    // and full_name is not yet populated — safe to run repeatedly.
+    // ── 2. Company / address columns ──────────────────────────────────────────
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS company_name  VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS address_line1 TEXT,
+        ADD COLUMN IF NOT EXISTS address_line2 TEXT,
+        ADD COLUMN IF NOT EXISTS city          VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS state         VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS pincode       VARCHAR(10),
+        ADD COLUMN IF NOT EXISTS country       VARCHAR(100) DEFAULT 'India';
+    `);
+
+    // ── 3. Legal / KYC columns ────────────────────────────────────────────────
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS pan_number    VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS aadhar_number VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS customer_type VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS kyc_status    VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS kyc_documents JSONB;
+    `);
+
+    // ── 4. CRM / metadata columns ─────────────────────────────────────────────
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS notes         TEXT,
+        ADD COLUMN IF NOT EXISTS metadata      JSONB,
+        ADD COLUMN IF NOT EXISTS requirement_type VARCHAR,
+        ADD COLUMN IF NOT EXISTS property_preference VARCHAR,
+        ADD COLUMN IF NOT EXISTS tentative_purchase_timeframe VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS lead_source   VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS assigned_sales_person VARCHAR(255);
+    `);
+
+    // ── 5. Financial summary columns (read-only aggregates) ───────────────────
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS credit_limit        DECIMAL(15,2),
+        ADD COLUMN IF NOT EXISTS outstanding_balance DECIMAL(15,2),
+        ADD COLUMN IF NOT EXISTS total_bookings      INTEGER,
+        ADD COLUMN IF NOT EXISTS total_purchases     DECIMAL(15,2);
+    `);
+
+    // ── 6. Status column ─────────────────────────────────────────────────────
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+    `);
+
+    // ── 7. Data migration: back-fill full_name from first_name / last_name ────
     await queryRunner.query(`
       DO $$
       BEGIN
         IF EXISTS (
           SELECT 1 FROM information_schema.columns
-           WHERE table_name = 'customers'
-             AND column_name = 'first_name'
+           WHERE table_name = 'customers' AND column_name = 'first_name'
         ) THEN
           UPDATE customers
              SET full_name = TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,''))
            WHERE (full_name IS NULL OR full_name = '')
              AND (first_name IS NOT NULL OR last_name IS NOT NULL);
         END IF;
-      END;
-      $$;
+      END $$;
     `);
+
+    // ── 8. Data migration: back-fill phone_number from phone ─────────────────
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'phone'
+        ) THEN
+          UPDATE customers
+             SET phone_number = phone
+           WHERE phone_number IS NULL AND phone IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    // ── 9. Data migration: back-fill address_line1 from address ───────────────
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'address'
+        ) THEN
+          UPDATE customers
+             SET address_line1 = address
+           WHERE address_line1 IS NULL AND address IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    // ── 10. Ensure customer_code is populated for legacy rows ─────────────────
+    await queryRunner.query(`
+      UPDATE customers
+         SET customer_code = 'CUST-' || SUBSTRING(id::text, 1, 8)
+       WHERE customer_code IS NULL;
+    `);
+
+    // ── 11. Ensure full_name is populated (fallback: use email prefix) ─────────
+    await queryRunner.query(`
+      UPDATE customers
+         SET full_name = COALESCE(
+               NULLIF(TRIM(full_name), ''),
+               SPLIT_PART(email, '@', 1),
+               'Customer'
+             )
+       WHERE full_name IS NULL OR full_name = '';
+    `);
+
+    this.logger.log('Customers schema ensured — all columns up to date');
+  }
+
+  /**
+   * Ensures the payments table has all columns the current Payment entity expects.
+   * Handles column renames from older versions of the entity.
+   */
+  private async ensurePaymentsSchema(queryRunner: QueryRunner) {
+    // Core columns that may be missing in older prod DBs
+    await queryRunner.query(`
+      ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS payment_number   VARCHAR UNIQUE,
+        ADD COLUMN IF NOT EXISTS payment_type     VARCHAR,
+        ADD COLUMN IF NOT EXISTS payment_mode     VARCHAR,
+        ADD COLUMN IF NOT EXISTS bank_name        VARCHAR,
+        ADD COLUMN IF NOT EXISTS transaction_id   VARCHAR,
+        ADD COLUMN IF NOT EXISTS cheque_number    VARCHAR,
+        ADD COLUMN IF NOT EXISTS cheque_date      DATE,
+        ADD COLUMN IF NOT EXISTS utr_number       VARCHAR,
+        ADD COLUMN IF NOT EXISTS payment_status   VARCHAR DEFAULT 'PENDING',
+        ADD COLUMN IF NOT EXISTS receipt_number   VARCHAR,
+        ADD COLUMN IF NOT EXISTS notes            TEXT,
+        ADD COLUMN IF NOT EXISTS milestone_id     UUID,
+        ADD COLUMN IF NOT EXISTS is_active        BOOLEAN DEFAULT TRUE;
+    `);
+
+    // Back-fill payment_type from type if older schema used 'type'
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'payments' AND column_name = 'type'
+        ) THEN
+          UPDATE payments SET payment_type = type WHERE payment_type IS NULL AND type IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    // Back-fill payment_mode from payment_method if older schema used 'payment_method'
+    await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'payments' AND column_name = 'payment_method'
+        ) THEN
+          UPDATE payments SET payment_mode = payment_method WHERE payment_mode IS NULL AND payment_method IS NOT NULL;
+        END IF;
+      END $$;
+    `);
+
+    this.logger.log('Payments schema ensured — all columns up to date');
   }
 }
