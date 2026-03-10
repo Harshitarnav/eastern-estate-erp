@@ -142,7 +142,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
       children: [
         { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
-        { id: 'settings-users',   label: 'User Management', icon: Users, href: '/settings/users' },
+        { id: 'settings-users',   label: 'User Management', icon: Users, href: '/settings/users', superAdminOnly: true },
       ]
     },
   ];
@@ -194,7 +194,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               const hasActiveChild = hasChildren && isChildActive(item.children!.map(c => c.href));
 
               // Filter children based on access
-              const filteredChildren = item.children?.filter(child => canAccess(child.id));
+              const filteredChildren = item.children?.filter(child => {
+                // Super-admin-only items (e.g. User Management)
+                if ((child as any).superAdminOnly && !userRoles.includes('super_admin')) return false;
+                return canAccess(child.id);
+              });
 
               return (
                 <div key={item.id}>

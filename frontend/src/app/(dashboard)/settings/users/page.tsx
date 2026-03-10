@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Users, Plus, Search, Edit2, Power, Trash2, X,
-  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw,
+  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import {
   Role,
   CreateUserDto,
 } from '@/services/users.service';
+import { useAuthStore } from '@/store/authStore';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -175,6 +177,7 @@ function UserModal({
                     value={form.password}
                     onChange={e => set('password')(e.target.value)}
                     placeholder="Minimum 8 characters"
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -192,6 +195,7 @@ function UserModal({
                   value={form.confirmPwd}
                   onChange={e => set('confirmPwd')(e.target.value)}
                   placeholder="Repeat password"
+                  autoComplete="new-password"
                 />
               </div>
             </>
@@ -218,6 +222,7 @@ function UserModal({
                   onChange={e => set('email')(e.target.value)}
                   placeholder="arnav@easternestate.in"
                   disabled={!isCreate}
+                  autoComplete="off"
                 />
                 {!isCreate && <p className="text-xs text-muted-foreground">Email cannot be changed after creation.</p>}
               </div>
@@ -228,6 +233,7 @@ function UserModal({
                     value={form.username}
                     onChange={e => set('username')(e.target.value)}
                     placeholder="Auto-generated from email if left blank"
+                    autoComplete="off"
                   />
                 </div>
               )}
@@ -245,6 +251,7 @@ function UserModal({
                         value={form.password}
                         onChange={e => set('password')(e.target.value)}
                         placeholder="Minimum 8 characters"
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
@@ -262,6 +269,7 @@ function UserModal({
                       value={form.confirmPwd}
                       onChange={e => set('confirmPwd')(e.target.value)}
                       placeholder="Repeat password"
+                      autoComplete="new-password"
                     />
                   </div>
                 </>
@@ -314,6 +322,14 @@ function UserModal({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function UserManagementPage() {
+  const router = useRouter();
+  const { user: currentUser } = useAuthStore();
+
+  // ── Access guard — Super Admin only ────────────────────────────────────────
+  const isSuperAdmin = currentUser?.roles?.some(
+    (r: any) => (typeof r === 'string' ? r : r.name) === 'super_admin',
+  );
+
   const [users, setUsers]         = useState<User[]>([]);
   const [roles, setRoles]         = useState<Role[]>([]);
   const [total, setTotal]         = useState(0);
@@ -325,6 +341,24 @@ export default function UserManagementPage() {
   const [modal, setModal]         = useState<
     { mode: ModalMode; user?: User } | null
   >(null);
+
+  // Block non-super-admins before rendering anything
+  if (currentUser && !isSuperAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
+        <div className="rounded-full bg-red-100 p-4">
+          <Lock className="h-8 w-8 text-[#A8211B]" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-800">Access Restricted</h2>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          User Management is only accessible to Super Admins. Contact your Super Admin to manage user accounts.
+        </p>
+        <Button variant="outline" onClick={() => router.push('/settings')}>
+          Back to Settings
+        </Button>
+      </div>
+    );
+  }
 
   const LIMIT = 20;
 
