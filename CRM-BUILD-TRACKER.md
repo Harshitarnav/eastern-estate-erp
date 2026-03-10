@@ -52,7 +52,7 @@
 
 ---
 
-### 3. 🔲 Money Receipt PDF
+### 3. ✅ Money Receipt PDF
 **What:** Generate a formatted PDF receipt matching the Assotech receipt sample.  
 **Scope:**
 - [ ] Receipt number auto-sequencing (e.g., `4323/00383/25-26`)

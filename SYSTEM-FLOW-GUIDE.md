@@ -185,7 +185,7 @@ A Demand Draft is the official payment demand notice sent to the customer when a
 
 ---
 
-## 6. Receiving a Payment
+## 6. Receiving a Payment & Generating a Money Receipt
 
 ```
 Sidebar: Payments & Plans → Payments
@@ -195,10 +195,27 @@ When a customer actually pays against a demand:
 
 1. Go to **Payments** → **+ New Payment**
 2. Select the **Booking** and the **Customer**.
-3. Enter: Amount Received, Payment Date, Payment Method (Cash / NEFT / Cheque), Reference Number.
-4. Save. A Payment Receipt Number is generated.
+3. Enter: Amount Received, Payment Date, Payment Method (Cash / NEFT / Cheque / UPI), Bank Name, Cheque No / UTR as applicable.
+4. Save. The payment is recorded and a Receipt Number can be assigned.
 
 > The payment plan balance updates automatically once the payment is linked to a milestone.
+
+### Generating a Money Receipt PDF
+
+1. From the **Payments** list, click on a payment to open its detail page.
+2. Click the green **Generate Receipt** button in the top-right.
+3. A dialog opens with:
+   - **Receipt Number** — pre-filled from the stored receipt number if one exists, or you can type one (e.g. `EE/REC/25-26/0001`).
+   - **Narration / Notes** — optional free text (e.g. "Payment received against On-Possession demand for Flat A-101").
+4. Click **Download Receipt PDF**.
+5. A formatted PDF is downloaded containing:
+   - Eastern Estate header with logo
+   - Customer details + Unit details (Property → Tower → Flat)
+   - Payment mode block (method, bank, cheque/UTR details)
+   - Amount table with total
+   - Amount in words (Indian format)
+   - Notes / Narration
+   - Authorised Signatory footer
 
 ---
 
