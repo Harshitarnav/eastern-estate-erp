@@ -51,6 +51,12 @@ export class DemandDraft {
   @Column({ type: 'text', nullable: true })
   content: string | null;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  title: string | null;
+
+  @Column({ name: 'due_date', type: 'timestamp', nullable: true })
+  dueDate: Date | null;
+
   // Optional JSON with placeholders, bank details, etc.
   @Column({ type: 'jsonb', nullable: true })
   metadata: any;

@@ -41,8 +41,10 @@ import {
   X,
   Plus,
   Trash2,
+  FilePlus,
 } from 'lucide-react';
 import { paymentPlansService, FlatPaymentPlan, FlatPaymentMilestone } from '@/services/payment-plans.service';
+import { demandDraftsService } from '@/services/demand-drafts.service';
 import { toast } from 'sonner';
 
 const CONSTRUCTION_PHASES = ['FOUNDATION', 'STRUCTURE', 'MEP', 'FINISHING', 'HANDOVER'] as const;
@@ -75,6 +77,9 @@ export default function PaymentPlanDetailPage() {
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [generatingInvoiceFor, setGeneratingInvoiceFor] = useState<number | null>(null); // milestone sequence
+  // Map of demandDraftId → current status (fetched after load)
+  const [draftStatusMap, setDraftStatusMap] = useState<Record<string, string>>({});
 
   // Editable copies
   const [editedMilestones, setEditedMilestones] = useState<FlatPaymentMilestone[]>([]);
@@ -87,11 +92,33 @@ export default function PaymentPlanDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 
+  const loadDraftStatuses = async (data: FlatPaymentPlan) => {
+    // Collect all milestone demandDraftIds that exist
+    const ids = (data.milestones ?? [])
+      .map(m => m.demandDraftId)
+      .filter((id): id is string => !!id);
+    if (ids.length === 0) return;
+    try {
+      // Fetch each draft in parallel and build a status map
+      const results = await Promise.allSettled(
+        ids.map(id => demandDraftsService.getDemandDraft(id))
+      );
+      const map: Record<string, string> = {};
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled') map[ids[i]] = r.value.status;
+      });
+      setDraftStatusMap(map);
+    } catch {
+      // Non-critical — just skip
+    }
+  };
+
   const loadPlan = async () => {
     try {
       setLoading(true);
       const data = await paymentPlansService.getFlatPaymentPlan(planId);
       setPlan(data);
+      loadDraftStatuses(data);
     } catch (error: any) {
       toast.error('Failed to load payment plan');
       console.error(error);
@@ -135,6 +162,190 @@ export default function PaymentPlanDetailPage() {
       console.error(error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── generate demand invoice for a milestone ────────────────────────────────
+
+  /** Builds a branded HTML demand notice using data already on the page */
+  const buildDraftHtml = (milestone: FlatPaymentMilestone): string => {
+    if (!plan) return '';
+    const customerName = plan.customer?.fullName ?? 'Customer';
+    const propertyName = plan.flat?.property?.name ?? '';
+    const towerName   = plan.flat?.tower?.name ?? '';
+    const flatNumber  = plan.flat?.flatNumber ?? '';
+    const bookingNo   = plan.booking?.bookingNumber ?? '';
+    const today       = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dueDate     = milestone.dueDate
+      ? new Date(milestone.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
+      : '—';
+    const fmt = (n: number) => `₹${Number(n).toLocaleString('en-IN')}`;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; margin: 0; padding: 0; }
+    .page { max-width: 800px; margin: 0 auto; padding: 32px; }
+    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #A8211B; padding-bottom: 16px; margin-bottom: 24px; }
+    .header .company { font-size: 22px; font-weight: 700; color: #7B1E12; }
+    .header .sub { font-size: 12px; color: #666; margin-top: 2px; }
+    .title { text-align: center; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #A8211B; margin-bottom: 24px; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+    .meta-item label { font-size: 11px; color: #666; text-transform: uppercase; }
+    .meta-item .val { font-weight: 600; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    th { background: #A8211B; color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; }
+    td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+    tr.total td { font-weight: 700; background: #fef9f0; }
+    .note { background: #fef3cd; border-left: 4px solid #F2C94C; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 12px; }
+    .footer { border-top: 1px solid #eee; padding-top: 16px; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
+    .sign-block { text-align: right; }
+    .sign-block .line { margin-top: 40px; border-top: 1px solid #999; width: 180px; display: inline-block; }
+    .sign-block p { margin: 4px 0; font-size: 11px; color: #444; }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="company">Eastern Estate</div>
+      <div class="sub">Construction &amp; Development</div>
+    </div>
+    <div style="text-align:right; font-size:11px; color:#666;">
+      <div>Date: ${today}</div>
+      ${bookingNo ? `<div>Booking No: ${bookingNo}</div>` : ''}
+    </div>
+  </div>
+
+  <div class="title">Demand Notice</div>
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <label>To</label>
+      <div class="val">${customerName}</div>
+    </div>
+    <div class="meta-item">
+      <label>Unit</label>
+      <div class="val">${[propertyName, towerName, flatNumber].filter(Boolean).join(' › ')}</div>
+    </div>
+    <div class="meta-item">
+      <label>Milestone</label>
+      <div class="val">${milestone.name}</div>
+    </div>
+    ${milestone.constructionPhase ? `
+    <div class="meta-item">
+      <label>Construction Phase</label>
+      <div class="val">${milestone.constructionPhase}${milestone.phasePercentage != null ? ` (${milestone.phasePercentage}%)` : ''}</div>
+    </div>` : ''}
+  </div>
+
+  <p>Dear <strong>${customerName}</strong>,</p>
+  <p>
+    As per your registered payment plan, the construction of your unit has reached the
+    <strong>${milestone.name}</strong> milestone. The following installment is now due.
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>Description</th><th style="text-align:right">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${milestone.sequence}</td>
+        <td>${milestone.name}${milestone.description ? ` – ${milestone.description}` : ''}</td>
+        <td style="text-align:right">${fmt(milestone.amount)}</td>
+      </tr>
+      <tr class="total">
+        <td colspan="2" style="text-align:right">Amount Payable</td>
+        <td style="text-align:right">${fmt(milestone.amount)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="meta-grid" style="margin-bottom:16px;">
+    <div class="meta-item">
+      <label>Total Property Value</label>
+      <div class="val">${fmt(plan.totalAmount)}</div>
+    </div>
+    <div class="meta-item">
+      <label>Total Paid So Far</label>
+      <div class="val">${fmt(plan.paidAmount)}</div>
+    </div>
+    <div class="meta-item">
+      <label>Current Installment</label>
+      <div class="val" style="color:#A8211B;">${fmt(milestone.amount)}</div>
+    </div>
+    <div class="meta-item">
+      <label>Due Date</label>
+      <div class="val">${dueDate}</div>
+    </div>
+  </div>
+
+  <div class="note">
+    ⚠ Please make the payment on or before <strong>${dueDate}</strong> to avoid any delays.
+    For payment instructions or queries, please contact our accounts department.
+  </div>
+
+  <div class="footer">
+    <div>Eastern Estate Construction &amp; Development</div>
+    <div class="sign-block">
+      <div class="line"></div>
+      <p>Authorised Signatory</p>
+      <p>Accounts Department</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>`;
+  };
+
+  const generateInvoice = async (milestone: FlatPaymentMilestone) => {
+    if (!plan) return;
+    try {
+      setGeneratingInvoiceFor(milestone.sequence);
+      const flatNumber  = plan.flat?.flatNumber ?? '';
+      const towerName   = plan.flat?.tower?.name ?? '';
+      const propertyName = plan.flat?.property?.name ?? '';
+      const customerName = plan.customer?.fullName ?? '';
+
+      // Build a human-readable title: "A-101 / Tower A - On Possession"
+      const titleParts = [flatNumber, towerName].filter(Boolean).join(' / ');
+      const draftTitle = titleParts
+        ? `${titleParts} – ${milestone.name}`
+        : milestone.name;
+
+      const draft = await demandDraftsService.create({
+        flatId: plan.flatId,
+        customerId: plan.customerId,
+        bookingId: plan.bookingId,
+        amount: milestone.amount,
+        title: draftTitle,
+        dueDate: milestone.dueDate ?? undefined,
+        status: 'DRAFT',
+        content: buildDraftHtml(milestone),
+        metadata: {
+          milestoneName: milestone.name,
+          milestoneSequence: milestone.sequence,
+          constructionPhase: milestone.constructionPhase,
+          phasePercentage: milestone.phasePercentage,
+          flatPaymentPlanId: plan.id,
+          flatNumber,
+          towerName,
+          propertyName,
+          customerName,
+        },
+      });
+      toast.success(`Demand invoice created for "${milestone.name}"`);
+      router.push(`/demand-drafts/${draft.id}`);
+    } catch (err: any) {
+      toast.error(err?.userMessage || 'Failed to create demand invoice');
+      console.error(err);
+    } finally {
+      setGeneratingInvoiceFor(null);
     }
   };
 
@@ -449,6 +660,7 @@ export default function PaymentPlanDetailPage() {
                   <TableHead className="w-36">Due Date</TableHead>
                   <TableHead className="w-36">Status</TableHead>
                   {!editMode && <TableHead className="w-32">Completed At</TableHead>}
+                  {!editMode && <TableHead className="w-40">Invoice</TableHead>}
                   {editMode && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -601,6 +813,55 @@ export default function PaymentPlanDetailPage() {
                         </TableCell>
                       )}
 
+                      {/* Generate / View Invoice (read mode only) */}
+                      {!editMode && (
+                        <TableCell>
+                          {milestone.demandDraftId ? (
+                            <div className="flex flex-col items-start gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/demand-drafts/${milestone.demandDraftId}`)}
+                                className="h-7 text-xs"
+                              >
+                                <Eye className="mr-1 h-3 w-3" />
+                                View Invoice
+                              </Button>
+                              {draftStatusMap[milestone.demandDraftId] && (
+                                <Badge
+                                  className={`text-[10px] h-4 px-1.5 ${
+                                    draftStatusMap[milestone.demandDraftId] === 'SENT'
+                                      ? 'bg-green-600'
+                                      : draftStatusMap[milestone.demandDraftId] === 'READY'
+                                      ? 'bg-blue-500'
+                                      : draftStatusMap[milestone.demandDraftId] === 'DRAFT'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'
+                                  }`}
+                                >
+                                  {draftStatusMap[milestone.demandDraftId]}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={generatingInvoiceFor === milestone.sequence}
+                              onClick={() => generateInvoice(milestone)}
+                              className="h-7 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                            >
+                              {generatingInvoiceFor === milestone.sequence ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : (
+                                <FilePlus className="mr-1 h-3 w-3" />
+                              )}
+                              Gen. Invoice
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
+
                       {/* Remove row (edit mode only) */}
                       {editMode && (
                         <TableCell>
@@ -619,7 +880,7 @@ export default function PaymentPlanDetailPage() {
 
                 {displayMilestones.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={editMode ? 8 : 8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={editMode ? 8 : 9} className="text-center text-muted-foreground py-8">
                       {editMode ? 'No milestones yet — click "Add Milestone" to start.' : 'No milestones found.'}
                     </TableCell>
                   </TableRow>

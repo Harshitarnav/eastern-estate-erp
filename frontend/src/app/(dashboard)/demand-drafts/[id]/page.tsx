@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Card,
@@ -11,9 +11,26 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   ArrowLeft,
   FileText,
@@ -23,12 +40,21 @@ import {
   Save,
   CheckCircle,
   Loader2,
-  Eye,
   X,
+  Trash2,
+  Info,
 } from 'lucide-react';
 import { demandDraftsService, DemandDraft } from '@/services/demand-drafts.service';
 import { toast } from 'sonner';
 
+const STATUS_COLORS: Record<string, string> = {
+  DRAFT: 'bg-yellow-500',
+  READY: 'bg-blue-500',
+  SENT: 'bg-green-600',
+  PAID: 'bg-emerald-600',
+  CANCELLED: 'bg-red-500',
+  FAILED: 'bg-red-700',
+};
 
 export default function DemandDraftDetailPage() {
   const router = useRouter();
@@ -39,31 +65,40 @@ export default function DemandDraftDetailPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState('');
+
+  // Edit field state
   const [editedTitle, setEditedTitle] = useState('');
   const [editedAmount, setEditedAmount] = useState('');
   const [editedDueDate, setEditedDueDate] = useState('');
-  const [previewMode, setPreviewMode] = useState(true);
+
+  // WYSIWYG: the content area is contenteditable — we use a ref to read innerHTML on save
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Dialogs
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (draftId) {
-      loadDraft();
-    }
+    if (draftId) loadDraft();
   }, [draftId]);
+
+  // When entering edit mode, ensure the contenteditable div has the latest HTML
+  useEffect(() => {
+    if (isEditing && contentRef.current && draft?.content) {
+      contentRef.current.innerHTML = draft.content;
+    }
+  }, [isEditing, draft?.content]);
 
   const loadDraft = async () => {
     try {
       setLoading(true);
       const data = await demandDraftsService.getDemandDraft(draftId);
-      // Use type assertion to bypass strict type checking for API response
       setDraft(data as DemandDraft);
-      setEditedContent(data.content || '');
       setEditedTitle(data.title || '');
       setEditedAmount(data.amount?.toString() || '');
-      setEditedDueDate(data.dueDate || '');
+      setEditedDueDate(data.dueDate ? data.dueDate.toString().slice(0, 10) : '');
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to load demand draft');
-      console.error(error);
+      toast.error(error?.userMessage || 'Failed to load demand draft');
     } finally {
       setLoading(false);
     }
@@ -71,21 +106,21 @@ export default function DemandDraftDetailPage() {
 
   const handleSave = async () => {
     if (!draft) return;
-
     try {
       setSaving(true);
+      // Read the edited HTML from the contenteditable div
+      const editedContent = contentRef.current?.innerHTML || draft.content || '';
       await demandDraftsService.updateDemandDraft(draft.id, {
         content: editedContent,
         title: editedTitle,
         amount: parseFloat(editedAmount),
-        dueDate: editedDueDate,
+        dueDate: editedDueDate || null,
       });
-      toast.success('Demand draft updated successfully');
+      toast.success('Demand draft saved');
       setIsEditing(false);
       await loadDraft();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to update demand draft');
-      console.error(error);
+      toast.error(error?.userMessage || 'Failed to save demand draft');
     } finally {
       setSaving(false);
     }
@@ -93,77 +128,76 @@ export default function DemandDraftDetailPage() {
 
   const handleApprove = async () => {
     if (!draft) return;
-
     try {
       setSaving(true);
       await demandDraftsService.approveDemandDraft(draft.id);
-      toast.success('Demand draft approved successfully');
+      toast.success('Draft approved — status is now READY');
       await loadDraft();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to approve demand draft');
-      console.error(error);
+      toast.error(error?.userMessage || 'Failed to approve draft');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSend = async () => {
+  const handleMarkSent = async () => {
     if (!draft) return;
-
     try {
       setSaving(true);
       await demandDraftsService.sendDemandDraft(draft.id);
-      toast.success('Demand draft sent successfully');
+      toast.success('Draft marked as SENT');
+      setSendDialogOpen(false);
       await loadDraft();
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Failed to send demand draft');
-      console.error(error);
+      toast.error(error?.userMessage || 'Failed to mark as sent');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleExport = () => {
-    if (!draft || !draft.content) {
-      toast.error('No content to export');
+  const handleDelete = async () => {
+    if (!draft) return;
+    try {
+      setSaving(true);
+      await demandDraftsService.delete(draft.id);
+      toast.success('Demand draft deleted');
+      router.push('/demand-drafts');
+    } catch (error: any) {
+      toast.error(error?.userMessage || 'Failed to delete draft');
+      setSaving(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!draft?.content) {
+      toast.error('No content to download');
       return;
     }
-
-    // Create a blob with HTML content
     const blob = new Blob([draft.content], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `demand_draft_${draft.id}.html`;
+    const safeName = (draft.title || 'demand-draft').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    a.download = `${safeName}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success('Demand draft exported as HTML');
+    toast.success('Downloaded as HTML — open in browser to print as PDF');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'DRAFT':
-        return 'bg-yellow-500';
-      case 'READY':
-        return 'bg-blue-500';
-      case 'SENT':
-        return 'bg-purple-500';
-      case 'PAID':
-        return 'bg-green-500';
-      case 'CANCELLED':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+  const cancelEdit = () => {
+    setIsEditing(false);
+    if (draft && contentRef.current) {
+      contentRef.current.innerHTML = draft.content || '';
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <div className="text-lg ml-2">Loading demand draft...</div>
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2 text-lg">Loading demand draft…</span>
       </div>
     );
   }
@@ -179,326 +213,331 @@ export default function DemandDraftDetailPage() {
     );
   }
 
+  const canEdit = draft.status === 'DRAFT';
+  const canApprove = draft.status === 'DRAFT';
+  const canSend = draft.status === 'READY';
+  const canDelete = draft.status === 'DRAFT' || draft.status === 'FAILED';
+
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight">
               {draft.title || 'Demand Draft'}
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Draft ID: <span className="font-mono">{draft.id}</span>
-            </p>
+            <p className="text-xs text-muted-foreground font-mono mt-1">{draft.id}</p>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
-          <Badge className={getStatusColor(draft.status)}>
+          <Badge className={STATUS_COLORS[draft.status] ?? 'bg-gray-500'}>
             {draft.status}
           </Badge>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-600 border-red-300 hover:bg-red-50"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-1 h-4 w-4" /> Delete
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Actions Bar */}
+      {/* ── Action Bar ── */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-5">
           <div className="flex flex-wrap gap-3">
-            {!isEditing && (
-              <Button
-                variant="outline"
-                onClick={() => setIsEditing(true)}
-                disabled={draft.status === 'SENT' || draft.status === 'PAID'}
-              >
+            {!isEditing && canEdit && (
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
                 <Edit className="mr-2 h-4 w-4" /> Edit Draft
               </Button>
             )}
 
             {isEditing && (
               <>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="mr-2 h-4 w-4" />
-                  )}
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                   Save Changes
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditedContent(draft.content || '');
-                    setEditedTitle(draft.title || '');
-                    setEditedAmount(draft.amount?.toString() || '');
-                  }}
-                  disabled={saving}
-                >
+                <Button variant="outline" onClick={cancelEdit} disabled={saving}>
                   <X className="mr-2 h-4 w-4" /> Cancel
                 </Button>
               </>
             )}
 
-            {draft.status === 'DRAFT' && !isEditing && (
+            {!isEditing && canApprove && (
               <Button
                 onClick={handleApprove}
                 disabled={saving}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {saving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                )}
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
                 Approve Draft
               </Button>
             )}
 
-            {draft.status === 'READY' && !isEditing && (
+            {!isEditing && canSend && (
               <Button
-                onClick={handleSend}
+                onClick={() => setSendDialogOpen(true)}
                 disabled={saving}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-green-700 hover:bg-green-800"
               >
-                {saving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
-                Send to Customer
+                <Send className="mr-2 h-4 w-4" /> Send to Customer
               </Button>
             )}
 
             {!isEditing && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setPreviewMode(!previewMode)}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  {previewMode ? 'View HTML' : 'View Preview'}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleExport}
-                >
-                  <Download className="mr-2 h-4 w-4" /> Export HTML
-                </Button>
-              </>
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="mr-2 h-4 w-4" /> Download HTML
+              </Button>
             )}
           </div>
+
+          {draft.status === 'SENT' && draft.sentAt && (
+            <p className="text-sm text-green-700 mt-3 flex items-center gap-1">
+              <CheckCircle className="h-4 w-4" />
+              Marked as sent on {new Date(draft.sentAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+            </p>
+          )}
         </CardContent>
       </Card>
 
+      {/* ── Main layout ── */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {isEditing ? (
+
+        {/* ── Content / Editor ── */}
+        <div className="lg:col-span-2 space-y-4">
+
+          {/* Edit fields: title / amount / due date */}
+          {isEditing && (
             <Card>
               <CardHeader>
-                <CardTitle>Edit Demand Draft</CardTitle>
-                <CardDescription>
-                  Modify the content, title, amount, or due date
-                </CardDescription>
+                <CardTitle className="text-base">Draft Details</CardTitle>
+                <CardDescription>Update the title, amount and due date</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-3 space-y-1">
                   <Label htmlFor="title">Title</Label>
                   <Input
                     id="title"
                     value={editedTitle}
-                    onChange={(e) => setEditedTitle(e.target.value)}
-                    placeholder="Payment Demand for Milestone"
+                    onChange={e => setEditedTitle(e.target.value)}
+                    placeholder="e.g. Demand Notice – On Possession"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="amount">Amount (₹)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      value={editedAmount}
-                      onChange={(e) => setEditedAmount(e.target.value)}
-                      placeholder="100000"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dueDate">Due Date</Label>
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      value={editedDueDate ? new Date(editedDueDate).toISOString().split('T')[0] : ''}
-                      onChange={(e) => setEditedDueDate(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="content">HTML Content</Label>
-                  <Textarea
-                    id="content"
-                    value={editedContent}
-                    onChange={(e) => setEditedContent(e.target.value)}
-                    rows={20}
-                    className="font-mono text-sm"
-                    placeholder="<html>...</html>"
+                <div className="space-y-1">
+                  <Label htmlFor="amount">Amount (₹)</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={editedAmount}
+                    onChange={e => setEditedAmount(e.target.value)}
                   />
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Demand Draft Content</CardTitle>
-                <CardDescription>
-                  {previewMode ? 'Preview of the demand draft' : 'Raw HTML content'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {previewMode ? (
-                  <div
-                    className="border rounded-lg p-6 bg-white"
-                    dangerouslySetInnerHTML={{ __html: draft.content || '<p>No content available</p>' }}
+                <div className="space-y-1">
+                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={editedDueDate}
+                    onChange={e => setEditedDueDate(e.target.value)}
                   />
-                ) : (
-                  <pre className="text-xs bg-gray-50 p-4 rounded-lg overflow-x-auto border">
-                    <code>{draft.content || 'No content available'}</code>
-                  </pre>
-                )}
+                </div>
               </CardContent>
             </Card>
           )}
+
+          {/* Preview / WYSIWYG content area */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle className="text-base">
+                  {isEditing ? 'Edit Notice Content' : 'Demand Notice Preview'}
+                </CardTitle>
+                {isEditing && (
+                  <CardDescription className="flex items-center gap-1 mt-1">
+                    <Info className="h-3 w-3" />
+                    Click directly in the document below to edit text. Formatting is preserved.
+                  </CardDescription>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {/* Read mode — render HTML safely, no children */}
+              {!isEditing && draft.content && (
+                <div
+                  className="rounded-lg bg-white min-h-[400px] overflow-auto border p-6"
+                  dangerouslySetInnerHTML={{ __html: draft.content }}
+                />
+              )}
+
+              {/* Read mode — empty state */}
+              {!isEditing && !draft.content && (
+                <div className="rounded-lg bg-white min-h-[400px] overflow-auto border p-6">
+                  <p className="text-muted-foreground italic">No content yet.</p>
+                </div>
+              )}
+
+              {/* Edit mode — contenteditable, populated via useEffect ref */}
+              {isEditing && (
+                <div
+                  ref={contentRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="rounded-lg bg-white min-h-[400px] overflow-auto border-2 border-blue-400 p-6 cursor-text focus:outline-none focus:border-blue-600 transition-all"
+                />
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Details Sidebar */}
+        {/* ── Details Sidebar ── */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Draft Details</CardTitle>
+              <CardTitle className="text-base">Draft Details</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 text-sm">
               <div>
-                <Label className="text-xs text-muted-foreground">Milestone</Label>
-                <div className="font-medium">{draft.milestoneId || 'N/A'}</div>
+                <p className="text-xs text-muted-foreground uppercase">Amount</p>
+                <p className="text-2xl font-bold">₹{Number(draft.amount).toLocaleString('en-IN')}</p>
               </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground">Amount</Label>
-                <div className="text-2xl font-bold">₹{draft.amount?.toLocaleString('en-IN')}</div>
-              </div>
-
               {draft.dueDate && (
                 <div>
-                  <Label className="text-xs text-muted-foreground">Due Date</Label>
-                  <div className="font-medium">
-                    {new Date(draft.dueDate).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </div>
+                  <p className="text-xs text-muted-foreground uppercase">Due Date</p>
+                  <p className="font-medium">
+                    {new Date(draft.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </p>
                 </div>
               )}
-
               <div>
-                <Label className="text-xs text-muted-foreground">Flat ID</Label>
-                <div className="font-mono text-sm">{draft.flatId}</div>
+                <p className="text-xs text-muted-foreground uppercase">Status</p>
+                <Badge className={STATUS_COLORS[draft.status] ?? 'bg-gray-500'}>{draft.status}</Badge>
               </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground">Customer ID</Label>
-                <div className="font-mono text-sm">{draft.customerId}</div>
-              </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground">Auto-Generated</Label>
-                <div>{draft.autoGenerated ? 'Yes' : 'No'}</div>
-              </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground">Requires Review</Label>
-                <div>{draft.requiresReview ? 'Yes' : 'No'}</div>
-              </div>
-
               {draft.generatedAt && (
                 <div>
-                  <Label className="text-xs text-muted-foreground">Generated At</Label>
-                  <div className="text-sm">
-                    {new Date(draft.generatedAt).toLocaleString('en-IN')}
-                  </div>
+                  <p className="text-xs text-muted-foreground uppercase">Created</p>
+                  <p>{new Date(draft.createdAt).toLocaleDateString('en-IN')}</p>
                 </div>
               )}
-
               {draft.reviewedAt && (
                 <div>
-                  <Label className="text-xs text-muted-foreground">Reviewed At</Label>
-                  <div className="text-sm">
-                    {new Date(draft.reviewedAt).toLocaleString('en-IN')}
-                  </div>
+                  <p className="text-xs text-muted-foreground uppercase">Approved</p>
+                  <p>{new Date(draft.reviewedAt).toLocaleDateString('en-IN')}</p>
                 </div>
               )}
-
               {draft.sentAt && (
                 <div>
-                  <Label className="text-xs text-muted-foreground">Sent At</Label>
-                  <div className="text-sm">
-                    {new Date(draft.sentAt).toLocaleString('en-IN')}
-                  </div>
+                  <p className="text-xs text-muted-foreground uppercase">Sent</p>
+                  <p>{new Date(draft.sentAt).toLocaleDateString('en-IN')}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {draft.metadata && (
+          {/* Milestone / booking info from metadata */}
+          {draft.metadata && (draft.metadata.milestoneName || draft.metadata.flatPaymentPlanId) && (
             <Card>
               <CardHeader>
-                <CardTitle>Additional Info</CardTitle>
+                <CardTitle className="text-base">Linked Milestone</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                {draft.metadata.flatNumber && (
+              <CardContent className="space-y-3 text-sm">
+                {draft.metadata.milestoneName && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">Flat Number</Label>
-                    <div className="font-medium">{draft.metadata.flatNumber}</div>
-                  </div>
-                )}
-                {draft.metadata.propertyName && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Property</Label>
-                    <div className="font-medium">{draft.metadata.propertyName}</div>
-                  </div>
-                )}
-                {draft.metadata.towerName && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Tower</Label>
-                    <div className="font-medium">{draft.metadata.towerName}</div>
-                  </div>
-                )}
-                {draft.metadata.customerName && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Customer</Label>
-                    <div className="font-medium">{draft.metadata.customerName}</div>
+                    <p className="text-xs text-muted-foreground uppercase">Milestone</p>
+                    <p className="font-medium">{draft.metadata.milestoneName}</p>
                   </div>
                 )}
                 {draft.metadata.constructionPhase && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">Construction Phase</Label>
-                    <div className="font-medium">{draft.metadata.constructionPhase}</div>
+                    <p className="text-xs text-muted-foreground uppercase">Construction Phase</p>
+                    <p className="font-medium">
+                      {draft.metadata.constructionPhase}
+                      {draft.metadata.phasePercentage != null ? ` · ${draft.metadata.phasePercentage}%` : ''}
+                    </p>
                   </div>
+                )}
+                {draft.metadata.flatPaymentPlanId && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-1"
+                    onClick={() => router.push(`/payment-plans/${draft.metadata.flatPaymentPlanId}`)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Payment Plan
+                  </Button>
                 )}
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+
+      {/* ── Send Dialog ── */}
+      <Dialog open={sendDialogOpen} onOpenChange={setSendDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send to Customer</DialogTitle>
+            <DialogDescription>
+              The system does not send emails automatically yet. Please share this demand
+              notice with the customer manually (email / WhatsApp / post), then click
+              <strong> Mark as Sent</strong> to update the status in the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800 flex gap-2">
+            <Info className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              Download the HTML file, open it in a browser, and use <em>Print → Save as PDF</em> to get
+              a PDF you can attach to an email.
+            </span>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSendDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="outline" onClick={handleDownload}>
+              <Download className="mr-2 h-4 w-4" /> Download Notice
+            </Button>
+            <Button
+              onClick={handleMarkSent}
+              disabled={saving}
+              className="bg-green-700 hover:bg-green-800"
+            >
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4" />}
+              Mark as Sent
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete Confirmation ── */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this demand draft?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The draft will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

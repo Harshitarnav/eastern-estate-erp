@@ -42,6 +42,8 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             id: user.id,
             email: user.email,
             username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
             roles: user.roles,
             permissions: user.roles.flatMap(role => role.permissions),
         };

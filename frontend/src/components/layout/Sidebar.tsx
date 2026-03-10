@@ -7,7 +7,8 @@ import {
   X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
-  Settings, ChevronDown, Target, Database, Table as TableIcon
+  Settings, ChevronDown, Target, Database, Table as TableIcon,
+  FileText
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { hasModuleAccess, isAdminRole } from '@/lib/roles';
@@ -76,6 +77,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       children: [
         { id: 'payments-list', label: 'Payments', icon: DollarSign, href: '/payments' },
         { id: 'payment-plans', label: 'Payment Plans', icon: Calendar, href: '/payment-plans' },
+        { id: 'demand-drafts', label: 'Demand Drafts', icon: FileText, href: '/demand-drafts' },
         { id: 'construction-milestones', label: 'Construction Milestones', icon: Target, href: '/construction-milestones' },
       ]
     },

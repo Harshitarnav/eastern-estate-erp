@@ -58,6 +58,14 @@ __decorate([
     __metadata("design:type", String)
 ], DemandDraft.prototype, "content", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 500, nullable: true }),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "title", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'due_date', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], DemandDraft.prototype, "dueDate", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'jsonb', nullable: true }),
     __metadata("design:type", Object)
 ], DemandDraft.prototype, "metadata", void 0);

@@ -28,6 +28,15 @@
 
 ---
 
+### 1b. ✅ Flow Fixes (Sidebar + Navigation + Invoice Trigger)
+- Demand Drafts added to sidebar under Payments & Plans
+- Demand Drafts listing page created at `/demand-drafts`
+- Booking detail → "View Payment Plan" / "Create Payment Plan" button in Quick Actions
+- Payment Plan milestone rows → "Gen. Invoice" button (creates draft + navigates to it)
+- Roles updated: `demand-drafts` access added for SUPER_ADMIN, ADMIN, SALES_TEAM
+
+---
+
 ### 2. 🔲 Demand Invoice PDF
 **What:** Generate a formatted PDF demand invoice matching the Assotech sample.  
 **Scope:**

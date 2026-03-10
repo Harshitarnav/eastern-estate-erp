@@ -15,8 +15,10 @@ import {
   CheckCircle,
   Clock,
   Loader2,
+  LayoutList,
 } from 'lucide-react';
 import { bookingsService, Booking } from '@/services/bookings.service';
+import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette } from '@/utils/brand';
 
@@ -28,6 +30,7 @@ export default function BookingViewPage() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [paymentPlan, setPaymentPlan] = useState<FlatPaymentPlan | null | undefined>(undefined); // undefined = not yet fetched
 
   useEffect(() => {
     if (bookingId) {
@@ -41,6 +44,13 @@ export default function BookingViewPage() {
       const response = await bookingsService.getBooking(bookingId);
       setBooking(response);
       setError('');
+      // Silently look up the payment plan for this booking
+      try {
+        const plan = await paymentPlansService.getFlatPaymentPlanByBookingId(bookingId);
+        setPaymentPlan(plan);
+      } catch {
+        setPaymentPlan(null);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch booking');
       console.error('Error fetching booking:', err);
@@ -591,6 +601,26 @@ export default function BookingViewPage() {
                 <Edit className="w-4 h-4" />
                 Edit Booking
               </button>
+              {/* Payment Plan shortcut */}
+              {paymentPlan ? (
+                <button
+                  onClick={() => router.push(`/payment-plans/${paymentPlan.id}`)}
+                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                  style={{ borderColor: '#16A34A', color: '#16A34A' }}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  View Payment Plan
+                </button>
+              ) : paymentPlan === null ? (
+                <button
+                  onClick={() => router.push('/payment-plans')}
+                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                  style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  Create Payment Plan
+                </button>
+              ) : null /* still loading */ }
               <button
                 onClick={() => router.push('/bookings')}
                 className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"

@@ -13,6 +13,8 @@ export declare class JwtStrategy extends JwtStrategy_base {
         id: string;
         email: string;
         username: string;
+        firstName: string;
+        lastName: string;
         roles: import("../../modules/users/entities/role.entity").Role[];
         permissions: import("../../modules/users/entities/permission.entity").Permission[];
     }>;
