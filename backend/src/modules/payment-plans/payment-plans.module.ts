@@ -9,6 +9,7 @@ import { DemandDraftTemplateService } from './services/demand-draft-template.ser
 import { PaymentPlanTemplateController } from './controllers/payment-plan-template.controller';
 import { FlatPaymentPlanController } from './controllers/flat-payment-plan.controller';
 import { DemandDraftTemplateController } from './controllers/demand-draft-template.controller';
+import { PaymentPlansSchemaSyncService } from './payment-plans.schema-sync.service';
 import { Flat } from '../flats/entities/flat.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Customer } from '../customers/entities/customer.entity';
@@ -35,6 +36,7 @@ import { Payment } from '../payments/entities/payment.entity';
     PaymentPlanTemplateService,
     FlatPaymentPlanService,
     DemandDraftTemplateService,
+    PaymentPlansSchemaSyncService,
   ],
   exports: [
     PaymentPlanTemplateService,

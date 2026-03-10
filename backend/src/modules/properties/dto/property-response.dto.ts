@@ -42,6 +42,14 @@ export class PropertyResponseDto {
   projectId?: string;
   projectCode?: string;
   projectName?: string;
+  // Project-level legal & bank
+  gstin?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  branch?: string;
+  upiId?: string;
   
   // Calculated fields
   towers?: number;

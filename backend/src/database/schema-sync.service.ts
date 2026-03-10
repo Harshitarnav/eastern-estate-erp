@@ -40,8 +40,61 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('vendor/purchase', (qr) => this.ensureVendorAndPurchaseSchema(qr));
       await runIsolated('marketing', (qr) => this.ensureMarketingSchema(qr));
       await runIsolated('documents', (qr) => this.ensureDocumentsSchema(qr));
+      await runIsolated('company_settings', (qr) => this.ensureCompanySettingsSchema(qr));
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  private async ensureCompanySettingsSchema(queryRunner: QueryRunner) {
+    await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS company_settings (
+        id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        company_name  VARCHAR(255) NOT NULL DEFAULT 'Eastern Estate',
+        tagline       VARCHAR(255) DEFAULT 'Construction & Development',
+        address       TEXT,
+        city          VARCHAR(100),
+        state         VARCHAR(100),
+        pincode       VARCHAR(20),
+        phone         VARCHAR(50),
+        email         VARCHAR(255),
+        website       VARCHAR(255),
+        gstin         VARCHAR(50),
+        rera_number   VARCHAR(100),
+        bank_name     VARCHAR(255),
+        account_name  VARCHAR(255),
+        account_number VARCHAR(100),
+        ifsc_code     VARCHAR(50),
+        branch        VARCHAR(255),
+        upi_id        VARCHAR(255),
+        smtp_host     VARCHAR(255),
+        smtp_port     INTEGER DEFAULT 587,
+        smtp_user     VARCHAR(255),
+        smtp_pass     VARCHAR(255),
+        smtp_from     VARCHAR(255),
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    /* Ensure at least one row always exists (singleton pattern) */
+    await queryRunner.query(`
+      INSERT INTO company_settings (company_name, tagline)
+      SELECT 'Eastern Estate', 'Construction & Development'
+      WHERE NOT EXISTS (SELECT 1 FROM company_settings)
+    `);
+
+    /* Add any new columns that may be missing in older DBs */
+    const newCols = [
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS upi_id VARCHAR(255)`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_host VARCHAR(255)`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_port INTEGER DEFAULT 587`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_user VARCHAR(255)`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_pass VARCHAR(255)`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_from VARCHAR(255)`,
+    ];
+    for (const sql of newCols) {
+      await queryRunner.query(sql);
     }
   }
 

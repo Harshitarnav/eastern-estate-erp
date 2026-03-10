@@ -35,4 +35,11 @@ export declare class CreatePropertyDto {
     isFeatured?: boolean;
     nearbyLandmarks?: string;
     projectId?: string;
+    gstin?: string;
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    branch?: string;
+    upiId?: string;
 }

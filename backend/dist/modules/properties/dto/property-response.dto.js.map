@@ -1,1 +1,1 @@
-{"version":3,"file":"property-response.dto.js","sourceRoot":"","sources":["../../../../src/modules/properties/dto/property-response.dto.ts"],"names":[],"mappings":";;;AAAA,MAAa,mBAAmB;CAqD/B;AArDD,kDAqDC;AAED,MAAa,4BAA4B;CASxC;AATD,oEASC"}
+{"version":3,"file":"property-response.dto.js","sourceRoot":"","sources":["../../../../src/modules/properties/dto/property-response.dto.ts"],"names":[],"mappings":";;;AAAA,MAAa,mBAAmB;CA6D/B;AA7DD,kDA6DC;AAED,MAAa,4BAA4B;CASxC;AATD,oEASC"}

@@ -138,7 +138,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'database-relationships', label: 'Relationships', icon: BarChart3, href: '/database/relationships' },
       ]
     },
-    { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+    {
+      id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
+      children: [
+        { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
+      ]
+    },
   ];
 
   // Filter menu items based on user's role

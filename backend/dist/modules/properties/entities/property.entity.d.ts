@@ -43,6 +43,13 @@ export declare class Property {
     inventoryChecklist: Record<string, boolean> | null;
     dataCompletionPct: number;
     dataCompletenessStatus: DataCompletenessStatus;
+    gstin: string;
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+    ifscCode: string;
+    branch: string;
+    upiId: string;
     projectId: string | null;
     project?: ConstructionProject | null;
     createdBy: string;

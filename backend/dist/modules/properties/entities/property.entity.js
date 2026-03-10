@@ -262,6 +262,34 @@ __decorate([
     __metadata("design:type", String)
 ], Property.prototype, "dataCompletenessStatus", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true, length: 50 }),
+    __metadata("design:type", String)
+], Property.prototype, "gstin", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'bank_name', nullable: true, length: 255 }),
+    __metadata("design:type", String)
+], Property.prototype, "bankName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'account_name', nullable: true, length: 255 }),
+    __metadata("design:type", String)
+], Property.prototype, "accountName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'account_number', nullable: true, length: 100 }),
+    __metadata("design:type", String)
+], Property.prototype, "accountNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'ifsc_code', nullable: true, length: 50 }),
+    __metadata("design:type", String)
+], Property.prototype, "ifscCode", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true, length: 255 }),
+    __metadata("design:type", String)
+], Property.prototype, "branch", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'upi_id', nullable: true, length: 255 }),
+    __metadata("design:type", String)
+], Property.prototype, "upiId", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'project_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], Property.prototype, "projectId", void 0);

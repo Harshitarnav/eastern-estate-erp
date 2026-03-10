@@ -47,6 +47,14 @@ export class PropertiesSchemaSyncService implements OnModuleInit {
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS inventory_checklist JSONB;`,
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS data_completion_pct DECIMAL(5,2) DEFAULT 0;`,
       `ALTER TABLE properties ADD COLUMN IF NOT EXISTS data_completeness_status data_completeness_status_enum DEFAULT 'NOT_STARTED';`,
+      // Project-level tax, legal & bank details (override company-wide defaults)
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS gstin VARCHAR(50);`,
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS bank_name VARCHAR(255);`,
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS account_name VARCHAR(255);`,
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS account_number VARCHAR(100);`,
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(50);`,
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS branch VARCHAR(255);`,
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS upi_id VARCHAR(255);`,
     ];
 
     try {

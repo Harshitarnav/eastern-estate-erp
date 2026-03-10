@@ -224,7 +224,7 @@ export default function PropertyDetailPage() {
               <InfoRow label="Total Area"     value={fmtArea(property.totalArea, property.areaUnit)} />
               <InfoRow label="Built-up Area"  value={fmtArea(property.builtUpArea, property.areaUnit)} />
               <InfoRow label="Floors / Tower" value={property.floorsPerTower} />
-              <InfoRow label="BHK Types"      value={property.bhkTypes?.join(', ')} />
+              <InfoRow label="BHK Types"      value={Array.isArray(property.bhkTypes) ? property.bhkTypes.join(', ') : (property.bhkTypes as any) || undefined} />
               <InfoRow label="Price Range"    value={property.priceMin && property.priceMax ? `${fmt(property.priceMin)} – ${fmt(property.priceMax)}` : undefined} />
               <InfoRow label="Country"        value={property.country} />
             </div>

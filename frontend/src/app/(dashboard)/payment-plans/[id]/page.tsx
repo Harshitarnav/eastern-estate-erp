@@ -177,137 +177,200 @@ export default function PaymentPlanDetailPage() {
 
   // ── generate demand invoice for a milestone ────────────────────────────────
 
-  /** Builds a branded HTML demand notice using data already on the page */
+  /** Builds the canonical Eastern Estate Demand Draft HTML */
   const buildDraftHtml = (milestone: FlatPaymentMilestone): string => {
     if (!plan) return '';
+
     const customerName = plan.customer?.fullName ?? 'Customer';
-    const propertyName = plan.flat?.property?.name ?? '';
-    const towerName   = plan.flat?.tower?.name ?? '';
-    const flatNumber  = plan.flat?.flatNumber ?? '';
-    const bookingNo   = plan.booking?.bookingNumber ?? '';
-    const today       = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-    const dueDate     = milestone.dueDate
+    const customerEmail = (plan.customer as any)?.email ?? '';
+    const customerPhone = (plan.customer as any)?.phoneNumber ?? '';
+    const propertyName  = plan.flat?.property?.name ?? '';
+    const towerName     = plan.flat?.tower?.name ?? '';
+    const flatNumber    = plan.flat?.flatNumber ?? '';
+    const bookingNo     = plan.booking?.bookingNumber ?? '';
+    const today         = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    const dueDateStr    = milestone.dueDate
       ? new Date(milestone.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })
-      : '—';
-    const fmt = (n: number) => `₹${Number(n).toLocaleString('en-IN')}`;
+      : new Date(Date.now() + 30 * 86400000).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
+    const amountFmt     = Number(milestone.amount).toLocaleString('en-IN');
+    const totalFmt      = Number(plan.totalAmount).toLocaleString('en-IN');
+    const paidFmt       = Number(plan.paidAmount).toLocaleString('en-IN');
+    const balanceFmt    = Number(Math.max(0, (plan.balanceAmount ?? 0) - milestone.amount)).toLocaleString('en-IN');
+    const refNumber     = `DD-${bookingNo || flatNumber}-${String(milestone.sequence).padStart(2, '0')}`;
+
+    const unitParts = [propertyName, towerName, flatNumber ? `Flat ${flatNumber}` : ''].filter(Boolean);
+    const unitStr   = unitParts.join(' \u203a');
+
+    const contactParts = [customerEmail, customerPhone].filter(Boolean);
+    const contactLine  = contactParts.length
+      ? `<div class="to-contact">${contactParts.join(' &nbsp;|&nbsp; ')}</div>`
+      : '';
+
+    const constructionLine = milestone.constructionPhase
+      ? ` (${milestone.constructionPhase}${milestone.phasePercentage != null ? ` \u2014 ${milestone.phasePercentage}%` : ''})`
+      : '';
+
+    const descLine = milestone.description
+      ? `<br/><span style="font-size:11.5px;color:#666;">${milestone.description}</span>`
+      : '';
+
+    const CSS = `
+* { box-sizing: border-box; }
+body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #1a1a1a; margin: 0; padding: 0; background: #fff; }
+.page { max-width: 820px; margin: 0 auto; padding: 40px; }
+.header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 3px solid #A8211B; }
+.brand-name { font-size: 26px; font-weight: 700; color: #7B1E12; letter-spacing: 0.5px; }
+.brand-sub  { font-size: 12px; color: #555; margin-top: 3px; }
+.brand-tag  { font-size: 11px; color: #999; margin-top: 2px; font-style: italic; }
+.header-right { text-align: right; font-size: 11px; color: #555; line-height: 1.9; }
+.header-right .ref-no { font-weight: 700; font-size: 13px; color: #1a1a1a; }
+.doc-title { text-align: center; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #A8211B; margin: 22px 0 26px; }
+.to-block { padding: 14px 18px; background: #fafafa; border-left: 3px solid #A8211B; border-radius: 0 4px 4px 0; margin-bottom: 22px; }
+.to-label   { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 5px; }
+.to-name    { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+.to-unit    { font-size: 12px; color: #555; margin-top: 3px; }
+.to-contact { font-size: 11px; color: #888; margin-top: 5px; }
+.subject-line { font-size: 13px; font-weight: 600; color: #333; padding-bottom: 12px; margin-bottom: 20px; border-bottom: 1px dashed #ddd; }
+.subject-line span { color: #A8211B; }
+.body-text p { margin: 0 0 10px; line-height: 1.8; color: #333; }
+table.dt { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12.5px; }
+table.dt th { background: #A8211B; color: #fff; padding: 9px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+table.dt td { padding: 10px 14px; border-bottom: 1px solid #eee; vertical-align: top; }
+table.dt tr.tr-total td { background: #fef9f0; font-weight: 700; border-top: 2px solid #A8211B; }
+table.dt .r { text-align: right; font-weight: 600; }
+table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
+.sg { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #e5e7eb; border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; margin-bottom: 24px; }
+.sg-cell { background: #fff; padding: 12px 16px; }
+.sg-cell label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 4px; }
+.sg-val { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+.sg-val.red   { color: #A8211B; }
+.sg-val.green { color: #16a34a; }
+.bank-box { background: #f5f5f5; border-left: 4px solid #A8211B; padding: 16px 20px; margin-bottom: 24px; border-radius: 0 4px 4px 0; }
+.bank-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #A8211B; margin-bottom: 12px; }
+.bank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-bottom: 10px; }
+.bank-grid label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.4px; color: #9ca3af; }
+.bank-grid .bv { font-size: 13px; font-weight: 600; color: #333; margin-top: 1px; }
+.bank-note { font-size: 11px; color: #666; margin-top: 10px; padding-top: 8px; border-top: 1px solid #ddd; }
+.note-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 4px; padding: 12px 16px; margin-bottom: 28px; font-size: 12px; color: #78350f; line-height: 1.6; }
+.sig-section { display: flex; justify-content: flex-end; margin-bottom: 32px; }
+.sig-block { text-align: center; min-width: 200px; }
+.sig-line { border-top: 1px solid #aaa; margin-top: 52px; margin-bottom: 6px; }
+.sig-label { font-size: 12px; font-weight: 700; color: #333; }
+.sig-sub   { font-size: 11px; color: #666; margin-top: 2px; }
+.page-footer { border-top: 1px solid #eee; padding-top: 12px; font-size: 10.5px; color: #999; display: flex; justify-content: space-between; line-height: 1.8; }
+@media print { .page { padding: 24px; } }`;
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <style>
-    body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; margin: 0; padding: 0; }
-    .page { max-width: 800px; margin: 0 auto; padding: 32px; }
-    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #A8211B; padding-bottom: 16px; margin-bottom: 24px; }
-    .header .company { font-size: 22px; font-weight: 700; color: #7B1E12; }
-    .header .sub { font-size: 12px; color: #666; margin-top: 2px; }
-    .title { text-align: center; font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #A8211B; margin-bottom: 24px; }
-    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
-    .meta-item label { font-size: 11px; color: #666; text-transform: uppercase; }
-    .meta-item .val { font-weight: 600; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    th { background: #A8211B; color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; }
-    td { padding: 8px 12px; border-bottom: 1px solid #eee; }
-    tr.total td { font-weight: 700; background: #fef9f0; }
-    .note { background: #fef3cd; border-left: 4px solid #F2C94C; padding: 12px 16px; border-radius: 4px; margin-bottom: 24px; font-size: 12px; }
-    .footer { border-top: 1px solid #eee; padding-top: 16px; display: flex; justify-content: space-between; font-size: 11px; color: #888; }
-    .sign-block { text-align: right; }
-    .sign-block .line { margin-top: 40px; border-top: 1px solid #999; width: 180px; display: inline-block; }
-    .sign-block p { margin: 4px 0; font-size: 11px; color: #444; }
-  </style>
+  <meta charset="UTF-8"/>
+  <style>${CSS}</style>
 </head>
 <body>
 <div class="page">
+
   <div class="header">
     <div>
-      <div class="company">Eastern Estate</div>
-      <div class="sub">Construction &amp; Development</div>
+      <div class="brand-name">Eastern Estate</div>
+      <div class="brand-sub">Construction &amp; Development</div>
+      <div class="brand-tag">Building Homes, Nurturing Bonds</div>
     </div>
-    <div style="text-align:right; font-size:11px; color:#666;">
+    <div class="header-right">
+      <div class="ref-no">Ref: ${refNumber}</div>
       <div>Date: ${today}</div>
-      ${bookingNo ? `<div>Booking No: ${bookingNo}</div>` : ''}
+      ${bookingNo ? `<div>Booking No: <strong>${bookingNo}</strong></div>` : ''}
     </div>
   </div>
 
-  <div class="title">Demand Notice</div>
+  <div class="doc-title">Payment Demand Notice</div>
 
-  <div class="meta-grid">
-    <div class="meta-item">
-      <label>To</label>
-      <div class="val">${customerName}</div>
-    </div>
-    <div class="meta-item">
-      <label>Unit</label>
-      <div class="val">${[propertyName, towerName, flatNumber].filter(Boolean).join(' › ')}</div>
-    </div>
-    <div class="meta-item">
-      <label>Milestone</label>
-      <div class="val">${milestone.name}</div>
-    </div>
-    ${milestone.constructionPhase ? `
-    <div class="meta-item">
-      <label>Construction Phase</label>
-      <div class="val">${milestone.constructionPhase}${milestone.phasePercentage != null ? ` (${milestone.phasePercentage}%)` : ''}</div>
-    </div>` : ''}
+  <div class="to-block">
+    <div class="to-label">To</div>
+    <div class="to-name">${customerName}</div>
+    <div class="to-unit">${unitStr}</div>
+    ${contactLine}
   </div>
 
-  <p>Dear <strong>${customerName}</strong>,</p>
-  <p>
-    As per your registered payment plan, the construction of your unit has reached the
-    <strong>${milestone.name}</strong> milestone. The following installment is now due.
-  </p>
+  <div class="subject-line">
+    Subject: <span>Demand for Payment &ndash; ${milestone.name}</span>
+    &nbsp;&nbsp;|&nbsp;&nbsp; Unit: <span>${flatNumber}</span>
+  </div>
 
-  <table>
+  <div class="body-text">
+    <p>Dear <strong>${customerName}</strong>,</p>
+    <p>Greetings from <strong>Eastern Estate</strong>! We hope you are doing well.</p>
+    <p>
+      We are pleased to inform you that the construction of your registered unit has reached the
+      <strong>${milestone.name}</strong> stage${constructionLine}. As per the terms of your
+      registered Payment Plan, the following installment is now due for payment:
+    </p>
+  </div>
+
+  <table class="dt">
     <thead>
       <tr>
-        <th>#</th><th>Description</th><th style="text-align:right">Amount</th>
+        <th width="5%">#</th>
+        <th>Milestone / Description</th>
+        <th width="18%">Due Date</th>
+        <th width="18%" style="text-align:right">Amount (&amp;#x20B9;)</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>${milestone.sequence}</td>
-        <td>${milestone.name}${milestone.description ? ` – ${milestone.description}` : ''}</td>
-        <td style="text-align:right">${fmt(milestone.amount)}</td>
+        <td><strong>${milestone.name}</strong>${descLine}</td>
+        <td>${dueDateStr}</td>
+        <td class="r">&#x20B9; ${amountFmt}</td>
       </tr>
-      <tr class="total">
-        <td colspan="2" style="text-align:right">Amount Payable</td>
-        <td style="text-align:right">${fmt(milestone.amount)}</td>
+      <tr class="tr-total">
+        <td colspan="3" style="text-align:right">Total Amount Payable</td>
+        <td class="r">&#x20B9; ${amountFmt}</td>
       </tr>
     </tbody>
   </table>
 
-  <div class="meta-grid" style="margin-bottom:16px;">
-    <div class="meta-item">
-      <label>Total Property Value</label>
-      <div class="val">${fmt(plan.totalAmount)}</div>
+  <div class="sg">
+    <div class="sg-cell"><label>Total Property Value</label><div class="sg-val">&#x20B9; ${totalFmt}</div></div>
+    <div class="sg-cell"><label>Amount Paid to Date</label><div class="sg-val green">&#x20B9; ${paidFmt}</div></div>
+    <div class="sg-cell"><label>Current Installment Due</label><div class="sg-val red">&#x20B9; ${amountFmt}</div></div>
+    <div class="sg-cell"><label>Balance After This Payment</label><div class="sg-val">&#x20B9; ${balanceFmt}</div></div>
+  </div>
+
+  <div class="bank-box">
+    <div class="bank-title">Payment Instructions</div>
+    <div class="bank-grid">
+      <div><label>Bank Name</label><div class="bv">[Bank Name &mdash; to be filled]</div></div>
+      <div><label>Account Name</label><div class="bv">Eastern Estate</div></div>
+      <div><label>Account Number</label><div class="bv">[Account Number &mdash; to be filled]</div></div>
+      <div><label>IFSC Code</label><div class="bv">[IFSC Code &mdash; to be filled]</div></div>
     </div>
-    <div class="meta-item">
-      <label>Total Paid So Far</label>
-      <div class="val">${fmt(plan.paidAmount)}</div>
-    </div>
-    <div class="meta-item">
-      <label>Current Installment</label>
-      <div class="val" style="color:#A8211B;">${fmt(milestone.amount)}</div>
-    </div>
-    <div class="meta-item">
-      <label>Due Date</label>
-      <div class="val">${dueDate}</div>
+    <div class="bank-note">
+      Cheques / Demand Drafts should be drawn in favour of <strong>Eastern Estate</strong>.
+      For NEFT / RTGS / UPI transfers, please use the Booking Number as the reference.
+      Share the transaction receipt with our Accounts team after payment.
     </div>
   </div>
 
-  <div class="note">
-    ⚠ Please make the payment on or before <strong>${dueDate}</strong> to avoid any delays.
-    For payment instructions or queries, please contact our accounts department.
+  <div class="note-box">
+    &#9888;&#65039; <strong>Important:</strong> Kindly ensure payment reaches us on or before
+    <strong>${dueDateStr}</strong>. Delayed payments may attract penalties as per your Booking
+    Agreement. For queries or assistance, please contact our Accounts Department.
   </div>
 
-  <div class="footer">
+  <div class="sig-section">
+    <div class="sig-block">
+      <div class="sig-line"></div>
+      <div class="sig-label">Authorised Signatory</div>
+      <div class="sig-sub">For Eastern Estate</div>
+      <div class="sig-sub">Accounts Department</div>
+    </div>
+  </div>
+
+  <div class="page-footer">
     <div>Eastern Estate Construction &amp; Development</div>
-    <div class="sign-block">
-      <div class="line"></div>
-      <p>Authorised Signatory</p>
-      <p>Accounts Department</p>
-    </div>
+    <div>System-generated document. Please retain for your records.</div>
   </div>
+
 </div>
 </body>
 </html>`;

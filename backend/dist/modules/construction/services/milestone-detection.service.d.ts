@@ -5,7 +5,7 @@ import { Flat } from '../../flats/entities/flat.entity';
 export interface MilestoneMatch {
     flatPaymentPlan: FlatPaymentPlan;
     milestoneSequence: number;
-    constructionProgress: ConstructionFlatProgress;
+    constructionProgress: ConstructionFlatProgress | null;
     milestoneName: string;
     amount: number;
 }
