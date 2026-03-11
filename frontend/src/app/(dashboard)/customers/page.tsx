@@ -16,8 +16,6 @@ import {
   Award,
   Loader2,
   Users,
-  TrendingUp,
-  AlertCircle,
   MapPin,
 } from 'lucide-react';
 import { customersService, Customer, CustomerFilters } from '@/services/customers.service';
@@ -157,7 +155,7 @@ export default function CustomersPage() {
             <span style={{ color: brandPalette.accent }}>greatest assets</span>
           </>
         }
-        description="This is your central hub for managing all verified customers who have completed bookings or purchases. Track KYC verification status, monitor lifetime value, identify VIP relationships, and maintain complete customer intelligence for your sales and CRM teams."
+        description="Manage verified customers, track KYC status, monitor lifetime value, and identify your most valuable relationships — all in one place."
         actions={
           <>
             <BrandPrimaryButton 
@@ -177,53 +175,6 @@ export default function CustomersPage() {
           </>
         }
       />
-
-      {/* Purpose Explanation Card */}
-      <div
-        className="rounded-2xl border bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm"
-        style={{ borderColor: `${brandPalette.accent}40` }}
-      >
-        <div className="flex items-start gap-4">
-          <div 
-            className="p-3 rounded-xl"
-            style={{ backgroundColor: `${brandPalette.accent}20` }}
-          >
-            <AlertCircle className="w-6 h-6" style={{ color: brandPalette.accent }} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2" style={{ color: brandPalette.secondary }}>
-              Why This Page Exists
-            </h3>
-            <p className="text-sm text-gray-700 leading-relaxed mb-3">
-              <strong>Customers vs Leads:</strong> This page shows <strong>verified customers</strong> who have completed bookings or purchases. 
-              These are different from <strong>leads</strong> (potential customers still in the sales pipeline).
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Shield className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-sm text-gray-900">Track KYC Status</span>
-                </div>
-                <p className="text-xs text-gray-600">Monitor verification progress for compliance and trust-building</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-sm text-gray-900">Monitor Lifetime Value</span>
-                </div>
-                <p className="text-xs text-gray-600">Track total revenue and bookings per customer relationship</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Award className="w-4 h-4 text-amber-600" />
-                  <span className="font-medium text-sm text-gray-900">Identify VIP Customers</span>
-                </div>
-                <p className="text-xs text-gray-600">Recognize and prioritize high-value customer relationships</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Statistics Dashboard */}
       <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -10,19 +10,13 @@ import {
   Plus,
   Search,
   Calendar,
-  DollarSign,
-  Home,
   User,
-  Filter,
   Loader2,
   Eye,
   Edit,
-  X,
   CheckCircle,
   Clock,
-  AlertCircle,
   TrendingUp,
-  Building,
 } from 'lucide-react';
 import { bookingsService, Booking, BookingFilters } from '@/services/bookings.service';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
@@ -155,7 +149,7 @@ function BookingsPageContent() {
             <span style={{ color: brandPalette.accent }}>token to possession</span>
           </>
         }
-        description="This is your central hub for managing all property bookings. Monitor booking status, payment progress, track agreements, manage home loans, and oversee the complete booking lifecycle from initial token to final possession."
+        description="Track every property booking from token to final possession — payment milestones, agreement status, home loans, and possession handover in one place."
         actions={
           <>
             <BrandPrimaryButton onClick={() => router.push('/bookings/new')}>
@@ -169,59 +163,6 @@ function BookingsPageContent() {
           </>
         }
       />
-
-      {/* Purpose Explanation Card */}
-      <div
-        className="rounded-2xl border bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm"
-        style={{ borderColor: `${brandPalette.accent}40` }}
-      >
-        <div className="flex items-start gap-4">
-          <div 
-            className="p-3 rounded-xl"
-            style={{ backgroundColor: `${brandPalette.accent}20` }}
-          >
-            <AlertCircle className="w-6 h-6" style={{ color: brandPalette.accent }} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2" style={{ color: brandPalette.secondary }}>
-              What is a Booking?
-            </h3>
-            <p className="text-sm text-gray-700 leading-relaxed mb-3">
-              A <strong>booking</strong> represents a confirmed property purchase where a customer has paid a token amount and signed an agreement. This page tracks the complete journey from initial booking to final possession and registration.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-sm text-gray-900">Payment Tracking</span>
-                </div>
-                <p className="text-xs text-gray-600">Monitor token, installments, and balance amounts</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-sm text-gray-900">Agreement Management</span>
-                </div>
-                <p className="text-xs text-gray-600">Track agreement signing and documentation</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Home className="w-4 h-4 text-amber-600" />
-                  <span className="font-medium text-sm text-gray-900">Possession Dates</span>
-                </div>
-                <p className="text-xs text-gray-600">Expected vs actual possession timeline</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Building className="w-4 h-4 text-purple-600" />
-                  <span className="font-medium text-sm text-gray-900">Home Loan Status</span>
-                </div>
-                <p className="text-xs text-gray-600">Track bank loans and approval status</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Statistics Dashboard */}
       {stats && (
