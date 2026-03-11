@@ -16,8 +16,9 @@ easternestate.global {
 
     # Proxy new files stored in MinIO
     # /files/<key>  →  minio:9000/eastern-estate/<key>
-    handle /files/* {
-        uri strip_prefix /files
+    # handle_path strips /files from the URI *before* any directives run,
+    # so {path} = /uuid.jpg and the rewrite produces /eastern-estate/uuid.jpg
+    handle_path /files/* {
         rewrite * /eastern-estate{path}
         reverse_proxy minio:9000
     }
