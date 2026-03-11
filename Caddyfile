@@ -15,8 +15,9 @@ easternestate.global {
     }
 
     # Proxy new files stored in MinIO
-    # /files/<key>  →  minio:9000/<bucket>/<key>
-    handle_path /files/* {
+    # /files/<key>  →  minio:9000/eastern-estate/<key>
+    handle /files/* {
+        uri strip_prefix /files
         rewrite * /eastern-estate{path}
         reverse_proxy minio:9000
     }
