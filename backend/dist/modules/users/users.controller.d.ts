@@ -15,6 +15,7 @@ export declare class UsersController {
         };
     }>;
     findOne(id: string): Promise<import("./entities/user.entity").User>;
+    patch(id: string, updateUserDto: UpdateUserDto, req: any): Promise<import("./entities/user.entity").User>;
     update(id: string, updateUserDto: UpdateUserDto, req: any): Promise<import("./entities/user.entity").User>;
     remove(id: string): Promise<{
         message: string;

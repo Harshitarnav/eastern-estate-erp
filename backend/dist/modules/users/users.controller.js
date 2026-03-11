@@ -33,6 +33,9 @@ let UsersController = class UsersController {
     findOne(id) {
         return this.usersService.findOne(id);
     }
+    patch(id, updateUserDto, req) {
+        return this.usersService.update(id, updateUserDto, req.user.id);
+    }
     update(id, updateUserDto, req) {
         return this.usersService.update(id, updateUserDto, req.user.id);
     }
@@ -70,6 +73,15 @@ __decorate([
 ], UsersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, update_user_dto_1.UpdateUserDto, Object]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "patch", null);
+__decorate([
+    (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),

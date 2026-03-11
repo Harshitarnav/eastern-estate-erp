@@ -543,6 +543,32 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
         IF EXISTS (
           SELECT 1 FROM information_schema.columns
            WHERE table_name = 'customers' AND column_name = 'first_name'
+             AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE customers ALTER COLUMN first_name DROP NOT NULL;
+        END IF;
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'last_name'
+             AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE customers ALTER COLUMN last_name DROP NOT NULL;
+        END IF;
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'phone'
+             AND is_nullable = 'NO'
+        ) THEN
+          ALTER TABLE customers ALTER COLUMN phone DROP NOT NULL;
+        END IF;
+      END $$;
+    `);
+        await queryRunner.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM information_schema.columns
+           WHERE table_name = 'customers' AND column_name = 'first_name'
         ) THEN
           UPDATE customers
              SET full_name = TRIM(COALESCE(first_name,'') || ' ' || COALESCE(last_name,''))
