@@ -402,11 +402,11 @@ function BookingsPageContent() {
                 style={{ borderColor: `${brandPalette.neutral}60` }}
               >
                 <div className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     {/* Left Section - Booking Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-xl font-semibold" style={{ color: brandPalette.secondary }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <h3 className="text-lg font-semibold" style={{ color: brandPalette.secondary }}>
                           {booking.bookingNumber}
                         </h3>
                         <span
@@ -425,7 +425,7 @@ function BookingsPageContent() {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div>
                           <p className="text-gray-600 text-xs">Customer</p>
                           <p className="font-medium">{booking.customer?.full_name || 'N/A'}</p>
@@ -451,7 +451,7 @@ function BookingsPageContent() {
                     </div>
 
                     {/* Right Section - Payment Progress */}
-                    <div className="lg:w-80">
+                    <div className="md:w-72 shrink-0">
                       <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-xs text-gray-600">Payment Progress</span>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Users, Plus, Search, Edit2, Power, Trash2, X,
-  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock,
+  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock, ChevronLeft,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TableRowsSkeleton } from '@/components/Skeletons';
@@ -420,6 +420,15 @@ export default function UserManagementPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
+
+      {/* Back button */}
+      <button
+        onClick={() => router.push('/settings')}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#A8211B] transition-colors"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to Settings
+      </button>
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
