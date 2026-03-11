@@ -33,6 +33,7 @@ import {
 import { FileText, Loader2, Eye, Search, RefreshCw, Trash2 } from 'lucide-react';
 import { demandDraftsService, DemandDraft, DemandDraftStatus } from '@/services/demand-drafts.service';
 import { toast } from 'sonner';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 const STATUS_COLORS: Record<DemandDraftStatus, string> = {
   DRAFT: 'bg-gray-400',
@@ -156,9 +157,7 @@ export default function DemandDraftsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+            <TableRowsSkeleton rows={6} cols={5} />
           ) : (
             <Table>
               <TableHeader>

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { customersService, Customer, CustomerFilters } from '@/services/customers.service';
 import { propertiesService } from '@/services/properties.service';
+import { CardGridSkeleton } from '@/components/Skeletons';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
@@ -377,12 +378,7 @@ export default function CustomersPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandPalette.primary }} />
-            <p className="text-gray-600 text-sm">Loading customers...</p>
-          </div>
-        </div>
+        <CardGridSkeleton cards={8} />
       ) : (customers || []).length === 0 ? (
         <div className="bg-white/90 rounded-3xl border p-12 text-center shadow-sm">
           <UserCheck className="h-16 w-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.55 }} />

@@ -33,6 +33,7 @@ import {
 import { paymentPlansService, LedgerResponse, LedgerRow } from '@/services/payment-plans.service';
 import { generateLedgerPdf } from '@/lib/generate-ledger-pdf';
 import { toast } from 'sonner';
+import { DetailSkeleton } from '@/components/Skeletons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -229,11 +230,7 @@ export default function LedgerPage() {
 
   // ── Loading / error states ──────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#A8211B]" />
-      </div>
-    );
+    return <DetailSkeleton sidebar={false} />;
   }
 
   if (error || !ledger) {

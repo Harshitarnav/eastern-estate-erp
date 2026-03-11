@@ -6,6 +6,7 @@ import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { leadsService } from '@/services/leads.service';
 import { propertiesService } from '@/services/properties.service';
 import { usersService } from '@/services/users.service';
+import { FormSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 
 export default function LeadEditPage() {
@@ -143,11 +144,7 @@ export default function LeadEditPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-      </div>
-    );
+    return <FormSkeleton fields={10} />;
   }
 
   return (

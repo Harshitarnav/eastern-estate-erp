@@ -8,6 +8,7 @@ import {
   Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -482,9 +483,7 @@ export default function UserManagementPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center items-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-[#A8211B]" />
-            </div>
+            <TableRowsSkeleton rows={6} cols={7} />
           ) : users.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />

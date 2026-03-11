@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/services/api';
 import MaterialEntryModal from '@/components/modals/MaterialEntryModal';
 import MaterialExitModal from '@/components/modals/MaterialExitModal';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 function MaterialsPageContent() {
   const router = useRouter();
@@ -161,10 +162,7 @@ function MaterialsPageContent() {
       {/* Materials List */}
       <div className="bg-white rounded-lg shadow mb-6">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading materials...</p>
-          </div>
+          <div className="p-4"><TableRowsSkeleton rows={5} cols={5} /></div>
         ) : (materials || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">🧱</p>

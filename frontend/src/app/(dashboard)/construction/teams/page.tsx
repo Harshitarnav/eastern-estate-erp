@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/services/api';
 import CreateTeamModal from '@/components/modals/CreateTeamModal';
 import AddWorkScheduleModal from '@/components/modals/AddWorkScheduleModal';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 function TeamsPageContent() {
   const router = useRouter();
@@ -213,10 +214,7 @@ function TeamsPageContent() {
 
       {/* Empty State */}
       {loading ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading team data...</p>
-        </div>
+        <TableRowsSkeleton rows={5} cols={4} />
       ) : (projects || []).length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center mb-6">
           <p className="text-4xl mb-4">👥</p>

@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtINR = (n: number) =>
@@ -245,9 +246,7 @@ export default function CollectionReportPage() {
 
       {/* Table */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-[#A8211B]" />
-        </div>
+        <TableRowsSkeleton rows={7} cols={6} />
       ) : !report || report.rows.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <TrendingUp className="h-10 w-10 mx-auto mb-3 opacity-30" />

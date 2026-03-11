@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
 import { budgetsService, type Budget } from '@/services/accounting.service';
 import { format } from 'date-fns';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -57,7 +58,7 @@ export default function BudgetsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-96">Loading budgets...</div>;
+    return <div className="p-6"><TableRowsSkeleton rows={6} cols={5} /></div>;
   }
 
   const totalBudgeted = ((budgets || [])).reduce((sum, b) => sum + b.budgetedAmount, 0);

@@ -1,6 +1,6 @@
 # CRM Feature Build Tracker
 > Work through items **one at a time**. Mark ✅ when confirmed, then move to next.  
-> Last updated: March 2026
+> Last updated: March 2026 (updated 11 Mar 2026)
 
 ---
 
@@ -176,13 +176,49 @@
 
 ---
 
+### 20. ✅ HR Module Fixes
+**What:** Resolved four production issues reported by the HR team.  
+**Fixes:**
+- **Static leave balances (CL/SL/EL):** Removed hardcoded defaults (`12/12/15`) from `employees.service.ts` `create()` — leave balances now come from the DTO or default to `0` via the entity definition
+- **Incomplete employee detail page:** Rewrote `employees/[id]/page.tsx` to display every field from the `Employee` entity — personal, employment, salary, bank, leave, attendance, and a new **Feedback & Performance** section (skills, qualifications, experience, rating, last review, notes)
+- **Vanishing fields on edit:** Fixed `Form.tsx` — changed `formValues[field.name] || ''` → `formValues[field.name] ?? ''` so number fields with value `0` no longer appear blank
+- **Missing loaders:** Added skeleton loaders to employee list, detail, and edit pages
+
+---
+
+### 21. ✅ Skeleton Loaders — ERP-wide
+**What:** Replaced all spinner/no-loader loading states with contextual skeleton loaders across every page in the ERP.  
+**Why:** Prevents multiple clicks during loading and gives users a clear visual of the page structure before data arrives.  
+**Scope:**
+- Created `frontend/src/components/Skeletons.tsx` — centralised library of 7 skeleton patterns:
+  - `TableSkeleton` — animated rows for data tables
+  - `CardGridSkeleton` — card grids (customers, marketing, projects)
+  - `TableRowsSkeleton` — compact row skeletons for dense tables
+  - `DetailSkeleton` — two-column detail/profile page layout
+  - `DashboardSkeleton` — stat cards + charts layout
+  - `FormSkeleton` — labelled form fields
+  - `SectionSkeleton` — generic section block
+- Updated `DataTable.tsx` to accept a `loading` prop and render `TableSkeleton` natively
+- **55+ pages updated** across every module:
+  - Dashboard, Bookings, Customers, Payments, Leads, Properties, Flats, Towers
+  - Construction (8 sub-pages: overview, projects, vendors, materials, POs, progress, teams, inventory, milestones)
+  - Sales (overview, tasks, follow-ups)
+  - Marketing, Roles, Users
+  - Accounting (overview, expenses, accounts, budgets, reports)
+  - Reports (outstanding, collection, inventory)
+  - Settings (company, users, property-access)
+  - Demand Drafts, Payment Plans, Ledger, Notifications
+  - All `[id]` detail pages and all `[id]/edit` / `new` form pages
+
+---
+
 ---
 
 ## 🔲 Pending — Next Up
 
 ---
 
-### 20. 🔲 Leads DTO Audit
+### 22. 🔲 Leads DTO Audit
 **What:** Same audit done for Booking/Customer/Employee — check for silent data loss in the Leads module.  
 **Why:** If leads have the same issue, notes, source, follow-up dates, or budget fields may not be saving.  
 **Scope:**
@@ -195,7 +231,7 @@
 
 ---
 
-### 21. 🔲 Payment Reminders (Automated)
+### 23. 🔲 Payment Reminders (Automated)
 **What:** Automated email / notification reminders to customers for upcoming and overdue milestone payments.  
 **Why:** Currently reminders are fully manual — accounts has to find overdue units in the report and call/email each one.  
 **Scope:**
@@ -209,7 +245,7 @@
 
 ---
 
-### 22. 🔲 Accounting Module Audit
+### 24. 🔲 Accounting Module Audit
 **What:** Audit the Expenses, Budgets, and Accounts sub-modules for silent data loss.  
 **Why:** These modules were built early and may have the same DTO/entity gaps found in Bookings and Customers.  
 **Scope:**
@@ -222,7 +258,7 @@
 
 ---
 
-### 23. 🔲 Sales Leads → Follow-ups & Tasks
+### 25. 🔲 Sales Leads → Follow-ups & Tasks
 **What:** A structured follow-up task system tied to Leads.  
 **Why:** Currently there's no way to schedule a callback or track task status per lead.  
 **Scope:**
@@ -235,7 +271,7 @@
 
 ---
 
-### 24. 🔲 Possession / Handover Workflow
+### 26. 🔲 Possession / Handover Workflow
 **What:** Track the handover process for units that are ready for possession.  
 **Why:** Possession involves collecting final dues, signing handover checklist, handing over keys — no system for this yet.  
 **Scope:**
@@ -248,7 +284,7 @@
 
 ---
 
-### 25. 🔲 Cancellation / Refund Workflow
+### 27. 🔲 Cancellation / Refund Workflow
 **What:** Formal process for cancelling a booking and tracking refund.  
 **Why:** Currently there is no structured way to cancel a booking — the flat stays "Booked" even if the deal falls through.  
 **Scope:**
@@ -261,6 +297,24 @@
 
 ---
 
+### 28. 🔲 Customer Portal / Dashboard
+**What:** A read-only self-service portal for customers to view their booking, ledger, and documents.  
+**Scope:** TBD
+
+---
+
+### 29. 🔲 Sales and CP Rate & Unit Details View
+**What:** A structured view for channel partners and sales team showing unit pricing and availability.  
+**Scope:** TBD
+
+---
+
+### 30. 🔲 Customer Rate Negotiations
+**What:** Track negotiated rates and discount approvals per customer/booking.  
+**Scope:** TBD
+
+---
+
 ## Notes
 - Logo files: `frontend/public/logo.png` + `frontend/public/logo-white.png` ✅
 - jspdf + jspdf-autotable already in `frontend/package.json` ✅
@@ -268,3 +322,6 @@
 - SMTP email (nodemailer) wired in via `MailService` ✅
 - Company Settings + Property-level overrides for GSTIN/bank in place ✅
 - Schema sync handles all DB migrations automatically on backend boot ✅
+- Skeleton loaders centralised in `frontend/src/components/Skeletons.tsx` ✅
+- `Form.tsx` uses `??` (nullish coalescing) — number fields with value `0` display correctly ✅
+- Employee leave balances (CL/SL/EL) are dynamic — set via DTO, no hardcoded defaults ✅

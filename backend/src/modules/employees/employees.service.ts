@@ -38,9 +38,16 @@ export class EmployeesService {
     Object.assign(employee, createEmployeeDto);
     employee.grossSalary = grossSalary;
     employee.netSalary = netSalary;
-    employee.casualLeaveBalance = 12;
-    employee.sickLeaveBalance = 12;
-    employee.earnedLeaveBalance = 15;
+    // Use values from DTO if provided; otherwise apply sensible defaults
+    if (createEmployeeDto.casualLeaveBalance === undefined) {
+      employee.casualLeaveBalance = 12;
+    }
+    if (createEmployeeDto.sickLeaveBalance === undefined) {
+      employee.sickLeaveBalance = 12;
+    }
+    if (createEmployeeDto.earnedLeaveBalance === undefined) {
+      employee.earnedLeaveBalance = 15;
+    }
 
     const savedEmployee = await this.employeesRepository.save(employee);
 

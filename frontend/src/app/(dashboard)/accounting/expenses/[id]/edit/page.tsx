@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { expensesService, accountsService, Expense } from '@/services/accounting.service';
+import { FormSkeleton } from '@/components/Skeletons';
 
 export default function EditExpensePage() {
   const router = useRouter();
@@ -90,13 +91,7 @@ export default function EditExpensePage() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-center items-center py-16">
-          <p className="text-gray-600">Loading expense...</p>
-        </div>
-      </div>
-    );
+    return <FormSkeleton fields={8} />;
   }
 
   return (

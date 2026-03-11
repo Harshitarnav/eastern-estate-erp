@@ -7,6 +7,7 @@ import { customersService } from '@/services/customers.service';
 import { propertiesService } from '@/services/properties.service';
 import { toast } from 'sonner';
 import { showApiError } from '@/utils/error-handler';
+import { FormSkeleton } from '@/components/Skeletons';
 
 export default function CustomerEditPage() {
   const router = useRouter();
@@ -115,11 +116,7 @@ export default function CustomerEditPage() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto py-16 px-4 text-center text-gray-600">
-        Loading customer...
-      </div>
-    );
+    return <FormSkeleton fields={10} />;
   }
 
   if (error) {

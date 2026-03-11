@@ -46,6 +46,7 @@ import {
 import { paymentPlansService, FlatPaymentPlan, FlatPaymentMilestone } from '@/services/payment-plans.service';
 import { demandDraftsService } from '@/services/demand-drafts.service';
 import { toast } from 'sonner';
+import { DetailSkeleton } from '@/components/Skeletons';
 import {
   Dialog,
   DialogContent,
@@ -469,12 +470,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
   // ── loading / not-found states ─────────────────────────────────────────────
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2 text-lg">Loading payment plan...</span>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (!plan) {

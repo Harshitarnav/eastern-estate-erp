@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
+import { DashboardSkeleton } from '@/components/Skeletons';
 
 export default function ConstructionDashboard() {
   const router = useRouter();
@@ -63,14 +64,7 @@ export default function ConstructionDashboard() {
   const activeVendors = ((vendors || [])).filter(v => v.isActive);
 
   if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg">Loading Construction Dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

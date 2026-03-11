@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DollarSign, TrendingUp, TrendingDown, PieChart, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { accountsService, expensesService } from '@/services/accounting.service';
+import { DashboardSkeleton } from '@/components/Skeletons';
 
 export default function AccountingDashboard() {
   const [loading, setLoading] = useState(true);
@@ -33,11 +34,7 @@ export default function AccountingDashboard() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-lg">Loading accounting data...</div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const formatCurrency = (amount: number) => {

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Check, X, DollarSign } from 'lucide-react';
 import { expensesService, type Expense } from '@/services/accounting.service';
 import { format } from 'date-fns';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -76,7 +77,7 @@ export default function ExpensesPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-96">Loading expenses...</div>;
+    return <div className="p-6"><TableRowsSkeleton rows={6} cols={5} /></div>;
   }
 
   const totalExpenses = ((expenses || [])).reduce((sum, exp) => sum + exp.amount, 0);

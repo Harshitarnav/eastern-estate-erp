@@ -54,6 +54,7 @@ import {
   formatIndianNumber,
   formatToCrore,
 } from '@/utils/brand';
+import { DashboardSkeleton } from '@/components/Skeletons';
 
 export default function SalesDashboard() {
   const router = useRouter();
@@ -246,14 +247,7 @@ export default function SalesDashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { usersService, type User } from '@/services/users.service';
 import { rolesService, type Role } from '@/services/roles.service';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -166,7 +167,7 @@ export default function UsersPage() {
       </div>
 
       {loading ? (
-        <div>Loading...</div>
+        <TableRowsSkeleton rows={6} cols={7} />
       ) : (
         <Table>
           <TableHeader>

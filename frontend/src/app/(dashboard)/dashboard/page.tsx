@@ -11,6 +11,7 @@ import {
 import { reportsService, DashboardSummary } from '@/services/reports.service';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import { DashboardSkeleton } from '@/components/Skeletons';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -168,11 +169,7 @@ export default function DashboardPage() {
     : 'there';
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandRed }} />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const d = data!;

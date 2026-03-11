@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Phone, Mail, User } from 'lucide-react';
+import { DetailSkeleton } from '@/components/Skeletons';
 
 export default function LeadDetailPage() {
   const params = useParams();
@@ -44,11 +45,7 @@ export default function LeadDetailPage() {
     : null;
 
   if (loading) {
-    return (
-      <div className="p-6 flex items-center gap-2 text-gray-600">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading lead...
-      </div>
-    );
+    return <DetailSkeleton sidebar={false} />;
   }
 
   if (error) {

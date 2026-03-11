@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { DetailSkeleton } from '@/components/Skeletons';
 
 export default function ViewPaymentPage() {
   const router = useRouter();
@@ -160,11 +161,7 @@ export default function ViewPaymentPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex justify-center items-center py-16">
-          <p className="text-gray-600">Loading payment...</p>
-        </div>
-      </div>
+      <DetailSkeleton sidebar={false} />
     );
   }
 

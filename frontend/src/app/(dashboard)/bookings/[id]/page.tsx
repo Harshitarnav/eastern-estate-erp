@@ -23,6 +23,7 @@ import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.s
 import { paymentsService } from '@/services/payments.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette } from '@/utils/brand';
+import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
 import { generateBookingSummaryPdf } from '@/lib/generate-booking-pdf';
@@ -140,14 +141,7 @@ export default function BookingViewPage() {
   const customerEmail = booking?.customer?.email || 'N/A';
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandPalette.primary }} />
-          <p className="text-gray-600">Loading booking details...</p>
-        </div>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (error || !booking) {

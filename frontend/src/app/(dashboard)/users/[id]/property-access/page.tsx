@@ -46,6 +46,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiService } from '@/services/api';
+import { FormSkeleton } from '@/components/Skeletons';
 
 interface Property {
   id: string;
@@ -190,12 +191,7 @@ export default function UserPropertyAccessPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <div className="text-lg ml-2">Loading property access...</div>
-      </div>
-    );
+    return <FormSkeleton fields={8} />;
   }
 
   if (!user) {

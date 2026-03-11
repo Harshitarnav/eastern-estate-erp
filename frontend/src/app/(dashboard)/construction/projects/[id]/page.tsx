@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { api } from '@/services/api';
+import { DetailSkeleton } from '@/components/Skeletons';
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -72,14 +73,7 @@ export default function ProjectDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading project details...</p>
-        </div>
-      </div>
-    );
+    return <DetailSkeleton sidebar={false} />;
   }
 
   if (!project) {

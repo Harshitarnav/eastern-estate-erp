@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -371,10 +372,7 @@ function DataTable<T extends { id: string | number }>({
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading...</p>
-          </div>
+          <TableRowsSkeleton rows={5} cols={4} />
         ) : paginatedData.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <p className="text-gray-500">{emptyMessage}</p>
@@ -574,10 +572,7 @@ function DataTable<T extends { id: string | number }>({
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading data...</p>
-          </div>
+          <TableRowsSkeleton rows={7} cols={5} />
         ) : paginatedData.length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-gray-500 text-lg">{emptyMessage}</p>

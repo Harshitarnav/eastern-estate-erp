@@ -1,6 +1,6 @@
 # Eastern Estate ERP — System Flow Guide
 > **Living document.** Update this file whenever the system flow changes.  
-> Last updated: March 2026
+> Last updated: 11 March 2026
 
 ---
 
@@ -403,9 +403,23 @@ Sidebar: HR → Employees
    - **Employment** — Department, Designation, Join Date, Employment Type
    - **Salary** — Basic, HRA, TA, DA, Other Allowances, PF, ESI, TDS (gross and net auto-calculate)
    - **Bank** — Bank Name, Account Number, IFSC, UAN, PF/ESI numbers
-   - **Leave** — Leave balances per type
+   - **Leave** — CL, SL, and EL balances (enter the actual entitlement — no hardcoded defaults)
 3. Upload documents from the **Documents** section: offer letter, ID proof, etc.
 4. Save — all fields persist correctly
+
+### Viewing an Employee Profile
+The employee detail page shows all data across every section:
+
+| Section | What's shown |
+|---------|-------------|
+| **Personal** | Name, DOB, Gender, Phone, Address, Emergency Contact |
+| **Employment** | Department, Designation, Join Date, Type, Status, Manager |
+| **Salary** | Basic, HRA, TA, DA, Allowances, PF, ESI, TDS, Gross, Net |
+| **Bank** | Bank Name, Account Number, IFSC, UAN, PF/ESI numbers |
+| **Leave Balances** | CL, SL, EL remaining — sourced live from the database |
+| **Attendance Summary** | Days Present, Days Absent, Late Arrivals |
+| **Feedback & Performance** | Skills, Qualifications, Experience, Performance Rating, Last Review Date, Notes |
+| **Documents** | Offer letter, ID proof, qualification certificates |
 
 ### Editing an Employee
 1. Open the employee profile → click **Edit**
@@ -413,6 +427,8 @@ Sidebar: HR → Employees
 3. Save — all fields update (including salary, bank details, and leave balances)
 
 > ℹ️ Net salary auto-calculates from Basic + HRA + Allowances − Deductions. To override, type directly in the Net Salary field.
+
+> ℹ️ Leave balances (CL / SL / EL) are set when creating the employee and can be updated via Edit at any time. They reflect whatever value is entered — there are no hardcoded defaults.
 
 ---
 
@@ -553,6 +569,16 @@ Or from a **Payment Plan**, the booking number and customer name appear in the h
 A: Two ways:  
 1. **Dashboard** → scroll to the "Overdue Milestones" table — click any row to open that unit's ledger  
 2. **Reports → Outstanding** → filter / sort by the "Overdue Milestones" column
+
+---
+
+**Q: The page shows a grey skeleton/shimmer instead of data — is something broken?**  
+A: No — that is the skeleton loader. Every page shows an animated preview of its layout while data loads from the server. It disappears automatically once the data arrives. If it stays indefinitely, check your network connection or the backend logs.
+
+---
+
+**Q: Leave balances (CL / SL / EL) on an employee profile show 0.**  
+A: Leave balances must be entered when creating the employee (or updated via Edit). There are no automatic defaults — the value shown is exactly what was saved. Ask HR to open the employee → Edit → Leave tab and enter the correct balances.
 
 ---
 

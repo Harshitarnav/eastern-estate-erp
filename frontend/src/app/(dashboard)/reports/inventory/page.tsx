@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtINR = (n: number | null) =>
@@ -342,10 +343,7 @@ export default function InventoryReportPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex items-center justify-center py-16 gap-3 text-gray-500">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-sm">Loading inventory…</span>
-            </div>
+            <TableRowsSkeleton rows={7} cols={6} />
           ) : !report || report.rows.length === 0 ? (
             <div className="py-16 text-center text-sm text-gray-400">No units match the current filters.</div>
           ) : (

@@ -6,6 +6,7 @@ import { api } from '@/services/api';
 import { ChevronDown, ChevronRight, Building2, Home, Package, ClipboardList } from 'lucide-react';
 import MaterialEntryModal from '@/components/modals/MaterialEntryModal';
 import MaterialExitModal from '@/components/modals/MaterialExitModal';
+import { SectionSkeleton } from '@/components/Skeletons';
 
 interface Flat {
   id: string;
@@ -118,11 +119,9 @@ export default function ConstructionInventoryPage() {
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg">Loading Site Inventory...</p>
-        </div>
+      <div className="p-6 space-y-4">
+        <SectionSkeleton rows={6} />
+        <SectionSkeleton rows={4} />
       </div>
     );
   }

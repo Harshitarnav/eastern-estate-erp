@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Download, FileText, TrendingUp, PieChart } from 'lucide-react';
 import { accountsService, budgetsService } from '@/services/accounting.service';
+import { SectionSkeleton } from '@/components/Skeletons';
 
 export default function ReportsPage() {
   const [balanceSheet, setBalanceSheet] = useState<any>(null);
@@ -46,7 +47,7 @@ export default function ReportsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-96">Loading reports...</div>;
+    return <div className="p-6 space-y-4"><SectionSkeleton rows={4} /><SectionSkeleton rows={4} /></div>;
   }
 
   return (

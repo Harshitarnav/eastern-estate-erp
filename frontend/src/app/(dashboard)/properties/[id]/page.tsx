@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { propertiesService, Property, PropertyInventorySummary } from '@/services/properties.service';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
 
@@ -106,11 +107,7 @@ export default function PropertyDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: brandPalette.primary }} />
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (error || !property) {
