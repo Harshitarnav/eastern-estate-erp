@@ -582,4 +582,40 @@ A: Leave balances must be entered when creating the employee (or updated via Edi
 
 ---
 
+**Q: Where are uploaded documents and profile pictures stored? Will they survive a server rebuild?**  
+A: All new uploads go to **MinIO** — an S3-compatible object store running as a Docker container with a persistent `minio_data` volume. Even if the server OS is wiped and the containers are recreated, the files survive as long as the volume is preserved (or backed up). Files are served at `https://<domain>/files/<uuid.ext>` via Caddy. Older uploads (pre-MinIO) continue to work at `/uploads/<uuid.ext>` from the backend's Docker volume.
+
+---
+
+**Q: How do I access the MinIO Admin Console to browse stored files?**  
+A: The console runs on port `9001` but is bound to `127.0.0.1` (not exposed to the internet). To access it:  
+1. Open a terminal on your **Mac** and run: `ssh -L 9001:localhost:9001 root@<server-ip>`  
+2. Keep that terminal open (it tunnels the port to your machine)  
+3. Open `http://localhost:9001` in your browser  
+4. Log in with `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` from the server's `.env` file  
+The `eastern-estate` bucket holds all uploaded files.
+
+---
+
+**Q: A file uploaded before the MinIO migration is missing — it shows a broken image or 404.**  
+A: Pre-migration files are stored in the backend container's `backend_uploads` Docker volume and served at `/uploads/<key>`. If a file is missing, either the volume was lost or the migration script updated that row to `/files/` but the file wasn't copied. Re-run the migration: `docker exec -it eastern-estate-backend node scripts/migrate-uploads-to-minio.js` — it skips already-migrated files.
+
+---
+
+**Q: How do I run the MinIO migration script on the production server?**  
+A:
+```bash
+# 1. Make sure you're in the project directory on the server
+cd ~/eastern-estate-erp && git pull
+
+# 2. Copy the JS script into the running backend container
+docker cp backend/scripts/migrate-uploads-to-minio.js eastern-estate-backend:/app/scripts/
+
+# 3. Run it (plain node — no ts-node needed)
+docker exec -it eastern-estate-backend node scripts/migrate-uploads-to-minio.js
+```
+The script is idempotent — safe to re-run; it skips any file already pointing to `/files/`.
+
+---
+
 *End of guide. Please update this document whenever a new flow is added or an existing one changes.*

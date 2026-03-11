@@ -196,13 +196,18 @@
 - Updated `UploadController` — calls `save()` before returning URL; thumbnail generation happens before `save()` so the source file is still available
 - Updated `DocumentsService` — calls `save()` then `getUrl()` instead of just `getUrl()`
 - Added MinIO container + `minio_data` volume to `docker-compose.prod.yml`
-- Updated `Caddyfile` — `/files/*` routes proxy to MinIO (`/files/<key>` → `minio:9000/eastern-estate/<key>`)
+- Updated `Caddyfile` — `handle_path /files/*` strips the prefix then rewrites to `/eastern-estate/{path}` before proxying to `minio:9000` (`/files/<key>` → `minio:9000/eastern-estate/<key>`)
 - Old `/uploads/*` route unchanged — legacy files on Docker volume continue to work forever
 - Bucket auto-created with public-read policy on backend startup via `onModuleInit()`
 
 **File URL patterns:**
 - Old files (pre-MinIO): `/uploads/<uuid>.pdf` — served from backend Docker volume
 - New files (MinIO): `/files/<uuid>.pdf` — served directly from MinIO via Caddy
+
+**Production fixes applied after initial deployment:**
+- `docker-compose.prod.yml` — added `ports: "127.0.0.1:9001:9001"` to MinIO container so the Admin Console is reachable via SSH tunnel (`ssh -L 9001:localhost:9001 root@<server>` → `http://localhost:9001`)
+- `Caddyfile` — fixed path-rewrite bug: `handle_path` strips `/files` prefix before `rewrite` runs, so `{path}` = `/uuid.jpg` not `/files/uuid.jpg`; without this fix Caddy was sending key `files/uuid.jpg` to MinIO (NoSuchKey error)
+- Created `backend/scripts/migrate-uploads-to-minio.js` (plain JavaScript) to avoid `ts-node` / `tsconfig.json` compilation conflicts inside the production container; migrates `documents.file_url`, `employees.profile_picture`, and `employee_documents.document_url` from `/uploads/` to `/files/` — run with `node scripts/migrate-uploads-to-minio.js` inside the container
 
 ---
 
@@ -348,3 +353,7 @@
 - MinIO object storage active in production — files stored permanently in `minio_data` Docker volume ✅
 - `STORAGE_SERVICE` injection token — auto-switches between MinIO (prod) and local filesystem (dev) ✅
 - `@aws-sdk/client-s3` already in `backend/package.json` — no new packages needed ✅
+- MinIO Admin Console accessible via SSH tunnel on port `9001` (bound to `127.0.0.1` only — not public) ✅
+- Caddy `handle_path /files/*` correctly strips prefix before rewrite — files serve at `https://<domain>/files/<key>` ✅
+- Migration script `backend/scripts/migrate-uploads-to-minio.js` (plain JS) migrated all pre-MinIO uploads to bucket; run with `node scripts/migrate-uploads-to-minio.js` inside backend container ✅
+- All DB rows confirmed updated: `documents.file_url`, `employees.profile_picture`, `employee_documents.document_url` all point to `/files/...` ✅
