@@ -17,7 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const document_entity_1 = require("./entities/document.entity");
-const local_storage_service_1 = require("../../common/upload/storage/local-storage.service");
+const storage_token_1 = require("../../common/upload/storage/storage.token");
 const path = require("path");
 let DocumentsService = class DocumentsService {
     constructor(repo, storage) {
@@ -25,6 +25,7 @@ let DocumentsService = class DocumentsService {
         this.storage = storage;
     }
     async create(file, dto, userId) {
+        await this.storage.save(file, file.filename);
         const doc = this.repo.create({
             ...dto,
             fileUrl: this.storage.getUrl(file.filename),
@@ -62,8 +63,8 @@ let DocumentsService = class DocumentsService {
     async remove(id, userId) {
         const doc = await this.findOne(id);
         try {
-            const filename = path.basename(doc.fileUrl);
-            await this.storage.delete(filename);
+            const key = path.basename(doc.fileUrl);
+            await this.storage.delete(key);
         }
         catch {
         }
@@ -79,7 +80,7 @@ exports.DocumentsService = DocumentsService;
 exports.DocumentsService = DocumentsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(document_entity_1.Document)),
-    __metadata("design:paramtypes", [typeorm_2.Repository,
-        local_storage_service_1.LocalStorageService])
+    __param(1, (0, common_1.Inject)(storage_token_1.STORAGE_SERVICE)),
+    __metadata("design:paramtypes", [typeorm_2.Repository, Object])
 ], DocumentsService);
 //# sourceMappingURL=documents.service.js.map

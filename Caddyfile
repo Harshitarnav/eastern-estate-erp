@@ -9,8 +9,16 @@ easternestate.global {
     }
     
     # Proxy uploaded files (images, documents, etc.) to backend
+    # This serves files still stored on the backend Docker volume (legacy / local dev)
     handle /uploads/* {
         reverse_proxy backend:3001
+    }
+
+    # Proxy new files stored in MinIO
+    # /files/<key>  →  minio:9000/<bucket>/<key>
+    handle_path /files/* {
+        rewrite * /eastern-estate{path}
+        reverse_proxy minio:9000
     }
     
     # Proxy everything else to frontend

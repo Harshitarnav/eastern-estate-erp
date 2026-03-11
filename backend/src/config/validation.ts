@@ -34,12 +34,13 @@ export const validationSchema = Joi.object({
   RATE_LIMIT_MAX: Joi.number().positive().default(100),
   CORS_ORIGINS: Joi.string().allow('').optional(),
 
-  MINIO_ENDPOINT: Joi.string().hostname().required(),
+  // MinIO / object storage — all optional; omit to fall back to local disk storage
+  MINIO_ENDPOINT: Joi.string().hostname().optional(),
   MINIO_PORT: Joi.number().port().default(9000),
-  MINIO_ACCESS_KEY: Joi.string().required(),
-  MINIO_SECRET_KEY: Joi.string().required(),
+  MINIO_ACCESS_KEY: Joi.string().allow('').optional(),
+  MINIO_SECRET_KEY: Joi.string().allow('').optional(),
   MINIO_USE_SSL: Joi.boolean().truthy('true').falsy('false').default(false),
-  MINIO_BUCKET: Joi.string().required(),
+  MINIO_BUCKET: Joi.string().allow('').optional(),
 
   // Email configuration (optional - graceful degradation if not set)
   EMAIL_HOST: Joi.string().hostname().default('smtp.gmail.com'),

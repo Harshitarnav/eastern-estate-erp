@@ -186,7 +186,27 @@
 
 ---
 
-### 21. ✅ Skeleton Loaders — ERP-wide
+### 21a. ✅ MinIO Object Storage
+**What:** Replaced local filesystem uploads with MinIO (S3-compatible) object storage for permanent document persistence.  
+**Why:** Files on the backend container's local filesystem are lost if the server is wiped. MinIO stores files in a Docker volume that survives server updates.  
+**Scope:**
+- Created `MinioStorageService` using `@aws-sdk/client-s3` (already installed) — implements `IStorageService`
+- Created `STORAGE_SERVICE` injection token — modules resolve to `MinioStorageService` in production, `LocalStorageService` in local dev (based on `MINIO_ENDPOINT` env var)
+- Updated `multer.config.ts` — multer writes to `os.tmpdir()` first; `storage.save()` then moves/uploads to final destination
+- Updated `UploadController` — calls `save()` before returning URL; thumbnail generation happens before `save()` so the source file is still available
+- Updated `DocumentsService` — calls `save()` then `getUrl()` instead of just `getUrl()`
+- Added MinIO container + `minio_data` volume to `docker-compose.prod.yml`
+- Updated `Caddyfile` — `/files/*` routes proxy to MinIO (`/files/<key>` → `minio:9000/eastern-estate/<key>`)
+- Old `/uploads/*` route unchanged — legacy files on Docker volume continue to work forever
+- Bucket auto-created with public-read policy on backend startup via `onModuleInit()`
+
+**File URL patterns:**
+- Old files (pre-MinIO): `/uploads/<uuid>.pdf` — served from backend Docker volume
+- New files (MinIO): `/files/<uuid>.pdf` — served directly from MinIO via Caddy
+
+---
+
+### 22. ✅ Skeleton Loaders — ERP-wide
 **What:** Replaced all spinner/no-loader loading states with contextual skeleton loaders across every page in the ERP.  
 **Why:** Prevents multiple clicks during loading and gives users a clear visual of the page structure before data arrives.  
 **Scope:**
@@ -325,3 +345,6 @@
 - Skeleton loaders centralised in `frontend/src/components/Skeletons.tsx` ✅
 - `Form.tsx` uses `??` (nullish coalescing) — number fields with value `0` display correctly ✅
 - Employee leave balances (CL/SL/EL) are dynamic — set via DTO, no hardcoded defaults ✅
+- MinIO object storage active in production — files stored permanently in `minio_data` Docker volume ✅
+- `STORAGE_SERVICE` injection token — auto-switches between MinIO (prod) and local filesystem (dev) ✅
+- `@aws-sdk/client-s3` already in `backend/package.json` — no new packages needed ✅

@@ -1,24 +1,28 @@
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { tmpdir } from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { BadRequestException } from '@nestjs/common';
 
+/**
+ * Files are written to the OS temp directory first.
+ * The active StorageService (LocalStorageService or MinioStorageService)
+ * then moves/uploads the file from there to its final destination when
+ * storage.save(file, key) is called.
+ */
 export const multerConfig: MulterOptions = {
   storage: diskStorage({
-    destination: (req, file, cb) => {
-      const uploadPath = process.env.UPLOAD_LOCATION || './uploads';
-      cb(null, uploadPath);
+    destination: (_req, _file, cb) => {
+      cb(null, tmpdir());
     },
-    filename: (req, file, cb) => {
+    filename: (_req, file, cb) => {
       const uniqueId = uuidv4();
       const ext = extname(file.originalname);
-      const filename = `${uniqueId}${ext}`;
-      cb(null, filename);
+      cb(null, `${uniqueId}${ext}`);
     },
   }),
-  fileFilter: (req, file, cb) => {
-    // Allowed file types
+  fileFilter: (_req, file, cb) => {
     const allowedMimes = [
       // Images
       'image/jpeg',
@@ -44,13 +48,13 @@ export const multerConfig: MulterOptions = {
     }
   },
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB default
+    fileSize: 10 * 1024 * 1024, // 10 MB
   },
 };
 
 export const imageUploadConfig: MulterOptions = {
   ...multerConfig,
-  fileFilter: (req, file, cb) => {
+  fileFilter: (_req, file, cb) => {
     const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
@@ -59,6 +63,6 @@ export const imageUploadConfig: MulterOptions = {
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB for images
+    fileSize: 5 * 1024 * 1024, // 5 MB
   },
 };

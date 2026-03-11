@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Inject,
   UploadedFile,
   UploadedFiles,
   UseInterceptors,
@@ -9,14 +10,18 @@ import {
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FileValidationPipe, FilesValidationPipe } from './pipes/file-validation.pipe';
 import { ImageProcessorService } from './image-processor.service';
-import { LocalStorageService } from './storage/local-storage.service';
+import { IStorageService } from './storage/storage.interface';
+import { STORAGE_SERVICE } from './storage/storage.token';
 import { FileResponseDto } from './dto/upload-file.dto';
+import { tmpdir } from 'os';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 
 @Controller('upload')
 export class UploadController {
   constructor(
     private readonly imageProcessor: ImageProcessorService,
-    private readonly storage: LocalStorageService,
+    @Inject(STORAGE_SERVICE) private readonly storage: IStorageService,
   ) {}
 
   @Post('single')
@@ -41,19 +46,38 @@ export class UploadController {
       mimeType: file.mimetype,
       size: file.size,
       path: file.path,
-      url: this.storage.getUrl(file.filename),
       uploadedAt: new Date(),
+      url: '', // filled below
     };
 
+    // Generate thumbnail BEFORE save() — save() deletes the temp file
     if (this.imageProcessor.isImage(file.mimetype)) {
+      const thumbKey = `thumbnails/${file.filename}`;
+      const thumbTempPath = path.join(tmpdir(), `thumb_${file.filename}`);
       try {
-        const thumbnailPath = `thumbnails/${file.filename}`;
-        await this.imageProcessor.generateThumbnail(file.path, `./uploads/${thumbnailPath}`);
-        response.thumbnailUrl = this.storage.getUrl(thumbnailPath);
+        await this.imageProcessor.generateThumbnail(file.path, thumbTempPath);
+
+        const thumbStats = await fs.stat(thumbTempPath);
+        const thumbFile = {
+          path: thumbTempPath,
+          filename: thumbKey,
+          originalname: `thumb_${file.originalname}`,
+          mimetype: 'image/jpeg',
+          size: thumbStats.size,
+        } as Express.Multer.File;
+
+        await this.storage.save(thumbFile, thumbKey);
+        response.thumbnailUrl = this.storage.getUrl(thumbKey);
       } catch (error) {
         console.error('Failed to generate thumbnail:', error);
+        // Clean up thumb temp file if it was created
+        await fs.unlink(thumbTempPath).catch(() => {});
       }
     }
+
+    // Save the main file (moves from tmpdir to final destination)
+    await this.storage.save(file, file.filename);
+    response.url = this.storage.getUrl(file.filename);
 
     return response;
   }
@@ -84,19 +108,36 @@ export class UploadController {
         mimeType: file.mimetype,
         size: file.size,
         path: file.path,
-        url: this.storage.getUrl(file.filename),
         uploadedAt: new Date(),
+        url: '',
       };
 
+      // Thumbnail before save()
       if (this.imageProcessor.isImage(file.mimetype)) {
+        const thumbKey = `thumbnails/${file.filename}`;
+        const thumbTempPath = path.join(tmpdir(), `thumb_${file.filename}`);
         try {
-          const thumbnailPath = `thumbnails/${file.filename}`;
-          await this.imageProcessor.generateThumbnail(file.path, `./uploads/${thumbnailPath}`);
-          response.thumbnailUrl = this.storage.getUrl(thumbnailPath);
+          await this.imageProcessor.generateThumbnail(file.path, thumbTempPath);
+
+          const thumbStats = await fs.stat(thumbTempPath);
+          const thumbFile = {
+            path: thumbTempPath,
+            filename: thumbKey,
+            originalname: `thumb_${file.originalname}`,
+            mimetype: 'image/jpeg',
+            size: thumbStats.size,
+          } as Express.Multer.File;
+
+          await this.storage.save(thumbFile, thumbKey);
+          response.thumbnailUrl = this.storage.getUrl(thumbKey);
         } catch (error) {
           console.error('Failed to generate thumbnail:', error);
+          await fs.unlink(thumbTempPath).catch(() => {});
         }
       }
+
+      await this.storage.save(file, file.filename);
+      response.url = this.storage.getUrl(file.filename);
 
       responses.push(response);
     }
