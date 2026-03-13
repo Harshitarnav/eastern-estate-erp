@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Megaphone, FileText, Paperclip, Download, Calendar, DollarSign } from 'lucide-react';
 import { marketingService, Campaign } from '@/services/marketing.service';
+import { DetailSkeleton } from '@/components/Skeletons';
 
 export default function CampaignDetailPage() {
   const router = useRouter();
@@ -93,16 +94,7 @@ export default function CampaignDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-center items-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#A8211B' }}></div>
-            <p className="text-gray-600">Loading campaign...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <DetailSkeleton sidebar={false} />;
   }
 
   if (error && !campaign) {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { rolesService, type CreateRoleDto, type UpdateRoleDto } from '@/services/roles.service';
 import { type Role, type Permission } from '@/services/users.service';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -115,7 +116,7 @@ export default function RolesPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-8">Loading...</div>
+        <TableRowsSkeleton rows={5} cols={3} />
       ) : (
         <div className="grid gap-4">
           {((roles || [])).map((role) => (

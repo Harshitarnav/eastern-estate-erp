@@ -45,6 +45,7 @@ import { propertiesService, Property } from '@/services/properties.service';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdminRole } from '@/lib/roles';
+import { FormSkeleton } from '@/components/Skeletons';
 
 interface User {
   id: string;
@@ -205,11 +206,7 @@ export default function PropertyAccessManagement() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <FormSkeleton fields={8} />;
   }
 
   return (

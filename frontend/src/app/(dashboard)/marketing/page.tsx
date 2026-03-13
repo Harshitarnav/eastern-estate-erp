@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Megaphone, Plus, Search, TrendingUp, DollarSign, Users as UsersIcon, Target } from 'lucide-react';
 import { marketingService, Campaign, CampaignFilters } from '@/services/marketing.service';
+import { CardGridSkeleton } from '@/components/Skeletons';
 
 export default function MarketingPage() {
   const router = useRouter();
@@ -164,12 +165,7 @@ export default function MarketingPage() {
 
       {/* Loading */}
       {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#A8211B' }}></div>
-            <p className="text-gray-600">Loading campaigns...</p>
-          </div>
-        </div>
+        <CardGridSkeleton cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" />
       ) : (campaigns || []).length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">
           <Megaphone className="h-16 w-16 mx-auto mb-4" style={{ color: '#A8211B', opacity: 0.5 }} />

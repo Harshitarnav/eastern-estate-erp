@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/select';
 import { brandGradient, brandPalette } from '@/utils/brand';
 import { Loader2, ArrowLeft, Calendar, Clock, MapPin } from 'lucide-react';
+import { FormSkeleton } from '@/components/Skeletons';
 
 type TaskFormState = {
   title: string;
@@ -138,11 +139,7 @@ export default function NewTaskPage() {
   };
 
   if (isLoading || (loadingLeads && !user)) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-[#A8211B]" />
-      </div>
-    );
+    return <FormSkeleton fields={8} />;
   }
 
   return (

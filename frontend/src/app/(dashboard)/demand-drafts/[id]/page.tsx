@@ -51,6 +51,7 @@ import { bookingsService } from '@/services/bookings.service';
 import { paymentPlansService } from '@/services/payment-plans.service';
 import { generateDemandInvoicePdf, DemandInvoiceData } from '@/lib/generate-demand-invoice-pdf';
 import { toast } from 'sonner';
+import { DetailSkeleton } from '@/components/Skeletons';
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-yellow-500',
@@ -318,12 +319,7 @@ export default function DemandDraftDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2 text-lg">Loading demand draft…</span>
-      </div>
-    );
+    return <DetailSkeleton sidebar={false} />;
   }
 
   if (!draft) {

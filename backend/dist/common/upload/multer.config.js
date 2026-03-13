@@ -3,22 +3,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.imageUploadConfig = exports.multerConfig = void 0;
 const multer_1 = require("multer");
 const path_1 = require("path");
+const os_1 = require("os");
 const uuid_1 = require("uuid");
 const common_1 = require("@nestjs/common");
 exports.multerConfig = {
     storage: (0, multer_1.diskStorage)({
-        destination: (req, file, cb) => {
-            const uploadPath = process.env.UPLOAD_LOCATION || './uploads';
-            cb(null, uploadPath);
+        destination: (_req, _file, cb) => {
+            cb(null, (0, os_1.tmpdir)());
         },
-        filename: (req, file, cb) => {
+        filename: (_req, file, cb) => {
             const uniqueId = (0, uuid_1.v4)();
             const ext = (0, path_1.extname)(file.originalname);
-            const filename = `${uniqueId}${ext}`;
-            cb(null, filename);
+            cb(null, `${uniqueId}${ext}`);
         },
     }),
-    fileFilter: (req, file, cb) => {
+    fileFilter: (_req, file, cb) => {
         const allowedMimes = [
             'image/jpeg',
             'image/jpg',
@@ -46,7 +45,7 @@ exports.multerConfig = {
 };
 exports.imageUploadConfig = {
     ...exports.multerConfig,
-    fileFilter: (req, file, cb) => {
+    fileFilter: (_req, file, cb) => {
         const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
         if (allowedMimes.includes(file.mimetype)) {
             cb(null, true);

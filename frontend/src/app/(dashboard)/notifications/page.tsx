@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import notificationsService, { Notification } from '@/services/notifications.service';
 import { formatDistanceToNow } from 'date-fns';
+import { TableSkeleton } from '@/components/Skeletons';
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -78,11 +79,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <div className="p-6"><TableSkeleton rows={6} /></div>;
   }
 
   return (

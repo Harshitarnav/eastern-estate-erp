@@ -7,6 +7,7 @@ import BookingForm from '@/components/forms/BookingForm';
 import { bookingsService } from '@/services/bookings.service';
 import { toast } from 'sonner';
 import { showApiError } from '@/utils/error-handler';
+import { FormSkeleton } from '@/components/Skeletons';
 
 export default function BookingEditPage() {
   const router = useRouter();
@@ -152,11 +153,7 @@ export default function BookingEditPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-      </div>
-    );
+    return <FormSkeleton fields={10} />;
   }
 
   if (error) {

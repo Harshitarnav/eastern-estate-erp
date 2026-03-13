@@ -4,24 +4,19 @@ import { useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePropertyStore } from '@/store/propertyStore';
 import { propertiesService } from '@/services/properties.service';
+import { TableSkeleton } from '@/components/Skeletons';
 import {
   FileText,
   Plus,
   Search,
   Calendar,
-  DollarSign,
-  Home,
   User,
-  Filter,
   Loader2,
   Eye,
   Edit,
-  X,
   CheckCircle,
   Clock,
-  AlertCircle,
   TrendingUp,
-  Building,
 } from 'lucide-react';
 import { bookingsService, Booking, BookingFilters } from '@/services/bookings.service';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
@@ -154,7 +149,7 @@ function BookingsPageContent() {
             <span style={{ color: brandPalette.accent }}>token to possession</span>
           </>
         }
-        description="This is your central hub for managing all property bookings. Monitor booking status, payment progress, track agreements, manage home loans, and oversee the complete booking lifecycle from initial token to final possession."
+        description="Track every property booking from token to final possession — payment milestones, agreement status, home loans, and possession handover in one place."
         actions={
           <>
             <BrandPrimaryButton onClick={() => router.push('/bookings/new')}>
@@ -168,59 +163,6 @@ function BookingsPageContent() {
           </>
         }
       />
-
-      {/* Purpose Explanation Card */}
-      <div
-        className="rounded-2xl border bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm"
-        style={{ borderColor: `${brandPalette.accent}40` }}
-      >
-        <div className="flex items-start gap-4">
-          <div 
-            className="p-3 rounded-xl"
-            style={{ backgroundColor: `${brandPalette.accent}20` }}
-          >
-            <AlertCircle className="w-6 h-6" style={{ color: brandPalette.accent }} />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-2" style={{ color: brandPalette.secondary }}>
-              What is a Booking?
-            </h3>
-            <p className="text-sm text-gray-700 leading-relaxed mb-3">
-              A <strong>booking</strong> represents a confirmed property purchase where a customer has paid a token amount and signed an agreement. This page tracks the complete journey from initial booking to final possession and registration.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-sm text-gray-900">Payment Tracking</span>
-                </div>
-                <p className="text-xs text-gray-600">Monitor token, installments, and balance amounts</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-sm text-gray-900">Agreement Management</span>
-                </div>
-                <p className="text-xs text-gray-600">Track agreement signing and documentation</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Home className="w-4 h-4 text-amber-600" />
-                  <span className="font-medium text-sm text-gray-900">Possession Dates</span>
-                </div>
-                <p className="text-xs text-gray-600">Expected vs actual possession timeline</p>
-              </div>
-              <div className="bg-white/70 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Building className="w-4 h-4 text-purple-600" />
-                  <span className="font-medium text-sm text-gray-900">Home Loan Status</span>
-                </div>
-                <p className="text-xs text-gray-600">Track bank loans and approval status</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Statistics Dashboard */}
       {stats && (
@@ -374,12 +316,7 @@ function BookingsPageContent() {
 
       {/* Bookings List */}
       {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandPalette.primary }} />
-            <p className="text-gray-600 text-sm">Loading bookings...</p>
-          </div>
-        </div>
+        <TableSkeleton rows={5} />
       ) : (bookings || []).length === 0 ? (
         <div className="bg-white/90 rounded-3xl border p-12 text-center shadow-sm">
           <FileText className="h-16 w-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.55 }} />
@@ -406,11 +343,11 @@ function BookingsPageContent() {
                 style={{ borderColor: `${brandPalette.neutral}60` }}
               >
                 <div className="p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     {/* Left Section - Booking Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-xl font-semibold" style={{ color: brandPalette.secondary }}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-3 flex-wrap">
+                        <h3 className="text-lg font-semibold" style={{ color: brandPalette.secondary }}>
                           {booking.bookingNumber}
                         </h3>
                         <span
@@ -429,7 +366,7 @@ function BookingsPageContent() {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div>
                           <p className="text-gray-600 text-xs">Customer</p>
                           <p className="font-medium">{booking.customer?.full_name || 'N/A'}</p>
@@ -455,7 +392,7 @@ function BookingsPageContent() {
                     </div>
 
                     {/* Right Section - Payment Progress */}
-                    <div className="lg:w-80">
+                    <div className="md:w-72 shrink-0">
                       <div className="bg-gray-50 rounded-xl p-4">
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-xs text-gray-600">Payment Progress</span>

@@ -20,6 +20,7 @@ import {
 import { customersService, Customer } from '@/services/customers.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
 
@@ -79,14 +80,7 @@ export default function CustomerViewPage() {
       : 'PENDING';
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandPalette.primary }} />
-          <p className="text-gray-600">Loading customer details...</p>
-        </div>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (error || !customer) {

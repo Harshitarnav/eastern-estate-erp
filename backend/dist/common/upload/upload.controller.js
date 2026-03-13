@@ -17,7 +17,10 @@ const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const file_validation_pipe_1 = require("./pipes/file-validation.pipe");
 const image_processor_service_1 = require("./image-processor.service");
-const local_storage_service_1 = require("./storage/local-storage.service");
+const storage_token_1 = require("./storage/storage.token");
+const os_1 = require("os");
+const path = require("path");
+const fs = require("fs/promises");
 let UploadController = class UploadController {
     constructor(imageProcessor, storage) {
         this.imageProcessor = imageProcessor;
@@ -34,19 +37,32 @@ let UploadController = class UploadController {
             mimeType: file.mimetype,
             size: file.size,
             path: file.path,
-            url: this.storage.getUrl(file.filename),
             uploadedAt: new Date(),
+            url: '',
         };
         if (this.imageProcessor.isImage(file.mimetype)) {
+            const thumbKey = `thumbnails/${file.filename}`;
+            const thumbTempPath = path.join((0, os_1.tmpdir)(), `thumb_${file.filename}`);
             try {
-                const thumbnailPath = `thumbnails/${file.filename}`;
-                await this.imageProcessor.generateThumbnail(file.path, `./uploads/${thumbnailPath}`);
-                response.thumbnailUrl = this.storage.getUrl(thumbnailPath);
+                await this.imageProcessor.generateThumbnail(file.path, thumbTempPath);
+                const thumbStats = await fs.stat(thumbTempPath);
+                const thumbFile = {
+                    path: thumbTempPath,
+                    filename: thumbKey,
+                    originalname: `thumb_${file.originalname}`,
+                    mimetype: 'image/jpeg',
+                    size: thumbStats.size,
+                };
+                await this.storage.save(thumbFile, thumbKey);
+                response.thumbnailUrl = this.storage.getUrl(thumbKey);
             }
             catch (error) {
                 console.error('Failed to generate thumbnail:', error);
+                await fs.unlink(thumbTempPath).catch(() => { });
             }
         }
+        await this.storage.save(file, file.filename);
+        response.url = this.storage.getUrl(file.filename);
         return response;
     }
     async uploadMultiple(files) {
@@ -62,19 +78,32 @@ let UploadController = class UploadController {
                 mimeType: file.mimetype,
                 size: file.size,
                 path: file.path,
-                url: this.storage.getUrl(file.filename),
                 uploadedAt: new Date(),
+                url: '',
             };
             if (this.imageProcessor.isImage(file.mimetype)) {
+                const thumbKey = `thumbnails/${file.filename}`;
+                const thumbTempPath = path.join((0, os_1.tmpdir)(), `thumb_${file.filename}`);
                 try {
-                    const thumbnailPath = `thumbnails/${file.filename}`;
-                    await this.imageProcessor.generateThumbnail(file.path, `./uploads/${thumbnailPath}`);
-                    response.thumbnailUrl = this.storage.getUrl(thumbnailPath);
+                    await this.imageProcessor.generateThumbnail(file.path, thumbTempPath);
+                    const thumbStats = await fs.stat(thumbTempPath);
+                    const thumbFile = {
+                        path: thumbTempPath,
+                        filename: thumbKey,
+                        originalname: `thumb_${file.originalname}`,
+                        mimetype: 'image/jpeg',
+                        size: thumbStats.size,
+                    };
+                    await this.storage.save(thumbFile, thumbKey);
+                    response.thumbnailUrl = this.storage.getUrl(thumbKey);
                 }
                 catch (error) {
                     console.error('Failed to generate thumbnail:', error);
+                    await fs.unlink(thumbTempPath).catch(() => { });
                 }
             }
+            await this.storage.save(file, file.filename);
+            response.url = this.storage.getUrl(file.filename);
             responses.push(response);
         }
         return responses;
@@ -106,7 +135,7 @@ __decorate([
 ], UploadController.prototype, "uploadMultiple", null);
 exports.UploadController = UploadController = __decorate([
     (0, common_1.Controller)('upload'),
-    __metadata("design:paramtypes", [image_processor_service_1.ImageProcessorService,
-        local_storage_service_1.LocalStorageService])
+    __param(1, (0, common_1.Inject)(storage_token_1.STORAGE_SERVICE)),
+    __metadata("design:paramtypes", [image_processor_service_1.ImageProcessorService, Object])
 ], UploadController);
 //# sourceMappingURL=upload.controller.js.map

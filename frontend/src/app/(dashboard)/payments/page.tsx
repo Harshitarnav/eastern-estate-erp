@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { paymentsService, Payment, PaymentFilters } from '@/services/payments.service';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
+import { TableSkeleton } from '@/components/Skeletons';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
 import { toast } from 'sonner';
@@ -295,12 +296,7 @@ export default function PaymentsPage() {
       )}
 
       {loading ? (
-        <div className="flex justify-center items-center py-16">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin" style={{ color: brandPalette.primary }} />
-            <p className="text-gray-600 text-sm">Loading payments...</p>
-          </div>
-        </div>
+        <TableSkeleton rows={6} />
       ) : (payments || []).length === 0 ? (
         <div className="bg-white/90 rounded-3xl border p-12 text-center shadow-sm">
           <IndianRupee className="h-16 w-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.55 }} />

@@ -1,22 +1,22 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Document, DocumentEntityType } from './entities/document.entity';
 import { CreateDocumentDto } from './dto/create-document.dto';
-import { LocalStorageService } from '../../common/upload/storage/local-storage.service';
+import { IStorageService } from '../../common/upload/storage/storage.interface';
+import { STORAGE_SERVICE } from '../../common/upload/storage/storage.token';
 import * as path from 'path';
-import * as fs from 'fs/promises';
 
 @Injectable()
 export class DocumentsService {
   constructor(
     @InjectRepository(Document)
     private readonly repo: Repository<Document>,
-    private readonly storage: LocalStorageService,
+    @Inject(STORAGE_SERVICE) private readonly storage: IStorageService,
   ) {}
 
   /** Upload a new document file + save metadata */
@@ -25,6 +25,9 @@ export class DocumentsService {
     dto: CreateDocumentDto,
     userId: string,
   ): Promise<Document> {
+    // Move the multer temp file to its final destination (local or MinIO)
+    await this.storage.save(file, file.filename);
+
     const doc = this.repo.create({
       ...dto,
       fileUrl: this.storage.getUrl(file.filename),
@@ -72,12 +75,14 @@ export class DocumentsService {
   async remove(id: string, userId: string): Promise<void> {
     const doc = await this.findOne(id);
 
-    // Try to delete the physical file (best-effort)
+    // Try to delete the physical file (best-effort — if it's gone already, that's fine)
     try {
-      const filename = path.basename(doc.fileUrl);
-      await this.storage.delete(filename);
+      // Extract just the filename/key from the stored URL
+      // Handles both /uploads/<key> and /files/<key> patterns
+      const key = path.basename(doc.fileUrl);
+      await this.storage.delete(key);
     } catch {
-      // File might already be gone — continue
+      // File might already be gone — continue with DB removal
     }
 
     await this.repo.remove(doc);

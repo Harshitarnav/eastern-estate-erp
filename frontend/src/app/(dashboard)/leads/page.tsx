@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePropertyStore } from '@/store/propertyStore';
 import { leadsService, Lead, LeadFilters } from '@/services/leads.service';
 import { usersService } from '@/services/users.service';
+import { TableSkeleton } from '@/components/Skeletons';
 import { propertiesService } from '@/services/properties.service';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -838,9 +839,7 @@ export default function LeadsListPage() {
       {/* Main Content */}
       <div className="max-w-[1800px] mx-auto px-4 py-6">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
+          <TableSkeleton rows={6} />
         ) : leads.length === 0 ? (
           <Card className="p-12 text-center">
             <div className="text-gray-400 mb-4">

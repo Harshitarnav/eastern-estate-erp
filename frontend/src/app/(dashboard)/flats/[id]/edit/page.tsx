@@ -8,6 +8,7 @@ import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
 import { customersService } from '@/services/customers.service';
 import { mapFlatFormToPayload } from '@/utils/forms/flat';
+import { FormSkeleton } from '@/components/Skeletons';
 
 export default function EditFlatPage() {
   const router = useRouter();
@@ -196,11 +197,7 @@ export default function EditFlatPage() {
   };
 
   if (initialLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return <FormSkeleton fields={12} />;
   }
 
   return (

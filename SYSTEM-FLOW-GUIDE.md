@@ -1,6 +1,6 @@
 # Eastern Estate ERP — System Flow Guide
 > **Living document.** Update this file whenever the system flow changes.  
-> Last updated: March 2026
+> Last updated: 11 March 2026
 
 ---
 
@@ -403,9 +403,23 @@ Sidebar: HR → Employees
    - **Employment** — Department, Designation, Join Date, Employment Type
    - **Salary** — Basic, HRA, TA, DA, Other Allowances, PF, ESI, TDS (gross and net auto-calculate)
    - **Bank** — Bank Name, Account Number, IFSC, UAN, PF/ESI numbers
-   - **Leave** — Leave balances per type
+   - **Leave** — CL, SL, and EL balances (enter the actual entitlement — no hardcoded defaults)
 3. Upload documents from the **Documents** section: offer letter, ID proof, etc.
 4. Save — all fields persist correctly
+
+### Viewing an Employee Profile
+The employee detail page shows all data across every section:
+
+| Section | What's shown |
+|---------|-------------|
+| **Personal** | Name, DOB, Gender, Phone, Address, Emergency Contact |
+| **Employment** | Department, Designation, Join Date, Type, Status, Manager |
+| **Salary** | Basic, HRA, TA, DA, Allowances, PF, ESI, TDS, Gross, Net |
+| **Bank** | Bank Name, Account Number, IFSC, UAN, PF/ESI numbers |
+| **Leave Balances** | CL, SL, EL remaining — sourced live from the database |
+| **Attendance Summary** | Days Present, Days Absent, Late Arrivals |
+| **Feedback & Performance** | Skills, Qualifications, Experience, Performance Rating, Last Review Date, Notes |
+| **Documents** | Offer letter, ID proof, qualification certificates |
 
 ### Editing an Employee
 1. Open the employee profile → click **Edit**
@@ -413,6 +427,8 @@ Sidebar: HR → Employees
 3. Save — all fields update (including salary, bank details, and leave balances)
 
 > ℹ️ Net salary auto-calculates from Basic + HRA + Allowances − Deductions. To override, type directly in the Net Salary field.
+
+> ℹ️ Leave balances (CL / SL / EL) are set when creating the employee and can be updated via Edit at any time. They reflect whatever value is entered — there are no hardcoded defaults.
 
 ---
 
@@ -553,6 +569,52 @@ Or from a **Payment Plan**, the booking number and customer name appear in the h
 A: Two ways:  
 1. **Dashboard** → scroll to the "Overdue Milestones" table — click any row to open that unit's ledger  
 2. **Reports → Outstanding** → filter / sort by the "Overdue Milestones" column
+
+---
+
+**Q: The page shows a grey skeleton/shimmer instead of data — is something broken?**  
+A: No — that is the skeleton loader. Every page shows an animated preview of its layout while data loads from the server. It disappears automatically once the data arrives. If it stays indefinitely, check your network connection or the backend logs.
+
+---
+
+**Q: Leave balances (CL / SL / EL) on an employee profile show 0.**  
+A: Leave balances must be entered when creating the employee (or updated via Edit). There are no automatic defaults — the value shown is exactly what was saved. Ask HR to open the employee → Edit → Leave tab and enter the correct balances.
+
+---
+
+**Q: Where are uploaded documents and profile pictures stored? Will they survive a server rebuild?**  
+A: All new uploads go to **MinIO** — an S3-compatible object store running as a Docker container with a persistent `minio_data` volume. Even if the server OS is wiped and the containers are recreated, the files survive as long as the volume is preserved (or backed up). Files are served at `https://<domain>/files/<uuid.ext>` via Caddy. Older uploads (pre-MinIO) continue to work at `/uploads/<uuid.ext>` from the backend's Docker volume.
+
+---
+
+**Q: How do I access the MinIO Admin Console to browse stored files?**  
+A: The console runs on port `9001` but is bound to `127.0.0.1` (not exposed to the internet). To access it:  
+1. Open a terminal on your **Mac** and run: `ssh -L 9001:localhost:9001 root@<server-ip>`  
+2. Keep that terminal open (it tunnels the port to your machine)  
+3. Open `http://localhost:9001` in your browser  
+4. Log in with `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` from the server's `.env` file  
+The `eastern-estate` bucket holds all uploaded files.
+
+---
+
+**Q: A file uploaded before the MinIO migration is missing — it shows a broken image or 404.**  
+A: Pre-migration files are stored in the backend container's `backend_uploads` Docker volume and served at `/uploads/<key>`. If a file is missing, either the volume was lost or the migration script updated that row to `/files/` but the file wasn't copied. Re-run the migration: `docker exec -it eastern-estate-backend node scripts/migrate-uploads-to-minio.js` — it skips already-migrated files.
+
+---
+
+**Q: How do I run the MinIO migration script on the production server?**  
+A:
+```bash
+# 1. Make sure you're in the project directory on the server
+cd ~/eastern-estate-erp && git pull
+
+# 2. Copy the JS script into the running backend container
+docker cp backend/scripts/migrate-uploads-to-minio.js eastern-estate-backend:/app/scripts/
+
+# 3. Run it (plain node — no ts-node needed)
+docker exec -it eastern-estate-backend node scripts/migrate-uploads-to-minio.js
+```
+The script is idempotent — safe to re-run; it skips any file already pointing to `/files/`.
 
 ---
 

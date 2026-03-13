@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Save, Upload, X, Paperclip, Loader } from 'lucide-react';
 import { marketingService, Campaign } from '@/services/marketing.service';
 import ErrorModal from '@/components/modals/ErrorModal';
+import { FormSkeleton } from '@/components/Skeletons';
 
 export default function EditCampaignPage() {
   const router = useRouter();
@@ -181,16 +182,7 @@ export default function EditCampaignPage() {
   };
 
   if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex justify-center items-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#A8211B' }}></div>
-            <p className="text-gray-600">Loading campaign...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <FormSkeleton fields={10} />;
   }
 
   if (!campaign) {

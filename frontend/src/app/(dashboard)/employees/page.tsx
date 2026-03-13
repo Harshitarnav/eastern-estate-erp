@@ -195,13 +195,50 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Loading */}
+      {/* Loading — skeleton cards */}
       {loading ? (
-        <div className="flex justify-center items-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#A8211B' }}></div>
-            <p className="text-gray-600">Loading employees...</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+              {/* Card header */}
+              <div className="p-4" style={{ backgroundColor: '#FEF3E2' }}>
+                <div className="flex items-start gap-4">
+                  <div className="h-16 w-16 rounded-full bg-gray-300 flex-shrink-0" />
+                  <div className="flex-1 space-y-2 pt-1">
+                    <div className="h-4 bg-gray-300 rounded w-3/4" />
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  </div>
+                  <div className="h-6 w-16 bg-gray-200 rounded-full flex-shrink-0" />
+                </div>
+              </div>
+              {/* Card body */}
+              <div className="p-4 space-y-3">
+                <div className="h-5 bg-gray-200 rounded w-1/3" />
+                <div className="h-4 bg-gray-200 rounded w-2/3" />
+                <div className="space-y-2">
+                  <div className="h-3 bg-gray-100 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-5/6" />
+                  <div className="h-3 bg-gray-100 rounded w-4/6" />
+                </div>
+                <div className="pt-3 border-t grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="h-3 bg-gray-100 rounded w-3/4 mb-1" />
+                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  </div>
+                  <div>
+                    <div className="h-3 bg-gray-100 rounded w-3/4 mb-1" />
+                    <div className="h-4 bg-gray-200 rounded w-2/3" />
+                  </div>
+                </div>
+                <div className="pt-3 border-t mt-1 flex gap-2">
+                  <div className="h-7 bg-gray-100 rounded w-1/3" />
+                  <div className="h-7 bg-gray-100 rounded w-1/3" />
+                  <div className="h-7 bg-gray-100 rounded w-1/3" />
+                </div>
+                <div className="h-9 bg-gray-200 rounded w-full mt-2" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : (employees || []).length === 0 ? (
         <div className="bg-white rounded-lg shadow-md p-12 text-center">

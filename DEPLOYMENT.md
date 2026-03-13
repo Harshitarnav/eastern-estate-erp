@@ -517,6 +517,51 @@ docker stats --no-stream
 
 ---
 
+## 🗄️ MinIO — Accessing the Admin Console
+
+MinIO's console runs on port `9001` but is **bound to `127.0.0.1` only** (not exposed to the internet). Access it via an SSH tunnel from your Mac.
+
+### Step 1 — Open the SSH tunnel (on your Mac)
+
+Open a **new terminal** on your Mac (not on the server) and run:
+
+```bash
+ssh -L 9001:localhost:9001 root@143.244.135.165
+```
+
+Keep this terminal open. It forwards `localhost:9001` on your Mac → port `9001` inside the server.
+
+### Step 2 — Open the console in your browser
+
+While the tunnel terminal is open, go to:
+
+```
+http://localhost:9001
+```
+
+### Step 3 — Log in
+
+Use the credentials from the server's `.env` file:
+
+| Field | Value |
+|---|---|
+| **Username** | `MINIO_ACCESS_KEY` value in `.env` |
+| **Password** | `MINIO_SECRET_KEY` value in `.env` |
+
+To check your credentials on the server:
+```bash
+grep MINIO ~/eastern-estate-erp/.env
+```
+
+### Step 4 — Browse the bucket
+
+Once logged in → click **Object Browser** → select the **`eastern-estate`** bucket.  
+All uploaded documents and profile pictures are stored here.
+
+> **Note:** Closing the tunnel terminal disconnects the console. Re-run the `ssh -L` command to reconnect.
+
+---
+
 ## 📚 Additional Resources
 
 - **System Overview:** See [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)
@@ -543,9 +588,9 @@ docker stats --no-stream
 
 ---
 
-**Last Updated:** February 20, 2026  
-**Server:** DigitalOcean (3.238.49.77)  
-**Version:** 1.0
+**Last Updated:** March 11, 2026  
+**Server:** DigitalOcean (143.244.135.165)  
+**Version:** 1.1
 
 ---
 

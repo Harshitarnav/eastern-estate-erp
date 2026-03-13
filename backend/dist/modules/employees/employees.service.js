@@ -38,9 +38,15 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         Object.assign(employee, createEmployeeDto);
         employee.grossSalary = grossSalary;
         employee.netSalary = netSalary;
-        employee.casualLeaveBalance = 12;
-        employee.sickLeaveBalance = 12;
-        employee.earnedLeaveBalance = 15;
+        if (createEmployeeDto.casualLeaveBalance === undefined) {
+            employee.casualLeaveBalance = 12;
+        }
+        if (createEmployeeDto.sickLeaveBalance === undefined) {
+            employee.sickLeaveBalance = 12;
+        }
+        if (createEmployeeDto.earnedLeaveBalance === undefined) {
+            employee.earnedLeaveBalance = 15;
+        }
         const savedEmployee = await this.employeesRepository.save(employee);
         try {
             await this.createUserForEmployee(savedEmployee, createdBy);

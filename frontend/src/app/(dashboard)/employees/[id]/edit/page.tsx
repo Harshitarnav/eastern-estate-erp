@@ -173,11 +173,33 @@ export default function EditEmployeePage() {
 
   const handleCancel = () => router.push(`/employees/${employeeId}`);
 
-  // Loading state
+  // Loading state — skeleton for the edit form
   if (initialLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: '#A8211B' }} />
+      <div className="p-6 animate-pulse">
+        <div className="h-5 bg-gray-200 rounded w-44 mb-6" />
+        <div className="h-8 bg-gray-200 rounded w-48 mb-6" />
+        <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+          {/* Tab bar skeleton */}
+          <div className="flex gap-4 border-b pb-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-5 w-20 bg-gray-200 rounded" />
+            ))}
+          </div>
+          {/* Field grid skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i}>
+                <div className="h-3 bg-gray-100 rounded w-1/3 mb-2" />
+                <div className="h-10 bg-gray-200 rounded w-full" />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="h-10 w-24 bg-gray-200 rounded-lg" />
+            <div className="h-10 w-32 bg-gray-300 rounded-lg" />
+          </div>
+        </div>
       </div>
     );
   }

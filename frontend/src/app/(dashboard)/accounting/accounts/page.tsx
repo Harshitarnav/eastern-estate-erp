@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 import { accountsService, type Account } from '@/services/accounting.service';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -48,7 +49,7 @@ export default function AccountsPage() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-96">Loading accounts...</div>;
+    return <div className="p-6"><TableRowsSkeleton rows={6} cols={4} /></div>;
   }
 
   const totalsByType = (accounts || []).reduce((acc, account) => {

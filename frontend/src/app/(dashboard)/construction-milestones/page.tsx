@@ -68,6 +68,7 @@ import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { isAdminRole } from '@/lib/roles';
+import { DashboardSkeleton } from '@/components/Skeletons';
 
 interface ConstructionProgress {
   id: string;
@@ -334,12 +335,7 @@ export default function ConstructionMilestonesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        <span className="ml-2 text-lg">Loading construction milestones...</span>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

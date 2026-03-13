@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Users, Plus, Search, Edit2, Power, Trash2, X,
-  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock,
+  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock, ChevronLeft,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { TableRowsSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -420,6 +421,15 @@ export default function UserManagementPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
 
+      {/* Back button */}
+      <button
+        onClick={() => router.push('/settings')}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#A8211B] transition-colors"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to Settings
+      </button>
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -482,9 +492,7 @@ export default function UserManagementPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center items-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-[#A8211B]" />
-            </div>
+            <TableRowsSkeleton rows={6} cols={7} />
           ) : users.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
               <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />

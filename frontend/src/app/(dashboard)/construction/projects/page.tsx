@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
+import { CardGridSkeleton } from '@/components/Skeletons';
 
 export default function ConstructionProjectsPage() {
   const router = useRouter();
@@ -187,10 +188,7 @@ export default function ConstructionProjectsPage() {
       {/* Projects List */}
       <div className="bg-white rounded-lg shadow">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading projects...</p>
-          </div>
+          <div className="p-4"><CardGridSkeleton cards={6} columns="grid-cols-1 md:grid-cols-2 lg:grid-cols-3" /></div>
         ) : (filteredProjects || []).length === 0 ? (
           <div className="p-12 text-center">
             <p className="text-4xl mb-4">🏗️</p>

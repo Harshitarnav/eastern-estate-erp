@@ -14,6 +14,7 @@ import { BrandHero, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { formatCurrency } from '@/utils/formatters';
 import { DocumentEntityType, DocumentCategory, documentsService, ErpDocument } from '@/services/documents.service';
+import { SectionSkeleton } from '@/components/Skeletons';
 
 const CHECKLIST_LABELS: Record<string, string> = {
   has_area: 'Area details captured',
@@ -373,9 +374,9 @@ export default function FlatDetailPage() {
       />
 
       {loading ? (
-        <div className="flex items-center justify-center rounded-3xl border border-dashed border-gray-200 bg-white/70 py-20 text-gray-600">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span className="ml-3 text-sm font-medium">Loading unit details…</span>
+        <div className="space-y-6">
+          <SectionSkeleton rows={6} />
+          <SectionSkeleton rows={4} />
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-3xl border border-red-200 bg-red-50 p-10 text-center text-sm text-red-700">

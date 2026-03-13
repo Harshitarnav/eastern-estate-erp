@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Save, Building2, CreditCard, Shield, Mail, Loader2,
-  Info, ExternalLink, AlertTriangle, Send, CheckCircle2, XCircle,
+  Info, ExternalLink, AlertTriangle, Send, CheckCircle2, XCircle, ChevronLeft,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { FormSkeleton } from '@/components/Skeletons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -154,15 +155,20 @@ export default function CompanySettingsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <FormSkeleton fields={10} />;
   }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-16">
+
+      {/* Back button */}
+      <button
+        onClick={() => router.push('/settings')}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#A8211B] transition-colors"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to Settings
+      </button>
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">

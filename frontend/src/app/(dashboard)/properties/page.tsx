@@ -10,6 +10,7 @@ import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
 import { Building2, Plus, Calendar, TrendingUp, Home, Sparkles, AlertTriangle, IndianRupee, Loader2, Eye } from 'lucide-react';
 import { propertiesService, Property as ApiProperty, PropertyInventorySummary, TowerInventorySummary, TowerUnitStagePreview } from '@/services/properties.service';
 import { formatCurrency } from '@/utils/formatters';
+import { SectionSkeleton } from '@/components/Skeletons';
 
 interface PropertyRow {
   id: string;
@@ -498,7 +499,7 @@ export default function PropertiesPage() {
         }
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <BrandStatCard
           title="Portfolio Strength"
           primary={formatIndianNumber(stats.totalProjects)}
@@ -780,10 +781,7 @@ function TowerStageSection({
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center gap-2 py-10 text-sm text-gray-500">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          Fetching the latest tower imagery…
-        </div>
+        <SectionSkeleton rows={4} title={false} />
       ) : error ? (
         <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700">
           {error}

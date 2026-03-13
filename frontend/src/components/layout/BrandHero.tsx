@@ -16,7 +16,7 @@ export function BrandHero({ eyebrow, title, description, actions, badge }: Brand
       style={{ background: brandGradient }}
     >
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: brandHeroOverlay }} />
-      <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+      <div className="relative flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
         <div className="space-y-4 max-w-2xl">
           {eyebrow && (
             <span className="uppercase tracking-[0.4em] text-xs" style={{ color: '#FDE2A9' }}>
@@ -30,7 +30,7 @@ export function BrandHero({ eyebrow, title, description, actions, badge }: Brand
           {badge}
         </div>
         {actions && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">{actions}</div>
+          <div className="flex flex-wrap items-center gap-3 md:flex-col md:items-end md:justify-start md:shrink-0">{actions}</div>
         )}
       </div>
     </section>
