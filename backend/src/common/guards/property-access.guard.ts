@@ -49,8 +49,13 @@ export class PropertyAccessGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // Global admins bypass property-level restrictions
-    const isAdmin = await this.propertyAccessService.isGlobalAdmin(user.id);
+    // Global admins bypass property-level restrictions.
+    // Use request.user.roles (already loaded fresh from DB by JwtStrategy on every request)
+    // — this is the same source RolesGuard uses and avoids a redundant second DB query.
+    const userRoles: string[] = (user.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    const isAdmin = userRoles.includes('super_admin') || userRoles.includes('admin');
     if (isAdmin) {
       this.logger.debug(`User ${user.email} is global admin - bypassing property access check`);
       request.isGlobalAdmin = true;
@@ -58,9 +63,6 @@ export class PropertyAccessGuard implements CanActivate {
     }
 
     // HR role bypasses property-level restrictions (manages employees/users system-wide)
-    const userRoles: string[] = (user.roles || []).map((r: any) =>
-      typeof r === 'string' ? r : r.name,
-    );
     if (userRoles.includes('hr')) {
       this.logger.debug(`User ${user.email} has HR role - bypassing property access check`);
       request.isGlobalAdmin = false;
