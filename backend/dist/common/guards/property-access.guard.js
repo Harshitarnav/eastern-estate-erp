@@ -40,13 +40,13 @@ let PropertyAccessGuard = PropertyAccessGuard_1 = class PropertyAccessGuard {
             this.logger.warn('User not authenticated');
             throw new common_1.ForbiddenException('User not authenticated');
         }
-        const isAdmin = await this.propertyAccessService.isGlobalAdmin(user.id);
+        const userRoles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        const isAdmin = userRoles.includes('super_admin') || userRoles.includes('admin');
         if (isAdmin) {
             this.logger.debug(`User ${user.email} is global admin - bypassing property access check`);
             request.isGlobalAdmin = true;
             return true;
         }
-        const userRoles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
         if (userRoles.includes('hr')) {
             this.logger.debug(`User ${user.email} has HR role - bypassing property access check`);
             request.isGlobalAdmin = false;
