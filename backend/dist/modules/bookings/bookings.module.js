@@ -18,6 +18,7 @@ const tower_entity_1 = require("../towers/entities/tower.entity");
 const customer_entity_1 = require("../customers/entities/customer.entity");
 const payments_module_1 = require("../payments/payments.module");
 const notifications_module_1 = require("../notifications/notifications.module");
+const accounting_module_1 = require("../accounting/accounting.module");
 let BookingsModule = class BookingsModule {
 };
 exports.BookingsModule = BookingsModule;
@@ -27,6 +28,7 @@ exports.BookingsModule = BookingsModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([booking_entity_1.Booking, flat_entity_1.Flat, property_entity_1.Property, tower_entity_1.Tower, customer_entity_1.Customer]),
             payments_module_1.PaymentsModule,
             notifications_module_1.NotificationsModule,
+            accounting_module_1.AccountingModule,
         ],
         controllers: [bookings_controller_1.BookingsController],
         providers: [bookings_service_1.BookingsService],

@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import {
@@ -28,8 +29,8 @@ export class BookingsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createBookingDto: CreateBookingDto): Promise<BookingResponseDto> {
-    return this.bookingsService.create(createBookingDto);
+  async create(@Body() createBookingDto: CreateBookingDto, @Request() req: any): Promise<BookingResponseDto> {
+    return this.bookingsService.create(createBookingDto, req.user?.userId ?? req.user?.id);
   }
 
   @Get()

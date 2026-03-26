@@ -15,7 +15,7 @@ import { CreateJournalEntryDto, UpdateJournalEntryDto, VoidJournalEntryDto } fro
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { JournalEntryStatus } from './entities/journal-entry.entity';
 
-@Controller('journal-entries')
+@Controller('accounting/journal-entries')
 @UseGuards(JwtAuthGuard)
 export class JournalEntriesController {
   constructor(private readonly journalEntriesService: JournalEntriesService) {}

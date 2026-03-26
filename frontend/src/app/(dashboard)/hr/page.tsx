@@ -48,10 +48,11 @@ export default function HRPage() {
     {
       id: 'payroll',
       title: 'Payroll',
-      description: 'Process salaries, deductions, and salary slips',
+      description: 'Process salaries, deductions, and generate salary slips with auto accounting entries',
       icon: DollarSign,
-      status: 'coming-soon',
+      status: 'active',
       color: '#EF4444',
+      href: '/hr/payroll',
     },
     {
       id: 'performance',

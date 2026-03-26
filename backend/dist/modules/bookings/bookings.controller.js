@@ -21,8 +21,8 @@ let BookingsController = class BookingsController {
     constructor(bookingsService) {
         this.bookingsService = bookingsService;
     }
-    async create(createBookingDto) {
-        return this.bookingsService.create(createBookingDto);
+    async create(createBookingDto, req) {
+        return this.bookingsService.create(createBookingDto, req.user?.userId ?? req.user?.id);
     }
     async findAll(query) {
         return this.bookingsService.findAll(query);
@@ -48,8 +48,9 @@ __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.CreateBookingDto]),
+    __metadata("design:paramtypes", [dto_1.CreateBookingDto, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "create", null);
 __decorate([

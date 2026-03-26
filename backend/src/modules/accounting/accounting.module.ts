@@ -13,11 +13,16 @@ import { AccountsService } from './accounts.service';
 import { ExpensesService } from './expenses.service';
 import { BudgetsService } from './budgets.service';
 import { JournalEntriesService } from './journal-entries.service';
+import { BankAccountsService } from './bank-accounts.service';
+import { BankStatementsService } from './bank-statements.service';
 import { AccountingController } from './accounting.controller';
 import { AccountsController } from './accounts.controller';
 import { ExpensesController } from './expenses.controller';
 import { BudgetsController } from './budgets.controller';
 import { JournalEntriesController } from './journal-entries.controller';
+import { BankAccountsController } from './bank-accounts.controller';
+import { BankStatementsController } from './bank-statements.controller';
+import { AccountingIntegrationService } from './accounting-integration.service';
 
 @Module({
   imports: [
@@ -38,6 +43,8 @@ import { JournalEntriesController } from './journal-entries.controller';
     ExpensesController,
     BudgetsController,
     JournalEntriesController,
+    BankAccountsController,
+    BankStatementsController,
   ],
   providers: [
     AccountingService,
@@ -45,6 +52,9 @@ import { JournalEntriesController } from './journal-entries.controller';
     ExpensesService,
     BudgetsService,
     JournalEntriesService,
+    BankAccountsService,
+    BankStatementsService,
+    AccountingIntegrationService,
   ],
   exports: [
     AccountingService,
@@ -52,6 +62,9 @@ import { JournalEntriesController } from './journal-entries.controller';
     ExpensesService,
     BudgetsService,
     JournalEntriesService,
+    BankAccountsService,
+    BankStatementsService,
+    AccountingIntegrationService,
   ],
 })
 export class AccountingModule {}

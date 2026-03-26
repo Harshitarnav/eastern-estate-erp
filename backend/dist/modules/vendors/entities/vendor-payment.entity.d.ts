@@ -19,6 +19,7 @@ export declare class VendorPayment {
     notes: string;
     createdBy: string;
     creator: User;
+    journalEntryId: string | null;
     createdAt: Date;
     updatedAt: Date;
     get isLinkedToPO(): boolean;

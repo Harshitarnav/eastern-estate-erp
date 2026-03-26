@@ -7,6 +7,8 @@ declare const GoogleStrategy_base: new (...args: [options: import("passport-goog
 export declare class GoogleStrategy extends GoogleStrategy_base {
     private configService;
     private usersService;
+    private readonly logger;
+    private readonly isConfigured;
     constructor(configService: ConfigService, usersService: UsersService);
     validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any>;
 }

@@ -15,6 +15,7 @@ const vendors_service_1 = require("./vendors.service");
 const vendor_payments_service_1 = require("./vendor-payments.service");
 const vendors_controller_1 = require("./vendors.controller");
 const vendor_payments_controller_1 = require("./vendor-payments.controller");
+const accounting_module_1 = require("../accounting/accounting.module");
 let VendorsModule = class VendorsModule {
 };
 exports.VendorsModule = VendorsModule;
@@ -22,6 +23,7 @@ exports.VendorsModule = VendorsModule = __decorate([
     (0, common_1.Module)({
         imports: [
             typeorm_1.TypeOrmModule.forFeature([vendor_entity_1.Vendor, vendor_payment_entity_1.VendorPayment]),
+            accounting_module_1.AccountingModule,
         ],
         controllers: [
             vendors_controller_1.VendorsController,

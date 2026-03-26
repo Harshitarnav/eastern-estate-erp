@@ -9,11 +9,12 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ConstructionProgressLog = exports.ProgressType = void 0;
+exports.ConstructionProgressLog = exports.ShiftType = exports.ProgressType = void 0;
 const typeorm_1 = require("typeorm");
 const property_entity_1 = require("../../properties/entities/property.entity");
 const tower_entity_1 = require("../../towers/entities/tower.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
+const construction_project_entity_1 = require("./construction-project.entity");
 var ProgressType;
 (function (ProgressType) {
     ProgressType["STRUCTURE"] = "STRUCTURE";
@@ -21,6 +22,11 @@ var ProgressType;
     ProgressType["FINISHING"] = "FINISHING";
     ProgressType["QUALITY_CHECK"] = "QUALITY_CHECK";
 })(ProgressType || (exports.ProgressType = ProgressType = {}));
+var ShiftType;
+(function (ShiftType) {
+    ShiftType["DAY"] = "DAY";
+    ShiftType["NIGHT"] = "NIGHT";
+})(ShiftType || (exports.ShiftType = ShiftType = {}));
 let ConstructionProgressLog = class ConstructionProgressLog {
 };
 exports.ConstructionProgressLog = ConstructionProgressLog;
@@ -29,11 +35,11 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "propertyId", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property),
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
     __metadata("design:type", property_entity_1.Property)
 ], ConstructionProgressLog.prototype, "property", void 0);
@@ -51,6 +57,11 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "constructionProjectId", void 0);
 __decorate([
+    (0, typeorm_1.ManyToOne)(() => construction_project_entity_1.ConstructionProject, { nullable: true }),
+    (0, typeorm_1.JoinColumn)({ name: 'construction_project_id' }),
+    __metadata("design:type", construction_project_entity_1.ConstructionProject)
+], ConstructionProgressLog.prototype, "constructionProject", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'log_date', type: 'date' }),
     __metadata("design:type", Date)
 ], ConstructionProgressLog.prototype, "logDate", void 0);
@@ -59,11 +70,12 @@ __decorate([
         name: 'progress_type',
         type: 'enum',
         enum: ProgressType,
+        nullable: true,
     }),
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "progressType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'description', type: 'text' }),
+    (0, typeorm_1.Column)({ name: 'description', type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "description", void 0);
 __decorate([
@@ -83,14 +95,51 @@ __decorate([
     __metadata("design:type", Number)
 ], ConstructionProgressLog.prototype, "temperature", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'logged_by', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'logged_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "loggedBy", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => user_entity_1.User),
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'logged_by' }),
     __metadata("design:type", user_entity_1.User)
 ], ConstructionProgressLog.prototype, "logger", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'shift',
+        type: 'enum',
+        enum: ShiftType,
+        nullable: true,
+    }),
+    __metadata("design:type", String)
+], ConstructionProgressLog.prototype, "shift", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'workers_present', type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], ConstructionProgressLog.prototype, "workersPresent", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'workers_absent', type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], ConstructionProgressLog.prototype, "workersAbsent", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'materials_used', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionProgressLog.prototype, "materialsUsed", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'issues_delays', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionProgressLog.prototype, "issuesDelays", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'supervisor_name', type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], ConstructionProgressLog.prototype, "supervisorName", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'next_day_plan', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionProgressLog.prototype, "nextDayPlan", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'remarks', type: 'text', nullable: true }),
+    __metadata("design:type", String)
+], ConstructionProgressLog.prototype, "remarks", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

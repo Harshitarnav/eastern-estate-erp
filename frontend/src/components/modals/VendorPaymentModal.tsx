@@ -10,8 +10,7 @@ interface VendorPaymentModalProps {
   onSuccess: () => void;
 }
 
-const PAYMENT_METHODS = ['CASH', 'CHEQUE', 'BANK_TRANSFER', 'UPI', 'OTHER'];
-const PAYMENT_STATUS = ['PENDING', 'COMPLETED', 'FAILED'];
+const PAYMENT_MODES = ['CASH', 'CHEQUE', 'NEFT', 'RTGS', 'UPI'];
 
 export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: VendorPaymentModalProps) {
   const [vendors, setVendors] = useState<any[]>([]);
@@ -19,11 +18,10 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
   const [formData, setFormData] = useState({
     vendorId: '',
     amount: '',
-    paymentMethod: 'BANK_TRANSFER',
+    paymentMode: 'NEFT',
     paymentDate: new Date().toISOString().split('T')[0],
-    referenceNumber: '',
-    paymentStatus: 'COMPLETED',
-    remarks: '',
+    transactionReference: '',
+    notes: '',
   });
 
   useEffect(() => {
@@ -34,8 +32,9 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
 
   const loadVendors = async () => {
     try {
+      // api.get() returns response.data directly (not a full Axios response)
       const response = await api.get('/vendors');
-      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const data = Array.isArray(response) ? response : (response?.data || []);
       setVendors((data || []).filter((v: any) => v.isActive));
     } catch (error) {
       console.error('Failed to load vendors:', error);
@@ -55,12 +54,11 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
     try {
       await api.post('/vendor-payments', {
         vendorId: formData.vendorId,
-        amountPaid: parseFloat(formData.amount),
-        paymentMethod: formData.paymentMethod,
+        amount: parseFloat(formData.amount),
+        paymentMode: formData.paymentMode,
         paymentDate: formData.paymentDate,
-        referenceNumber: formData.referenceNumber || null,
-        paymentStatus: formData.paymentStatus,
-        remarks: formData.remarks || null,
+        transactionReference: formData.transactionReference || undefined,
+        notes: formData.notes || undefined,
       });
 
       alert('Vendor payment recorded successfully!');
@@ -78,11 +76,10 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
     setFormData({
       vendorId: '',
       amount: '',
-      paymentMethod: 'BANK_TRANSFER',
+      paymentMode: 'NEFT',
       paymentDate: new Date().toISOString().split('T')[0],
-      referenceNumber: '',
-      paymentStatus: 'COMPLETED',
-      remarks: '',
+      transactionReference: '',
+      notes: '',
     });
     onClose();
   };
@@ -134,21 +131,19 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
             />
           </div>
 
-          {/* Payment Method */}
+          {/* Payment Mode */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Method <span className="text-red-600">*</span>
+              Payment Mode <span className="text-red-600">*</span>
             </label>
             <select
-              value={formData.paymentMethod}
-              onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
+              value={formData.paymentMode}
+              onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               required
             >
-              {((PAYMENT_METHODS || [])).map((method) => (
-                <option key={method} value={method}>
-                  {method.replace('_', ' ')}
-                </option>
+              {PAYMENT_MODES.map((mode) => (
+                <option key={mode} value={mode}>{mode}</option>
               ))}
             </select>
           </div>
@@ -167,37 +162,18 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
             />
           </div>
 
-          {/* Reference Number */}
+          {/* Transaction Reference */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Reference Number
+              Transaction Reference
             </label>
             <input
               type="text"
-              value={formData.referenceNumber}
-              onChange={(e) => setFormData({ ...formData, referenceNumber: e.target.value })}
+              value={formData.transactionReference}
+              onChange={(e) => setFormData({ ...formData, transactionReference: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="Cheque/Transaction ID"
+              placeholder="Cheque no. / NEFT ref / UPI ID"
             />
-          </div>
-
-          {/* Payment Status */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Payment Status <span className="text-red-600">*</span>
-            </label>
-            <select
-              value={formData.paymentStatus}
-              onChange={(e) => setFormData({ ...formData, paymentStatus: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              required
-            >
-              {((PAYMENT_STATUS || [])).map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
           </div>
         </div>
 
@@ -227,14 +203,14 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
           </div>
         )}
 
-        {/* Remarks */}
+        {/* Notes */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Remarks
+            Notes
           </label>
           <textarea
-            value={formData.remarks}
-            onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             rows={3}
             placeholder="Any additional notes about this payment..."

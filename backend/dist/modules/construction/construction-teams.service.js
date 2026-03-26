@@ -25,20 +25,29 @@ let ConstructionTeamsService = class ConstructionTeamsService {
         const team = this.constructionTeamRepository.create(createDto);
         return await this.constructionTeamRepository.save(team);
     }
+    async findAll(filters) {
+        const where = { isActive: true };
+        if (filters?.constructionProjectId)
+            where.constructionProjectId = filters.constructionProjectId;
+        if (filters?.propertyId)
+            where.propertyId = filters.propertyId;
+        return await this.constructionTeamRepository.find({
+            where,
+            order: { createdAt: 'DESC' },
+        });
+    }
     async findByProject(constructionProjectId) {
         return await this.constructionTeamRepository.find({
             where: { constructionProjectId, isActive: true },
-            relations: ['employee', 'constructionProject'],
             order: { createdAt: 'DESC' },
         });
     }
     async findOne(id) {
         const team = await this.constructionTeamRepository.findOne({
             where: { id },
-            relations: ['employee', 'constructionProject'],
         });
         if (!team) {
-            throw new common_1.NotFoundException(`Team member with ID ${id} not found`);
+            throw new common_1.NotFoundException(`Team with ID ${id} not found`);
         }
         return team;
     }
@@ -51,6 +60,7 @@ let ConstructionTeamsService = class ConstructionTeamsService {
         const team = await this.findOne(id);
         team.isActive = false;
         await this.constructionTeamRepository.save(team);
+        return { success: true };
     }
 };
 exports.ConstructionTeamsService = ConstructionTeamsService;

@@ -108,7 +108,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], JournalEntriesController.prototype, "remove", null);
 exports.JournalEntriesController = JournalEntriesController = __decorate([
-    (0, common_1.Controller)('journal-entries'),
+    (0, common_1.Controller)('accounting/journal-entries'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [journal_entries_service_1.JournalEntriesService])
 ], JournalEntriesController);

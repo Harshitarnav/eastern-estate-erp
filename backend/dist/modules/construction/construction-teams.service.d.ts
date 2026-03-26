@@ -4,8 +4,14 @@ export declare class ConstructionTeamsService {
     private readonly constructionTeamRepository;
     constructor(constructionTeamRepository: Repository<ConstructionTeam>);
     create(createDto: any): Promise<ConstructionTeam[]>;
+    findAll(filters?: {
+        constructionProjectId?: string;
+        propertyId?: string;
+    }): Promise<ConstructionTeam[]>;
     findByProject(constructionProjectId: string): Promise<ConstructionTeam[]>;
     findOne(id: string): Promise<ConstructionTeam>;
     update(id: string, updateDto: any): Promise<ConstructionTeam>;
-    remove(id: string): Promise<void>;
+    remove(id: string): Promise<{
+        success: boolean;
+    }>;
 }

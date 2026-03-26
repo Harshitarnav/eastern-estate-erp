@@ -63,10 +63,10 @@ export class MaterialEntry {
   @Column({ name: 'entry_date', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   entryDate: Date;
 
-  @Column({ name: 'entered_by', type: 'uuid' })
-  enteredBy: string;
+  @Column({ name: 'entered_by', type: 'uuid', nullable: true })
+  enteredBy: string | null;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'entered_by' })
   enteredByUser: User;
 

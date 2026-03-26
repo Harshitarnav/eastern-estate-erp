@@ -32,13 +32,14 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
 
   const loadData = async () => {
     try {
+      // api.get() returns response.data directly (not a full Axios response)
       const [materialsRes, vendorsRes] = await Promise.all([
         api.get('/materials'),
         api.get('/vendors')
       ]);
       
-      const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
-      const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
+      const materialsData = Array.isArray(materialsRes) ? materialsRes : (materialsRes?.data || []);
+      const vendorsData = Array.isArray(vendorsRes) ? vendorsRes : (vendorsRes?.data || []);
       
       setMaterials((materialsData || []).filter((m: any) => m.isActive));
       setVendors((vendorsData || []).filter((v: any) => v.isActive));
@@ -56,17 +57,20 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
       return;
     }
 
+    const qty = parseFloat(formData.quantity);
+    const price = parseFloat(formData.unitPrice);
     setLoading(true);
     try {
       await api.post('/material-entries', {
         materialId: formData.materialId,
-        vendorId: formData.vendorId || null,
-        quantityReceived: parseFloat(formData.quantity),
-        unitPrice: parseFloat(formData.unitPrice),
-        totalAmount: parseFloat(formData.quantity) * parseFloat(formData.unitPrice),
-        invoiceNumber: formData.invoiceNumber || null,
+        vendorId: formData.vendorId || undefined,
+        entryType: 'PURCHASE',
+        quantity: qty,
+        unitPrice: price,
+        totalValue: qty * price,
+        invoiceNumber: formData.invoiceNumber || undefined,
         entryDate: formData.entryDate,
-        remarks: formData.remarks || null,
+        remarks: formData.remarks || undefined,
       });
 
       alert('Material entry recorded successfully!');
@@ -94,7 +98,7 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
   };
 
   const selectedMaterial = materials.find(m => m.id === formData.materialId);
-  const totalAmount = formData.quantity && formData.unitPrice
+  const totalValue = formData.quantity && formData.unitPrice
     ? (parseFloat(formData.quantity) * parseFloat(formData.unitPrice)).toFixed(2)
     : '0.00';
 
@@ -217,7 +221,7 @@ export default function MaterialEntryModal({ isOpen, onClose, onSuccess }: Mater
           <div className="flex justify-between items-center">
             <span className="text-lg font-semibold text-gray-700">Total Amount:</span>
             <span className="text-2xl font-bold" style={{ color: '#A8211B' }}>
-              ₹{totalAmount}
+              ₹{totalValue}
             </span>
           </div>
         </div>

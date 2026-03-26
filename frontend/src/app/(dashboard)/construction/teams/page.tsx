@@ -1,320 +1,510 @@
 'use client';
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
-import CreateTeamModal from '@/components/modals/CreateTeamModal';
-import AddWorkScheduleModal from '@/components/modals/AddWorkScheduleModal';
-import { TableRowsSkeleton } from '@/components/Skeletons';
+import { CardGridSkeleton } from '@/components/Skeletons';
+import { BrandHero, BrandPrimaryButton } from '@/components/layout/BrandHero';
+import { BrandStatCard } from '@/components/layout/BrandStatCard';
+import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import {
+  Users, Plus, Search, Phone, Mail, Wrench,
+  HardHat, Building2, Calendar, Edit, Trash2, X,
+} from 'lucide-react';
 
-function TeamsPageContent() {
+const TEAM_TYPE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  CONTRACTOR: { label: 'Contractor', color: 'text-blue-700',   bg: 'bg-blue-50' },
+  IN_HOUSE:   { label: 'In-House',   color: 'text-green-700',  bg: 'bg-green-50' },
+  LABOR:      { label: 'Labour',     color: 'text-orange-700', bg: 'bg-orange-50' },
+};
+
+const EMPTY_FORM = {
+  teamName: '', teamCode: '', teamType: 'CONTRACTOR',
+  constructionProjectId: '', leaderName: '', contactNumber: '',
+  email: '', totalMembers: '', specialization: '',
+  contractStartDate: '', contractEndDate: '', dailyRate: '',
+};
+
+function TeamsContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const propertyId = searchParams.get('propertyId') ?? '';
-
+  const [teams, setTeams] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
-  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [editTeam, setEditTeam] = useState<any | null>(null);
+  const [filterProject, setFilterProject] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [search, setSearch] = useState('');
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [propertyId]);
+  useEffect(() => { loadAll(); }, []);
+  useEffect(() => { loadTeams(); }, [filterProject]);
 
-  const loadData = async () => {
+  const loadAll = async () => {
+    try {
+      const data = await api.get('/construction-projects');
+      setProjects(Array.isArray(data) ? data : (data?.data || []));
+    } catch (e) { console.error(e); }
+    await loadTeams();
+  };
+
+  const loadTeams = async () => {
     setLoading(true);
     try {
-      const projectsUrl = propertyId 
-        ? `/construction-projects?propertyId=${propertyId}` 
-        : '/construction-projects';
-      
-      const [projectsRes, employeesRes] = await Promise.all([
-        api.get(projectsUrl),
-        api.get('/employees')
-      ]);
-      
-      const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
-      const employeesData = Array.isArray(employeesRes.data) ? employeesRes.data : (employeesRes.data?.data || []);
-      
-      setProjects(projectsData);
-      setEmployees(employeesData);
-    } catch (error) {
-      console.error('Failed to load data:', error);
+      const url = filterProject
+        ? `/construction-teams?constructionProjectId=${filterProject}`
+        : '/construction-teams';
+      const data = await api.get(url);
+      setTeams(Array.isArray(data) ? data : (data?.data || []));
+    } catch (e) { setTeams([]); }
+    finally { setLoading(false); }
+  };
+
+  const openCreate = () => {
+    setEditTeam(null);
+    setForm({ ...EMPTY_FORM, constructionProjectId: filterProject });
+    setShowPanel(true);
+  };
+
+  const openEdit = (team: any) => {
+    setEditTeam(team);
+    setForm({
+      teamName: team.teamName || '', teamCode: team.teamCode || '',
+      teamType: team.teamType || 'CONTRACTOR',
+      constructionProjectId: team.constructionProjectId || '',
+      leaderName: team.leaderName || '', contactNumber: team.contactNumber || '',
+      email: team.email || '', totalMembers: String(team.totalMembers || ''),
+      specialization: team.specialization || '',
+      contractStartDate: team.contractStartDate?.split('T')[0] || '',
+      contractEndDate: team.contractEndDate?.split('T')[0] || '',
+      dailyRate: String(team.dailyRate || ''),
+    });
+    setShowPanel(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.teamName || !form.leaderName || !form.contactNumber) {
+      alert('Team Name, Leader Name and Contact are required');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        totalMembers: parseInt(form.totalMembers) || 0,
+        dailyRate: parseFloat(form.dailyRate) || null,
+        contractStartDate: form.contractStartDate || null,
+        contractEndDate: form.contractEndDate || null,
+        constructionProjectId: form.constructionProjectId || null,
+      };
+      if (editTeam) {
+        await api.patch(`/construction-teams/${editTeam.id}`, payload);
+      } else {
+        await api.post('/construction-teams', payload);
+      }
+      setShowPanel(false);
+      loadTeams();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to save team');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
+  const handleDeactivate = async (id: string, name: string) => {
+    if (!confirm(`Remove team "${name}"? They won't appear in active lists.`)) return;
+    try {
+      await api.delete(`/construction-teams/${id}`);
+      setTeams(prev => prev.filter(t => t.id !== id));
+    } catch { alert('Failed to remove team'); }
+  };
+
+  const filteredTeams = teams.filter(t => {
+    if (filterType && t.teamType !== filterType) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (
+        t.teamName?.toLowerCase().includes(q) ||
+        t.leaderName?.toLowerCase().includes(q) ||
+        t.specialization?.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const totalWorkers = teams.reduce((s, t) => s + (t.activeMembers || t.totalMembers || 0), 0);
+  const contractorCount = teams.filter(t => t.teamType === 'CONTRACTOR').length;
+  const laborCount = teams.filter(t => t.teamType === 'LABOR').length;
+  const inHouseCount = teams.filter(t => t.teamType === 'IN_HOUSE').length;
+
+  const fmt = (d?: string) =>
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+
   return (
-    <div className="p-6">
-      {/* Eastern Estate Branded Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => router.push('/construction')}
-          className="text-gray-600 hover:text-gray-900 mb-4 flex items-center"
-        >
-          ← Back to Construction Hub
-        </button>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" style={{ backgroundColor: '#A8211B' }}>
-            👥
+    <div className="p-6 md:p-8 space-y-8 min-h-full" style={{ backgroundColor: brandPalette.background }}>
+
+      {/* Hero */}
+      <BrandHero
+        eyebrow="Construction Teams"
+        title={<>Manage every team, <span style={{ color: brandPalette.accent }}>on every site</span></>}
+        description="Track contractors, labour gangs and in-house teams. Assign teams to projects, monitor manpower, and manage contracts and daily rates."
+        actions={
+          <BrandPrimaryButton onClick={openCreate}>
+            <Plus className="w-4 h-4" /> Add Team
+          </BrandPrimaryButton>
+        }
+      />
+
+      {/* Stats */}
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <BrandStatCard
+          title="Total Teams"
+          primary={formatIndianNumber(teams.length)}
+          subLabel={`${totalWorkers} total workers`}
+          icon={<Users className="w-7 h-7" />}
+          accentColor={brandPalette.primary}
+        />
+        <BrandStatCard
+          title="Contractors"
+          primary={formatIndianNumber(contractorCount)}
+          subLabel="External firms"
+          icon={<Building2 className="w-7 h-7" />}
+          accentColor="rgba(37,99,235,0.2)"
+        />
+        <BrandStatCard
+          title="Labour Gangs"
+          primary={formatIndianNumber(laborCount)}
+          subLabel="Daily wage teams"
+          icon={<HardHat className="w-7 h-7" />}
+          accentColor="rgba(234,88,12,0.2)"
+        />
+        <BrandStatCard
+          title="In-House"
+          primary={formatIndianNumber(inHouseCount)}
+          subLabel="Own employees"
+          icon={<Wrench className="w-7 h-7" />}
+          accentColor="rgba(22,163,74,0.2)"
+        />
+      </section>
+
+      {/* Filters */}
+      <div
+        className="rounded-2xl border bg-white/90 backdrop-blur-sm shadow-sm p-5 space-y-4"
+        style={{ borderColor: `${brandPalette.neutral}80` }}
+      >
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by team name, leader, or specialization…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A8211B]"
+            />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#A8211B' }}>
-              Teams & Work Schedule
-            </h1>
-            <p className="text-sm text-gray-500">Eastern Estate ERP System</p>
-          </div>
+          <select
+            value={filterProject}
+            onChange={e => setFilterProject(e.target.value)}
+            className="px-4 py-2.5 border rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#A8211B] bg-white"
+          >
+            <option value="">All Projects</option>
+            {projects.map(p => <option key={p.id} value={p.id}>{p.projectName}</option>)}
+          </select>
+          <select
+            value={filterType}
+            onChange={e => setFilterType(e.target.value)}
+            className="px-4 py-2.5 border rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#A8211B] bg-white"
+          >
+            <option value="">All Types</option>
+            <option value="CONTRACTOR">Contractor</option>
+            <option value="IN_HOUSE">In-House</option>
+            <option value="LABOR">Labour</option>
+          </select>
+          {(search || filterType || filterProject) && (
+            <button
+              onClick={() => { setSearch(''); setFilterType(''); setFilterProject(''); }}
+              className="px-4 py-2.5 text-sm border rounded-xl hover:bg-gray-50"
+              style={{ borderColor: brandPalette.neutral, color: brandPalette.secondary }}
+            >
+              Clear
+            </button>
+          )}
         </div>
-        <p className="text-gray-600">Manage construction teams and work schedules</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-600 mb-1">Active Projects</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {((projects || [])).filter(p => p.status === 'IN_PROGRESS').length}
+      {/* Team Cards */}
+      {loading ? (
+        <CardGridSkeleton cards={6} />
+      ) : filteredTeams.length === 0 ? (
+        <div className="bg-white rounded-3xl border p-12 text-center shadow-sm" style={{ borderColor: `${brandPalette.neutral}60` }}>
+          <Users className="w-16 h-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.45 }} />
+          <h3 className="text-xl font-semibold mb-2" style={{ color: brandPalette.secondary }}>
+            {teams.length === 0 ? 'No Teams Yet' : 'No Teams Match'}
+          </h3>
+          <p className="text-gray-500 text-sm mb-6">
+            {teams.length === 0 ? 'Add your first construction team to get started.' : 'Try adjusting your filters.'}
           </p>
+          {teams.length === 0 && (
+            <BrandPrimaryButton onClick={openCreate}>
+              <Plus className="w-4 h-4" /> Add First Team
+            </BrandPrimaryButton>
+          )}
         </div>
-        <div className="bg-blue-50 rounded-lg shadow p-4">
-          <p className="text-sm text-blue-600 mb-1">Total Employees</p>
-          <p className="text-2xl font-bold text-blue-700">{(employees || []).length}</p>
-        </div>
-        <div className="bg-green-50 rounded-lg shadow p-4">
-          <p className="text-sm text-green-600 mb-1">Project Managers</p>
-          <p className="text-2xl font-bold text-green-700">
-            {((projects || [])).filter(p => p.projectManagerId).length}
-          </p>
-        </div>
-        <div className="bg-purple-50 rounded-lg shadow p-4">
-          <p className="text-sm text-purple-600 mb-1">Work Schedules</p>
-          <p className="text-2xl font-bold text-purple-700">0</p>
-        </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filteredTeams.map(team => {
+            const typeCfg = TEAM_TYPE_CONFIG[team.teamType] || TEAM_TYPE_CONFIG.LABOR;
+            const project = projects.find(p => p.id === team.constructionProjectId);
+            const expiring = team.contractEndDate &&
+              new Date(team.contractEndDate) <= new Date(Date.now() + 30 * 86400000);
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-500 text-white rounded-lg shadow-lg p-4 hover:bg-blue-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">👷</div>
-            <div>
-              <h3 className="font-bold">Create Team</h3>
-              <p className="text-sm text-blue-100">Form a new construction team</p>
-            </div>
-          </div>
-        </button>
+            return (
+              <div
+                key={team.id}
+                className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden"
+                style={{ borderColor: `${brandPalette.neutral}60` }}
+              >
+                {/* Type colour strip */}
+                <div className="h-1.5 w-full" style={{
+                  backgroundColor: team.teamType === 'CONTRACTOR' ? '#2563EB'
+                    : team.teamType === 'IN_HOUSE' ? '#16A34A' : '#EA580C'
+                }} />
 
-        <button
-          onClick={() => setShowScheduleModal(true)}
-          className="bg-green-500 text-white rounded-lg shadow-lg p-4 hover:bg-green-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">📅</div>
-            <div>
-              <h3 className="font-bold">Add Schedule</h3>
-              <p className="text-sm text-green-100">Create work schedule</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push(`/employees`)}
-          className="bg-orange-500 text-white rounded-lg shadow-lg p-4 hover:bg-orange-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">👨‍💼</div>
-            <div>
-              <h3 className="font-bold">View Employees</h3>
-              <p className="text-sm text-orange-100">Manage all employees</p>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      {/* Active Projects with Teams */}
-      {(projects || []).length > 0 && (
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4" style={{ color: '#A8211B' }}>
-            Project Teams
-          </h2>
-          <div className="space-y-4">
-            {((projects || [])).map((project) => (
-              <div key={project.id} className="border-2 border-gray-200 rounded-lg p-4 hover:border-red-500 transition-all">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-bold text-gray-900">{project.projectName}</h3>
-                    <p className="text-sm text-gray-600">
-                      Started: {new Date(project.startDate).toLocaleDateString('en-IN')}
-                    </p>
-                  </div>
-                  <span className={`px-3 py-1 rounded text-sm font-medium ${
-                    project.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-800' :
-                    project.status === 'PLANNING' ? 'bg-blue-100 text-blue-800' :
-                    project.status === 'ON_HOLD' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {project.status.replace('_', ' ')}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600 text-sm">Project Manager:</span>
-                    <span className="font-medium text-sm">
-                      {project.projectManager?.firstName && project.projectManager?.lastName
-                        ? `${project.projectManager.firstName} ${project.projectManager.lastName}`
-                        : 'Not Assigned'}
+                <div className="p-5">
+                  {/* Header row */}
+                  <div className="flex items-start justify-between gap-2 mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{team.teamName}</h3>
+                      {team.teamCode && <p className="text-xs text-gray-400 font-mono mt-0.5">#{team.teamCode}</p>}
+                    </div>
+                    <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold ${typeCfg.bg} ${typeCfg.color}`}>
+                      {typeCfg.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600 text-sm">Progress:</span>
-                    <span className="font-medium text-sm">{project.overallProgress}%</span>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2 ml-2">
-                      <div
-                        className="h-2 rounded-full"
-                        style={{
-                          width: `${project.overallProgress}%`,
-                          backgroundColor: '#A8211B'
-                        }}
-                      />
+
+                  {/* Info */}
+                  <div className="space-y-1.5 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span className="font-medium">{team.leaderName}</span>
                     </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <a href={`tel:${team.contactNumber}`} className="text-blue-600 hover:underline">{team.contactNumber}</a>
+                    </div>
+                    {team.email && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">{team.email}</span>
+                      </div>
+                    )}
+                    {team.specialization && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Wrench className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">{team.specialization}</span>
+                      </div>
+                    )}
+                    {project && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">{project.projectName}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="flex items-center justify-between py-3 border-y border-gray-100 mb-4">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-900">{team.activeMembers || team.totalMembers || 0}</p>
+                      <p className="text-xs text-gray-400">Workers</p>
+                    </div>
+                    {team.dailyRate && (
+                      <div className="text-center">
+                        <p className="text-lg font-bold text-gray-900">
+                          ₹{Number(team.dailyRate).toLocaleString('en-IN')}
+                        </p>
+                        <p className="text-xs text-gray-400">Daily Rate</p>
+                      </div>
+                    )}
+                    {team.contractEndDate && (
+                      <div className="text-center">
+                        <p className={`text-sm font-semibold ${expiring ? 'text-orange-600' : 'text-gray-700'}`}>
+                          {fmt(team.contractEndDate)}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {expiring ? '⚠ Expiring' : 'Contract End'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openEdit(team)}
+                      className="flex-1 py-2 border rounded-xl text-sm font-medium flex items-center justify-center gap-1.5 transition-colors hover:bg-[#FEF3E2]"
+                      style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
+                    >
+                      <Edit className="w-3.5 h-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeactivate(team.id, team.teamName)}
+                      className="px-4 py-2 border rounded-xl text-sm font-medium transition-colors hover:bg-red-50"
+                      style={{ borderColor: '#FCA5A5', color: '#B91C1C' }}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => alert('Assign Team Members feature coming soon!')}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                  >
-                    Assign Team
-                  </button>
-                  <button
-                    onClick={() => alert('View Work Schedule feature coming soon!')}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm"
-                  >
-                    View Schedule
-                  </button>
-                  <button
-                    onClick={() => router.push(`/construction/progress?propertyId=${propertyId}`)}
-                    className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
-                  >
-                    Progress Logs
-                  </button>
-                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Empty State */}
-      {loading ? (
-        <TableRowsSkeleton rows={5} cols={4} />
-      ) : (projects || []).length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center mb-6">
-          <p className="text-4xl mb-4">👥</p>
-          <p className="text-gray-600 mb-2">No construction projects found for this property</p>
-          <p className="text-sm text-gray-500 mb-4">
-            Create construction projects first to manage teams and schedules
-          </p>
-        </div>
-      ) : null}
-
-      {/* How to Use Guide */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-lg p-6 border-2" style={{ borderColor: '#A8211B' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style={{ backgroundColor: '#A8211B' }}>
-            📖
-          </div>
-          <h3 className="text-xl font-bold" style={{ color: '#A8211B' }}>
-            How to Use Teams & Work Schedule
-          </h3>
-        </div>
-        <div className="space-y-4 text-gray-700">
-          <div>
-            <h4 className="font-semibold mb-2">What is this page for?</h4>
-            <p className="text-sm">
-              The Teams & Work Schedule page helps you organize construction workers into teams, assign them to projects, 
-              and manage their work schedules. Optimize labor allocation, track team productivity, and ensure the right people 
-              are working on the right projects at the right time.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Key Features:</h4>
-            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-              <li><strong>Team Formation:</strong> Create teams with specific roles and responsibilities</li>
-              <li><strong>Member Assignment:</strong> Assign employees to teams and projects</li>
-              <li><strong>Work Scheduling:</strong> Plan daily, weekly, and monthly work schedules</li>
-              <li><strong>Role Management:</strong> Define team leaders, supervisors, and workers</li>
-              <li><strong>Performance Tracking:</strong> Monitor team productivity and output</li>
-              <li><strong>Attendance Integration:</strong> Link with daily progress logs for attendance</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">How to Use:</h4>
-            <ol className="list-decimal list-inside text-sm space-y-1 ml-2">
-              <li>Review existing project teams in the list above</li>
-              <li>Click "Create Team" to form a new construction team</li>
-              <li>Assign team members from your employee roster</li>
-              <li>Designate team leader and define roles</li>
-              <li>Create work schedules specifying dates and shifts</li>
-              <li>Use "View Schedule" to see team's work calendar</li>
-              <li>Link to Progress Logs to track daily attendance</li>
-            </ol>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Best Practices:</h4>
-            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-              <li>Keep teams small (5-10 members) for better coordination</li>
-              <li>Assign experienced team leaders to supervise work</li>
-              <li>Create schedules at least one week in advance</li>
-              <li>Balance workload across teams to avoid burnout</li>
-              <li>Track attendance daily to manage labor costs</li>
-              <li>Review team performance regularly and adjust assignments</li>
-            </ul>
-          </div>
-        </div>
+      {/* Footer */}
+      <div className="pt-4 text-center text-sm text-gray-400">
+        Eastern Estate ERP • Building Homes, Nurturing Bonds
       </div>
 
-      {/* Modals */}
-      <CreateTeamModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={() => {
-          setShowCreateModal(false);
-          loadData();
-        }}
-        propertyId={propertyId}
-      />
+      {/* ── Create / Edit Slide-in Panel ── */}
+      {showPanel && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/40" onClick={() => setShowPanel(false)} />
+          <div className="w-full max-w-lg bg-white shadow-2xl overflow-y-auto flex flex-col">
+            <div className="px-6 py-5 border-b flex items-center justify-between" style={{ backgroundColor: brandPalette.primary }}>
+              <div>
+                <h2 className="text-xl font-bold text-white">{editTeam ? 'Edit Team' : 'Add New Team'}</h2>
+                <p className="text-red-200 text-sm mt-0.5">
+                  {editTeam ? 'Update team details' : 'Register a new construction team'}
+                </p>
+              </div>
+              <button onClick={() => setShowPanel(false)} className="text-red-200 hover:text-white">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
 
-      <AddWorkScheduleModal
-        isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
-        onSuccess={() => {
-          setShowScheduleModal(false);
-          loadData();
-        }}
-        propertyId={propertyId}
-      />
+            <form onSubmit={handleSave} className="flex-1 p-6 space-y-5">
+              <div>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Team Identity</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Team Name <span className="text-red-500">*</span></label>
+                    <input type="text" value={form.teamName} onChange={e => setForm({ ...form, teamName: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="e.g. Ramesh Masonry Team" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Team Code</label>
+                    <input type="text" value={form.teamCode} onChange={e => setForm({ ...form, teamCode: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="T001" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Team Type <span className="text-red-500">*</span></label>
+                    <select value={form.teamType} onChange={e => setForm({ ...form, teamType: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent bg-white">
+                      <option value="CONTRACTOR">Contractor (Firm)</option>
+                      <option value="IN_HOUSE">In-House (Own Employees)</option>
+                      <option value="LABOR">Labour Gang (Daily Wage)</option>
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Project</label>
+                    <select value={form.constructionProjectId} onChange={e => setForm({ ...form, constructionProjectId: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent bg-white">
+                      <option value="">Not assigned</option>
+                      {projects.map(p => <option key={p.id} value={p.id}>{p.projectName}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Contact</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Leader Name <span className="text-red-500">*</span></label>
+                    <input type="text" value={form.leaderName} onChange={e => setForm({ ...form, leaderName: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="Supervisor / foreman name" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
+                    <input type="tel" value={form.contactNumber} onChange={e => setForm({ ...form, contactNumber: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="10-digit number" required />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="optional" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase mb-3">Work Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Workers</label>
+                    <input type="number" value={form.totalMembers} onChange={e => setForm({ ...form, totalMembers: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="0" min="0" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Daily Rate (₹)</label>
+                    <input type="number" value={form.dailyRate} onChange={e => setForm({ ...form, dailyRate: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="Per day cost" min="0" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
+                    <input type="text" value={form.specialization} onChange={e => setForm({ ...form, specialization: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent"
+                      placeholder="e.g. RCC Work, Masonry, Plumbing" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contract Start</label>
+                    <input type="date" value={form.contractStartDate} onChange={e => setForm({ ...form, contractStartDate: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contract End</label>
+                    <input type="date" value={form.contractEndDate} onChange={e => setForm({ ...form, contractEndDate: e.target.value })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-[#A8211B] focus:border-transparent" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2 border-t">
+                <button type="submit" disabled={saving}
+                  className="flex-1 py-3 text-white rounded-xl font-semibold disabled:opacity-50"
+                  style={{ backgroundColor: brandPalette.primary }}>
+                  {saving ? 'Saving…' : editTeam ? 'Update Team' : 'Add Team'}
+                </button>
+                <button type="button" onClick={() => setShowPanel(false)}
+                  className="px-5 py-3 border-2 rounded-xl font-medium text-gray-700 hover:bg-gray-50"
+                  style={{ borderColor: brandPalette.neutral }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-
 export default function TeamsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    }>
-      <TeamsPageContent />
+    <Suspense fallback={<CardGridSkeleton cards={6} />}>
+      <TeamsContent />
     </Suspense>
   );
 }
-

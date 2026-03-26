@@ -52,34 +52,34 @@ export class JournalEntry {
   status: JournalEntryStatus;
 
   @Column({ nullable: true })
-  createdBy: string;
+  createdBy: string; // snake_case: created_by (via SnakeNamingStrategy)
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'createdBy' })
+  @JoinColumn({ name: 'created_by' }) // explicit snake_case to match DB
   creator: User;
 
   @Column({ nullable: true })
-  approvedBy: string;
+  approvedBy: string; // snake_case: approved_by
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'approvedBy' })
+  @JoinColumn({ name: 'approved_by' })
   approver: User;
 
   @Column({ type: 'timestamp', nullable: true })
-  approvedAt: Date;
+  approvedAt: Date; // snake_case: approved_at
 
   @Column({ nullable: true })
-  voidedBy: string;
+  voidedBy: string; // snake_case: voided_by
 
   @ManyToOne(() => User, { nullable: true })
-  @JoinColumn({ name: 'voidedBy' })
+  @JoinColumn({ name: 'voided_by' })
   voider: User;
 
   @Column({ type: 'timestamp', nullable: true })
-  voidedAt: Date;
+  voidedAt: Date; // snake_case: voided_at
 
   @Column({ type: 'text', nullable: true })
-  voidReason: string;
+  voidReason: string; // snake_case: void_reason
 
   @OneToMany(() => JournalEntryLine, (line) => line.journalEntry, { cascade: true })
   lines: JournalEntryLine[];

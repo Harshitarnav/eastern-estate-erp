@@ -14,10 +14,11 @@ interface MaterialExitModalProps {
 export default function MaterialExitModal({ isOpen, onClose, onSuccess, propertyId }: MaterialExitModalProps) {
   const [materials, setMaterials] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     materialId: '',
-    projectId: '',
+    constructionProjectId: '',
     quantity: '',
     exitDate: new Date().toISOString().split('T')[0],
     issuedTo: '',
@@ -33,26 +34,30 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
 
   const loadData = async () => {
     try {
-      const [materialsRes, projectsRes] = await Promise.all([
+      // api.get() returns response.data directly (not a full Axios response)
+      const [materialsRes, projectsRes, empRes] = await Promise.all([
         api.get('/materials'),
-        api.get(`/construction-projects?propertyId=${propertyId}`)
+        api.get('/construction-projects'),
+        api.get('/employees'),
       ]);
       
-      const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
-      const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
+      const materialsData = Array.isArray(materialsRes) ? materialsRes : (materialsRes?.data || []);
+      const projectsData = Array.isArray(projectsRes) ? projectsRes : (projectsRes?.data || []);
+      const empData = Array.isArray(empRes) ? empRes : (empRes?.data || []);
       
       setMaterials((materialsData || []).filter((m: any) => m.isActive && m.currentStock > 0));
       setProjects((projectsData || []).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
+      setEmployees(empData || []);
     } catch (error) {
       console.error('Failed to load data:', error);
-      alert('Failed to load materials and projects');
+      alert('Failed to load required data');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.materialId || !formData.quantity || !formData.issuedTo) {
+    if (!formData.materialId || !formData.quantity || !formData.purpose) {
       alert('Please fill in all required fields');
       return;
     }
@@ -60,7 +65,7 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
     const selectedMaterial = materials.find(m => m.id === formData.materialId);
     const quantity = parseFloat(formData.quantity);
     
-    if (selectedMaterial && quantity > selectedMaterial.currentStock) {
+    if (selectedMaterial && quantity > Number(selectedMaterial.currentStock)) {
       alert(`Insufficient stock! Available: ${selectedMaterial.currentStock} ${selectedMaterial.unitOfMeasurement}`);
       return;
     }
@@ -69,12 +74,12 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
     try {
       await api.post('/material-exits', {
         materialId: formData.materialId,
-        projectId: formData.projectId || null,
-        quantityIssued: quantity,
+        constructionProjectId: formData.constructionProjectId || undefined,
+        quantity,
         exitDate: formData.exitDate,
-        issuedTo: formData.issuedTo,
-        purpose: formData.purpose || null,
-        remarks: formData.remarks || null,
+        issuedTo: formData.issuedTo || undefined,
+        purpose: formData.purpose,
+        remarks: formData.remarks || undefined,
       });
 
       alert('Material exit recorded successfully!');
@@ -91,7 +96,7 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
   const handleClose = () => {
     setFormData({
       materialId: '',
-      projectId: '',
+      constructionProjectId: '',
       quantity: '',
       exitDate: new Date().toISOString().split('T')[0],
       issuedTo: '',
@@ -143,12 +148,12 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
               Project (Optional)
             </label>
             <select
-              value={formData.projectId}
-              onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
+              value={formData.constructionProjectId}
+              onChange={(e) => setFormData({ ...formData, constructionProjectId: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               <option value="">Select Project</option>
-              {((projects || [])).map((project) => (
+              {(projects || []).map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.projectName}
                 </option>
@@ -191,25 +196,29 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
             />
           </div>
 
-          {/* Issued To */}
+          {/* Issued To - Employee */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Issued To <span className="text-red-600">*</span>
+              Issued To (Employee)
             </label>
-            <input
-              type="text"
+            <select
               value={formData.issuedTo}
               onChange={(e) => setFormData({ ...formData, issuedTo: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              placeholder="Name of person receiving"
-              required
-            />
+            >
+              <option value="">Select Employee</option>
+              {(employees || []).map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.fullName} {emp.employeeCode ? `(${emp.employeeCode})` : ''}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Purpose */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Purpose
+              Purpose <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
@@ -217,6 +226,7 @@ export default function MaterialExitModal({ isOpen, onClose, onSuccess, property
               onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
               placeholder="Purpose of material usage"
+              required
             />
           </div>
         </div>

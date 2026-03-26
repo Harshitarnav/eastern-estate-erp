@@ -82,12 +82,54 @@ export class UpdateExpenseDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
+  expenseCategory?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
   expenseType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  expenseSubCategory?: string;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
   amount?: number;
+
+  @IsOptional()
+  @IsDateString()
+  expenseDate?: string;
+
+  @IsOptional()
+  @IsString()
+  vendorId?: string;
+
+  @IsOptional()
+  @IsString()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsString()
+  propertyId?: string;
+
+  @IsOptional()
+  @IsString()
+  constructionProjectId?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentMethod?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentReference?: string;
+
+  @IsOptional()
+  @IsString()
+  paymentStatus?: string;
 
   @IsOptional()
   @IsString()
@@ -96,6 +138,18 @@ export class UpdateExpenseDto {
   @IsOptional()
   @IsString()
   receiptUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  invoiceNumber?: string;
+
+  @IsOptional()
+  @IsDateString()
+  invoiceDate?: string;
+
+  @IsOptional()
+  @IsString()
+  accountId?: string;
 
   @IsOptional()
   @IsEnum(ExpenseStatus)

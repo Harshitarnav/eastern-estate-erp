@@ -36,6 +36,12 @@ class ApiService {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        // When sending FormData (file uploads), let the browser set
+        // Content-Type automatically so it includes the multipart boundary.
+        // The default 'application/json' would strip the boundary and break uploads.
+        if (config.data instanceof FormData) {
+          delete config.headers['Content-Type'];
+        }
         return config;
       },
       (error) => Promise.reject(error)

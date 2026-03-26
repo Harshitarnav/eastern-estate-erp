@@ -16,6 +16,8 @@ const construction_project_assignment_entity_1 = require("./entities/constructio
 const construction_tower_progress_entity_1 = require("./entities/construction-tower-progress.entity");
 const construction_flat_progress_entity_1 = require("./entities/construction-flat-progress.entity");
 const construction_development_update_entity_1 = require("./entities/construction-development-update.entity");
+const ra_bill_entity_1 = require("./entities/ra-bill.entity");
+const qc_checklist_entity_1 = require("./entities/qc-checklist.entity");
 const construction_projects_service_1 = require("./construction-projects.service");
 const construction_projects_controller_1 = require("./construction-projects.controller");
 const construction_teams_service_1 = require("./construction-teams.service");
@@ -37,9 +39,16 @@ const construction_schema_sync_service_1 = require("./construction.schema-sync.s
 const milestone_detection_service_1 = require("./services/milestone-detection.service");
 const auto_demand_draft_service_1 = require("./services/auto-demand-draft.service");
 const construction_workflow_service_1 = require("./services/construction-workflow.service");
+const ra_bills_service_1 = require("./ra-bills.service");
+const ra_bills_controller_1 = require("./ra-bills.controller");
+const qc_service_1 = require("./qc.service");
+const qc_controller_1 = require("./qc.controller");
+const construction_reports_service_1 = require("./services/construction-reports.service");
+const construction_reports_controller_1 = require("./controllers/construction-reports.controller");
 const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
 const settings_module_1 = require("../settings/settings.module");
 const mail_module_1 = require("../../common/mail/mail.module");
+const accounting_module_1 = require("../accounting/accounting.module");
 const demand_draft_entity_1 = require("../demand-drafts/entities/demand-draft.entity");
 const payment_schedule_entity_1 = require("../payments/entities/payment-schedule.entity");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
@@ -62,6 +71,8 @@ exports.ConstructionModule = ConstructionModule = __decorate([
                 construction_tower_progress_entity_1.ConstructionTowerProgress,
                 construction_flat_progress_entity_1.ConstructionFlatProgress,
                 construction_development_update_entity_1.ConstructionDevelopmentUpdate,
+                ra_bill_entity_1.RABill,
+                qc_checklist_entity_1.QCChecklist,
                 demand_draft_entity_1.DemandDraft,
                 payment_schedule_entity_1.PaymentSchedule,
                 flat_payment_plan_entity_1.FlatPaymentPlan,
@@ -74,6 +85,7 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             payment_plans_module_1.PaymentPlansModule,
             settings_module_1.SettingsModule,
             mail_module_1.MailModule,
+            accounting_module_1.AccountingModule,
         ],
         controllers: [
             construction_projects_controller_1.ConstructionProjectsController,
@@ -86,6 +98,9 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             flat_progress_simple_controller_1.FlatProgressSimpleController,
             development_updates_controller_1.DevelopmentUpdatesController,
             milestones_controller_1.MilestonesController,
+            ra_bills_controller_1.RABillsController,
+            qc_controller_1.QCController,
+            construction_reports_controller_1.ConstructionReportsController,
         ],
         providers: [
             construction_projects_service_1.ConstructionProjectsService,
@@ -99,6 +114,9 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             milestone_detection_service_1.MilestoneDetectionService,
             auto_demand_draft_service_1.AutoDemandDraftService,
             construction_workflow_service_1.ConstructionWorkflowService,
+            ra_bills_service_1.RABillsService,
+            qc_service_1.QCService,
+            construction_reports_service_1.ConstructionReportsService,
         ],
         exports: [
             construction_projects_service_1.ConstructionProjectsService,
@@ -111,6 +129,9 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             milestone_detection_service_1.MilestoneDetectionService,
             auto_demand_draft_service_1.AutoDemandDraftService,
             construction_workflow_service_1.ConstructionWorkflowService,
+            ra_bills_service_1.RABillsService,
+            qc_service_1.QCService,
+            construction_reports_service_1.ConstructionReportsService,
         ],
     })
 ], ConstructionModule);

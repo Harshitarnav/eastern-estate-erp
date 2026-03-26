@@ -7,7 +7,7 @@ export declare class MaterialExit {
     constructionProjectId: string;
     quantity: number;
     purpose: string;
-    issuedTo: string;
+    issuedTo: string | null;
     issuedToEmployee: Employee;
     approvedBy: string;
     approvedByEmployee: Employee;

@@ -5,6 +5,7 @@ import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PaymentCompletionService } from './services/payment-completion.service';
+import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 
 @Injectable()
 export class PaymentsService {
@@ -15,6 +16,7 @@ export class PaymentsService {
     private paymentRepository: Repository<Payment>,
     @Inject(forwardRef(() => PaymentCompletionService))
     private paymentCompletionService: PaymentCompletionService,
+    private readonly accountingIntegrationService: AccountingIntegrationService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment> {
@@ -141,8 +143,19 @@ export class PaymentsService {
     }
 
     payment.status = 'COMPLETED';
+    const saved = await this.paymentRepository.save(payment);
 
-    return this.paymentRepository.save(payment);
+    // Auto-create Journal Entry (best-effort, never blocks the payment)
+    await this.accountingIntegrationService.onPaymentCompleted({
+      id: saved.id,
+      paymentCode: saved.paymentCode,
+      amount: Number(saved.amount),
+      paymentDate: saved.paymentDate,
+      paymentMethod: saved.paymentMethod,
+      createdBy: userId,
+    });
+
+    return saved;
   }
 
   async cancel(id: string): Promise<Payment> {

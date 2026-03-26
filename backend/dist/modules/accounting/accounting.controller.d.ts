@@ -3,10 +3,6 @@ import { AccountingService } from './accounting.service';
 export declare class AccountingController {
     private readonly accountingService;
     constructor(accountingService: AccountingService);
-    createAccount(data: any): Promise<import("./entities/account.entity").Account[]>;
-    getAllAccounts(): Promise<import("./entities/account.entity").Account[]>;
-    getAccountById(id: string): Promise<import("./entities/account.entity").Account>;
-    updateAccount(id: string, data: any): Promise<import("./entities/account.entity").Account>;
     createJournalEntry(data: any): Promise<import("./entities/journal-entry.entity").JournalEntry>;
     getJournalEntryById(id: string): Promise<import("./entities/journal-entry.entity").JournalEntry>;
     getJournalEntryLines(id: string): Promise<import("./entities/journal-entry-line.entity").JournalEntryLine[]>;
@@ -67,6 +63,29 @@ export declare class AccountingController {
     }>;
     exportLedgerToExcel(accountId: string, startDate: string, endDate: string, res: Response): Promise<void>;
     exportTrialBalanceToExcel(date: string, res: Response): Promise<void>;
+    getPropertyWisePL(startDate: string, endDate: string): Promise<{
+        period: {
+            startDate: Date;
+            endDate: Date;
+        };
+        properties: {
+            propertyId: string;
+            propertyName: string;
+            revenue: number;
+            expenses: number;
+            netProfit: number;
+            margin: number;
+        }[];
+        totals: {
+            margin: number;
+            revenue: number;
+            expenses: number;
+            netProfit: number;
+        };
+    }>;
+    getARAgingReport(asOf?: string): Promise<any>;
+    getAPAgingReport(asOf?: string): Promise<any>;
+    getCashFlowStatement(startDate: string, endDate: string): Promise<any>;
     exportForITR(financialYear: string): Promise<{
         financial_year: string;
         total_income: number;
@@ -81,15 +100,4 @@ export declare class AccountingController {
             amount: number;
         }[];
     }>;
-    createBankAccount(data: any): Promise<import("./entities/bank-account.entity").BankAccount[]>;
-    getAllBankAccounts(): Promise<import("./entities/bank-account.entity").BankAccount[]>;
-    getBankAccountById(id: string): Promise<import("./entities/bank-account.entity").BankAccount>;
-    uploadBankStatement(data: any, file: Express.Multer.File): Promise<{
-        total: number;
-        bankAccountId: any;
-        fileName: any;
-        statements: any[];
-    }>;
-    getUnreconciledTransactions(bankAccountId: string): Promise<import("./entities/bank-statement.entity").BankStatement[]>;
-    reconcileTransaction(statementId: string, journalEntryId: string): Promise<import("./entities/bank-statement.entity").BankStatement>;
 }

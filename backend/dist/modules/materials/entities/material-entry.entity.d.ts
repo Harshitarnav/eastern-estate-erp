@@ -18,7 +18,7 @@ export declare class MaterialEntry {
     vendor: Vendor;
     purchaseOrderId: string;
     entryDate: Date;
-    enteredBy: string;
+    enteredBy: string | null;
     enteredByUser: User;
     invoiceNumber: string;
     remarks: string;

@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Body,
   Param,
   Query,
@@ -18,28 +17,8 @@ import { AccountingService } from './accounting.service';
 export class AccountingController {
   constructor(private readonly accountingService: AccountingService) {}
 
-  // ============ ACCOUNTS ============
-  @Post('accounts')
-  createAccount(@Body() data: any) {
-    return this.accountingService.createAccount(data);
-  }
-
-  @Get('accounts')
-  getAllAccounts() {
-    return this.accountingService.getAllAccounts();
-  }
-
-  @Get('accounts/:id')
-  getAccountById(@Param('id') id: string) {
-    return this.accountingService.getAccountById(id);
-  }
-
-  @Put('accounts/:id')
-  updateAccount(@Param('id') id: string, @Body() data: any) {
-    return this.accountingService.updateAccount(id, data);
-  }
-
   // ============ JOURNAL ENTRIES ============
+  // NOTE: Account CRUD is handled by AccountsController (/accounting/accounts/*)
   @Post('journal-entries')
   createJournalEntry(@Body() data: any) {
     return this.accountingService.createJournalEntry(data);
@@ -143,48 +122,49 @@ export class AccountingController {
     res.send(buffer);
   }
 
+  // ============ PROPERTY-WISE P&L ============
+  @Get('reports/property-wise-pl')
+  getPropertyWisePL(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+    return this.accountingService.getPropertyWisePL(start, end);
+  }
+
+  // ============ AR AGING ============
+  @Get('reports/ar-aging')
+  getARAgingReport(@Query('asOf') asOf?: string) {
+    const date = asOf ? new Date(asOf) : new Date();
+    return this.accountingService.getARAgingReport(date);
+  }
+
+  // ============ AP AGING ============
+  @Get('reports/ap-aging')
+  getAPAgingReport(@Query('asOf') asOf?: string) {
+    const date = asOf ? new Date(asOf) : new Date();
+    return this.accountingService.getAPAgingReport(date);
+  }
+
+  // ============ CASH FLOW STATEMENT ============
+  @Get('reports/cash-flow')
+  getCashFlowStatement(
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+    return this.accountingService.getCashFlowStatement(start, end);
+  }
+
   // ============ ITR EXPORTS ============
   @Get('exports/itr')
   exportForITR(@Query('financialYear') financialYear: string) {
     return this.accountingService.exportForITR(financialYear);
   }
 
-  // ============ BANK ACCOUNTS ============
-  @Post('bank-accounts')
-  createBankAccount(@Body() data: any) {
-    return this.accountingService.createBankAccount(data);
-  }
-
-  @Get('bank-accounts')
-  getAllBankAccounts() {
-    return this.accountingService.getAllBankAccounts();
-  }
-
-  @Get('bank-accounts/:id')
-  getBankAccountById(@Param('id') id: string) {
-    return this.accountingService.getBankAccountById(id);
-  }
-
-  // ============ BANK STATEMENTS & RECONCILIATION ============
-  @Post('bank-statements/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadBankStatement(
-    @Body() data: any,
-    @UploadedFile() file: Express.Multer.File,
-  ) {
-    return this.accountingService.uploadBankStatement(data, file);
-  }
-
-  @Get('bank-statements/unreconciled/:bankAccountId')
-  getUnreconciledTransactions(@Param('bankAccountId') bankAccountId: string) {
-    return this.accountingService.getUnreconciledTransactions(bankAccountId);
-  }
-
-  @Post('bank-statements/:statementId/reconcile')
-  reconcileTransaction(
-    @Param('statementId') statementId: string,
-    @Body('journalEntryId') journalEntryId: string,
-  ) {
-    return this.accountingService.reconcileTransaction(statementId, journalEntryId);
-  }
+  // NOTE: Bank accounts & bank statements are handled by
+  //       BankAccountsController  (/accounting/bank-accounts/*)
+  //       BankStatementsController (/accounting/bank-statements/*)
 }

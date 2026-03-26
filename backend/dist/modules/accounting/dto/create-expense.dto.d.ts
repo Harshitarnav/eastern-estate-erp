@@ -21,10 +21,23 @@ export declare class CreateExpenseDto {
     status?: ExpenseStatus;
 }
 export declare class UpdateExpenseDto {
+    expenseCategory?: string;
     expenseType?: string;
+    expenseSubCategory?: string;
     amount?: number;
+    expenseDate?: string;
+    vendorId?: string;
+    employeeId?: string;
+    propertyId?: string;
+    constructionProjectId?: string;
+    paymentMethod?: string;
+    paymentReference?: string;
+    paymentStatus?: string;
     description?: string;
     receiptUrl?: string;
+    invoiceNumber?: string;
+    invoiceDate?: string;
+    accountId?: string;
     status?: string;
 }
 export declare class ApproveExpenseDto {

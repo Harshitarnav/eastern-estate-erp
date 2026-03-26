@@ -34,6 +34,19 @@ export class JournalEntriesService {
       throw new BadRequestException(`Journal entry must balance. Debits: ${totalDebit}, Credits: ${totalCredit}`);
     }
 
+    // Validate each line has EITHER a debit OR credit (DB enforces check_debit_or_credit constraint)
+    for (let i = 0; i < createJournalEntryDto.lines.length; i++) {
+      const line = createJournalEntryDto.lines[i];
+      const d = Number(line.debitAmount) || 0;
+      const c = Number(line.creditAmount) || 0;
+      if (d > 0 && c > 0) {
+        throw new BadRequestException(`Line ${i + 1}: A journal line cannot have both a debit and a credit amount.`);
+      }
+      if (d === 0 && c === 0) {
+        throw new BadRequestException(`Line ${i + 1}: A journal line must have either a debit or a credit amount.`);
+      }
+    }
+
     // Validate all accounts exist
     for (const line of createJournalEntryDto.lines) {
       const account = await this.accountsRepository.findOne({
@@ -124,7 +137,7 @@ export class JournalEntriesService {
   async findOne(id: string): Promise<JournalEntry> {
     const journalEntry = await this.journalEntriesRepository.findOne({
       where: { id },
-      relations: ['lines', 'lines.account', 'creator', 'poster', 'voider'],
+      relations: ['lines', 'lines.account', 'creator', 'voider'],
     });
 
     if (!journalEntry) {
@@ -180,12 +193,16 @@ export class JournalEntriesService {
           // Debit increases: Assets, Expenses
           // Credit increases: Liabilities, Equity, Income
           const isDebitAccount = ['ASSET', 'EXPENSE'].includes(account.accountType);
-          
-          if (isDebitAccount) {
-            account.currentBalance = Number(account.currentBalance) + line.debitAmount - line.creditAmount;
-          } else {
-            account.currentBalance = Number(account.currentBalance) + line.creditAmount - line.debitAmount;
-          }
+          const currentBal = Number(account.currentBalance) || 0;
+          const debit      = Number(line.debitAmount)       || 0;
+          const credit     = Number(line.creditAmount)      || 0;
+
+          const newBalance = isDebitAccount
+            ? currentBal + debit - credit
+            : currentBal + credit - debit;
+
+          // Round to 2dp before saving to avoid NUMERIC(15,2) overflow from float imprecision
+          account.currentBalance = Math.round(newBalance * 100) / 100;
 
           await queryRunner.manager.save(account);
         }
@@ -217,9 +234,9 @@ export class JournalEntriesService {
     try {
       // Update journal entry status
       journalEntry.status = JournalEntryStatus.VOID;
+      journalEntry.voidReason = voidDto.voidReason;
       journalEntry.voidedBy = userId;
       journalEntry.voidedAt = new Date();
-      journalEntry.voidReason = voidDto.voidReason;
 
       await queryRunner.manager.save(journalEntry);
 
@@ -231,12 +248,16 @@ export class JournalEntriesService {
 
         if (account) {
           const isDebitAccount = ['ASSET', 'EXPENSE'].includes(account.accountType);
-          
-          if (isDebitAccount) {
-            account.currentBalance = Number(account.currentBalance) - line.debitAmount + line.creditAmount;
-          } else {
-            account.currentBalance = Number(account.currentBalance) - line.creditAmount + line.debitAmount;
-          }
+          const currentBal = Number(account.currentBalance) || 0;
+          const debit      = Number(line.debitAmount)       || 0;
+          const credit     = Number(line.creditAmount)      || 0;
+
+          // Reverse: undo the original posting
+          const newBalance = isDebitAccount
+            ? currentBal - debit + credit
+            : currentBal - credit + debit;
+
+          account.currentBalance = Math.round(newBalance * 100) / 100;
 
           await queryRunner.manager.save(account);
         }

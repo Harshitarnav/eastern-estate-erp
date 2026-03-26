@@ -6,10 +6,12 @@ import { VendorsService } from './vendors.service';
 import { VendorPaymentsService } from './vendor-payments.service';
 import { VendorsController } from './vendors.controller';
 import { VendorPaymentsController } from './vendor-payments.controller';
+import { AccountingModule } from '../accounting/accounting.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Vendor, VendorPayment]),
+    AccountingModule,
   ],
   controllers: [
     VendorsController,

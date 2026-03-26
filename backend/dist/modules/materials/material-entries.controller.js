@@ -22,8 +22,9 @@ let MaterialEntriesController = class MaterialEntriesController {
     constructor(entriesService) {
         this.entriesService = entriesService;
     }
-    create(createDto) {
-        return this.entriesService.create(createDto);
+    create(createDto, req) {
+        const userId = req.user?.id || req.user?.sub || null;
+        return this.entriesService.create({ ...createDto, enteredBy: userId });
     }
     findAll(materialId, vendorId) {
         const filters = {};
@@ -47,8 +48,9 @@ exports.MaterialEntriesController = MaterialEntriesController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_material_entry_dto_1.CreateMaterialEntryDto]),
+    __metadata("design:paramtypes", [create_material_entry_dto_1.CreateMaterialEntryDto, Object]),
     __metadata("design:returntype", void 0)
 ], MaterialEntriesController.prototype, "create", null);
 __decorate([

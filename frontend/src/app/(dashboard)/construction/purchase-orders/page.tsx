@@ -1,33 +1,77 @@
 'use client';
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
+import { CardGridSkeleton } from '@/components/Skeletons';
 import CreatePurchaseOrderModal from '@/components/modals/CreatePurchaseOrderModal';
-import { TableRowsSkeleton } from '@/components/Skeletons';
+import { BrandHero, BrandPrimaryButton } from '@/components/layout/BrandHero';
+import { BrandStatCard } from '@/components/layout/BrandStatCard';
+import { brandPalette, formatIndianNumber, formatToCrore } from '@/utils/brand';
+import {
+  ShoppingCart, Plus, Search, TrendingUp, Clock,
+  CheckCircle, AlertTriangle, ChevronRight, Calendar,
+  RefreshCw,
+} from 'lucide-react';
+
+interface PurchaseOrder {
+  id: string;
+  poNumber: string;
+  poDate: string;
+  vendor?: { vendorName: string; phoneNumber?: string };
+  constructionProject?: { projectName: string };
+  status: string;
+  expectedDeliveryDate?: string;
+  actualDeliveryDate?: string;
+  subtotal: number;
+  taxAmount: number;
+  totalAmount: number;
+  advancePaid: number;
+  balanceAmount: number;
+  notes?: string;
+}
+
+const STATUS_CFG: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  DRAFT:              { label: 'Draft',             bg: 'bg-gray-100',   text: 'text-gray-700',   border: 'border-gray-200' },
+  PENDING_APPROVAL:   { label: 'Pending Approval',  bg: 'bg-yellow-50',  text: 'text-yellow-700', border: 'border-yellow-200' },
+  APPROVED:           { label: 'Approved',           bg: 'bg-blue-50',    text: 'text-blue-700',   border: 'border-blue-200' },
+  ORDERED:            { label: 'Ordered',            bg: 'bg-purple-50',  text: 'text-purple-700', border: 'border-purple-200' },
+  PARTIALLY_RECEIVED: { label: 'Partial Receipt',    bg: 'bg-orange-50',  text: 'text-orange-700', border: 'border-orange-200' },
+  RECEIVED:           { label: 'Received',           bg: 'bg-green-50',   text: 'text-green-700',  border: 'border-green-200' },
+  DELIVERED:          { label: 'Delivered',          bg: 'bg-green-50',   text: 'text-green-700',  border: 'border-green-200' },
+  CANCELLED:          { label: 'Cancelled',          bg: 'bg-red-50',     text: 'text-red-700',    border: 'border-red-200' },
+};
+
+const STATUS_NEXT: Record<string, string> = {
+  DRAFT: 'PENDING_APPROVAL',
+  PENDING_APPROVAL: 'APPROVED',
+  APPROVED: 'ORDERED',
+  ORDERED: 'PARTIALLY_RECEIVED',
+  PARTIALLY_RECEIVED: 'RECEIVED',
+};
+
+const STATUS_NEXT_LABEL: Record<string, string> = {
+  DRAFT: 'Submit for Approval',
+  PENDING_APPROVAL: 'Approve',
+  APPROVED: 'Mark as Ordered',
+  ORDERED: 'Mark Partial Receipt',
+  PARTIALLY_RECEIVED: 'Mark Fully Received',
+};
 
 function PurchaseOrdersPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const propertyId = searchParams.get('propertyId');
-
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  useEffect(() => {
-    if (!propertyId) {
-      router.push('/construction');
-      return;
-    }
-    loadOrders();
-  }, [propertyId]);
+  useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/purchase-orders');
-      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const res = await api.get('/purchase-orders');
+      const data = Array.isArray(res) ? res : (res?.data || res?.items || []);
       setOrders(data);
     } catch (error) {
       console.error('Failed to load purchase orders:', error);
@@ -36,287 +80,288 @@ function PurchaseOrdersPageContent() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const updateStatus = async (id: string, status: string) => {
+    try {
+      await api.patch(`/purchase-orders/${id}/status`, { status });
+      await loadOrders();
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: any = {
-      'DRAFT': 'bg-gray-100 text-gray-800',
-      'PENDING_APPROVAL': 'bg-yellow-100 text-yellow-800',
-      'APPROVED': 'bg-blue-100 text-blue-800',
-      'SENT': 'bg-purple-100 text-purple-800',
-      'PARTIALLY_RECEIVED': 'bg-orange-100 text-orange-800',
-      'RECEIVED': 'bg-green-100 text-green-800',
-      'CANCELLED': 'bg-red-100 text-red-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+  const fmtCur = (n: number | string) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+  const fmt = (d?: string) =>
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-  const getPaymentStatusColor = (status: string) => {
-    const colors: any = {
-      'PENDING': 'bg-yellow-100 text-yellow-800',
-      'PARTIAL': 'bg-orange-100 text-orange-800',
-      'PAID': 'bg-green-100 text-green-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
+  const filtered = orders.filter(po => {
+    const matchStatus = !filterStatus || po.status === filterStatus;
+    const matchSearch = !searchTerm
+      || po.poNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+      || po.vendor?.vendorName?.toLowerCase().includes(searchTerm.toLowerCase())
+      || po.constructionProject?.projectName?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchStatus && matchSearch;
+  });
 
-  if (!propertyId) return null;
+  const stats = {
+    total: orders.length,
+    pending: orders.filter(p => p.status === 'PENDING_APPROVAL').length,
+    active: orders.filter(p => ['APPROVED', 'ORDERED', 'PARTIALLY_RECEIVED'].includes(p.status)).length,
+    received: orders.filter(p => ['RECEIVED', 'DELIVERED'].includes(p.status)).length,
+    totalValue: orders.reduce((s, p) => s + (Number(p.totalAmount) || 0), 0),
+    outstanding: orders.reduce((s, p) => s + (Number(p.balanceAmount) || 0), 0),
+  };
 
   return (
-    <div className="p-6">
-      {/* Eastern Estate Branded Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => router.push('/construction')}
-          className="text-gray-600 hover:text-gray-900 mb-4 flex items-center"
-        >
-          ← Back to Construction Hub
-        </button>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" style={{ backgroundColor: '#A8211B' }}>
-            🛒
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#A8211B' }}>
-              Purchase Orders
-            </h1>
-            <p className="text-sm text-gray-500">Eastern Estate ERP System</p>
-          </div>
-        </div>
-        <p className="text-gray-600">Create and manage material purchase orders</p>
+    <div className="p-6 md:p-8 space-y-8 min-h-full" style={{ backgroundColor: brandPalette.background }}>
+
+      {/* Hero */}
+      <BrandHero
+        eyebrow="Purchase Orders"
+        title={<>Procure materials, <span style={{ color: brandPalette.accent }}>from order to delivery</span></>}
+        description="Create, approve and track all material purchase orders. Monitor delivery status, outstanding payments and the full procurement lifecycle."
+        actions={
+          <BrandPrimaryButton onClick={() => setShowCreateModal(true)}>
+            <Plus className="w-4 h-4" /> New Purchase Order
+          </BrandPrimaryButton>
+        }
+      />
+
+      {/* Stats */}
+      <section className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+        <BrandStatCard
+          title="Total Orders"
+          primary={formatIndianNumber(stats.total)}
+          subLabel={`${stats.pending} pending approval`}
+          icon={<ShoppingCart className="w-7 h-7" />}
+          accentColor={brandPalette.primary}
+        />
+        <BrandStatCard
+          title="Active Orders"
+          primary={formatIndianNumber(stats.active)}
+          subLabel="Approved or in transit"
+          icon={<TrendingUp className="w-7 h-7" />}
+          accentColor="rgba(37,99,235,0.2)"
+        />
+        <BrandStatCard
+          title="Total Value"
+          primary={formatToCrore(stats.totalValue)}
+          subLabel="All purchase orders"
+          icon={<Clock className="w-7 h-7" />}
+          accentColor="rgba(168,33,27,0.18)"
+        />
+        <BrandStatCard
+          title="Outstanding"
+          primary={formatToCrore(stats.outstanding)}
+          subLabel="Balance to be paid"
+          icon={<AlertTriangle className="w-7 h-7" />}
+          accentColor={stats.outstanding > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(61,163,93,0.2)'}
+        />
+      </section>
+
+      {/* Workflow Banner */}
+      <div
+        className="rounded-2xl border bg-white/90 shadow-sm p-4 flex flex-wrap items-center gap-2"
+        style={{ borderColor: `${brandPalette.neutral}80` }}
+      >
+        <span className="text-xs font-semibold text-gray-400 uppercase mr-2">Workflow</span>
+        {['Draft', 'Pending Approval', 'Approved', 'Ordered', 'Partial Receipt', 'Received'].map((step, i, arr) => (
+          <span key={step} className="flex items-center gap-2">
+            <span className="bg-gray-100 text-gray-700 text-xs rounded-full px-3 py-1 font-medium">{step}</span>
+            {i < arr.length - 1 && <ChevronRight className="w-3.5 h-3.5 text-gray-300" />}
+          </span>
+        ))}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-600 mb-1">Total POs</p>
-          <p className="text-2xl font-bold text-gray-900">{(orders || []).length}</p>
-        </div>
-        <div className="bg-yellow-50 rounded-lg shadow p-4">
-          <p className="text-sm text-yellow-600 mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-700">
-            {((orders || [])).filter(po => po.status === 'PENDING_APPROVAL').length}
-          </p>
-        </div>
-        <div className="bg-blue-50 rounded-lg shadow p-4">
-          <p className="text-sm text-blue-600 mb-1">Approved</p>
-          <p className="text-2xl font-bold text-blue-700">
-            {((orders || [])).filter(po => po.status === 'APPROVED' || po.status === 'SENT').length}
-          </p>
-        </div>
-        <div className="bg-green-50 rounded-lg shadow p-4">
-          <p className="text-sm text-green-600 mb-1">Received</p>
-          <p className="text-2xl font-bold text-green-700">
-            {((orders || [])).filter(po => po.status === 'RECEIVED').length}
-          </p>
-        </div>
-        <div className="bg-purple-50 rounded-lg shadow p-4">
-          <p className="text-sm text-purple-600 mb-1">Total Value</p>
-          <p className="text-2xl font-bold text-purple-700">
-            {formatCurrency(((orders || [])).reduce((sum, po) => sum + (po.grandTotal || 0), 0))}
-          </p>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <button
-          onClick={() => alert('Create PO feature coming soon!')}
-          className="bg-blue-500 text-white rounded-lg shadow-lg p-4 hover:bg-blue-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">📝</div>
-            <div>
-              <h3 className="font-bold">Create New PO</h3>
-              <p className="text-sm text-blue-100">Start a new purchase order</p>
-            </div>
+      {/* Filters */}
+      <div
+        className="rounded-2xl border bg-white/90 backdrop-blur-sm shadow-sm p-5"
+        style={{ borderColor: `${brandPalette.neutral}80` }}
+      >
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by PO number, vendor, or project…"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A8211B]"
+            />
           </div>
-        </button>
-
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-green-500 text-white rounded-lg shadow-lg p-4 hover:bg-green-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">🤝</div>
-            <div>
-              <h3 className="font-bold">Manage Vendors</h3>
-              <p className="text-sm text-green-100">View and add vendors</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push(`/construction/materials?propertyId=${propertyId}`)}
-          className="bg-orange-500 text-white rounded-lg shadow-lg p-4 hover:bg-orange-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">🧱</div>
-            <div>
-              <h3 className="font-bold">View Materials</h3>
-              <p className="text-sm text-orange-100">Check material inventory</p>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      {/* Purchase Orders List */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        {loading ? (
-          <div className="p-4"><TableRowsSkeleton rows={5} cols={5} /></div>
-        ) : (orders || []).length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-4xl mb-4">🛒</p>
-            <p className="text-gray-600 mb-4">No purchase orders found. Create your first PO!</p>
+          <select
+            value={filterStatus}
+            onChange={e => setFilterStatus(e.target.value)}
+            className="px-4 py-2.5 border rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#A8211B] bg-white"
+          >
+            <option value="">All Statuses</option>
+            {Object.entries(STATUS_CFG).map(([k, v]) => (
+              <option key={k} value={k}>{v.label}</option>
+            ))}
+          </select>
+          <button
+            onClick={loadOrders}
+            className="px-4 py-2.5 border rounded-xl text-sm flex items-center gap-2 hover:bg-gray-50"
+            style={{ borderColor: brandPalette.neutral, color: brandPalette.secondary }}
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Refresh
+          </button>
+          {(searchTerm || filterStatus) && (
             <button
-              onClick={() => alert('Create PO feature coming soon!')}
-              className="px-6 py-2 text-white rounded-lg"
-              style={{ backgroundColor: '#A8211B' }}
+              onClick={() => { setSearchTerm(''); setFilterStatus(''); }}
+              className="px-4 py-2.5 text-sm border rounded-xl hover:bg-gray-50"
+              style={{ borderColor: brandPalette.neutral, color: brandPalette.secondary }}
             >
-              Create Purchase Order
+              Clear
             </button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">PO Number</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {((orders || [])).map((po) => (
-                  <tr key={po.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{po.poNumber}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {po.vendor?.vendorName || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {new Date(po.orderDate).toLocaleDateString('en-IN')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {new Date(po.expectedDeliveryDate).toLocaleDateString('en-IN')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {formatCurrency(po.grandTotal || 0)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(po.status)}`}>
-                        {po.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getPaymentStatusColor(po.paymentStatus)}`}>
-                        {po.paymentStatus}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* How to Use Guide */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-lg p-6 border-2" style={{ borderColor: '#A8211B' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style={{ backgroundColor: '#A8211B' }}>
-            📖
-          </div>
-          <h3 className="text-xl font-bold" style={{ color: '#A8211B' }}>
-            How to Use Purchase Orders
+      {/* PO List */}
+      {loading ? (
+        <CardGridSkeleton cards={4} />
+      ) : filtered.length === 0 ? (
+        <div className="bg-white rounded-3xl border p-12 text-center shadow-sm" style={{ borderColor: `${brandPalette.neutral}60` }}>
+          <ShoppingCart className="w-16 h-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.45 }} />
+          <h3 className="text-xl font-semibold mb-2" style={{ color: brandPalette.secondary }}>
+            {orders.length === 0 ? 'No Purchase Orders Yet' : 'No Orders Match'}
           </h3>
+          <p className="text-gray-500 text-sm mb-6">
+            {orders.length === 0 ? 'Create your first purchase order to start tracking procurement.' : 'Try adjusting your filters.'}
+          </p>
+          {orders.length === 0 && (
+            <BrandPrimaryButton onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4" /> Create First PO
+            </BrandPrimaryButton>
+          )}
         </div>
-        <div className="space-y-4 text-gray-700">
-          <div>
-            <h4 className="font-semibold mb-2">What is this page for?</h4>
-            <p className="text-sm">
-              The Purchase Orders page manages the procurement process for construction materials. Create orders, track approvals, 
-              monitor deliveries, and manage payments - all from one centralized location. Streamline your material ordering workflow.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Key Features:</h4>
-            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-              <li><strong>PO Creation:</strong> Create detailed purchase orders with line items</li>
-              <li><strong>Approval Workflow:</strong> Track PO approval status and history</li>
-              <li><strong>Delivery Tracking:</strong> Monitor expected and actual delivery dates</li>
-              <li><strong>Payment Management:</strong> Track payment status (Pending, Partial, Paid)</li>
-              <li><strong>Vendor Integration:</strong> Link POs directly to vendors</li>
-              <li><strong>Status Tracking:</strong> Monitor PO lifecycle from draft to received</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">How to Use:</h4>
-            <ol className="list-decimal list-inside text-sm space-y-1 ml-2">
-              <li>Click "Create New PO" to start a purchase order</li>
-              <li>Select vendor and add materials with quantities</li>
-              <li>Submit for approval and track approval status</li>
-              <li>Once approved, PO is sent to vendor</li>
-              <li>Mark as received when materials arrive at site</li>
-              <li>Update payment status when paying the vendor</li>
-            </ol>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Best Practices:</h4>
-            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-              <li>Create POs well in advance of material need dates</li>
-              <li>Get multiple quotes before creating POs</li>
-              <li>Verify material specs match project requirements</li>
-              <li>Track delivery dates to avoid construction delays</li>
-              <li>Update status promptly when materials are received</li>
-            </ul>
-          </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map(po => {
+            const statusCfg = STATUS_CFG[po.status] || STATUS_CFG.DRAFT;
+            const isOverdue = po.expectedDeliveryDate
+              && new Date(po.expectedDeliveryDate) < new Date()
+              && !['RECEIVED', 'DELIVERED', 'CANCELLED'].includes(po.status);
+            const totalAmt = Number(po.totalAmount) || 0;
+            const paidAmt = Number(po.advancePaid) || 0;
+            const balAmt = Number(po.balanceAmount) || 0;
+
+            return (
+              <div
+                key={po.id}
+                className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden"
+                style={{ borderColor: `${brandPalette.neutral}60` }}
+              >
+                <div className="p-5">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    {/* Left */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <h3 className="font-bold text-gray-900 text-lg">{po.poNumber}</h3>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                          {statusCfg.label}
+                        </span>
+                        {isOverdue && (
+                          <span className="flex items-center gap-1 text-xs font-medium text-red-600">
+                            <AlertTriangle className="w-3 h-3" /> Overdue
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div>
+                          <p className="text-gray-400 text-xs">Vendor</p>
+                          <p className="font-medium">{po.vendor?.vendorName || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-xs">Project</p>
+                          <p className="font-medium truncate">{po.constructionProject?.projectName || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-xs">PO Date</p>
+                          <p className="font-medium flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-gray-400" />{fmt(po.poDate)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-xs">Expected Delivery</p>
+                          <p className={`font-medium flex items-center gap-1 ${isOverdue ? 'text-red-600' : ''}`}>
+                            <Calendar className="w-3 h-3 text-gray-400" />{fmt(po.expectedDeliveryDate)}
+                          </p>
+                          {po.actualDeliveryDate && (
+                            <p className="text-xs text-green-600 flex items-center gap-1 mt-0.5">
+                              <CheckCircle className="w-3 h-3" /> {fmt(po.actualDeliveryDate)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right - financials */}
+                    <div className="md:w-64 shrink-0">
+                      <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Total</span>
+                          <span className="font-bold text-gray-900">{fmtCur(totalAmt)}</span>
+                        </div>
+                        {paidAmt > 0 && (
+                          <>
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div
+                                className="h-1.5 rounded-full"
+                                style={{
+                                  width: `${totalAmt > 0 ? Math.min((paidAmt / totalAmt) * 100, 100) : 0}%`,
+                                  backgroundColor: brandPalette.success,
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <span className="text-green-600 font-medium">Paid: {fmtCur(paidAmt)}</span>
+                              <span className={`font-medium ${balAmt > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                                Bal: {fmtCur(balAmt)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        {STATUS_NEXT[po.status] && (
+                          <button
+                            onClick={() => updateStatus(po.id, STATUS_NEXT[po.status])}
+                            className="w-full mt-1 py-1.5 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: brandPalette.primary }}
+                          >
+                            {STATUS_NEXT_LABEL[po.status]}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
+      )}
+
+      {/* Footer */}
+      <div className="pt-4 text-center text-sm text-gray-400">
+        Eastern Estate ERP • Building Homes, Nurturing Bonds
       </div>
 
-      {/* Modal */}
       <CreatePurchaseOrderModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={() => {
-          setShowCreateModal(false);
-          loadOrders();
-        }}
-        propertyId={propertyId}
+        onSuccess={() => { setShowCreateModal(false); loadOrders(); }}
+        propertyId=""
       />
     </div>
   );
 }
 
-
 export default function PurchaseOrdersPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<CardGridSkeleton cards={4} />}>
       <PurchaseOrdersPageContent />
     </Suspense>
   );
 }
-

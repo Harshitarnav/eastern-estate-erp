@@ -18,28 +18,32 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const vendor_payment_entity_1 = require("./entities/vendor-payment.entity");
 const vendor_entity_1 = require("./entities/vendor.entity");
+const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
 let VendorPaymentsService = class VendorPaymentsService {
-    constructor(paymentsRepository, vendorsRepository, dataSource) {
+    constructor(paymentsRepository, vendorsRepository, dataSource, accountingIntegration) {
         this.paymentsRepository = paymentsRepository;
         this.vendorsRepository = vendorsRepository;
         this.dataSource = dataSource;
+        this.accountingIntegration = accountingIntegration;
     }
     async create(createDto) {
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();
+        let savedPayment;
+        let vendorName;
         try {
             const payment = this.paymentsRepository.create(createDto);
-            await queryRunner.manager.save(payment);
+            savedPayment = await queryRunner.manager.save(payment);
             const vendor = await queryRunner.manager.findOne(vendor_entity_1.Vendor, {
                 where: { id: createDto.vendorId },
             });
             if (vendor) {
+                vendorName = vendor.vendorName;
                 vendor.outstandingAmount = Math.max(0, Number(vendor.outstandingAmount) - createDto.amount);
                 await queryRunner.manager.save(vendor);
             }
             await queryRunner.commitTransaction();
-            return payment;
         }
         catch (error) {
             await queryRunner.rollbackTransaction();
@@ -48,6 +52,21 @@ let VendorPaymentsService = class VendorPaymentsService {
         finally {
             await queryRunner.release();
         }
+        const je = await this.accountingIntegration.onVendorPaymentRecorded({
+            id: savedPayment.id,
+            amount: Number(savedPayment.amount),
+            paymentDate: savedPayment.paymentDate instanceof Date
+                ? savedPayment.paymentDate
+                : new Date(savedPayment.paymentDate),
+            vendorName,
+            transactionReference: savedPayment.transactionReference ?? undefined,
+            createdBy: savedPayment.createdBy,
+        });
+        if (je) {
+            await this.paymentsRepository.update(savedPayment.id, { journalEntryId: je.id });
+            savedPayment.journalEntryId = je.id;
+        }
+        return savedPayment;
     }
     async findAll(filters) {
         const query = this.paymentsRepository.createQueryBuilder('payment');
@@ -90,6 +109,7 @@ exports.VendorPaymentsService = VendorPaymentsService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(vendor_entity_1.Vendor)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.DataSource])
+        typeorm_2.DataSource,
+        accounting_integration_service_1.AccountingIntegrationService])
 ], VendorPaymentsService);
 //# sourceMappingURL=vendor-payments.service.js.map

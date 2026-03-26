@@ -21,6 +21,6 @@ export declare class ExpensesController {
     update(id: string, updateExpenseDto: UpdateExpenseDto): Promise<import("./entities/expense.entity").Expense>;
     approve(id: string, approveDto: ApproveExpenseDto, req: any): Promise<import("./entities/expense.entity").Expense>;
     reject(id: string, rejectDto: RejectExpenseDto, req: any): Promise<import("./entities/expense.entity").Expense>;
-    markAsPaid(id: string): Promise<import("./entities/expense.entity").Expense>;
+    markAsPaid(id: string, req: any): Promise<import("./entities/expense.entity").Expense>;
     remove(id: string): Promise<void>;
 }

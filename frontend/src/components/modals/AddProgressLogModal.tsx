@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Modal from './Modal';
 import { api } from '@/services/api';
+import { Camera, X, Upload, ImageIcon } from 'lucide-react';
 
 interface AddProgressLogModalProps {
   isOpen: boolean;
@@ -14,9 +16,18 @@ interface AddProgressLogModalProps {
 const WEATHER_CONDITIONS = ['SUNNY', 'CLOUDY', 'RAINY', 'STORMY', 'FOGGY'];
 const SHIFTS = ['DAY', 'NIGHT'];
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:3001';
+
 export default function AddProgressLogModal({ isOpen, onClose, onSuccess, propertyId }: AddProgressLogModalProps) {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Photo state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     projectId: '',
     logDate: new Date().toISOString().split('T')[0],
@@ -41,13 +52,34 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
 
   const loadProjects = async () => {
     try {
-      const response = await api.get(`/construction-projects?propertyId=${propertyId}`);
-      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      // api.get() returns response.data directly (not a full Axios response)
+      // If propertyId is empty, load all projects instead of filtering by empty string
+      const url = propertyId ? `/construction-projects?propertyId=${propertyId}` : '/construction-projects';
+      const response = await api.get(url);
+      const data = Array.isArray(response) ? response : (response?.data || []);
       setProjects((data || []).filter((p: any) => p.status === 'IN_PROGRESS' || p.status === 'PLANNING'));
     } catch (error) {
       console.error('Failed to load projects:', error);
       alert('Failed to load projects');
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    const allowed = files.filter(f => f.type.startsWith('image/'));
+    const combined = [...selectedFiles, ...allowed].slice(0, 5); // max 5
+    setSelectedFiles(combined);
+    // Generate preview URLs
+    const urls = combined.map(f => URL.createObjectURL(f));
+    setPreviews(prev => { prev.forEach(u => URL.revokeObjectURL(u)); return urls; });
+    // Reset input so the same file can be re-selected if removed
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removePreview = (idx: number) => {
+    URL.revokeObjectURL(previews[idx]);
+    setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+    setPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,8 +92,8 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
 
     setLoading(true);
     try {
-      await api.post('/construction-progress-logs', {
-        projectId: formData.projectId,
+      const log = await api.post('/construction-progress-logs', {
+        constructionProjectId: formData.projectId,
         logDate: formData.logDate,
         shift: formData.shift,
         workCompleted: formData.workCompleted,
@@ -76,7 +108,28 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
         remarks: formData.remarks || null,
       });
 
-      alert('Progress log added successfully!');
+      // ── Upload photos if any ──────────────────────────────────────────────
+      if (selectedFiles.length > 0 && log?.id) {
+        setUploadingPhotos(true);
+        try {
+          const formPayload = new FormData();
+          selectedFiles.forEach(f => formPayload.append('photos', f));
+          const token = localStorage.getItem('token') ?? sessionStorage.getItem('token') ?? '';
+          await fetch(
+            `${API_BASE}/api/v1/construction-progress-logs/${log.id}/photos`,
+            {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+              body: formPayload,
+            },
+          );
+        } catch (photoErr) {
+          console.warn('Photos upload failed (log was saved):', photoErr);
+        } finally {
+          setUploadingPhotos(false);
+        }
+      }
+
       onSuccess();
       handleClose();
     } catch (error: any) {
@@ -103,6 +156,9 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
       nextDayPlan: '',
       remarks: '',
     });
+    previews.forEach(u => URL.revokeObjectURL(u));
+    setSelectedFiles([]);
+    setPreviews([]);
     onClose();
   };
 
@@ -354,15 +410,83 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
           </div>
         </div>
 
+        {/* Site Photos */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2" style={{ color: '#A8211B' }}>
+            <Camera className="w-5 h-5" /> Site Photos
+            <span className="text-sm font-normal text-gray-400">(up to 5 images, max 10 MB each)</span>
+          </h3>
+
+          {/* Drop zone / file picker */}
+          <div
+            className="relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+            style={{ borderColor: '#A8211B40' }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={selectedFiles.length >= 5}
+            />
+            <Upload className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+            <p className="text-sm text-gray-500">
+              {selectedFiles.length >= 5
+                ? 'Maximum 5 photos selected'
+                : 'Click to select photos — JPEG, PNG, WebP'}
+            </p>
+          </div>
+
+          {/* Previews */}
+          {previews.length > 0 && (
+            <div className="flex gap-3 flex-wrap mt-3">
+              {previews.map((url, idx) => (
+                <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 shadow-sm" style={{ width: 88, height: 88 }}>
+                  <Image
+                    src={url}
+                    alt={`preview-${idx}`}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removePreview(idx)}
+                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5">
+                    {(selectedFiles[idx]?.size / 1024).toFixed(0)} KB
+                  </div>
+                </div>
+              ))}
+              {selectedFiles.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-[88px] h-[88px] rounded-xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 transition-colors"
+                >
+                  <ImageIcon className="w-5 h-5 mb-1" />
+                  <span className="text-[10px]">Add more</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Form Actions */}
         <div className="flex gap-3 pt-4 border-t">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || uploadingPhotos}
             className="flex-1 px-6 py-3 text-white rounded-lg font-medium disabled:opacity-50"
             style={{ backgroundColor: '#A8211B' }}
           >
-            {loading ? 'Saving...' : 'Save Progress Log'}
+            {uploadingPhotos ? 'Uploading photos…' : loading ? 'Saving…' : 'Save Progress Log'}
           </button>
           <button
             type="button"

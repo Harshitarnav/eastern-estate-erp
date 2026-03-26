@@ -7,6 +7,8 @@ import { ConstructionProjectAssignment } from './entities/construction-project-a
 import { ConstructionTowerProgress } from './entities/construction-tower-progress.entity';
 import { ConstructionFlatProgress } from './entities/construction-flat-progress.entity';
 import { ConstructionDevelopmentUpdate } from './entities/construction-development-update.entity';
+import { RABill } from './entities/ra-bill.entity';
+import { QCChecklist } from './entities/qc-checklist.entity';
 import { ConstructionProjectsService } from './construction-projects.service';
 import { ConstructionProjectsController } from './construction-projects.controller';
 import { ConstructionTeamsService } from './construction-teams.service';
@@ -28,9 +30,16 @@ import { ConstructionSchemaSyncService } from './construction.schema-sync.servic
 import { MilestoneDetectionService } from './services/milestone-detection.service';
 import { AutoDemandDraftService } from './services/auto-demand-draft.service';
 import { ConstructionWorkflowService } from './services/construction-workflow.service';
+import { RABillsService } from './ra-bills.service';
+import { RABillsController } from './ra-bills.controller';
+import { QCService } from './qc.service';
+import { QCController } from './qc.controller';
+import { ConstructionReportsService } from './services/construction-reports.service';
+import { ConstructionReportsController } from './controllers/construction-reports.controller';
 import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
 import { SettingsModule } from '../settings/settings.module';
 import { MailModule } from '../../common/mail/mail.module';
+import { AccountingModule } from '../accounting/accounting.module';
 import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 import { PaymentSchedule } from '../payments/entities/payment-schedule.entity';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
@@ -50,6 +59,8 @@ import { Tower } from '../towers/entities/tower.entity';
       ConstructionTowerProgress,
       ConstructionFlatProgress,
       ConstructionDevelopmentUpdate,
+      RABill,
+      QCChecklist,
       DemandDraft,
       PaymentSchedule,
       FlatPaymentPlan,
@@ -62,6 +73,7 @@ import { Tower } from '../towers/entities/tower.entity';
     PaymentPlansModule,
     SettingsModule,
     MailModule,
+    AccountingModule,
   ],
   controllers: [
     ConstructionProjectsController,
@@ -74,6 +86,9 @@ import { Tower } from '../towers/entities/tower.entity';
     FlatProgressSimpleController,
     DevelopmentUpdatesController,
     MilestonesController,
+    RABillsController,
+    QCController,
+    ConstructionReportsController,
   ],
   providers: [
     ConstructionProjectsService,
@@ -87,6 +102,9 @@ import { Tower } from '../towers/entities/tower.entity';
     MilestoneDetectionService,
     AutoDemandDraftService,
     ConstructionWorkflowService,
+    RABillsService,
+    QCService,
+    ConstructionReportsService,
   ],
   exports: [
     ConstructionProjectsService,
@@ -99,6 +117,9 @@ import { Tower } from '../towers/entities/tower.entity';
     MilestoneDetectionService,
     AutoDemandDraftService,
     ConstructionWorkflowService,
+    RABillsService,
+    QCService,
+    ConstructionReportsService,
   ],
 })
 export class ConstructionModule {}

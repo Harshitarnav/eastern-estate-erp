@@ -22,6 +22,34 @@ export declare class AccountsController {
         totalExpenses: number;
         netProfit: number;
     }>;
+    getTrialBalance(): Promise<{
+        accounts: Array<{
+            accountCode: string;
+            accountName: string;
+            accountType: string;
+            debitBalance: number;
+            creditBalance: number;
+        }>;
+        totalDebit: number;
+        totalCredit: number;
+        isBalanced: boolean;
+    }>;
+    getPropertyWisePL(propertyId: string): Promise<{
+        propertyId: string;
+        income: Array<{
+            accountName: string;
+            accountCode: string;
+            amount: number;
+        }>;
+        expenses: Array<{
+            accountName: string;
+            accountCode: string;
+            amount: number;
+        }>;
+        totalIncome: number;
+        totalExpenses: number;
+        netProfit: number;
+    }>;
     findByCode(code: string): Promise<import("./entities/account.entity").Account>;
     findOne(id: string): Promise<import("./entities/account.entity").Account>;
     update(id: string, updateAccountDto: UpdateAccountDto): Promise<import("./entities/account.entity").Account>;

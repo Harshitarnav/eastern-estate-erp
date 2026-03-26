@@ -1,9 +1,12 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Account, AccountType } from './entities/account.entity';
+import { JournalEntryLine } from './entities/journal-entry-line.entity';
 import { CreateAccountDto, UpdateAccountDto } from './dto/create-account.dto';
 export declare class AccountsService {
     private accountsRepository;
-    constructor(accountsRepository: Repository<Account>);
+    private journalEntryLinesRepository;
+    private dataSource;
+    constructor(accountsRepository: Repository<Account>, journalEntryLinesRepository: Repository<JournalEntryLine>, dataSource: DataSource);
     create(createAccountDto: CreateAccountDto): Promise<Account>;
     findAll(filters?: {
         accountType?: AccountType;
@@ -26,6 +29,34 @@ export declare class AccountsService {
     getProfitAndLoss(startDate?: Date, endDate?: Date): Promise<{
         income: Account[];
         expenses: Account[];
+        totalIncome: number;
+        totalExpenses: number;
+        netProfit: number;
+    }>;
+    getTrialBalance(): Promise<{
+        accounts: Array<{
+            accountCode: string;
+            accountName: string;
+            accountType: string;
+            debitBalance: number;
+            creditBalance: number;
+        }>;
+        totalDebit: number;
+        totalCredit: number;
+        isBalanced: boolean;
+    }>;
+    getPropertyWisePL(propertyId: string): Promise<{
+        propertyId: string;
+        income: Array<{
+            accountName: string;
+            accountCode: string;
+            amount: number;
+        }>;
+        expenses: Array<{
+            accountName: string;
+            accountCode: string;
+            amount: number;
+        }>;
         totalIncome: number;
         totalExpenses: number;
         netProfit: number;

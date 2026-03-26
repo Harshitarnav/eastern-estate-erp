@@ -20,13 +20,13 @@ export class BankStatement {
   @JoinColumn({ name: 'bank_account_id' })
   bankAccount: BankAccount;
 
-  @Column({ name: 'statement_date', type: 'date' })
+  @Column({ name: 'statement_date', type: 'date', nullable: true })
   statementDate: Date;
 
   @Column({ name: 'transaction_date', type: 'date' })
   transactionDate: Date;
 
-  @Column({ name: 'transaction_id' })
+  @Column({ name: 'transaction_id', nullable: true })
   transactionId: string;
 
   @Column({ type: 'text' })

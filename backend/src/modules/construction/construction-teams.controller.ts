@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { ConstructionTeamsService } from './construction-teams.service';
 
 @Controller('construction-teams')
@@ -8,6 +8,14 @@ export class ConstructionTeamsController {
   @Post()
   create(@Body() createDto: any) {
     return this.constructionTeamsService.create(createDto);
+  }
+
+  @Get()
+  findAll(
+    @Query('constructionProjectId') constructionProjectId?: string,
+    @Query('propertyId') propertyId?: string,
+  ) {
+    return this.constructionTeamsService.findAll({ constructionProjectId, propertyId });
   }
 
   @Get('project/:projectId')

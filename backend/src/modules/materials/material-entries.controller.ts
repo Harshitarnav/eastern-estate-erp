@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
 import { MaterialEntriesService } from './material-entries.service';
 import { CreateMaterialEntryDto } from './dto/create-material-entry.dto';
 import { UpdateMaterialEntryDto } from './dto/update-material-entry.dto';
@@ -10,8 +10,9 @@ export class MaterialEntriesController {
   constructor(private readonly entriesService: MaterialEntriesService) {}
 
   @Post()
-  create(@Body() createDto: CreateMaterialEntryDto) {
-    return this.entriesService.create(createDto);
+  create(@Body() createDto: CreateMaterialEntryDto, @Req() req: any) {
+    const userId = req.user?.id || req.user?.sub || null;
+    return this.entriesService.create({ ...createDto, enteredBy: userId });
   }
 
   @Get()

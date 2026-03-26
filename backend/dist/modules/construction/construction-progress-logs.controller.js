@@ -14,13 +14,34 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConstructionProgressLogsController = void 0;
 const common_1 = require("@nestjs/common");
+const platform_express_1 = require("@nestjs/platform-express");
+const multer_1 = require("multer");
+const path_1 = require("path");
+const fs = require("fs");
 const construction_progress_logs_service_1 = require("./construction-progress-logs.service");
+const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+const photoStorage = (0, multer_1.diskStorage)({
+    destination: (_req, _file, cb) => {
+        const dir = (0, path_1.join)(process.cwd(), 'uploads', 'progress-photos');
+        fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (_req, file, cb) => {
+        const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+        cb(null, `${unique}${(0, path_1.extname)(file.originalname)}`);
+    },
+});
 let ConstructionProgressLogsController = class ConstructionProgressLogsController {
     constructor(constructionProgressLogsService) {
         this.constructionProgressLogsService = constructionProgressLogsService;
     }
     create(createDto) {
         return this.constructionProgressLogsService.create(createDto);
+    }
+    findAll(constructionProjectId, propertyId) {
+        return this.constructionProgressLogsService.findAll({ constructionProjectId, propertyId });
     }
     findByProject(projectId) {
         return this.constructionProgressLogsService.findByProject(projectId);
@@ -37,6 +58,24 @@ let ConstructionProgressLogsController = class ConstructionProgressLogsControlle
     remove(id) {
         return this.constructionProgressLogsService.remove(id);
     }
+    uploadPhotos(id, files) {
+        if (!files || files.length === 0) {
+            throw new common_1.BadRequestException('No files uploaded');
+        }
+        const urls = files.map(f => `/uploads/progress-photos/${f.filename}`);
+        return this.constructionProgressLogsService.addPhotos(id, urls);
+    }
+    removePhoto(id, photoUrl) {
+        if (!photoUrl)
+            throw new common_1.BadRequestException('photoUrl is required');
+        try {
+            const filePath = (0, path_1.join)(process.cwd(), 'uploads', photoUrl.replace(/^\/uploads\//, ''));
+            if (fs.existsSync(filePath))
+                fs.unlinkSync(filePath);
+        }
+        catch { }
+        return this.constructionProgressLogsService.removePhoto(id, photoUrl);
+    }
 };
 exports.ConstructionProgressLogsController = ConstructionProgressLogsController;
 __decorate([
@@ -46,6 +85,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ConstructionProgressLogsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('constructionProjectId')),
+    __param(1, (0, common_1.Query)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ConstructionProgressLogsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('project/:projectId'),
     __param(0, (0, common_1.Param)('projectId')),
@@ -82,8 +129,35 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], ConstructionProgressLogsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/photos'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FilesInterceptor)('photos', 5, {
+        storage: photoStorage,
+        limits: { fileSize: MAX_SIZE_BYTES },
+        fileFilter: (_req, file, cb) => {
+            if (!ALLOWED_MIME.includes(file.mimetype)) {
+                return cb(new common_1.BadRequestException(`Unsupported file type: ${file.mimetype}. Allowed: JPEG, PNG, WebP, GIF`), false);
+            }
+            cb(null, true);
+        },
+    })),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.UploadedFiles)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Array]),
+    __metadata("design:returntype", void 0)
+], ConstructionProgressLogsController.prototype, "uploadPhotos", null);
+__decorate([
+    (0, common_1.Delete)(':id/photos'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('photoUrl')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ConstructionProgressLogsController.prototype, "removePhoto", null);
 exports.ConstructionProgressLogsController = ConstructionProgressLogsController = __decorate([
     (0, common_1.Controller)('construction-progress-logs'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [construction_progress_logs_service_1.ConstructionProgressLogsService])
 ], ConstructionProgressLogsController);
 //# sourceMappingURL=construction-progress-logs.controller.js.map

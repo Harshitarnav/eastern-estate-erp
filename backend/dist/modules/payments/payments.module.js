@@ -21,6 +21,7 @@ const payments_controller_1 = require("./payments.controller");
 const installments_controller_1 = require("./installments.controller");
 const refunds_controller_1 = require("./refunds.controller");
 const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
+const accounting_module_1 = require("../accounting/accounting.module");
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
@@ -40,6 +41,7 @@ exports.PaymentsModule = PaymentsModule = __decorate([
                 flat_payment_plan_entity_1.FlatPaymentPlan,
             ]),
             payment_plans_module_1.PaymentPlansModule,
+            accounting_module_1.AccountingModule,
         ],
         controllers: [
             payments_controller_1.PaymentsController,

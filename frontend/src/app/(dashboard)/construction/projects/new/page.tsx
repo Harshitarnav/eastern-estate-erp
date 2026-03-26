@@ -41,10 +41,17 @@ export default function NewConstructionProjectPage() {
     }
   }, [formData.towerId]);
 
+  // api.get() returns response.data directly — extract array from either format
+  const extractArray = (data: any): any[] => {
+    if (Array.isArray(data)) return data;
+    if (data?.data && Array.isArray(data.data)) return data.data;
+    return [];
+  };
+
   const loadProperties = async () => {
     try {
       const response = await api.get('/properties');
-      setProperties(response.data || []);
+      setProperties(extractArray(response));
     } catch (error) {
       console.error('Failed to load properties:', error);
     }
@@ -53,7 +60,7 @@ export default function NewConstructionProjectPage() {
   const loadTowers = async (propertyId: string) => {
     try {
       const response = await api.get(`/towers?propertyId=${propertyId}`);
-      setTowers(response.data || []);
+      setTowers(extractArray(response));
     } catch (error) {
       console.error('Failed to load towers:', error);
     }
@@ -62,7 +69,7 @@ export default function NewConstructionProjectPage() {
   const loadFlats = async (towerId: string) => {
     try {
       const response = await api.get(`/flats?towerId=${towerId}`);
-      setFlats(response.data || []);
+      setFlats(extractArray(response));
     } catch (error) {
       console.error('Failed to load flats:', error);
     }
@@ -71,7 +78,7 @@ export default function NewConstructionProjectPage() {
   const loadEmployees = async () => {
     try {
       const response = await api.get('/employees');
-      setEmployees(response.data || []);
+      setEmployees(extractArray(response));
     } catch (error) {
       console.error('Failed to load employees:', error);
     }
