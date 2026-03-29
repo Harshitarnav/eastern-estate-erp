@@ -51,7 +51,9 @@ export class MaterialExitsService {
   }
 
   async findAll(filters?: { materialId?: string; projectId?: string }): Promise<MaterialExit[]> {
-    const query = this.exitsRepository.createQueryBuilder('exit');
+    const query = this.exitsRepository.createQueryBuilder('exit')
+      .leftJoinAndSelect('exit.issuedToEmployee', 'employee')
+      .leftJoinAndSelect('exit.approvedByEmployee', 'approver');
 
     if (filters?.materialId) {
       query.andWhere('exit.materialId = :materialId', { materialId: filters.materialId });

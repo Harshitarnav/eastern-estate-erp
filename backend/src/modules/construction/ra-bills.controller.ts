@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -29,8 +30,15 @@ export class RABillsController {
     @Query('vendorId') vendorId?: string,
     @Query('status') status?: string,
     @Query('propertyId') propertyId?: string,
+    @Req() req?: any,
   ) {
-    return this.raBillsService.findAll({ constructionProjectId, vendorId, status, propertyId });
+    return this.raBillsService.findAll({
+      constructionProjectId,
+      vendorId,
+      status,
+      propertyId,
+      accessiblePropertyIds: req?.accessiblePropertyIds,
+    });
   }
 
   @Get('summary/:projectId')

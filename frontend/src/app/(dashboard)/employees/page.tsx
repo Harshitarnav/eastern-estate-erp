@@ -164,16 +164,6 @@ export default function EmployeesPage() {
             <UserCog className="h-5 w-5" />
             <span>Manage Users</span>
           </button>
-          <button
-            onClick={() => router.push('/roles')}
-            className="px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2"
-            style={{ borderColor: '#A8211B', color: '#A8211B' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3E2'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          >
-            <Shield className="h-5 w-5" />
-            <span>View Roles</span>
-          </button>
           <div className="flex-1"></div>
           <button
             onClick={() => router.push('/employees/new')}

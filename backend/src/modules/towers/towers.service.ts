@@ -158,7 +158,7 @@ export class TowersService {
    * @param queryDto - Query parameters for filtering and pagination
    * @returns Paginated list of towers
    */
-  async findAll(queryDto: QueryTowerDto): Promise<PaginatedTowerResponseDto> {
+  async findAll(queryDto: QueryTowerDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedTowerResponseDto> {
     const {
       page = 1,
       limit = 10,
@@ -184,6 +184,8 @@ export class TowersService {
 
     if (propertyId) {
       where.propertyId = propertyId;
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      where.propertyId = In(accessiblePropertyIds);
     }
 
     if (constructionStatus) {

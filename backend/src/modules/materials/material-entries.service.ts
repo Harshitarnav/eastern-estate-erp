@@ -45,7 +45,8 @@ export class MaterialEntriesService {
   }
 
   async findAll(filters?: { materialId?: string; vendorId?: string }): Promise<MaterialEntry[]> {
-    const query = this.entriesRepository.createQueryBuilder('entry');
+    const query = this.entriesRepository.createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.vendor', 'vendor');
 
     if (filters?.materialId) {
       query.andWhere('entry.materialId = :materialId', { materialId: filters.materialId });

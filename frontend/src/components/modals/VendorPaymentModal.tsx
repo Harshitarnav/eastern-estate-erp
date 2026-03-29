@@ -8,11 +8,12 @@ interface VendorPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  vendor?: any; // pre-select a vendor when opened from a vendor card
 }
 
 const PAYMENT_MODES = ['CASH', 'CHEQUE', 'NEFT', 'RTGS', 'UPI'];
 
-export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: VendorPaymentModalProps) {
+export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor }: VendorPaymentModalProps) {
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -27,8 +28,12 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess }: Vendo
   useEffect(() => {
     if (isOpen) {
       loadVendors();
+      // Pre-select vendor if provided
+      if (vendor?.id) {
+        setFormData(prev => ({ ...prev, vendorId: vendor.id }));
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, vendor]);
 
   const loadVendors = async () => {
     try {

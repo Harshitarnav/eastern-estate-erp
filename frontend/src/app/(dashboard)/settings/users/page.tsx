@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   Users, Plus, Search, Edit2, Power, Trash2, X,
-  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock, ChevronLeft,
+  Loader2, ShieldCheck, Eye, EyeOff, RefreshCw, Lock, ChevronLeft, Building2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TableRowsSkeleton } from '@/components/Skeletons';
@@ -326,9 +326,12 @@ export default function UserManagementPage() {
   const router = useRouter();
   const { user: currentUser } = useAuthStore();
 
-  // ── Access guard — Super Admin only ────────────────────────────────────────
+  // ── Access guard — Admin or Super Admin ────────────────────────────────────
   const isSuperAdmin = currentUser?.roles?.some(
     (r: any) => (typeof r === 'string' ? r : r.name) === 'super_admin',
+  );
+  const isAdmin = currentUser?.roles?.some(
+    (r: any) => ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name),
   );
 
   const [users, setUsers]         = useState<User[]>([]);
@@ -401,7 +404,7 @@ export default function UserManagementPage() {
   const totalPages = Math.ceil(total / LIMIT);
 
   // ── Access guard — render after all hooks (Rules of Hooks requirement) ─────
-  if (currentUser && !isSuperAdmin) {
+  if (currentUser && !isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
         <div className="rounded-full bg-red-100 p-4">
@@ -409,10 +412,10 @@ export default function UserManagementPage() {
         </div>
         <h2 className="text-xl font-semibold text-gray-800">Access Restricted</h2>
         <p className="text-sm text-muted-foreground max-w-xs">
-          User Management is only accessible to Super Admins. Contact your Super Admin to manage user accounts.
+          User Management is only accessible to Admins. Contact your Admin to manage user accounts.
         </p>
-        <Button variant="outline" onClick={() => router.push('/settings')}>
-          Back to Settings
+        <Button variant="outline" onClick={() => router.push('/')}>
+          Back to Dashboard
         </Button>
       </div>
     );
@@ -420,15 +423,6 @@ export default function UserManagementPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16">
-
-      {/* Back button */}
-      <button
-        onClick={() => router.push('/settings')}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-[#A8211B] transition-colors"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        Back to Settings
-      </button>
 
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -570,6 +564,14 @@ export default function UserManagementPage() {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          {/* Project Access */}
+                          <button
+                            onClick={() => router.push(`/users/${u.id}/property-access`)}
+                            className="p-1.5 rounded hover:bg-blue-50 text-gray-400 hover:text-blue-600"
+                            title="Manage project access"
+                          >
+                            <Building2 className="h-4 w-4" />
+                          </button>
                           {/* Edit */}
                           <button
                             onClick={() => setModal({ mode: 'edit', user: u })}
@@ -586,26 +588,30 @@ export default function UserManagementPage() {
                           >
                             <ShieldCheck className="h-4 w-4" />
                           </button>
-                          {/* Toggle active */}
-                          <button
-                            onClick={() => handleToggleActive(u)}
-                            className={`p-1.5 rounded transition-colors ${
-                              u.isActive
-                                ? 'hover:bg-amber-50 text-gray-400 hover:text-amber-600'
-                                : 'hover:bg-green-50 text-gray-400 hover:text-green-600'
-                            }`}
-                            title={u.isActive ? 'Deactivate user' : 'Activate user'}
-                          >
-                            <Power className="h-4 w-4" />
-                          </button>
-                          {/* Delete */}
-                          <button
-                            onClick={() => handleDelete(u)}
-                            className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
-                            title="Delete user"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {/* Toggle active — hide for own account */}
+                          {u.id !== currentUser?.id && (
+                            <button
+                              onClick={() => handleToggleActive(u)}
+                              className={`p-1.5 rounded transition-colors ${
+                                u.isActive
+                                  ? 'hover:bg-amber-50 text-gray-400 hover:text-amber-600'
+                                  : 'hover:bg-green-50 text-gray-400 hover:text-green-600'
+                              }`}
+                              title={u.isActive ? 'Deactivate user' : 'Activate user'}
+                            >
+                              <Power className="h-4 w-4" />
+                            </button>
+                          )}
+                          {/* Delete — super admin only, hide for own account */}
+                          {isSuperAdmin && u.id !== currentUser?.id && (
+                            <button
+                              onClick={() => handleDelete(u)}
+                              className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

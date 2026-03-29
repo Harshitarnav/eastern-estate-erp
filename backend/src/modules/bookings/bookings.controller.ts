@@ -34,13 +34,13 @@ export class BookingsController {
   }
 
   @Get()
-  async findAll(@Query() query: QueryBookingDto): Promise<PaginatedBookingsResponse> {
-    return this.bookingsService.findAll(query);
+  async findAll(@Query() query: QueryBookingDto, @Request() req: any): Promise<PaginatedBookingsResponse> {
+    return this.bookingsService.findAll(query, req.accessiblePropertyIds);
   }
 
   @Get('statistics')
-  async getStatistics() {
-    return this.bookingsService.getStatistics();
+  async getStatistics(@Request() req: any) {
+    return this.bookingsService.getStatistics(req.accessiblePropertyIds);
   }
 
   @Get(':id')

@@ -242,7 +242,7 @@ export class FlatsService {
   /**
    * Get all flats with filtering and pagination
    */
-  async findAll(query: QueryFlatDto): Promise<PaginatedFlatsResponse> {
+  async findAll(query: QueryFlatDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedFlatsResponse> {
     const {
       search,
       propertyId,
@@ -279,6 +279,8 @@ export class FlatsService {
     // Filters
     if (propertyId) {
       queryBuilder.andWhere('flat.propertyId = :propertyId', { propertyId });
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      queryBuilder.andWhere('flat.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
     }
 
     if (towerId) {
@@ -705,9 +707,12 @@ export class FlatsService {
     };
   }
 
-  async getGlobalStats() {
-    const record = await this.flatsRepository
-      .createQueryBuilder('flat')
+  async getGlobalStats(accessiblePropertyIds?: string[] | null) {
+    const qb = this.flatsRepository.createQueryBuilder('flat');
+    if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      qb.where('flat.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
+    }
+    const record = await qb
       .select('COUNT(*)', 'total')
       .addSelect("SUM(CASE WHEN flat.status = :available THEN 1 ELSE 0 END)", 'available')
       .addSelect("SUM(CASE WHEN flat.status = :sold THEN 1 ELSE 0 END)", 'sold')

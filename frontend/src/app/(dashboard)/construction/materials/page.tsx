@@ -346,11 +346,16 @@ function MaterialsPageContent() {
                   return (
                     <tr key={material.id} className="hover:bg-gray-50">
                       <td className="px-5 py-4">
-                          <div className="font-medium text-gray-900">{material.materialName}</div>
-                        <div className="text-xs text-gray-400 font-mono">{material.materialCode}</div>
-                        {material.specifications && (
-                          <div className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{material.specifications}</div>
-                        )}
+                        <button
+                          onClick={() => router.push(`/construction/materials/${material.id}`)}
+                          className="text-left group"
+                        >
+                          <div className="font-medium text-gray-900 group-hover:underline group-hover:text-[#A8211B] transition-colors">{material.materialName}</div>
+                          <div className="text-xs text-gray-400 font-mono">{material.materialCode}</div>
+                          {material.specifications && (
+                            <div className="text-xs text-gray-400 mt-0.5 truncate max-w-[200px]">{material.specifications}</div>
+                          )}
+                        </button>
                       </td>
                       <td className="px-5 py-4">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${getCategoryColor(material.category)}`}>

@@ -10,7 +10,8 @@ import {
   UseGuards,
   Request,
   HttpCode,
-  HttpStatus
+  HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { 
@@ -31,6 +32,14 @@ import { UserRole } from '../../common/constants/roles.constant';
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
+
+  /** Throws if the current user's access is restricted and doesn't include this property. */
+  private assertPropertyAccess(req: any, propertyId: string): void {
+    const ids: string[] | null = req.accessiblePropertyIds;
+    if (ids && !ids.includes(propertyId)) {
+      throw new ForbiddenException('You do not have access to this property');
+    }
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -68,6 +77,7 @@ export class PropertiesController {
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<PropertyHierarchyDto> {
+    this.assertPropertyAccess(req, id);
     return this.propertiesService.getHierarchy(id, req.user?.id);
   }
 
@@ -76,6 +86,7 @@ export class PropertiesController {
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<PropertyInventorySummaryDto> {
+    this.assertPropertyAccess(req, id);
     return this.propertiesService.getInventorySummary(id, req.user?.id);
   }
 
@@ -84,6 +95,7 @@ export class PropertiesController {
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<PropertyResponseDto> {
+    this.assertPropertyAccess(req, id);
     return this.propertiesService.findOne(id, req.user?.id);
   }
 
@@ -94,6 +106,7 @@ export class PropertiesController {
     @Body() updatePropertyDto: UpdatePropertyDto,
     @Request() req: any,
   ): Promise<PropertyResponseDto> {
+    this.assertPropertyAccess(req, id);
     return this.propertiesService.update(id, updatePropertyDto, req.user?.id);
   }
 
@@ -103,6 +116,7 @@ export class PropertiesController {
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<void> {
+    this.assertPropertyAccess(req, id);
     return this.propertiesService.remove(id, req.user?.id);
   }
 
@@ -112,6 +126,7 @@ export class PropertiesController {
     @Param('id') id: string,
     @Request() req: any,
   ): Promise<PropertyResponseDto> {
+    this.assertPropertyAccess(req, id);
     return this.propertiesService.toggleActive(id, req.user?.id);
   }
 }

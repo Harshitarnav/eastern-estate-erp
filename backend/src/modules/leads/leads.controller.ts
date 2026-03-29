@@ -51,8 +51,8 @@ export class LeadsController {
   * GET /leads
   */
   @Get()
-  async findAll(@Query() query: QueryLeadDto, @Req() req: Request): Promise<PaginatedLeadsResponse> {
-    return this.leadsService.findAll(query, req.user as any);
+  async findAll(@Query() query: QueryLeadDto, @Req() req: any): Promise<PaginatedLeadsResponse> {
+    return this.leadsService.findAll(query, req.user as any, req.accessiblePropertyIds);
   }
 
   /**
@@ -60,8 +60,8 @@ export class LeadsController {
    * GET /leads/statistics
    */
   @Get('statistics')
-  async getStatistics() {
-    return this.leadsService.getStatistics();
+  async getStatistics(@Req() req: any) {
+    return this.leadsService.getStatistics(req.accessiblePropertyIds);
   }
 
   /**

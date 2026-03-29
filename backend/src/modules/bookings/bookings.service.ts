@@ -297,7 +297,7 @@ export class BookingsService {
     }
   }
 
-  async findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse> {
+  async findAll(query: QueryBookingDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedBookingsResponse> {
     const {
       search,
       status,
@@ -346,6 +346,8 @@ export class BookingsService {
 
     if (propertyId) {
       queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      queryBuilder.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
     }
 
     if (bookingDateFrom) {
@@ -473,8 +475,14 @@ export class BookingsService {
     return BookingResponseDto.fromEntity(cancelledBooking);
   }
 
-  async getStatistics() {
-    const bookings = await this.bookingsRepository.find({ where: { isActive: true } });
+  async getStatistics(accessiblePropertyIds?: string[] | null) {
+    const where: any = { isActive: true };
+    const bookings = accessiblePropertyIds && accessiblePropertyIds.length > 0
+      ? await this.bookingsRepository.createQueryBuilder('b')
+          .where('b.isActive = true')
+          .andWhere('b.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+          .getMany()
+      : await this.bookingsRepository.find({ where });
 
     const total = bookings.length;
     const tokenPaid = bookings.filter((b) => b.status === 'TOKEN_PAID').length;

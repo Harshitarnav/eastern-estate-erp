@@ -39,10 +39,12 @@ export class PaymentsService {
     paymentType?: string;
     paymentMethod?: string;
     status?: PaymentStatus;
+    isVerified?: boolean;
     startDate?: Date;
     endDate?: Date;
     minAmount?: number;
     maxAmount?: number;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<Payment[]> {
     const query = this.paymentRepository.createQueryBuilder('payment')
       .leftJoinAndSelect('payment.booking', 'booking')
@@ -68,6 +70,14 @@ export class PaymentsService {
       query.andWhere('payment.status = :status', { status: filters.status });
     }
 
+    if (filters?.isVerified !== undefined) {
+      if (filters.isVerified) {
+        query.andWhere('payment.verifiedBy IS NOT NULL');
+      } else {
+        query.andWhere('payment.verifiedBy IS NULL');
+      }
+    }
+
     if (filters?.startDate && filters?.endDate) {
       query.andWhere('payment.paymentDate BETWEEN :startDate AND :endDate', {
         startDate: filters.startDate,
@@ -81,6 +91,12 @@ export class PaymentsService {
 
     if (filters?.maxAmount) {
       query.andWhere('payment.amount <= :maxAmount', { maxAmount: filters.maxAmount });
+    }
+
+    if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+      query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
+        accessiblePropertyIds: filters.accessiblePropertyIds,
+      });
     }
 
     query.orderBy('payment.paymentDate', 'DESC');
@@ -176,6 +192,7 @@ export class PaymentsService {
     startDate?: Date;
     endDate?: Date;
     paymentType?: string;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<{
     totalPayments: number;
     totalAmount: number;
@@ -186,7 +203,8 @@ export class PaymentsService {
     byMethod: Array<{ method: string; count: number; amount: number }>;
     byType: Array<{ type: string; count: number; amount: number }>;
   }> {
-    const query = this.paymentRepository.createQueryBuilder('payment');
+    const query = this.paymentRepository.createQueryBuilder('payment')
+      .leftJoin('payment.booking', 'booking');
 
     if (filters?.startDate && filters?.endDate) {
       query.where('payment.paymentDate BETWEEN :startDate AND :endDate', {
@@ -197,6 +215,12 @@ export class PaymentsService {
 
     if (filters?.paymentType) {
       query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
+    }
+
+    if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+      query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
+        accessiblePropertyIds: filters.accessiblePropertyIds,
+      });
     }
 
     const payments = await query.getMany();

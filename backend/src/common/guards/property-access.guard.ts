@@ -49,40 +49,39 @@ export class PropertyAccessGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // Global admins bypass property-level restrictions.
-    // Use request.user.roles (already loaded fresh from DB by JwtStrategy on every request)
-    // — this is the same source RolesGuard uses and avoids a redundant second DB query.
     const userRoles: string[] = (user.roles || []).map((r: any) =>
       typeof r === 'string' ? r : r.name,
     );
-    const isAdmin = userRoles.includes('super_admin') || userRoles.includes('admin');
-    if (isAdmin) {
-      this.logger.debug(`User ${user.email} is global admin - bypassing property access check`);
+
+    // Super Admin — always sees everything, no filtering ever
+    if (userRoles.includes('super_admin')) {
+      this.logger.debug(`User ${user.email} is super_admin - full bypass`);
       request.isGlobalAdmin = true;
+      request.accessiblePropertyIds = null;
       return true;
     }
 
-    // HR role bypasses property-level restrictions (manages employees/users system-wide)
-    if (userRoles.includes('hr')) {
-      this.logger.debug(`User ${user.email} has HR role - bypassing property access check`);
-      request.isGlobalAdmin = false;
-      request.accessiblePropertyIds = [];
-      return true;
-    }
-
-    // For non-admin users, check if they have ANY property access
+    // For all other users (admin, hr, staff, etc.) check assigned properties first
     const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
+
+    // Admin / HR with NO explicit assignments → full access (opt-in restriction)
+    const isPrivilegedRole = userRoles.includes('admin') || userRoles.includes('hr');
+    if (isPrivilegedRole && (!userPropertyIds || userPropertyIds.length === 0)) {
+      this.logger.debug(`User ${user.email} has ${userRoles.join(',')} role with no assignments - full bypass`);
+      request.isGlobalAdmin = true;
+      request.accessiblePropertyIds = null;
+      return true;
+    }
     
     if (!userPropertyIds || userPropertyIds.length === 0) {
-      this.logger.warn(
-        `User ${user.email} has no property access - denying request`,
-      );
+      this.logger.warn(`User ${user.email} has no property access - denying request`);
       throw new ForbiddenException(
-        'You do not have access to any properties. Please contact your administrator.',
+        'You have not been assigned to any projects yet. Please contact your administrator.',
       );
     }
 
-    // Attach accessible property IDs to request for service-level filtering
+    // Attach accessible property IDs — services will filter by these
+    request.isGlobalAdmin = false;
     request.accessiblePropertyIds = userPropertyIds;
 
     // Extract propertyId from request (params, query, or body)

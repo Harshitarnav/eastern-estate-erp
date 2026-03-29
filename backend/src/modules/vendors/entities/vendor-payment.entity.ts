@@ -57,7 +57,7 @@ export class VendorPayment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ name: 'created_by', type: 'uuid' })
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy: string;
 
   @ManyToOne(() => User)

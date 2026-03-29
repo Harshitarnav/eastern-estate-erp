@@ -17,6 +17,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { paymentsService, Payment, PaymentFilters } from '@/services/payments.service';
+import { useAuthStore } from '@/store/authStore';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { TableSkeleton } from '@/components/Skeletons';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
@@ -26,6 +27,7 @@ import { showApiError } from '@/utils/error-handler';
 
 export default function PaymentsPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -62,7 +64,7 @@ export default function PaymentsPage() {
 
   const stats = useMemo(() => {
     const total = meta.total || (payments || []).length;
-    const verified = ((payments || [])).filter((payment) => payment.isVerified).length;
+    const verified = ((payments || [])).filter((payment) => payment.status === 'COMPLETED').length;
     const pending = ((payments || [])).filter((payment) => payment.status === 'PENDING').length;
     const totalAmount = ((payments || [])).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
     const outstandingAmount = ((payments || [])).reduce(
@@ -98,7 +100,8 @@ export default function PaymentsPage() {
 
   const handleVerify = async (id: string) => {
     try {
-      await paymentsService.verifyPayment(id, 'current-user-id'); // TODO: inject actual user ID
+      await paymentsService.verifyPayment(id, user?.id || '');
+      toast.success('Payment verified — Journal Entry auto-created');
       fetchPayments();
     } catch (err: any) {
       showApiError(err, 'Failed to verify payment');
@@ -404,16 +407,17 @@ export default function PaymentsPage() {
 
                   <div className="flex justify-between items-center">
                     <button
-                      onClick={() => handleVerify(payment.id)}
-                      className="text-xs font-semibold px-3 py-1 rounded-full transition-colors"
+                      onClick={() => payment.status !== 'COMPLETED' && handleVerify(payment.id)}
+                      disabled={payment.status === 'COMPLETED'}
+                      className="text-xs font-semibold px-3 py-1 rounded-full transition-colors disabled:cursor-default"
                       style={{
-                        backgroundColor: payment.isVerified
+                        backgroundColor: payment.status === 'COMPLETED'
                           ? 'rgba(61, 163, 93, 0.15)'
                           : 'rgba(242, 201, 76, 0.2)',
-                        color: payment.isVerified ? brandPalette.success : brandPalette.secondary,
+                        color: payment.status === 'COMPLETED' ? brandPalette.success : brandPalette.secondary,
                       }}
                     >
-                      {payment.isVerified ? 'Verified' : 'Verify'}
+                      {payment.status === 'COMPLETED' ? '✓ Verified' : 'Verify'}
                     </button>
                     {payment.receiptNumber && (
                       <span className="text-xs text-gray-500">
