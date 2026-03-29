@@ -18,7 +18,9 @@ if [ -z "$CONTAINER" ]; then
 fi
 
 echo "Using postgres container: $CONTAINER"
-MIGRATIONS_DIR="/opt/eastern-estate-erp/backend/src/database/migrations"
+# Resolve migrations dir relative to this script's location
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MIGRATIONS_DIR="$SCRIPT_DIR"
 
 run_migration() {
   local file="$1"
