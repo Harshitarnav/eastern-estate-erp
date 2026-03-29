@@ -8,13 +8,13 @@ import { Property } from '../../properties/entities/property.entity';
 export interface GrantAccessDto {
   userId: string;
   propertyId: string;
-  role: PropertyRole;
+  role?: PropertyRole;
 }
 
 export interface BulkGrantAccessDto {
   userId: string;
   propertyIds: string[];
-  role: PropertyRole;
+  role?: PropertyRole;
 }
 
 @Injectable()
@@ -58,7 +58,7 @@ export class PropertyAccessService {
   async grantAccess(
     userId: string,
     propertyId: string,
-    role: PropertyRole,
+    role: PropertyRole = PropertyRole.PROPERTY_ADMIN,
     assignedBy: string,
   ): Promise<UserPropertyAccess> {
     // Verify user exists
@@ -223,7 +223,7 @@ export class PropertyAccessService {
   async bulkGrantAccess(
     userId: string,
     propertyIds: string[],
-    role: PropertyRole,
+    role: PropertyRole = PropertyRole.PROPERTY_ADMIN,
     assignedBy: string,
   ): Promise<UserPropertyAccess[]> {
     const accesses = [];
