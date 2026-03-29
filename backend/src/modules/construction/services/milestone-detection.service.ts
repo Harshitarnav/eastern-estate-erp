@@ -35,24 +35,28 @@ export class MilestoneDetectionService {
   ) {}
 
   /**
-   * Scheduled job to check for milestone triggers
-   * Runs every hour
-   * COMMENTED OUT FOR NOW - Enable when ready for automation
+   * Scheduled job to check for milestone triggers every hour.
+   * Logs detected milestones — actual demand draft generation is done via AutoDemandDraftService.
    */
-  // @Cron(CronExpression.EVERY_HOUR)
-  // async checkMilestones(): Promise<void> {
-  //   this.logger.log('Starting milestone detection check...');
-  //   try {
-  //     const matches = await this.detectMilestones();
-  //     this.logger.log(`Found ${matches.length} milestone(s) that can be triggered`);
-  //     
-  //     // Note: Actual demand draft generation is handled by AutoDemandDraftService
-  //     // This service only detects and marks milestones
-  //     
-  //   } catch (error) {
-  //     this.logger.error('Error during milestone detection:', error);
-  //   }
-  // }
+  @Cron(CronExpression.EVERY_HOUR)
+  async checkMilestones(): Promise<void> {
+    this.logger.log('Starting scheduled milestone detection check...');
+    try {
+      const matches = await this.detectMilestones();
+      if (matches.length > 0) {
+        this.logger.log(`Milestone detection: found ${matches.length} milestone(s) ready to trigger`);
+        matches.forEach(m => {
+          this.logger.log(
+            `  ↳ Flat ${m.flatPaymentPlan.flatId} · "${m.milestoneName}" (seq ${m.milestoneSequence}) · ₹${m.amount}`,
+          );
+        });
+      } else {
+        this.logger.debug('Milestone detection: no new milestones triggered');
+      }
+    } catch (error) {
+      this.logger.error('Error during scheduled milestone detection:', error);
+    }
+  }
 
   /**
    * Detect construction milestones that match payment plan milestones

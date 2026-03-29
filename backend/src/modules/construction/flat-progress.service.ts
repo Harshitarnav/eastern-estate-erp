@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConstructionFlatProgress } from './entities/construction-flat-progress.entity';
-import { ConstructionPhase } from './entities/construction-tower-progress.entity';
+import { ConstructionPhase, PhaseStatus } from './entities/construction-tower-progress.entity';
 import { CreateFlatProgressDto } from './dto/create-flat-progress.dto';
 import { UpdateFlatProgressDto } from './dto/update-flat-progress.dto';
 
@@ -151,7 +151,7 @@ export class FlatProgressService {
         phase,
         phaseProgress: 0,
         overallProgress: 0,
-        status: 'NOT_STARTED' as any,
+        status: PhaseStatus.NOT_STARTED,
       }),
     );
 

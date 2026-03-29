@@ -30,6 +30,7 @@ function RABillsContent() {
   const [projects, setProjects] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState<any | null>(null);
   const [filterProject, setFilterProject] = useState(projectIdFromUrl);
@@ -75,13 +76,15 @@ function RABillsContent() {
 
   const loadBills = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const params = new URLSearchParams();
       if (filterProject) params.set('constructionProjectId', filterProject);
       if (filterStatus) params.set('status', filterStatus);
       const data = await api.get(`/ra-bills?${params.toString()}`);
       setBills(Array.isArray(data) ? data : (data?.data || []));
-    } catch (e) {
+    } catch (e: any) {
+      setLoadError(e?.response?.data?.message || e?.message || 'Failed to load RA bills');
       setBills([]);
     } finally {
       setLoading(false);
@@ -214,6 +217,15 @@ function RABillsContent() {
           accentColor="rgba(37,99,235,0.2)"
         />
       </section>
+
+      {/* Error banner */}
+      {loadError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span>{loadError}</span>
+          <button onClick={loadBills} className="ml-auto text-xs underline">Retry</button>
+        </div>
+      )}
 
       {/* Workflow Banner */}
       <div

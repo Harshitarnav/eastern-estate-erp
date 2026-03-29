@@ -606,6 +606,44 @@ export default function DemandDraftDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Cross-module navigation */}
+          {(draft.bookingId || draft.customerId || draft.flatId) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Related Records</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {draft.bookingId && (
+                  <Button
+                    variant="outline" size="sm" className="w-full justify-start"
+                    onClick={() => router.push(`/bookings/${draft.bookingId}`)}
+                  >
+                    <FileText className="mr-2 h-4 w-4 text-blue-600" />
+                    View Booking
+                  </Button>
+                )}
+                {draft.customerId && (
+                  <Button
+                    variant="outline" size="sm" className="w-full justify-start"
+                    onClick={() => router.push(`/customers/${draft.customerId}`)}
+                  >
+                    <FileText className="mr-2 h-4 w-4 text-green-600" />
+                    View Customer
+                  </Button>
+                )}
+                {draft.flatId && (
+                  <Button
+                    variant="outline" size="sm" className="w-full justify-start"
+                    onClick={() => router.push(`/flats/${draft.flatId}`)}
+                  >
+                    <FileText className="mr-2 h-4 w-4 text-purple-600" />
+                    View Flat/Unit
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

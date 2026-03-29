@@ -45,7 +45,7 @@ export default function DashboardPage() {
   ================================================= */
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 p-4 md:p-6">
       {/* Animated Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-72 h-72 bg-red-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" />
@@ -60,19 +60,19 @@ export default function DashboardPage() {
             mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}
         >
-          <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-8 border border-white/20">
+          <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-5 md:p-8 border border-white/20">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-3 bg-gradient-to-br from-red-600 to-orange-600 rounded-2xl shadow-lg">
-                    <Building2 className="h-8 w-8 text-white" />
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-red-600 to-orange-600 rounded-2xl shadow-lg">
+                    <Building2 className="h-6 w-6 md:h-8 md:w-8 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-red-700 via-red-600 to-orange-600 bg-clip-text text-transparent">
-                      Welcome to Eastern Estate
+                    <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-red-700 via-red-600 to-orange-600 bg-clip-text text-transparent">
+                      Eastern Estate
                     </h1>
-                    <p className="text-gray-600 mt-1 flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-red-500" />
+                    <p className="text-gray-600 mt-0.5 flex items-center gap-2 text-sm md:text-base">
+                      <Heart className="h-3.5 w-3.5 text-red-500" />
                       Building Homes, Nurturing Bonds
                     </p>
                   </div>
@@ -117,7 +117,7 @@ export default function DashboardPage() {
 
         {/* Key Metrics Cards */}
         <div 
-          className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 transform transition-all duration-1000 delay-150 ${
+          className={`grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8 transform transition-all duration-1000 delay-150 ${
             mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}
         >
@@ -350,83 +350,38 @@ export default function DashboardPage() {
             mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}
         >
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-8 border border-white/20">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-red-100 to-orange-100 rounded-xl">
-                <Sparkles className="h-6 w-6 text-red-600" />
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-5 md:p-8 border border-white/20">
+            <div className="flex items-center gap-3 mb-5 md:mb-6">
+              <div className="p-2.5 bg-gradient-to-br from-red-100 to-orange-100 rounded-xl">
+                <Sparkles className="h-5 w-5 md:h-6 md:w-6 text-red-600" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Quick Actions</h2>
-                <p className="text-gray-600">Navigate to your frequently used modules</p>
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900">Quick Actions</h2>
+                <p className="text-gray-600 text-sm hidden md:block">Navigate to your frequently used modules</p>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              <Link
-                href="/properties"
-                className="group p-6 bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-red-200"
-              >
-                <div className="p-4 bg-white rounded-xl mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
-                  <Building2 className="h-8 w-8 text-red-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900">Properties</p>
-                <p className="text-xs text-gray-600 mt-1">Manage</p>
-              </Link>
-              
-              <Link
-                href="/towers"
-                className="group p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-blue-200"
-              >
-                <div className="p-4 bg-white rounded-xl mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
-                  <Home className="h-8 w-8 text-blue-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900">Inventory</p>
-                <p className="text-xs text-gray-600 mt-1">View</p>
-              </Link>
-              
-              <Link
-                href="/leads"
-                className="group p-6 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-yellow-200"
-              >
-                <div className="p-4 bg-white rounded-xl mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
-                  <Target className="h-8 w-8 text-yellow-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900">Leads</p>
-                <p className="text-xs text-gray-600 mt-1">Track</p>
-              </Link>
-              
-              <Link
-                href="/customers"
-                className="group p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-green-200"
-              >
-                <div className="p-4 bg-white rounded-xl mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
-                  <Users className="h-8 w-8 text-green-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900">Customers</p>
-                <p className="text-xs text-gray-600 mt-1">Manage</p>
-              </Link>
-              
-              <Link
-                href="/bookings"
-                className="group p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-purple-200"
-              >
-                <div className="p-4 bg-white rounded-xl mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
-                  <CheckCircle className="h-8 w-8 text-purple-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900">Bookings</p>
-                <p className="text-xs text-gray-600 mt-1">Review</p>
-              </Link>
-              
-              <Link
-                href="/construction/inventory"
-                className="group p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent hover:border-orange-200"
-              >
-                <div className="p-4 bg-white rounded-xl mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
-                  <Package className="h-8 w-8 text-orange-600" />
-                </div>
-                <p className="text-sm font-bold text-gray-900">Materials</p>
-                <p className="text-xs text-gray-600 mt-1">Stock</p>
-              </Link>
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+              {[
+                { href: '/properties',           label: 'Properties', sub: 'Manage',   Icon: Building2,    from: 'from-red-50',    to: 'to-orange-50',   border: 'hover:border-red-200',    color: 'text-red-600' },
+                { href: '/towers',               label: 'Inventory',  sub: 'View',     Icon: Home,         from: 'from-blue-50',   to: 'to-indigo-50',   border: 'hover:border-blue-200',   color: 'text-blue-600' },
+                { href: '/leads',                label: 'Leads',      sub: 'Track',    Icon: Target,       from: 'from-yellow-50', to: 'to-amber-50',    border: 'hover:border-yellow-200', color: 'text-yellow-600' },
+                { href: '/customers',            label: 'Customers',  sub: 'Manage',   Icon: Users,        from: 'from-green-50',  to: 'to-emerald-50',  border: 'hover:border-green-200',  color: 'text-green-600' },
+                { href: '/bookings',             label: 'Bookings',   sub: 'Review',   Icon: CheckCircle,  from: 'from-purple-50', to: 'to-pink-50',     border: 'hover:border-purple-200', color: 'text-purple-600' },
+                { href: '/construction/inventory', label: 'Materials', sub: 'Stock',   Icon: Package,      from: 'from-orange-50', to: 'to-red-50',      border: 'hover:border-orange-200', color: 'text-orange-600' },
+              ].map(({ href, label, sub, Icon, from, to, border, color }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`group p-3 md:p-6 bg-gradient-to-br ${from} ${to} rounded-2xl text-center hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer border-2 border-transparent ${border}`}
+                >
+                  <div className="p-2 md:p-4 bg-white rounded-xl mb-2 md:mb-3 mx-auto w-fit group-hover:scale-110 transition-transform">
+                    <Icon className={`h-5 w-5 md:h-8 md:w-8 ${color}`} />
+                  </div>
+                  <p className="text-xs md:text-sm font-bold text-gray-900">{label}</p>
+                  <p className="text-[10px] md:text-xs text-gray-600 mt-0.5 hidden sm:block">{sub}</p>
+                </Link>
+              ))}
             </div>
           </div>
         </div>

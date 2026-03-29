@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConstructionTowerProgress, ConstructionPhase } from './entities/construction-tower-progress.entity';
+import { ConstructionTowerProgress, ConstructionPhase, PhaseStatus } from './entities/construction-tower-progress.entity';
 import { CreateTowerProgressDto } from './dto/create-tower-progress.dto';
 import { UpdateTowerProgressDto } from './dto/update-tower-progress.dto';
 
@@ -147,7 +147,7 @@ export class TowerProgressService {
         phase,
         phaseProgress: 0,
         overallProgress: 0,
-        status: 'NOT_STARTED' as any,
+        status: PhaseStatus.NOT_STARTED,
       }),
     );
 

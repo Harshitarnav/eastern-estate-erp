@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { SalaryPayment } from './entities/salary-payment.entity';
 import { Employee } from './entities/employee.entity';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { DataSource } from 'typeorm';
 export interface CreateSalaryPaymentDto {
     employeeId: string;
     paymentMonth: string;
@@ -29,7 +30,8 @@ export declare class SalaryPaymentsService {
     private salaryPaymentRepo;
     private employeeRepo;
     private readonly accountingIntegrationService;
-    constructor(salaryPaymentRepo: Repository<SalaryPayment>, employeeRepo: Repository<Employee>, accountingIntegrationService: AccountingIntegrationService);
+    private readonly dataSource;
+    constructor(salaryPaymentRepo: Repository<SalaryPayment>, employeeRepo: Repository<Employee>, accountingIntegrationService: AccountingIntegrationService, dataSource: DataSource);
     create(dto: CreateSalaryPaymentDto, createdBy: string): Promise<SalaryPayment>;
     findAll(filters?: {
         employeeId?: string;
@@ -45,6 +47,11 @@ export declare class SalaryPaymentsService {
         ifscCode?: string;
         paymentRemarks?: string;
     }): Promise<SalaryPayment>;
+    retryJE(id: string, userId: string): Promise<{
+        success: boolean;
+        journalEntryNumber?: string;
+        message: string;
+    }>;
     cancel(id: string): Promise<SalaryPayment>;
     getMonthSummary(month: string): Promise<{
         totalGross: number;

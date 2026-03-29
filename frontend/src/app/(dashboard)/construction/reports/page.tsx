@@ -60,6 +60,8 @@ export default function ConstructionReportsPage() {
   const [vendorData,  setVendorData]  = useState<any>(null);
   const [labourData,  setLabourData]  = useState<any>(null);
   const [qcData,      setQcData]      = useState<any>(null);
+  const [tabErrors,   setTabErrors]   = useState<Record<string, string>>({});
+  const [dashError,   setDashError]   = useState('');
 
   // Vendor date filters
   const [vendorFrom, setVendorFrom] = useState('');
@@ -74,13 +76,17 @@ export default function ConstructionReportsPage() {
     try {
       const data = await api.get('/construction/reports');
       setSummary(data);
-    } catch { /* silent */ } finally {
+      setDashError('');
+    } catch (e: any) {
+      setDashError(e?.response?.data?.message || e?.message || 'Failed to load dashboard summary');
+    } finally {
       setLoading(false);
     }
   };
 
   const loadTab = useCallback(async (tab: string) => {
     setTabLoading(true);
+    setTabErrors(prev => ({ ...prev, [tab]: '' }));
     try {
       switch (tab) {
         case 'budget':
@@ -103,8 +109,9 @@ export default function ConstructionReportsPage() {
           setQcData(await api.get('/construction/reports/qc'));
           break;
       }
-    } catch (e) {
-      console.error(`Reports tab ${tab} failed:`, e);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || `Failed to load ${tab} report`;
+      setTabErrors(prev => ({ ...prev, [tab]: msg }));
     } finally {
       setTabLoading(false);
     }
@@ -142,6 +149,13 @@ export default function ConstructionReportsPage() {
       />
 
       {/* ── SUMMARY STAT CARDS ── */}
+      {!loading && dashError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span>Dashboard summary failed to load: {dashError}</span>
+          <button onClick={loadDashboard} className="ml-auto text-xs underline">Retry</button>
+        </div>
+      )}
       {!loading && summary && (
         <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <BrandStatCard
@@ -205,6 +219,19 @@ export default function ConstructionReportsPage() {
             <div className="flex items-center justify-center py-20 gap-3 text-gray-400">
               <RefreshCw className="w-5 h-5 animate-spin" />
               <span>Loading report data…</span>
+            </div>
+          ) : tabErrors[activeTab] ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center">
+              <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+              <p className="text-red-700 font-medium mb-1">Failed to load this report</p>
+              <p className="text-red-500 text-sm mb-4">{tabErrors[activeTab]}</p>
+              <button
+                onClick={() => loadTab(activeTab)}
+                className="px-4 py-2 text-sm text-white rounded-xl font-medium"
+                style={{ backgroundColor: '#A8211B' }}
+              >
+                Retry
+              </button>
             </div>
           ) : (
             <>

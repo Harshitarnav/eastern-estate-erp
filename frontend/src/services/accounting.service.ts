@@ -53,13 +53,23 @@ export interface Expense {
   id: string;
   expenseCode: string;
   expenseCategory: string;
-  expenseType: string;
+  expenseType?: string;
+  expenseSubCategory?: string;
   amount: number;
   expenseDate: string;
-  description: string;
+  description?: string;
+  accountId?: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+  paymentStatus?: string;
+  vendorId?: string;
+  employeeId?: string;
+  propertyId?: string;
+  constructionProjectId?: string;
   status: 'PENDING' | 'APPROVED' | 'PAID' | 'REJECTED' | 'CANCELLED';
   receiptUrl?: string;
   invoiceNumber?: string;
+  invoiceDate?: string;
   approvedBy?: string;
   approvedAt?: string;
   createdAt: string;
@@ -72,10 +82,12 @@ export interface Budget {
   fiscalYear: number;
   startDate: string;
   endDate: string;
+  accountId?: string;
+  department?: string;
   budgetedAmount: number;
   actualAmount: number;
-  varianceAmount: number;
-  variancePercentage: number;
+  varianceAmount?: number;
+  variancePercentage?: number;
   status: 'DRAFT' | 'ACTIVE' | 'CLOSED' | 'REVISED';
   notes?: string;
   createdAt: string;
@@ -88,7 +100,10 @@ export interface JournalEntry {
   description: string;
   totalDebit: number;
   totalCredit: number;
-  status: 'DRAFT' | 'POSTED' | 'VOIDED';
+  status: 'DRAFT' | 'POSTED' | 'VOIDED' | 'VOID';
+  referenceType?: string;
+  referenceId?: string;
+  createdBy?: string;
   lines: JournalEntryLine[];
   createdAt: string;
 }
@@ -238,22 +253,22 @@ export const budgetsService = {
     return await api.get(`/accounting/budgets/${id}`);
   },
 
-  getVarianceReport: async (fiscalYear?: number) => {
-    return await api.get('/accounting/budgets/variance-report', {
-      params: { fiscalYear },
-    });
+  create: async (dto: Partial<Budget>) => {
+    return await api.post('/accounting/budgets', dto);
   },
 
-  create: async (data: Partial<Budget>) => {
-    return await api.post('/accounting/budgets', data);
-  },
-
-  update: async (id: string, data: Partial<Budget>) => {
-    return await api.patch(`/accounting/budgets/${id}`, data);
+  update: async (id: string, dto: Partial<Budget>) => {
+    return await api.patch(`/accounting/budgets/${id}`, dto);
   },
 
   delete: async (id: string) => {
     return await api.delete(`/accounting/budgets/${id}`);
+  },
+
+  getVarianceReport: async (fiscalYear?: number) => {
+    return await api.get('/accounting/budgets/variance-report', {
+      params: { fiscalYear },
+    });
   },
 };
 

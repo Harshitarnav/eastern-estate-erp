@@ -8,31 +8,20 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { AccountingService } from './accounting.service';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @Controller('accounting')
+@UseGuards(JwtAuthGuard)
 export class AccountingController {
   constructor(private readonly accountingService: AccountingService) {}
 
-  // ============ JOURNAL ENTRIES ============
-  // NOTE: Account CRUD is handled by AccountsController (/accounting/accounts/*)
-  @Post('journal-entries')
-  createJournalEntry(@Body() data: any) {
-    return this.accountingService.createJournalEntry(data);
-  }
-
-  @Get('journal-entries/:id')
-  getJournalEntryById(@Param('id') id: string) {
-    return this.accountingService.getJournalEntryById(id);
-  }
-
-  @Get('journal-entries/:id/lines')
-  getJournalEntryLines(@Param('id') id: string) {
-    return this.accountingService.getJournalEntryLines(id);
-  }
+  // NOTE: Journal entry CRUD is handled by JournalEntriesController (/accounting/journal-entries/*)
+  //       Only the Excel import endpoint lives here because it uses file upload middleware.
 
   // ============ LEDGER REPORTS ============
   @Get('ledgers/account/:id')

@@ -2,7 +2,7 @@ import { ExpenseStatus } from '../entities/expense.entity';
 export declare class CreateExpenseDto {
     expenseCode?: string;
     expenseCategory: string;
-    expenseType: string;
+    expenseType?: string;
     expenseSubCategory?: string;
     amount: number;
     expenseDate: string;
@@ -13,7 +13,7 @@ export declare class CreateExpenseDto {
     paymentMethod?: string;
     paymentReference?: string;
     paymentStatus?: string;
-    description: string;
+    description?: string;
     receiptUrl?: string;
     invoiceNumber?: string;
     invoiceDate?: string;

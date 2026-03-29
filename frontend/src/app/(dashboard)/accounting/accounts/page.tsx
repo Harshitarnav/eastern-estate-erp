@@ -128,9 +128,13 @@ export default function AccountsPage() {
               </thead>
               <tbody>
                 {(accounts || []).map((account) => (
-                  <tr key={account.id} className="border-b hover:bg-gray-50">
+                  <tr
+                    key={account.id}
+                    className="border-b hover:bg-gray-50 cursor-pointer"
+                    onClick={() => (window.location.href = `/accounting/accounts/${account.id}`)}
+                  >
                     <td className="p-2 font-mono text-sm">{account.accountCode}</td>
-                    <td className="p-2 font-medium">{account.accountName}</td>
+                    <td className="p-2 font-medium text-blue-600 hover:underline">{account.accountName}</td>
                     <td className="p-2">{getTypeBadge(account.accountType)}</td>
                     <td className="p-2 text-sm">{account.accountCategory}</td>
                     <td className="p-2 text-right font-medium">
@@ -143,7 +147,7 @@ export default function AccountsPage() {
                         <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
                       )}
                     </td>
-                    <td className="p-2 text-center">
+                    <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
                       <Link href={`/accounting/accounts/${account.id}/ledger`}>
                         <Button size="sm" variant="ghost" className="text-xs" title="View ledger">
                           <BookOpen className="h-3 w-3 mr-1" /> Ledger

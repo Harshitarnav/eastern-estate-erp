@@ -173,7 +173,7 @@ let AutoDemandDraftService = AutoDemandDraftService_1 = class AutoDemandDraftSer
             flatId: flatPaymentPlan.flatId,
             customerId: flatPaymentPlan.customerId,
             bookingId: flatPaymentPlan.bookingId,
-            milestoneId: milestone.name,
+            milestoneId: String(milestoneSequence),
             title: draftTitle,
             amount,
             status: demand_draft_entity_1.DemandDraftStatus.DRAFT,

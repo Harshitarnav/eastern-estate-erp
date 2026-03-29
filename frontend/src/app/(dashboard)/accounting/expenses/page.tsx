@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, X, DollarSign } from 'lucide-react';
+import { Plus, Check, X, DollarSign, Pencil } from 'lucide-react';
 import { expensesService, type Expense } from '@/services/accounting.service';
 import { format } from 'date-fns';
 import { TableRowsSkeleton } from '@/components/Skeletons';
@@ -68,19 +68,19 @@ export default function ExpensesPage() {
     return <Badge className={variants[status] || ''}>{status}</Badge>;
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: any) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number(amount) || 0);
   };
 
   if (loading) {
     return <div className="p-6"><TableRowsSkeleton rows={6} cols={5} /></div>;
   }
 
-  const totalExpenses = ((expenses || [])).reduce((sum, exp) => sum + exp.amount, 0);
+  const totalExpenses = ((expenses || [])).reduce((sum, exp) => sum + (Number(exp.amount) || 0), 0);
   const pendingCount = ((expenses || [])).filter(e => e.status === 'PENDING').length;
   const approvedCount = ((expenses || [])).filter(e => e.status === 'APPROVED').length;
 
@@ -191,11 +191,22 @@ export default function ExpensesPage() {
                     <td className="p-2">
                       <div className="flex justify-end gap-2">
                         {expense.status === 'PENDING' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => (window.location.href = `/accounting/expenses/${expense.id}/edit`)}
+                            title="Edit"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        )}
+                        {expense.status === 'PENDING' && (
                           <>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleApprove(expense.id)}
+                              title="Approve"
                             >
                               <Check className="h-3 w-3" />
                             </Button>
@@ -203,6 +214,7 @@ export default function ExpensesPage() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleReject(expense.id)}
+                              title="Reject"
                             >
                               <X className="h-3 w-3" />
                             </Button>

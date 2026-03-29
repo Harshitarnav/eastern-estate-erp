@@ -35,6 +35,12 @@ let BankAccountsController = class BankAccountsController {
     deactivate(id) {
         return this.service.deactivate(id);
     }
+    activate(id) {
+        return this.service.activate(id);
+    }
+    delete(id) {
+        return this.service.delete(id);
+    }
 };
 exports.BankAccountsController = BankAccountsController;
 __decorate([
@@ -72,6 +78,20 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], BankAccountsController.prototype, "deactivate", null);
+__decorate([
+    (0, common_1.Patch)(':id/activate'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BankAccountsController.prototype, "activate", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], BankAccountsController.prototype, "delete", null);
 exports.BankAccountsController = BankAccountsController = __decorate([
     (0, common_1.Controller)('accounting/bank-accounts'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

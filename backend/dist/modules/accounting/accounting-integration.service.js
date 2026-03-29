@@ -87,8 +87,19 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
     }
     async generateEntryNumber() {
         const year = new Date().getFullYear();
-        const count = await this.jeRepo.count();
-        return `JE${year}${String(count + 1).padStart(5, '0')}`;
+        const prefix = `JE${year}`;
+        const result = await this.jeRepo
+            .createQueryBuilder('je')
+            .select('MAX(je.entryNumber)', 'max')
+            .where('je.entryNumber LIKE :prefix', { prefix: `${prefix}%` })
+            .getRawOne();
+        let nextNum = 1;
+        if (result?.max) {
+            const lastNum = parseInt(String(result.max).replace(prefix, ''), 10);
+            if (!isNaN(lastNum))
+                nextNum = lastNum + 1;
+        }
+        return `${prefix}${String(nextNum).padStart(5, '0')}`;
     }
     async createAutoJE(opts) {
         const amount = Math.round(Number(opts.amount) * 100) / 100;

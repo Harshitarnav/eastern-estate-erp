@@ -1,10 +1,20 @@
 import { Repository } from 'typeorm';
 import { BankAccount } from './entities/bank-account.entity';
+import { Account } from './entities/account.entity';
 export declare class BankAccountsService {
     private readonly bankAccountsRepo;
-    constructor(bankAccountsRepo: Repository<BankAccount>);
-    findAll(): Promise<BankAccount[]>;
+    private readonly accountsRepo;
+    private readonly logger;
+    constructor(bankAccountsRepo: Repository<BankAccount>, accountsRepo: Repository<Account>);
+    findAll(): Promise<(BankAccount & {
+        coaAccount?: {
+            id: string;
+            accountCode: string;
+        } | null;
+    })[]>;
     findOne(id: string): Promise<BankAccount>;
+    private nextBankAccountCode;
+    private ensureCOAAccount;
     create(dto: {
         accountName: string;
         bankName: string;
@@ -17,4 +27,8 @@ export declare class BankAccountsService {
     }): Promise<BankAccount>;
     update(id: string, dto: Partial<BankAccount>): Promise<BankAccount>;
     deactivate(id: string): Promise<BankAccount>;
+    activate(id: string): Promise<BankAccount>;
+    delete(id: string): Promise<{
+        message: string;
+    }>;
 }

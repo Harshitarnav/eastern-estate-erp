@@ -89,7 +89,13 @@ let ExpensesService = class ExpensesService {
         if (expense.status === expense_entity_1.ExpenseStatus.APPROVED || expense.status === expense_entity_1.ExpenseStatus.PAID) {
             throw new common_1.BadRequestException('Cannot update approved or paid expenses');
         }
-        Object.assign(expense, updateExpenseDto);
+        const uuidFields = ['accountId', 'vendorId', 'employeeId', 'propertyId', 'constructionProjectId'];
+        const sanitized = { ...updateExpenseDto };
+        for (const field of uuidFields) {
+            if (sanitized[field] === '')
+                sanitized[field] = null;
+        }
+        Object.assign(expense, sanitized);
         return await this.expensesRepository.save(expense);
     }
     async approve(id, userId, approveDto) {

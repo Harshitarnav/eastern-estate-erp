@@ -50,11 +50,11 @@ export default function EditBudgetPage() {
       setFormData({
         budgetName: data.budgetName,
         fiscalYear: data.fiscalYear,
-        accountId: data.accountId,
-        allocatedAmount: data.allocatedAmount,
-        period: data.period,
-        startDate: data.startDate.split('T')[0],
-        endDate: data.endDate.split('T')[0],
+        accountId: data.accountId || '',
+        allocatedAmount: Number(data.budgetedAmount || 0),   // backend field is budgetedAmount
+        period: 'ANNUAL',
+        startDate: (data.startDate || '').split('T')[0],
+        endDate: (data.endDate || '').split('T')[0],
         notes: data.notes || ''
       });
       setError('');
@@ -71,7 +71,13 @@ export default function EditBudgetPage() {
     setError('');
 
     try {
-      await budgetsService.update(id, formData);
+      await budgetsService.update(id, {
+        budgetName: formData.budgetName,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        budgetedAmount: Number(formData.allocatedAmount),  // map allocatedAmount → budgetedAmount
+        notes: formData.notes || undefined,
+      });
       window.location.href = '/accounting/budgets';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to update budget');

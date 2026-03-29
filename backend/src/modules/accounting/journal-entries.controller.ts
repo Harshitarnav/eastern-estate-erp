@@ -45,6 +45,12 @@ export class JournalEntriesController {
     return this.journalEntriesService.findOne(id);
   }
 
+  @Get(':id/lines')
+  async findLines(@Param('id') id: string) {
+    const entry = await this.journalEntriesService.findOne(id);
+    return entry.lines ?? [];
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateJournalEntryDto: UpdateJournalEntryDto) {
     return this.journalEntriesService.update(id, updateJournalEntryDto);

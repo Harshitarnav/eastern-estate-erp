@@ -36,6 +36,10 @@ let JournalEntriesController = class JournalEntriesController {
     findOne(id) {
         return this.journalEntriesService.findOne(id);
     }
+    async findLines(id) {
+        const entry = await this.journalEntriesService.findOne(id);
+        return entry.lines ?? [];
+    }
     update(id, updateJournalEntryDto) {
         return this.journalEntriesService.update(id, updateJournalEntryDto);
     }
@@ -75,6 +79,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], JournalEntriesController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)(':id/lines'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], JournalEntriesController.prototype, "findLines", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),

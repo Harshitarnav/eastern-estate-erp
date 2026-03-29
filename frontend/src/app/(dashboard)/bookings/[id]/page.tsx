@@ -297,7 +297,13 @@ export default function BookingViewPage() {
                   <User className="w-4 h-4" />
                   Customer
                 </p>
-                <p className="font-medium">{customerName}</p>
+                <button
+                  onClick={() => booking.customerId && router.push(`/customers/${booking.customerId}`)}
+                  className="font-medium text-left hover:underline"
+                  style={{ color: booking.customerId ? '#A8211B' : undefined }}
+                >
+                  {customerName}
+                </button>
                 <p className="text-xs text-gray-500 mt-1">{customerPhone}</p>
                 <p className="text-xs text-gray-500">{customerEmail}</p>
               </div>
@@ -306,7 +312,13 @@ export default function BookingViewPage() {
                   <Building className="w-4 h-4" />
                   Property
                 </p>
-                <p className="font-medium">{booking.property?.name || 'N/A'}</p>
+                <button
+                  onClick={() => booking.propertyId && router.push(`/properties/${booking.propertyId}`)}
+                  className="font-medium text-left hover:underline"
+                  style={{ color: booking.propertyId ? '#A8211B' : undefined }}
+                >
+                  {booking.property?.name || 'N/A'}
+                </button>
               </div>
               <div>
                 <p className="text-sm text-gray-600 flex items-center gap-2">

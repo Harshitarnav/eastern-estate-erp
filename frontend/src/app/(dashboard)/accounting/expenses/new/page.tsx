@@ -5,32 +5,65 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { expensesService, accountsService, Expense } from '@/services/accounting.service';
 
+const EXPENSE_CATEGORIES = [
+  'Rent',
+  'Utilities',
+  'Office Supplies',
+  'Salaries',
+  'Marketing',
+  'Materials',
+  'Maintenance',
+  'Travel',
+  'Professional Fees',
+  'Insurance',
+  'Taxes',
+  'Other',
+];
+
+// Suggested sub-types per category — user can still type anything
+const TYPE_SUGGESTIONS: Record<string, string[]> = {
+  Rent:              ['Office Rent', 'Warehouse Rent', 'Site Rent'],
+  Utilities:         ['Electricity', 'Water', 'Internet', 'Phone'],
+  'Office Supplies': ['Stationery', 'Printer Ink', 'Furniture'],
+  Salaries:          ['Basic Salary', 'Bonus', 'Overtime', 'Advance'],
+  Marketing:         ['Digital Ads', 'Print Ads', 'Events', 'Branding'],
+  Materials:         ['Raw Material', 'Cement', 'Steel', 'Paint'],
+  Maintenance:       ['Repairs', 'AMC', 'Cleaning', 'Security'],
+  Travel:            ['Fuel', 'Flights', 'Hotel', 'Local Conveyance'],
+  'Professional Fees': ['Legal', 'CA/Audit', 'Consultant', 'Architect'],
+  Insurance:         ['Property', 'Vehicle', 'Health', 'Life'],
+  Taxes:             ['GST', 'Professional Tax', 'Property Tax'],
+  Other:             ['Miscellaneous'],
+};
+
 export default function NewExpensePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
-  
+
   type ExpenseForm = {
     expenseDate: string;
-    category: string;
+    expenseCategory: string;
+    expenseType: string;
     amount: number;
     accountId: string;
-    vendor: string;
     description: string;
     paymentMethod: string;
+    paymentReference: string;
     status: Expense['status'];
   };
 
   const [formData, setFormData] = useState<ExpenseForm>({
     expenseDate: new Date().toISOString().split('T')[0],
-    category: '',
+    expenseCategory: '',
+    expenseType: '',
     amount: 0,
     accountId: '',
-    vendor: '',
     description: '',
     paymentMethod: 'CASH',
-    status: 'PENDING'
+    paymentReference: '',
+    status: 'PENDING',
   });
 
   useEffect(() => {
@@ -40,7 +73,7 @@ export default function NewExpensePage() {
   const fetchAccounts = async () => {
     try {
       const data = await accountsService.getAll({ accountType: 'EXPENSE' });
-      setAccounts(data);
+      setAccounts(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching accounts:', err);
     }
@@ -48,14 +81,29 @@ export default function NewExpensePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.expenseCategory) {
+      setError('Please select a category');
+      return;
+    }
     setLoading(true);
     setError('');
 
     try {
-      await expensesService.create(formData);
+      await expensesService.create({
+        expenseDate: formData.expenseDate,
+        expenseCategory: formData.expenseCategory,
+        expenseType: formData.expenseType || formData.expenseCategory,
+        amount: formData.amount,
+        accountId: formData.accountId || undefined,
+        description: formData.description || undefined,
+        paymentMethod: formData.paymentMethod,
+        paymentReference: formData.paymentReference || undefined,
+        status: formData.status,
+      });
       window.location.href = '/accounting/expenses';
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create expense');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : (msg || 'Failed to create expense'));
       setLoading(false);
     }
   };
@@ -83,6 +131,7 @@ export default function NewExpensePage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Expense Date *
@@ -100,19 +149,65 @@ export default function NewExpensePage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Category *
               </label>
-              <input
-                type="text"
+              <select
                 required
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                value={formData.expenseCategory}
+                onChange={(e) => setFormData({ ...formData, expenseCategory: e.target.value, expenseType: '' })}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                placeholder="e.g., Office Supplies, Utilities"
-              />
+              >
+                <option value="">Select a category…</option>
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Amount *
+                Type <span className="text-gray-400 font-normal">(optional — specific label)</span>
+              </label>
+              {(() => {
+                const suggestions = TYPE_SUGGESTIONS[formData.expenseCategory] || [];
+                const isCustom = formData.expenseType !== '' && !suggestions.includes(formData.expenseType);
+                const selectVal = isCustom ? '__custom__' : formData.expenseType;
+                return (
+                  <>
+                    <select
+                      value={selectVal}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setFormData({ ...formData, expenseType: '' });
+                        } else {
+                          setFormData({ ...formData, expenseType: e.target.value });
+                        }
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">— Same as category —</option>
+                      {suggestions.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                      <option value="__custom__">Other (type manually)…</option>
+                    </select>
+                    {(selectVal === '__custom__' || isCustom) && (
+                      <input
+                        type="text"
+                        autoFocus
+                        value={isCustom ? formData.expenseType : ''}
+                        onChange={(e) => setFormData({ ...formData, expenseType: e.target.value })}
+                        className="w-full mt-2 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                        placeholder="Type a specific label…"
+                        maxLength={100}
+                      />
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Amount (₹) *
               </label>
               <input
                 type="number"
@@ -128,38 +223,6 @@ export default function NewExpensePage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Expense Account *
-              </label>
-              <select
-                required
-                value={formData.accountId}
-                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-              >
-                <option value="">Select Account</option>
-                {(accounts || []).map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.accountCode} - {account.accountName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Vendor
-              </label>
-              <input
-                type="text"
-                value={formData.vendor}
-                onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                placeholder="Vendor name"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Payment Method *
               </label>
               <select
@@ -170,10 +233,41 @@ export default function NewExpensePage() {
               >
                 <option value="CASH">Cash</option>
                 <option value="BANK">Bank Transfer</option>
-                <option value="CHECK">Check</option>
+                <option value="CHECK">Cheque</option>
                 <option value="CARD">Card</option>
                 <option value="OTHER">Other</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Expense Account (optional)
+              </label>
+              <select
+                value={formData.accountId}
+                onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+              >
+                <option value="">— Auto (no account) —</option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.accountCode} — {account.accountName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Payment Reference
+              </label>
+              <input
+                type="text"
+                value={formData.paymentReference}
+                onChange={(e) => setFormData({ ...formData, paymentReference: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                placeholder="Cheque no. / transfer ref."
+              />
             </div>
 
             <div>
@@ -184,10 +278,7 @@ export default function NewExpensePage() {
                 required
                 value={formData.status}
                 onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    status: e.target.value as Expense['status'],
-                  })
+                  setFormData({ ...formData, status: e.target.value as Expense['status'] })
                 }
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
               >
@@ -207,7 +298,7 @@ export default function NewExpensePage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
                 rows={3}
-                placeholder="Optional description"
+                placeholder="Optional details about this expense"
               />
             </div>
           </div>
@@ -227,7 +318,7 @@ export default function NewExpensePage() {
               className="px-6 py-2 rounded-lg text-white disabled:opacity-50"
               style={{ backgroundColor: '#A8211B' }}
             >
-              {loading ? 'Creating...' : 'Create Expense'}
+              {loading ? 'Creating…' : 'Create Expense'}
             </button>
           </div>
         </form>

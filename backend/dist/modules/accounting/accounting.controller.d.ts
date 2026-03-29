@@ -3,9 +3,6 @@ import { AccountingService } from './accounting.service';
 export declare class AccountingController {
     private readonly accountingService;
     constructor(accountingService: AccountingService);
-    createJournalEntry(data: any): Promise<import("./entities/journal-entry.entity").JournalEntry>;
-    getJournalEntryById(id: string): Promise<import("./entities/journal-entry.entity").JournalEntry>;
-    getJournalEntryLines(id: string): Promise<import("./entities/journal-entry-line.entity").JournalEntryLine[]>;
     getAccountLedger(id: string, startDate: string, endDate: string): Promise<{
         account: import("./entities/account.entity").Account;
         openingBalance: number;
@@ -59,6 +56,10 @@ export declare class AccountingController {
         total: number;
         imported: number;
         failed: number;
+        errors: {
+            row: number;
+            error: string;
+        }[];
         entries: any[];
     }>;
     exportLedgerToExcel(accountId: string, startDate: string, endDate: string, res: Response): Promise<void>;
