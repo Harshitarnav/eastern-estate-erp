@@ -11,7 +11,7 @@ import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import {
   Users, Plus, Search, Star, Phone, Mail, DollarSign,
-  CreditCard, Package, AlertTriangle, Building2, Edit, Trash2, RefreshCw,
+  CreditCard, Package, AlertTriangle, Building2, Edit, Trash2, RefreshCw, ExternalLink,
 } from 'lucide-react';
 
 function VendorsPageContent() {
@@ -245,8 +245,8 @@ function VendorsPageContent() {
                 <div className="p-5">
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2 mb-4">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1">{vendor.vendorName}</h3>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/construction/vendors/${vendor.id}`)}>
+                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1 hover:underline">{vendor.vendorName}</h3>
                       <p className="text-xs text-gray-400 font-mono mt-0.5">{vendor.vendorCode}</p>
                     </div>
                     {/* Star rating */}
@@ -326,7 +326,15 @@ function VendorsPageContent() {
                       Record Payment
                     </button>
                     <button
-                      onClick={() => router.push(`/construction/vendors?edit=${vendor.id}`)}
+                      onClick={() => router.push(`/construction/vendors/${vendor.id}`)}
+                      title="View details"
+                      className="p-2 border rounded-xl hover:bg-blue-50 transition-colors"
+                      style={{ borderColor: brandPalette.neutral }}
+                    >
+                      <ExternalLink className="w-4 h-4 text-blue-500" />
+                    </button>
+                    <button
+                      onClick={() => { setEditingVendor(vendor); setShowAddModal(true); }}
                       title="Edit vendor"
                       className="p-2 border rounded-xl hover:bg-gray-50 transition-colors"
                       style={{ borderColor: brandPalette.neutral }}
@@ -360,11 +368,13 @@ function VendorsPageContent() {
       {/* Modals */}
       <AddVendorModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={() => { setShowAddModal(false); loadVendors(); }}
+        vendor={editingVendor}
+        onClose={() => { setShowAddModal(false); setEditingVendor(null); }}
+        onSuccess={() => { setShowAddModal(false); setEditingVendor(null); loadVendors(); }}
       />
       <VendorPaymentModal
         isOpen={showPaymentModal}
+        vendor={selectedVendor}
         onClose={() => { setShowPaymentModal(false); setSelectedVendor(null); }}
         onSuccess={() => { setShowPaymentModal(false); setSelectedVendor(null); loadVendors(); }}
       />

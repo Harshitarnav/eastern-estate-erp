@@ -23,7 +23,7 @@ export class PaymentsController {
 
   @Post()
   create(@Body() createPaymentDto: CreatePaymentDto, @Request() req) {
-    return this.paymentsService.create(createPaymentDto, req.user.userId);
+    return this.paymentsService.create(createPaymentDto, req.user.id);
   }
 
   @Get()
@@ -37,8 +37,10 @@ export class PaymentsController {
     @Query('endDate') endDate?: string,
     @Query('minAmount') minAmount?: string,
     @Query('maxAmount') maxAmount?: string,
+    @Query('isVerified') isVerified?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Request() req?: any,
   ) {
     const filters: any = {};
     
@@ -47,10 +49,12 @@ export class PaymentsController {
     if (paymentType) filters.paymentType = paymentType;
     if (paymentMethod) filters.paymentMethod = paymentMethod;
     if (status) filters.status = status;
+    if (isVerified !== undefined) filters.isVerified = isVerified === 'true';
     if (startDate) filters.startDate = new Date(startDate);
     if (endDate) filters.endDate = new Date(endDate);
     if (minAmount) filters.minAmount = parseFloat(minAmount);
     if (maxAmount) filters.maxAmount = parseFloat(maxAmount);
+    filters.accessiblePropertyIds = req?.accessiblePropertyIds;
 
     const payments = await this.paymentsService.findAll(filters);
     
@@ -80,12 +84,14 @@ export class PaymentsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('paymentType') paymentType?: string,
+    @Request() req?: any,
   ) {
     const filters: any = {};
     
     if (startDate) filters.startDate = new Date(startDate);
     if (endDate) filters.endDate = new Date(endDate);
     if (paymentType) filters.paymentType = paymentType;
+    filters.accessiblePropertyIds = req?.accessiblePropertyIds;
 
     return this.paymentsService.getStatistics(filters);
   }
@@ -117,7 +123,7 @@ export class PaymentsController {
 
   @Post(':id/verify')
   verify(@Param('id') id: string, @Request() req) {
-    return this.paymentsService.verify(id, req.user.userId);
+    return this.paymentsService.verify(id, req.user.id);
   }
 
   @Post(':id/cancel')

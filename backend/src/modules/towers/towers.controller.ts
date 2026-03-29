@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
@@ -155,8 +156,8 @@ export class TowersController {
     description: 'Towers retrieved successfully',
     type: PaginatedTowerResponseDto,
   })
-  async findAll(@Query() queryDto: QueryTowerDto): Promise<PaginatedTowerResponseDto> {
-    return this.towersService.findAll(queryDto);
+  async findAll(@Query() queryDto: QueryTowerDto, @Req() req: any): Promise<PaginatedTowerResponseDto> {
+    return this.towersService.findAll(queryDto, req.accessiblePropertyIds);
   }
 
   /**

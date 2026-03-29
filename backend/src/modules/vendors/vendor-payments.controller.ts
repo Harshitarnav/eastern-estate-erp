@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { VendorPaymentsService } from './vendor-payments.service';
 import { CreateVendorPaymentDto } from './dto/create-vendor-payment.dto';
 import { UpdateVendorPaymentDto } from './dto/update-vendor-payment.dto';
@@ -10,8 +10,8 @@ export class VendorPaymentsController {
   constructor(private readonly paymentsService: VendorPaymentsService) {}
 
   @Post()
-  create(@Body() createDto: CreateVendorPaymentDto) {
-    return this.paymentsService.create(createDto);
+  create(@Body() createDto: CreateVendorPaymentDto, @Request() req) {
+    return this.paymentsService.create(createDto, req.user?.id);
   }
 
   @Get()

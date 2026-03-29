@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Card,
   CardContent,
@@ -48,7 +49,7 @@ import { toast } from 'sonner';
 // Use PaymentMilestoneDto from service instead of local interface
 type Milestone = PaymentMilestoneDto;
 
-export default function PaymentPlansPage() {
+function PaymentPlansContent() {
   const [templates, setTemplates] = useState<PaymentPlanTemplate[]>([]);
   const [flatPaymentPlans, setFlatPaymentPlans] = useState<FlatPaymentPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,11 +82,27 @@ export default function PaymentPlansPage() {
   const [loadingTowers, setLoadingTowers] = useState(false);
   const [loadingFlats, setLoadingFlats] = useState(false);
 
+  const searchParams = useSearchParams();
   const constructionPhases = ['FOUNDATION', 'STRUCTURE', 'MEP', 'FINISHING', 'HANDOVER'];
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-open create dialog and pre-select booking when redirected from a booking page
+  useEffect(() => {
+    const bookingId = searchParams.get('bookingId');
+    if (bookingId && bookings.length > 0) {
+      const booking = bookings.find((b: any) => b.id === bookingId);
+      if (booking) {
+        setSelectedBooking(bookingId);
+        if (booking.customerId) setSelectedCustomer(booking.customerId);
+        if (booking.flatId) setSelectedFlat(booking.flatId);
+        setActiveTab('flat-plans');
+        setCreatePlanDialogOpen(true);
+      }
+    }
+  }, [searchParams, bookings]);
 
   // Load towers when property is selected
   useEffect(() => {
@@ -910,5 +927,13 @@ export default function PaymentPlansPage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function PaymentPlansPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-400">Loading…</div>}>
+      <PaymentPlansContent />
+    </Suspense>
   );
 }

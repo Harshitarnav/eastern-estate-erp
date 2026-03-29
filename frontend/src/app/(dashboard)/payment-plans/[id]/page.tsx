@@ -736,13 +736,13 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                 <TableRow>
                   <TableHead className="w-10">#</TableHead>
                   <TableHead className="min-w-[180px]">Milestone Name</TableHead>
+                  {!editMode && <TableHead className="w-36">Invoice / DD</TableHead>}
+                  <TableHead className="min-w-[140px]">Amount (₹)</TableHead>
+                  <TableHead className="w-36">Status</TableHead>
                   <TableHead className="min-w-[150px]">Construction Phase</TableHead>
                   <TableHead className="w-24">Phase %</TableHead>
-                  <TableHead className="min-w-[140px]">Amount (₹)</TableHead>
                   <TableHead className="w-36">Due Date</TableHead>
-                  <TableHead className="w-36">Status</TableHead>
                   {!editMode && <TableHead className="w-32">Completed At</TableHead>}
-                  {!editMode && <TableHead className="w-40">Invoice</TableHead>}
                   {editMode && <TableHead className="w-10" />}
                 </TableRow>
               </TableHeader>
@@ -772,6 +772,97 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                               <div className="text-xs text-muted-foreground">{milestone.description}</div>
                             )}
                           </div>
+                        )}
+                      </TableCell>
+
+                      {/* Generate / View Invoice — 3rd column so it's always visible */}
+                      {!editMode && (
+                        <TableCell>
+                          {milestone.demandDraftId ? (
+                            <div className="flex flex-col items-start gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.push(`/demand-drafts/${milestone.demandDraftId}`)}
+                                className="h-7 text-xs"
+                              >
+                                <Eye className="mr-1 h-3 w-3" />
+                                View DD
+                              </Button>
+                              {draftStatusMap[milestone.demandDraftId] && (
+                                <Badge
+                                  className={`text-[10px] h-4 px-1.5 ${
+                                    draftStatusMap[milestone.demandDraftId] === 'SENT'
+                                      ? 'bg-green-600'
+                                      : draftStatusMap[milestone.demandDraftId] === 'READY'
+                                      ? 'bg-blue-500'
+                                      : draftStatusMap[milestone.demandDraftId] === 'DRAFT'
+                                      ? 'bg-yellow-500'
+                                      : 'bg-gray-400'
+                                  }`}
+                                >
+                                  {draftStatusMap[milestone.demandDraftId]}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={generatingInvoiceFor === milestone.sequence}
+                              onClick={() => setPreviewMilestone(milestone)}
+                              className="h-7 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
+                            >
+                              {generatingInvoiceFor === milestone.sequence ? (
+                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                              ) : (
+                                <FilePlus className="mr-1 h-3 w-3" />
+                              )}
+                              Gen. DD
+                            </Button>
+                          )}
+                        </TableCell>
+                      )}
+
+                      {/* Amount */}
+                      <TableCell>
+                        {editMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            value={milestone.amount}
+                            onChange={e => updateMilestone(index, 'amount', Number(e.target.value))}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="font-medium">
+                            ₹{Number(milestone.amount).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell>
+                        {editMode ? (
+                          <Select
+                            value={milestone.status}
+                            onValueChange={v =>
+                              updateMilestone(index, 'status', v as FlatPaymentMilestone['status'])
+                            }
+                          >
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {MILESTONE_STATUSES.map(s => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge className={getStatusColor(milestone.status)}>
+                            {milestone.status}
+                          </Badge>
                         )}
                       </TableCell>
 
@@ -826,23 +917,6 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                         )}
                       </TableCell>
 
-                      {/* Amount */}
-                      <TableCell>
-                        {editMode ? (
-                          <Input
-                            type="number"
-                            min={0}
-                            value={milestone.amount}
-                            onChange={e => updateMilestone(index, 'amount', Number(e.target.value))}
-                            className="h-8"
-                          />
-                        ) : (
-                          <span className="font-medium">
-                            ₹{Number(milestone.amount).toLocaleString('en-IN')}
-                          </span>
-                        )}
-                      </TableCell>
-
                       {/* Due Date */}
                       <TableCell>
                         {editMode ? (
@@ -861,86 +935,12 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                         )}
                       </TableCell>
 
-                      {/* Status */}
-                      <TableCell>
-                        {editMode ? (
-                          <Select
-                            value={milestone.status}
-                            onValueChange={v =>
-                              updateMilestone(index, 'status', v as FlatPaymentMilestone['status'])
-                            }
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {MILESTONE_STATUSES.map(s => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Badge className={getStatusColor(milestone.status)}>
-                            {milestone.status}
-                          </Badge>
-                        )}
-                      </TableCell>
-
                       {/* Completed At (read mode only) */}
                       {!editMode && (
                         <TableCell>
                           {milestone.completedAt
                             ? new Date(milestone.completedAt).toLocaleDateString('en-IN')
                             : '–'}
-                        </TableCell>
-                      )}
-
-                      {/* Generate / View Invoice (read mode only) */}
-                      {!editMode && (
-                        <TableCell>
-                          {milestone.demandDraftId ? (
-                            <div className="flex flex-col items-start gap-1">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.push(`/demand-drafts/${milestone.demandDraftId}`)}
-                                className="h-7 text-xs"
-                              >
-                                <Eye className="mr-1 h-3 w-3" />
-                                View Invoice
-                              </Button>
-                              {draftStatusMap[milestone.demandDraftId] && (
-                                <Badge
-                                  className={`text-[10px] h-4 px-1.5 ${
-                                    draftStatusMap[milestone.demandDraftId] === 'SENT'
-                                      ? 'bg-green-600'
-                                      : draftStatusMap[milestone.demandDraftId] === 'READY'
-                                      ? 'bg-blue-500'
-                                      : draftStatusMap[milestone.demandDraftId] === 'DRAFT'
-                                      ? 'bg-yellow-500'
-                                      : 'bg-gray-400'
-                                  }`}
-                                >
-                                  {draftStatusMap[milestone.demandDraftId]}
-                                </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={generatingInvoiceFor === milestone.sequence}
-                              onClick={() => setPreviewMilestone(milestone)}
-                              className="h-7 text-xs border-blue-300 text-blue-700 hover:bg-blue-50"
-                            >
-                              {generatingInvoiceFor === milestone.sequence ? (
-                                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                              ) : (
-                                <FilePlus className="mr-1 h-3 w-3" />
-                              )}
-                              Gen. Invoice
-                            </Button>
-                          )}
                         </TableCell>
                       )}
 

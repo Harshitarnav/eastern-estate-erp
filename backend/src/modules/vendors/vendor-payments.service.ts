@@ -18,7 +18,8 @@ export class VendorPaymentsService {
     private readonly accountingIntegration: AccountingIntegrationService,
   ) {}
 
-  async create(createDto: CreateVendorPaymentDto): Promise<VendorPayment> {
+  async create(createDto: CreateVendorPaymentDto, userId?: string): Promise<VendorPayment> {
+    if (userId) createDto.createdBy = userId;
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();

@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -31,8 +32,8 @@ export class FlatsController {
   constructor(private readonly flatsService: FlatsService) {}
 
   @Get('stats')
-  async getGlobalStats() {
-    return this.flatsService.getGlobalStats();
+  async getGlobalStats(@Req() req: any) {
+    return this.flatsService.getGlobalStats(req.accessiblePropertyIds);
   }
 
   /**
@@ -52,8 +53,8 @@ export class FlatsController {
    * GET /flats
    */
   @Get()
-  async findAll(@Query() query: QueryFlatDto): Promise<PaginatedFlatsResponse> {
-    return this.flatsService.findAll(query);
+  async findAll(@Query() query: QueryFlatDto, @Req() req: any): Promise<PaginatedFlatsResponse> {
+    return this.flatsService.findAll(query, req.accessiblePropertyIds);
   }
 
   /**

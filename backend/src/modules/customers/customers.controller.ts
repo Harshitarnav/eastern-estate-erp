@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -33,8 +34,8 @@ export class CustomersController {
   }
 
   @Get()
-  async findAll(@Query() query: QueryCustomerDto): Promise<PaginatedCustomersResponse> {
-    return this.customersService.findAll(query);
+  async findAll(@Query() query: QueryCustomerDto, @Req() req: any): Promise<PaginatedCustomersResponse> {
+    return this.customersService.findAll(query, req.accessiblePropertyIds);
   }
 
   @Get('statistics')

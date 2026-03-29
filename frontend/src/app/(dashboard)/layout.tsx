@@ -8,8 +8,9 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import ChatButton from '@/components/layout/ChatButton';
-import { Menu, LogOut } from 'lucide-react';
+import { Menu, LogOut, Building2 } from 'lucide-react';
 import { Toaster } from 'sonner';
+import apiService from '@/services/api';
 
 export default function DashboardLayout({
   children,
@@ -17,12 +18,33 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [assignedProjects, setAssignedProjects] = useState<{ id: string; name: string }[] | null>(null);
   const { user, logout, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
+
+  const userRoles: string[] = ((user as any)?.roles || []).map((r: any) =>
+    typeof r === 'string' ? r : r.name,
+  );
+  // Only super_admin is always unrestricted — all other roles depend on project assignments
+  const isSuperAdmin = userRoles.includes('super_admin');
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Fetch explicitly assigned projects to show in header (skip for super_admin)
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || isSuperAdmin) return;
+    apiService.get(`/users/${user.id}/property-access`)
+      .then((res: any) => {
+        const items: any[] = Array.isArray(res) ? res : (res?.data ?? []);
+        const projects = items
+          .filter((a: any) => a.property)
+          .map((a: any) => ({ id: a.property.id, name: a.property.name }));
+        setAssignedProjects(projects);
+      })
+      .catch(() => setAssignedProjects([]));
+  }, [isAuthenticated, user?.id, isSuperAdmin]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -79,6 +101,18 @@ export default function DashboardLayout({
           >
             Eastern Estate
           </span>
+
+          {/* Project scope badge — shows for any user with explicit project assignments */}
+          {!isSuperAdmin && assignedProjects && assignedProjects.length > 0 && (
+            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border" style={{ borderColor: '#F3E3C1', backgroundColor: '#FEF9F0', color: '#7B1E12' }}>
+              <Building2 className="h-3.5 w-3.5 shrink-0" />
+              <span className="max-w-[200px] truncate">
+                {assignedProjects.length === 1
+                  ? assignedProjects[0].name
+                  : `${assignedProjects.length} Projects`}
+              </span>
+            </div>
+          )}
 
           {/* Right */}
           <div className="flex items-center gap-1 ml-auto">

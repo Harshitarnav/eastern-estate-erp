@@ -104,7 +104,7 @@ export class LeadsService {
   /**
    * Get all leads with filtering and pagination
    */
-  async findAll(query: QueryLeadDto, user?: any): Promise<PaginatedLeadsResponse> {
+  async findAll(query: QueryLeadDto, user?: any, accessiblePropertyIds?: string[] | null): Promise<PaginatedLeadsResponse> {
     const {
       search,
       status,
@@ -161,6 +161,8 @@ export class LeadsService {
 
     if (propertyId) {
       queryBuilder.andWhere('lead.propertyId = :propertyId', { propertyId });
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      queryBuilder.andWhere('lead.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
     }
 
     if (towerId) {
@@ -379,10 +381,13 @@ export class LeadsService {
   /**
    * Get leads statistics
    */
-  async getStatistics() {
-    const leads = await this.leadsRepository.find({
-      where: { isActive: true },
-    });
+  async getStatistics(accessiblePropertyIds?: string[] | null) {
+    const leads = accessiblePropertyIds && accessiblePropertyIds.length > 0
+      ? await this.leadsRepository.createQueryBuilder('lead')
+          .where('lead.isActive = true')
+          .andWhere('lead.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+          .getMany()
+      : await this.leadsRepository.find({ where: { isActive: true } });
 
     const total = leads.length;
     const newLeads = leads.filter((l) => l.status === 'NEW').length;

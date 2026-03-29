@@ -46,6 +46,7 @@ export class RABillsService {
     vendorId?: string;
     status?: string;
     propertyId?: string;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<RABill[]> {
     const qb = this.raBillRepository.createQueryBuilder('bill')
       .leftJoinAndSelect('bill.vendor', 'vendor')
@@ -64,6 +65,8 @@ export class RABillsService {
     }
     if (filters?.propertyId) {
       qb.andWhere('bill.propertyId = :propertyId', { propertyId: filters.propertyId });
+    } else if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+      qb.andWhere('bill.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds: filters.accessiblePropertyIds });
     }
 
     return qb.getMany();

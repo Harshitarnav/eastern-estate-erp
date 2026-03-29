@@ -8,7 +8,7 @@ import {
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
   Settings, ChevronDown, Target, Database, Table as TableIcon,
-  FileText, AlertTriangle, BookOpen
+  FileText, AlertTriangle, BookOpen, Shield, KeyRound, UserCog
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { hasModuleAccess, isAdminRole } from '@/lib/roles';
@@ -146,10 +146,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     {
+      id: 'user-management', label: 'User Management', icon: UserCog, adminOnly: true,
+      children: [
+        { id: 'users-list',       label: 'Users',               icon: Users,    href: '/settings/users' },
+        { id: 'roles',            label: 'Roles & Permissions',  icon: Shield,   href: '/roles' },
+        { id: 'property-access',  label: 'Project Access',       icon: KeyRound, href: '/property-access' },
+      ]
+    },
+    {
       id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
       children: [
         { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
-        { id: 'settings-users',   label: 'User Management', icon: Users, href: '/settings/users', superAdminOnly: true },
       ]
     },
   ];
