@@ -11,11 +11,13 @@ export declare class AccountingService {
     private bankAccountRepository;
     private bankStatementRepository;
     private dataSource;
+    private readonly logger;
     constructor(accountRepository: Repository<Account>, journalEntryRepository: Repository<JournalEntry>, journalEntryLineRepository: Repository<JournalEntryLine>, bankAccountRepository: Repository<BankAccount>, bankStatementRepository: Repository<BankStatement>, dataSource: DataSource);
     createAccount(data: any): Promise<Account[]>;
     getAllAccounts(): Promise<Account[]>;
     getAccountById(id: string): Promise<Account>;
     updateAccount(id: string, data: any): Promise<Account>;
+    private generateEntryNumber;
     createJournalEntry(data: any): Promise<JournalEntry>;
     getJournalEntryById(id: string): Promise<JournalEntry>;
     getJournalEntryLines(entryId: string): Promise<JournalEntryLine[]>;
@@ -73,6 +75,10 @@ export declare class AccountingService {
         total: number;
         imported: number;
         failed: number;
+        errors: {
+            row: number;
+            error: string;
+        }[];
         entries: any[];
     }>;
     exportLedgerToExcel(accountId: string, startDate: Date, endDate: Date): Promise<any>;

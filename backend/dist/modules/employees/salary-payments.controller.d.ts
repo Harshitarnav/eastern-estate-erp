@@ -22,4 +22,9 @@ export declare class SalaryPaymentsController {
         paymentRemarks?: string;
     }, req: any): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
     cancel(id: string): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
+    retryJE(id: string, req: any): Promise<{
+        success: boolean;
+        journalEntryNumber?: string;
+        message: string;
+    }>;
 }

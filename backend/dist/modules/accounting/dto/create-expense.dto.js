@@ -26,6 +26,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateExpenseDto.prototype, "expenseCategory", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
@@ -81,6 +82,7 @@ __decorate([
     __metadata("design:type", String)
 ], CreateExpenseDto.prototype, "paymentStatus", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateExpenseDto.prototype, "description", void 0);

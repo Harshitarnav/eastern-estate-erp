@@ -10,9 +10,10 @@ export class CreateExpenseDto {
   @MaxLength(100)
   expenseCategory: string; // SALARY, RENT, UTILITIES, MARKETING, MATERIALS, MAINTENANCE, TRAVEL, OTHER
 
+  @IsOptional()
   @IsString()
   @MaxLength(100)
-  expenseType: string;
+  expenseType?: string;
 
   @IsOptional()
   @IsString()
@@ -54,8 +55,9 @@ export class CreateExpenseDto {
   @IsString()
   paymentStatus?: string;
 
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 
   @IsOptional()
   @IsString()

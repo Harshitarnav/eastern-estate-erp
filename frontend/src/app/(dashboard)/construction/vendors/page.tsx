@@ -11,31 +11,48 @@ import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import {
   Users, Plus, Search, Star, Phone, Mail, DollarSign,
-  CreditCard, Package, AlertTriangle, Building2,
+  CreditCard, Package, AlertTriangle, Building2, Edit, Trash2, RefreshCw,
 } from 'lucide-react';
 
 function VendorsPageContent() {
   const router = useRouter();
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [selectedVendor, setSelectedVendor] = useState<any | null>(null);
+  const [editingVendor, setEditingVendor] = useState<any | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => { loadVendors(); }, []);
 
   const loadVendors = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const response = await api.get('/vendors');
       const data = Array.isArray(response) ? response : (response?.data || []);
       setVendors((data || []).filter((v: any) => v.isActive));
-    } catch (error) {
-      console.error('Failed to load vendors:', error);
+    } catch (error: any) {
+      setLoadError(error?.response?.data?.message || error?.message || 'Failed to load vendors');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeactivate = async (vendor: any) => {
+    if (!confirm(`Deactivate vendor "${vendor.vendorName}"? They will be hidden from active lists.`)) return;
+    setActionLoading(vendor.id);
+    try {
+      await api.patch(`/vendors/${vendor.id}`, { isActive: false });
+      await loadVendors();
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Failed to deactivate vendor');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -90,6 +107,17 @@ function VendorsPageContent() {
           </>
         }
       />
+
+      {/* Error banner */}
+      {loadError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span>{loadError}</span>
+          <button onClick={loadVendors} className="ml-auto flex items-center gap-1 text-xs underline">
+            <RefreshCw className="w-3.5 h-3.5" /> Retry
+          </button>
+        </div>
+      )}
 
       {/* Stat Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -288,14 +316,35 @@ function VendorsPageContent() {
                     )}
                   </div>
 
-                  {/* Action */}
-                  <button
-                    onClick={() => { setSelectedVendor(vendor); setShowPaymentModal(true); }}
-                    className="mt-4 w-full py-2 text-sm font-medium border rounded-xl transition-colors hover:bg-[#FEF3E2]"
-                    style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
-                  >
-                    Record Payment
-                  </button>
+                  {/* Actions */}
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => { setSelectedVendor(vendor); setShowPaymentModal(true); }}
+                      className="flex-1 py-2 text-sm font-medium border rounded-xl transition-colors hover:bg-[#FEF3E2]"
+                      style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
+                    >
+                      Record Payment
+                    </button>
+                    <button
+                      onClick={() => router.push(`/construction/vendors?edit=${vendor.id}`)}
+                      title="Edit vendor"
+                      className="p-2 border rounded-xl hover:bg-gray-50 transition-colors"
+                      style={{ borderColor: brandPalette.neutral }}
+                    >
+                      <Edit className="w-4 h-4 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => handleDeactivate(vendor)}
+                      title="Deactivate vendor"
+                      disabled={actionLoading === vendor.id}
+                      className="p-2 border rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50"
+                      style={{ borderColor: '#FCA5A5' }}
+                    >
+                      {actionLoading === vendor.id
+                        ? <RefreshCw className="w-4 h-4 animate-spin text-gray-400" />
+                        : <Trash2 className="w-4 h-4 text-red-400" />}
+                    </button>
+                  </div>
                 </div>
               </div>
             );

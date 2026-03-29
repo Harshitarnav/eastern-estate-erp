@@ -62,10 +62,17 @@ interface BankAccount {
   currentBalance: number;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+/** India FY: April 1 → March 31.  Returns the April-1 that started the current FY. */
+function fyStartDate() {
+  const now = new Date();
+  const year = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1; // month 3 = April (0-indexed)
+  return `${year}-04-01`;
+}
+
 // ─── Cash Book ───────────────────────────────────────────────────────────────
 function CashBook() {
-  const thisYear = new Date().getFullYear();
-  const [startDate, setStartDate] = useState(`${thisYear}-04-01`);
+  const [startDate, setStartDate] = useState(fyStartDate());
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<LedgerData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,7 +86,7 @@ function CashBook() {
       const res = await api.get('/accounting/ledgers/cash-book', {
         params: { startDate, endDate },
       });
-      setData(res.data);
+      setData(res);
     } catch (e: any) {
       setError(e.response?.data?.message || e.message || 'Failed to load cash book');
     } finally {
@@ -95,7 +102,7 @@ function CashBook() {
     try {
       // find account id from the cash book data - we need to navigate via accounts list
       const accRes = await api.get('/accounting/accounts');
-      const accounts = accRes.data?.data || accRes.data || [];
+      const accounts = Array.isArray(accRes) ? accRes : (accRes?.data || []);
       const cashAcc = accounts.find((a: any) =>
         a.accountCode === data.account.accountCode || a.accountName === data.account.accountName
       );
@@ -145,6 +152,12 @@ function CashBook() {
 
       {data && (
         <>
+          {/* Hint: show which COA account is linked */}
+          <div className="text-xs bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-800">
+            <strong>ℹ️ Linked account:</strong> <span className="font-mono">{data.account.accountCode} — {data.account.accountName}</span>
+            {' '}— make sure you select this account when recording cash transactions in Journal Entries.
+          </div>
+
           {/* Summary cards */}
           <div className="grid grid-cols-3 gap-4">
             <Card><CardContent className="pt-4">
@@ -227,10 +240,9 @@ function CashBook() {
 
 // ─── Bank Book ───────────────────────────────────────────────────────────────
 function BankBook() {
-  const thisYear = new Date().getFullYear();
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [selectedBank, setSelectedBank] = useState('');
-  const [startDate, setStartDate] = useState(`${thisYear}-04-01`);
+  const [startDate, setStartDate] = useState(fyStartDate());
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<LedgerData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -238,7 +250,7 @@ function BankBook() {
 
   useEffect(() => {
     bankAccountsService.getAll().then(res => {
-      const accs = res.data?.data || res.data || [];
+      const accs = Array.isArray(res) ? res : (res?.data || []);
       setBankAccounts(accs);
       if (accs.length > 0) setSelectedBank(accs[0].id);
     }).catch(console.error);
@@ -252,7 +264,7 @@ function BankBook() {
       const res = await api.get(`/accounting/ledgers/bank-book/${selectedBank}`, {
         params: { startDate, endDate },
       });
-      setData(res.data);
+      setData(res);
     } catch (e: any) {
       setError(e.response?.data?.message || e.message || 'Failed to load bank book. Ensure the bank account is linked to a Chart of Accounts entry with the same name.');
     } finally {
@@ -309,6 +321,12 @@ function BankBook() {
 
       {data && (
         <>
+          {/* Hint: show which COA account is linked */}
+          <div className="text-xs bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-800">
+            <strong>ℹ️ Linked COA account:</strong> <span className="font-mono">{data.account.accountCode} — {data.account.accountName}</span>
+            {' '}— select this account in Journal Entries for transactions to appear here.
+          </div>
+
           <div className="grid grid-cols-3 gap-4">
             <Card><CardContent className="pt-4">
               <p className="text-xs text-gray-500">Opening Balance</p>
@@ -427,10 +445,13 @@ export default function CashBankBookPage() {
         </TabsContent>
       </Tabs>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-        <strong>📌 Note:</strong> The Cash Book shows all transactions in your default Cash account (code 1001).
-        The Bank Book links your registered bank accounts (from <em>Bank Accounts</em>) to their Chart of Accounts entry by name.
-        Ensure each bank account in <em>Accounting → Bank Accounts</em> has a matching account name in <em>Chart of Accounts</em>.
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 space-y-1">
+        <p><strong>📌 How this works:</strong></p>
+        <ul className="list-disc ml-4 space-y-1">
+          <li><strong>Cash Book</strong> — shows all JE lines posted to the "Cash on Hand" account (code 1110 or similar ASSET account with "cash" in the name).</li>
+          <li><strong>Bank Book</strong> — each bank you add in <em>Bank Accounts</em> automatically gets its own Chart of Accounts drawer. When you load the Bank Book, it shows the exact COA account name in a blue info box — <strong>always use that account</strong> when recording JEs for that bank.</li>
+          <li>Example: For "HDFC Bank", if the COA says "1200 — HDFC Bank", then in a Contra/Payment entry always select <em>1200 — HDFC Bank</em> as the bank side.</li>
+        </ul>
       </div>
     </div>
   );

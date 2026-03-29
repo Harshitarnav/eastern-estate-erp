@@ -130,7 +130,7 @@ let FlatProgressService = class FlatProgressService {
             phase,
             phaseProgress: 0,
             overallProgress: 0,
-            status: 'NOT_STARTED',
+            status: construction_tower_progress_entity_1.PhaseStatus.NOT_STARTED,
         }));
         return this.flatProgressRepo.save(progressRecords);
     }

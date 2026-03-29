@@ -108,7 +108,7 @@ export class ConstructionWorkflowService {
 
     let planUpdated = false;
 
-    for (const milestone of paymentPlan.milestones) {
+    for (const milestone of (paymentPlan.milestones ?? [])) {
       // Skip if milestone is not pending
       if (milestone.status !== 'PENDING') {
         continue;

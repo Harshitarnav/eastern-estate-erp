@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DollarSign, Users, Plus, CheckCircle, XCircle, Loader2, IndianRupee } from 'lucide-react';
+import { DollarSign, Users, Plus, CheckCircle, XCircle, Loader2, IndianRupee, RefreshCw, FileText } from 'lucide-react';
 
 interface Employee {
   id: string;
@@ -46,6 +46,7 @@ interface SalaryPayment {
   pfDeduction: number;
   esiDeduction: number;
   taxDeduction: number;
+  journalEntryNumber?: string | null;
 }
 
 interface Summary {
@@ -79,6 +80,8 @@ export default function PayrollPage() {
   const [showPay, setShowPay] = useState<SalaryPayment | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [jeRetrying, setJeRetrying] = useState<string | null>(null);
+  const [jeMessage, setJeMessage] = useState<{ id: string; msg: string; success: boolean } | null>(null);
 
   const [form, setForm] = useState({
     employeeId: '',
@@ -113,9 +116,9 @@ export default function PayrollPage() {
         api.get('/employees/salary-payments/summary', { params: { month } }),
         api.get('/employees', { params: { limit: 200 } }),
       ]);
-      setPayments(paymentsRes.data?.data || paymentsRes.data || []);
-      setSummary(summaryRes.data);
-      const empData = empRes.data?.data || empRes.data || [];
+      setPayments(Array.isArray(paymentsRes) ? paymentsRes : []);
+      setSummary(summaryRes);
+      const empData = empRes?.data || empRes || [];
       setEmployees(Array.isArray(empData) ? empData : []);
     } catch (err: any) {
       setError(err.message || 'Failed to load payroll data');
@@ -129,6 +132,13 @@ export default function PayrollPage() {
   const handleCreate = async () => {
     if (!form.employeeId || !form.basicSalary) {
       setError('Employee and Basic Salary are required');
+      return;
+    }
+    // Validate net salary
+    const previewGross = Number(form.basicSalary || 0) + Number(form.houseRentAllowance || 0) + Number(form.transportAllowance || 0) + Number(form.medicalAllowance || 0) + Number(form.otherAllowances || 0);
+    const previewDeductions = Number(form.pfDeduction || 0) + Number(form.esiDeduction || 0) + Number(form.taxDeduction || 0) + Number(form.advanceDeduction || 0) + Number(form.loanDeduction || 0) + Number(form.otherDeductions || 0);
+    if (previewGross - previewDeductions <= 0) {
+      setError('Net salary must be greater than ₹0. Please check earnings and deductions.');
       return;
     }
     setSaving(true);
@@ -165,13 +175,32 @@ export default function PayrollPage() {
     setSaving(true);
     setError('');
     try {
-      await api.post(`/employees/salary-payments/${showPay.id}/pay`, payForm);
+      const result = await api.post(`/employees/salary-payments/${showPay.id}/pay`, payForm);
       setShowPay(null);
-      loadData();
+      await loadData();
+      if (result?.journalEntryNumber) {
+        setJeMessage({ id: showPay.id, msg: `✅ Journal Entry ${result.journalEntryNumber} created automatically`, success: true });
+      } else {
+        setJeMessage({ id: showPay.id, msg: '⚠️ Payment saved but JE was not created — click "Gen JE" to retry', success: false });
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to process payment');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRetryJE = async (payment: SalaryPayment) => {
+    setJeRetrying(payment.id);
+    setJeMessage(null);
+    try {
+      const result = await api.post(`/employees/salary-payments/${payment.id}/retry-je`);
+      setJeMessage({ id: payment.id, msg: result?.message || (result?.success ? '✅ JE created' : '❌ JE failed'), success: result?.success });
+      await loadData();
+    } catch (err: any) {
+      setJeMessage({ id: payment.id, msg: `❌ ${err.response?.data?.message || err.message}`, success: false });
+    } finally {
+      setJeRetrying(null);
     }
   };
 
@@ -204,6 +233,13 @@ export default function PayrollPage() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
+        </div>
+      )}
+
+      {jeMessage && (
+        <div className={`border px-4 py-3 rounded-lg text-sm flex items-center justify-between ${jeMessage.success ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+          <span>{jeMessage.msg}</span>
+          <button onClick={() => setJeMessage(null)} className="ml-4 text-lg leading-none opacity-60 hover:opacity-100">×</button>
         </div>
       )}
 
@@ -255,6 +291,7 @@ export default function PayrollPage() {
                     <th className="text-right px-4 py-3 font-medium text-gray-600">PF/ESI/Tax</th>
                     <th className="text-right px-4 py-3 font-medium text-gray-600">Net Pay</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-600">JE</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-600">Action</th>
                   </tr>
                 </thead>
@@ -289,6 +326,28 @@ export default function PayrollPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
+                        {p.paymentStatus === 'PAID' && (
+                          p.journalEntryNumber ? (
+                            <span className="flex items-center justify-center gap-1 text-xs text-green-700 font-medium">
+                              <FileText className="h-3 w-3" />
+                              {p.journalEntryNumber}
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleRetryJE(p)}
+                              disabled={jeRetrying === p.id}
+                              className="text-orange-600 border-orange-300 hover:bg-orange-50 text-xs px-2"
+                            >
+                              {jeRetrying === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                              Gen JE
+                            </Button>
+                          )
+                        )}
+                        {p.paymentStatus !== 'PAID' && <span className="text-xs text-gray-400">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-center">
                         {p.paymentStatus === 'PENDING' && (
                           <Button
                             size="sm"
@@ -321,7 +380,7 @@ export default function PayrollPage() {
                     <td className="px-4 py-3 text-right font-mono font-bold text-green-700">
                       {fmt(payments.reduce((s, p) => s + Number(p.netSalary), 0))}
                     </td>
-                    <td colSpan={2} />
+                    <td colSpan={3} />
                   </tr>
                 </tfoot>
               </table>
@@ -497,8 +556,9 @@ export default function PayrollPage() {
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
                 ✅ A Journal Entry will be auto-created: <strong>Dr. Salary Expense → Cr. Bank/Cash</strong>
+                <br />⚠️ Requires an <strong>EXPENSE</strong> account named "Salary Expense" / "Payroll" / "Wages" and an <strong>ASSET</strong> account for Bank/Cash in Chart of Accounts.
               </div>
             </div>
           )}

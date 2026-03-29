@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { SalaryPayment, PaymentStatus } from './entities/salary-payment.entity';
 import { Employee } from './entities/employee.entity';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { DataSource } from 'typeorm';
 
 export interface CreateSalaryPaymentDto {
   employeeId: string;
@@ -37,6 +38,7 @@ export class SalaryPaymentsService {
     @InjectRepository(Employee)
     private employeeRepo: Repository<Employee>,
     private readonly accountingIntegrationService: AccountingIntegrationService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(dto: CreateSalaryPaymentDto, createdBy: string): Promise<SalaryPayment> {
@@ -149,7 +151,7 @@ export class SalaryPaymentsService {
     const saved = await this.salaryPaymentRepo.save(sp);
 
     // Auto-create Journal Entry (best-effort)
-    await this.accountingIntegrationService.onSalaryPaid({
+    const je = await this.accountingIntegrationService.onSalaryPaid({
       id: saved.id,
       employeeName: employee
         ? (employee.fullName ?? sp.employeeId)
@@ -160,7 +162,44 @@ export class SalaryPaymentsService {
       createdBy: userId,
     });
 
-    return saved;
+    return Object.assign(saved, { journalEntryNumber: je?.entryNumber ?? null }) as SalaryPayment & { journalEntryNumber: string | null };
+  }
+
+  /** Retry JE creation for a PAID salary that is missing a Journal Entry */
+  async retryJE(id: string, userId: string): Promise<{ success: boolean; journalEntryNumber?: string; message: string }> {
+    const sp = await this.findOne(id);
+
+    if (sp.paymentStatus !== PaymentStatus.PAID) {
+      return { success: false, message: 'Journal Entry can only be created for PAID salary records.' };
+    }
+
+    // Check if JE already exists for this salary
+    const existing = await this.dataSource.query(
+      `SELECT entry_number FROM journal_entries WHERE reference_type = 'SALARY' AND reference_id = $1 LIMIT 1`,
+      [sp.id],
+    );
+    if (existing.length > 0) {
+      return { success: true, journalEntryNumber: existing[0].entry_number, message: `Journal Entry ${existing[0].entry_number} already exists.` };
+    }
+
+    if (Number(sp.netSalary) <= 0) {
+      return { success: false, message: `Cannot create JE: net salary is ₹${sp.netSalary} (must be > 0).` };
+    }
+
+    const employee = await this.employeeRepo.findOne({ where: { id: sp.employeeId } });
+    const je = await this.accountingIntegrationService.onSalaryPaid({
+      id: sp.id,
+      employeeName: employee ? (employee.fullName ?? sp.employeeId) : sp.employeeId,
+      netSalary: Number(sp.netSalary),
+      paymentDate: sp.paymentDate instanceof Date ? sp.paymentDate : new Date(sp.paymentDate),
+      paymentMonth: sp.paymentMonth,
+      createdBy: userId,
+    });
+
+    if (je) {
+      return { success: true, journalEntryNumber: je.entryNumber, message: `Journal Entry ${je.entryNumber} created successfully.` };
+    }
+    return { success: false, message: 'JE creation failed — ensure "Salary Expense" (EXPENSE type) and a Bank/Cash (ASSET type) account exist in Chart of Accounts.' };
   }
 
   async cancel(id: string): Promise<SalaryPayment> {

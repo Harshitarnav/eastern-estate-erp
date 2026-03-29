@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle, Edit, Loader2 } from 'lucide-react';
 import PaymentForm from '@/components/forms/PaymentForm';
 import { paymentsService } from '@/services/payments.service';
@@ -58,8 +58,15 @@ function buildApiPayload(data: any) {
 interface ReviewMeta { customerName: string; bookingNumber: string }
 
 // ── component ─────────────────────────────────────────────────────────────────
-export default function NewPaymentPage() {
+function NewPaymentPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Pre-fill from URL: /payments/new?bookingId=xxx&customerId=yyy
+  const urlInitialData = {
+    bookingId:  searchParams.get('bookingId')  || '',
+    customerId: searchParams.get('customerId') || '',
+  };
 
   const [pendingData, setPendingData] = useState<any>(null);
   const [reviewMeta, setReviewMeta]   = useState<ReviewMeta>({ customerName: '', bookingNumber: '' });
@@ -144,7 +151,7 @@ export default function NewPaymentPage() {
       {/* ── Payment Form — hidden while reviewing (NOT unmounted so values are kept) ── */}
       <div className={pendingData || resolving ? 'hidden' : ''}>
         <div className="bg-white rounded-lg shadow-md p-6">
-          <PaymentForm onSubmit={handleFormSubmit} onCancel={handleCancel} />
+          <PaymentForm onSubmit={handleFormSubmit} onCancel={handleCancel} initialData={urlInitialData} />
         </div>
       </div>
 
@@ -247,5 +254,13 @@ export default function NewPaymentPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NewPaymentPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-gray-500">Loading…</div>}>
+      <NewPaymentPageContent />
+    </Suspense>
   );
 }

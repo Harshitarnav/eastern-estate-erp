@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, UseGuards,
+  Controller, Get, Post, Patch, Delete, Param, Body, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { BankAccountsService } from './bank-accounts.service';
@@ -41,5 +41,15 @@ export class BankAccountsController {
   @Patch(':id/deactivate')
   deactivate(@Param('id') id: string) {
     return this.service.deactivate(id);
+  }
+
+  @Patch(':id/activate')
+  activate(@Param('id') id: string) {
+    return this.service.activate(id);
+  }
+
+  @Delete(':id')
+  delete(@Param('id') id: string) {
+    return this.service.delete(id);
   }
 }

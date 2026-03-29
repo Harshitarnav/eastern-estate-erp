@@ -68,4 +68,10 @@ export class SalaryPaymentsController {
   cancel(@Param('id') id: string) {
     return this.salaryPaymentsService.cancel(id);
   }
+
+  /** Retry / regenerate missing Journal Entry for a PAID salary */
+  @Post(':id/retry-je')
+  retryJE(@Param('id') id: string, @Request() req) {
+    return this.salaryPaymentsService.retryJE(id, req.user.userId);
+  }
 }

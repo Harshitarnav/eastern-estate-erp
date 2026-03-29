@@ -189,8 +189,8 @@ function TrialBalanceReport({ data }: { data: any }) {
                     EXPENSE: 'bg-orange-100 text-orange-800',
                   }[a.accountType as string] || ''}>{a.accountType}</Badge>
                 </td>
-                <td className="p-2 text-right">{Number(a.debit) > 0 ? fmt(a.debit) : '—'}</td>
-                <td className="p-2 text-right">{Number(a.credit) > 0 ? fmt(a.credit) : '—'}</td>
+                <td className="p-2 text-right">{Number(a.debitBalance) > 0 ? fmt(a.debitBalance) : '—'}</td>
+                <td className="p-2 text-right">{Number(a.creditBalance) > 0 ? fmt(a.creditBalance) : '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -235,19 +235,22 @@ function BudgetVarianceReport({ data }: { data: any }) {
           </thead>
           <tbody>
             {data.budgets.map((b: any) => {
-              const v = Number(b.varianceAmount) || 0;
-              const vp = Number(b.variancePercentage) || 0;
+              // varianceAmount/variancePercentage are not stored columns — compute them
+              const budgeted = Number(b.budgetedAmount) || 0;
+              const actual = Number(b.actualAmount) || 0;
+              const v = actual - budgeted;           // positive = over budget (bad)
+              const vp = budgeted > 0 ? (v / budgeted) * 100 : 0;
               return (
                 <tr key={b.id} className="border-b hover:bg-gray-50">
                   <td className="p-2 font-medium">{b.budgetName}</td>
                   <td className="p-2 text-gray-500">{b.fiscalYear}</td>
-                  <td className="p-2 text-right">{fmt(b.budgetedAmount)}</td>
-                  <td className="p-2 text-right">{fmt(b.actualAmount)}</td>
-                  <td className={`p-2 text-right font-semibold ${v >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {v >= 0 ? '+' : '-'}{fmt(Math.abs(v))}
+                  <td className="p-2 text-right">{fmt(budgeted)}</td>
+                  <td className="p-2 text-right">{fmt(actual)}</td>
+                  <td className={`p-2 text-right font-semibold ${v <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {v <= 0 ? '−' : '+'}{fmt(Math.abs(v))}
                   </td>
-                  <td className={`p-2 text-right ${vp >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {vp >= 0 ? '+' : ''}{vp.toFixed(1)}%
+                  <td className={`p-2 text-right ${vp <= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {vp <= 0 ? '' : '+'}{vp.toFixed(1)}%
                   </td>
                   <td className="p-2 text-center">
                     <Badge className={b.status === 'ACTIVE' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}>{b.status}</Badge>
@@ -256,14 +259,14 @@ function BudgetVarianceReport({ data }: { data: any }) {
               );
             })}
           </tbody>
-          {data.summary && (
+          {(data.totalBudgeted !== undefined) && (
             <tfoot>
               <tr className="bg-gray-50 font-bold border-t-2">
                 <td colSpan={2} className="p-2">Total</td>
-                <td className="p-2 text-right">{fmt(data.summary.totalBudgeted)}</td>
-                <td className="p-2 text-right">{fmt(data.summary.totalActual)}</td>
-                <td className={`p-2 text-right ${(Number(data.summary.totalVariance) || 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                  {fmt(data.summary.totalVariance)}
+                <td className="p-2 text-right">{fmt(data.totalBudgeted)}</td>
+                <td className="p-2 text-right">{fmt(data.totalActual)}</td>
+                <td className={`p-2 text-right ${(Number(data.totalVariance) || 0) <= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {(Number(data.totalVariance) || 0) <= 0 ? '−' : '+'}{fmt(Math.abs(Number(data.totalVariance) || 0))}
                 </td>
                 <td colSpan={2}></td>
               </tr>
@@ -356,8 +359,9 @@ function ITRExport() {
 
 // ─── Property-wise P&L ──────────────────────────────────────────────────────
 function PropertyWisePL() {
-  const thisYear = new Date().getFullYear();
-  const [startDate, setStartDate] = useState(`${thisYear}-04-01`);
+  const now = new Date();
+  const fyYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+  const [startDate, setStartDate] = useState(`${fyYear}-04-01`);
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -368,7 +372,7 @@ function PropertyWisePL() {
       const res = await api.get('/accounting/reports/property-wise-pl', {
         params: { startDate, endDate },
       });
-      setData(res.data);
+      setData(res);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -747,7 +751,10 @@ export default function ReportsPage() {
         .finally(() => setLazyLoading(false));
     }
     if (tab === 'cash-flow' && !cashFlow) {
-      const fyStart = new Date(new Date().getFullYear(), 3, 1).toISOString().slice(0, 10); // April 1
+      // India FY: April 1 — roll back a year if we're in Jan/Feb/Mar
+      const now = new Date();
+      const fyYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+      const fyStart = `${fyYear}-04-01`;
       const today = format(new Date(), 'yyyy-MM-dd');
       setLazyLoading(true);
       api.get('/accounting/reports/cash-flow', { params: { startDate: fyStart, endDate: today } })

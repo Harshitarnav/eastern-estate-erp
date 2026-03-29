@@ -266,7 +266,7 @@ export class Flat {
   @Column({ length: 50, nullable: true })
   furnishingStatus: string; // Unfurnished, Semi-Furnished, Fully-Furnished
 
-  @Column({ type: 'simple-array', nullable: true })
+  @Column({ type: 'text', array: true, nullable: true })
   amenities: string[]; // AC, Modular Kitchen, Wardrobes, etc.
 
   // Additional Details

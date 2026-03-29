@@ -104,7 +104,14 @@ export class ExpensesService {
       throw new BadRequestException('Cannot update approved or paid expenses');
     }
 
-    Object.assign(expense, updateExpenseDto);
+    // Strip empty-string UUID fields — DB requires valid UUID or NULL
+    const uuidFields = ['accountId', 'vendorId', 'employeeId', 'propertyId', 'constructionProjectId'] as const;
+    const sanitized = { ...updateExpenseDto } as any;
+    for (const field of uuidFields) {
+      if (sanitized[field] === '') sanitized[field] = null;
+    }
+
+    Object.assign(expense, sanitized);
 
     return await this.expensesRepository.save(expense);
   }

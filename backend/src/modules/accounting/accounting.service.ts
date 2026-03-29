@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, DataSource } from 'typeorm';
 import { Account, AccountType } from './entities/account.entity';
@@ -10,6 +10,8 @@ import * as XLSX from 'xlsx';
 
 @Injectable()
 export class AccountingService {
+  private readonly logger = new Logger(AccountingService.name);
+
   constructor(
     @InjectRepository(Account)
     private accountRepository: Repository<Account>,
@@ -50,9 +52,30 @@ export class AccountingService {
   }
 
   // ============ JOURNAL ENTRIES ============
+  private async generateEntryNumber(): Promise<string> {
+    const year = new Date().getFullYear();
+    const prefix = `JE${year}`;
+    const result = await this.journalEntryRepository
+      .createQueryBuilder('je')
+      .select('MAX(je.entryNumber)', 'max')
+      .where('je.entryNumber LIKE :prefix', { prefix: `${prefix}%` })
+      .getRawOne();
+    let nextNum = 1;
+    if (result?.max) {
+      const lastNum = parseInt(String(result.max).replace(prefix, ''), 10);
+      if (!isNaN(lastNum)) nextNum = lastNum + 1;
+    }
+    return `${prefix}${String(nextNum).padStart(5, '0')}`;
+  }
+
   async createJournalEntry(data: any) {
     const { lines, ...entryData } = data;
-    
+
+    // Auto-generate entry number if not supplied
+    if (!entryData.entryNumber) {
+      entryData.entryNumber = await this.generateEntryNumber();
+    }
+
     // Create entry
     const entry = this.journalEntryRepository.create(entryData);
     const savedEntry = await this.journalEntryRepository.save(entry);
@@ -79,7 +102,7 @@ export class AccountingService {
   async getJournalEntryById(id: string) {
     return this.journalEntryRepository.findOne({
       where: { id },
-      relations: ['property'],
+      relations: ['lines', 'lines.account'],
     });
   }
 
@@ -142,7 +165,7 @@ export class AccountingService {
       return {
         date: line.journalEntry.entryDate,
         entryNumber: line.journalEntry.entryNumber,
-        narration: line.description || line.journalEntry.narration,
+        narration: line.description || line.journalEntry.description,
         debit,
         credit,
         balance: runningBalance,
@@ -168,7 +191,7 @@ export class AccountingService {
         entryDate: Between(startDate, endDate),
         status: JournalEntryStatus.POSTED,
       },
-      relations: ['property'],
+      relations: ['lines', 'lines.account'],
       order: { entryDate: 'ASC' },
     });
 
@@ -198,22 +221,13 @@ export class AccountingService {
       if (cashAccount) break;
     }
 
-    // Fall back: find any account whose name contains "Cash on Hand" or "Petty Cash"
-    if (!cashAccount) {
-      cashAccount = await this.accountRepository
-        .createQueryBuilder('account')
-        .where('LOWER(account.accountName) LIKE :name', { name: '%cash on hand%' })
-        .orWhere('LOWER(account.accountName) LIKE :petty', { petty: '%petty cash%' })
-        .andWhere('account.accountType = :type', { type: 'ASSET' })
-        .getOne();
-    }
-
-    // Broadest fallback: any asset account with "cash" in the name
+    // Fall back: find any ASSET account whose name contains "cash"
+    // (covers "Cash on Hand", "Cash In Hand", "Petty Cash", etc.)
     if (!cashAccount) {
       cashAccount = await this.accountRepository
         .createQueryBuilder('account')
         .where('LOWER(account.accountName) LIKE :name', { name: '%cash%' })
-        .andWhere('account.accountType = :type', { type: 'ASSET' })
+        .andWhere('account.accountType = :type', { type: AccountType.ASSET })
         .orderBy('account.accountCode', 'ASC')
         .getOne();
     }
@@ -237,13 +251,41 @@ export class AccountingService {
       throw new Error('Bank account not found');
     }
 
-    // Find the accounting account linked to this bank
-    const account = await this.accountRepository.findOne({
+    // 1. Exact name match
+    let account = await this.accountRepository.findOne({
       where: { accountName: bankAccount.accountName },
     });
 
+    // 2. Case-insensitive / partial name match
     if (!account) {
-      throw new Error('Bank account ledger not found');
+      account = await this.accountRepository
+        .createQueryBuilder('a')
+        .where('LOWER(a.accountName) LIKE :name', {
+          name: `%${bankAccount.accountName.toLowerCase()}%`,
+        })
+        .andWhere('a.accountType = :type', { type: AccountType.ASSET })
+        .orderBy('a.accountCode', 'ASC')
+        .getOne();
+    }
+
+    // 3. Match on bank name (e.g. "HDFC" appears in account name)
+    if (!account) {
+      account = await this.accountRepository
+        .createQueryBuilder('a')
+        .where('LOWER(a.accountName) LIKE :bank', {
+          bank: `%${bankAccount.bankName.toLowerCase()}%`,
+        })
+        .andWhere('a.accountType = :type', { type: AccountType.ASSET })
+        .orderBy('a.accountCode', 'ASC')
+        .getOne();
+    }
+
+    if (!account) {
+      throw new Error(
+        `No Chart of Accounts entry found for bank "${bankAccount.accountName}". ` +
+        `Please create an ASSET account in Chart of Accounts with the name "${bankAccount.accountName}" ` +
+        `or a name containing "${bankAccount.bankName}".`,
+      );
     }
 
     return this.getAccountLedger(account.id, startDate, endDate);
@@ -257,40 +299,63 @@ export class AccountingService {
     const data = XLSX.utils.sheet_to_json(worksheet);
 
     const imported = [];
-    for (const row of data as any[]) {
+    const errors: { row: number; error: string }[] = [];
+
+    for (let i = 0; i < (data as any[]).length; i++) {
+      const row = (data as any[])[i];
       try {
+        // Resolve account codes to IDs so balance updates work correctly
+        const debitCode  = String(row['Debit Account']  || '').trim();
+        const creditCode = String(row['Credit Account'] || '').trim();
+
+        const [debitAccount, creditAccount] = await Promise.all([
+          this.accountRepository.findOne({ where: { accountCode: debitCode } }),
+          this.accountRepository.findOne({ where: { accountCode: creditCode } }),
+        ]);
+
+        if (!debitAccount) {
+          throw new Error(`Debit account code "${debitCode}" not found in Chart of Accounts`);
+        }
+        if (!creditAccount) {
+          throw new Error(`Credit account code "${creditCode}" not found in Chart of Accounts`);
+        }
+
         const entry = await this.createJournalEntry({
           entryNumber: row['Entry Number'],
           entryDate: new Date(row['Date']),
-          narration: row['Narration'],
+          description: row['Narration'],
           financialYear: row['Financial Year'],
           period: row['Period'],
           lines: [
             {
-              accountCode: row['Debit Account'],
-              debitAmount: parseFloat(row['Debit Amount']) || 0,
+              accountId:    debitAccount.id,
+              accountCode:  debitCode,
+              debitAmount:  parseFloat(row['Debit Amount']) || 0,
               creditAmount: 0,
-              description: row['Description'],
+              description:  row['Description'],
             },
             {
-              accountCode: row['Credit Account'],
-              debitAmount: 0,
+              accountId:    creditAccount.id,
+              accountCode:  creditCode,
+              debitAmount:  0,
               creditAmount: parseFloat(row['Credit Amount']) || 0,
-              description: row['Description'],
+              description:  row['Description'],
             },
           ],
         });
         imported.push(entry);
       } catch (error) {
-        console.error('Error importing row:', row, error);
+        this.logger.error(`Row ${i + 2}: ${error.message}`);
+        errors.push({ row: i + 2, error: error.message });
       }
     }
 
     return {
-      total: data.length,
+      total:    (data as any[]).length,
       imported: imported.length,
-      failed: data.length - imported.length,
-      entries: imported,
+      failed:   errors.length,
+      errors,
+      entries:  imported,
     };
   }
 
@@ -540,25 +605,25 @@ export class AccountingService {
     // Outstanding installments from payment_schedules (PENDING or OVERDUE)
     const rows = await this.dataSource.query(`
       SELECT
-        c.id                        AS customer_id,
-        c.name                      AS customer_name,
-        c.phone                     AS customer_phone,
+        c.id                             AS customer_id,
+        c.full_name                      AS customer_name,
+        c.phone_number                   AS customer_phone,
         b.booking_number,
-        p.name                      AS property_name,
-        ps.id                       AS schedule_id,
-        ps."scheduleNumber"         AS schedule_number,
-        ps."dueDate"                AS due_date,
-        (ps.amount - ps."paidAmount") AS outstanding,
-        ps.amount                   AS installment_amount,
-        ($1::date - ps."dueDate"::date)  AS days_overdue
+        p.name                           AS property_name,
+        ps.id                            AS schedule_id,
+        ps.installment_number            AS schedule_number,
+        ps.due_date,
+        (ps.amount - ps.paid_amount)     AS outstanding,
+        ps.amount                        AS installment_amount,
+        ($1::date - ps.due_date::date)   AS days_overdue
       FROM payment_schedules ps
-      JOIN bookings b  ON b.id = ps."bookingId"
+      JOIN bookings b  ON b.id = ps.booking_id
       JOIN customers c ON c.id = b.customer_id
       JOIN properties p ON p.id = b.property_id
-      WHERE ps.status IN ('PENDING','OVERDUE')
-        AND ps."dueDate" <= $1
-        AND (ps.amount - ps."paidAmount") > 0
-      ORDER BY c.name, ps."dueDate"
+      WHERE ps.status IN ('PENDING','OVERDUE','PARTIAL')
+        AND ps.due_date <= $1
+        AND (ps.amount - ps.paid_amount) > 0
+      ORDER BY c.full_name, ps.due_date
     `, [asOfDate]);
 
     // Group by customer
@@ -623,20 +688,19 @@ export class AccountingService {
         v.id               AS vendor_id,
         v.vendor_name,
         v.vendor_code,
-        v.vendor_category,
-        v.contact_name,
-        v.phone,
+        v.contact_person   AS contact_name,
+        v.phone_number     AS phone,
         v.outstanding_amount,
         COALESCE(
-          MAX(po."expectedDelivery"),
+          MAX(po.expected_delivery_date),
           NOW()::date
         )                  AS latest_due_date,
-        ($1::date - COALESCE(MAX(po."expectedDelivery"), NOW()::date)::date) AS days_overdue
+        ($1::date - COALESCE(MAX(po.expected_delivery_date), NOW()::date)::date) AS days_overdue
       FROM vendors v
       LEFT JOIN purchase_orders po ON po.vendor_id = v.id
-        AND po.status NOT IN ('DELIVERED','CANCELLED')
+        AND po.status NOT IN ('RECEIVED','CANCELLED')
       WHERE v.outstanding_amount > 0
-      GROUP BY v.id, v.vendor_name, v.vendor_code, v.vendor_category, v.contact_name, v.phone, v.outstanding_amount
+      GROUP BY v.id, v.vendor_name, v.vendor_code, v.contact_person, v.phone_number, v.outstanding_amount
       ORDER BY v.outstanding_amount DESC
     `, [asOfDate]);
 
@@ -647,7 +711,7 @@ export class AccountingService {
         vendorId: row.vendor_id,
         vendorName: row.vendor_name,
         vendorCode: row.vendor_code,
-        vendorCategory: row.vendor_category,
+        vendorCategory: null,
         contactName: row.contact_name,
         phone: row.phone,
         outstandingAmount: amt,
@@ -679,24 +743,25 @@ export class AccountingService {
   // ============ CASH FLOW STATEMENT ============
   async getCashFlowStatement(startDate: Date, endDate: Date): Promise<any> {
     // Categorize JE lines into Operating / Investing / Financing based on account type + name patterns
+    // NOTE: raw SQL must use snake_case column names (SnakeNamingStrategy)
     const lines = await this.dataSource.query(`
       SELECT
         jel.id,
-        jel."debitAmount",
-        jel."creditAmount",
+        jel.debit_amount  AS "debitAmount",
+        jel.credit_amount AS "creditAmount",
         jel.description,
-        a."accountType",
-        a."accountName",
-        a."accountCode",
-        je."entryDate",
-        je."narration",
-        je."referenceType"
+        a.account_type    AS "accountType",
+        a.account_name    AS "accountName",
+        a.account_code    AS "accountCode",
+        je.entry_date     AS "entryDate",
+        je.description    AS "narration",
+        je.reference_type AS "referenceType"
       FROM journal_entry_lines jel
-      JOIN accounts a   ON a.id = jel."accountId"
-      JOIN journal_entries je ON je.id = jel."journalEntryId"
+      JOIN accounts a        ON a.id = jel.account_id
+      JOIN journal_entries je ON je.id = jel.journal_entry_id
       WHERE je.status = 'POSTED'
-        AND je."entryDate" BETWEEN $1 AND $2
-      ORDER BY je."entryDate"
+        AND je.entry_date BETWEEN $1 AND $2
+      ORDER BY je.entry_date
     `, [startDate, endDate]);
 
     const operating: any[] = [];
@@ -735,12 +800,30 @@ export class AccountingService {
 
     const sum = (arr: any[], key: 'debit' | 'credit' | 'net') => arr.reduce((s, e) => s + e[key], 0);
 
-    // Opening cash balance: sum of all ASSET (cash/bank) accounts' openingBalance
+    // Opening cash balance: sum of static opening_balance for cash/bank accounts
+    // PLUS all posted JEs that affected cash/bank accounts BEFORE the start date
     const cashAccounts = await this.dataSource.query(`
-      SELECT SUM("openingBalance") AS opening FROM accounts
-      WHERE "accountType" = 'ASSET'
-        AND (LOWER("accountName") LIKE '%cash%' OR LOWER("accountName") LIKE '%bank%')
-    `);
+      SELECT
+        COALESCE(SUM(a.opening_balance), 0) +
+        COALESCE((
+          SELECT SUM(
+            CASE
+              WHEN a2.account_type = 'ASSET' THEN jel2.debit_amount - jel2.credit_amount
+              ELSE jel2.credit_amount - jel2.debit_amount
+            END
+          )
+          FROM journal_entry_lines jel2
+          JOIN accounts a2            ON a2.id  = jel2.account_id
+          JOIN journal_entries je2    ON je2.id = jel2.journal_entry_id
+          WHERE je2.status = 'POSTED'
+            AND je2.entry_date < $1
+            AND a2.account_type = 'ASSET'
+            AND (LOWER(a2.account_name) LIKE '%cash%' OR LOWER(a2.account_name) LIKE '%bank%')
+        ), 0) AS opening
+      FROM accounts a
+      WHERE a.account_type = 'ASSET'
+        AND (LOWER(a.account_name) LIKE '%cash%' OR LOWER(a.account_name) LIKE '%bank%')
+    `, [startDate]);
     const openingBalance = Number(cashAccounts[0]?.opening) || 0;
 
     const netOperating = sum(operating, 'net');

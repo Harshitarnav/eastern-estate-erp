@@ -16,18 +16,10 @@ exports.AccountingController = void 0;
 const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const accounting_service_1 = require("./accounting.service");
+const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 let AccountingController = class AccountingController {
     constructor(accountingService) {
         this.accountingService = accountingService;
-    }
-    createJournalEntry(data) {
-        return this.accountingService.createJournalEntry(data);
-    }
-    getJournalEntryById(id) {
-        return this.accountingService.getJournalEntryById(id);
-    }
-    getJournalEntryLines(id) {
-        return this.accountingService.getJournalEntryLines(id);
     }
     getAccountLedger(id, startDate, endDate) {
         return this.accountingService.getAccountLedger(id, new Date(startDate), new Date(endDate));
@@ -83,27 +75,6 @@ let AccountingController = class AccountingController {
     }
 };
 exports.AccountingController = AccountingController;
-__decorate([
-    (0, common_1.Post)('journal-entries'),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", void 0)
-], AccountingController.prototype, "createJournalEntry", null);
-__decorate([
-    (0, common_1.Get)('journal-entries/:id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], AccountingController.prototype, "getJournalEntryById", null);
-__decorate([
-    (0, common_1.Get)('journal-entries/:id/lines'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], AccountingController.prototype, "getJournalEntryLines", null);
 __decorate([
     (0, common_1.Get)('ledgers/account/:id'),
     __param(0, (0, common_1.Param)('id')),
@@ -203,6 +174,7 @@ __decorate([
 ], AccountingController.prototype, "exportForITR", null);
 exports.AccountingController = AccountingController = __decorate([
     (0, common_1.Controller)('accounting'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [accounting_service_1.AccountingService])
 ], AccountingController);
 //# sourceMappingURL=accounting.controller.js.map
