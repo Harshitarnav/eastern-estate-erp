@@ -81,6 +81,13 @@ echo " STEP 6: FIX FLATS.IMAGES COLUMN TYPE"
 echo "======================================================"
 run_migration "$MIGRATIONS_DIR/v004_fix_flats_images_column.sql"
 
+# ── STEP 7: Fix vendors.name NOT NULL legacy column ───────────────────────
+echo ""
+echo "======================================================"
+echo " STEP 7: FIX VENDORS.NAME LEGACY COLUMN"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v005_fix_vendors_name_column.sql"
+
 echo ""
 echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
