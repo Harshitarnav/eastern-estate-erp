@@ -74,6 +74,13 @@ echo " STEP 5: COMPREHENSIVE COLUMN SYNC"
 echo "======================================================"
 run_migration "$MIGRATIONS_DIR/v003_prod_schema_sync.sql"
 
+# ── STEP 6: Fix flats.images JSONB → TEXT ──────────────────────────────────
+echo ""
+echo "======================================================"
+echo " STEP 6: FIX FLATS.IMAGES COLUMN TYPE"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v004_fix_flats_images_column.sql"
+
 echo ""
 echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
