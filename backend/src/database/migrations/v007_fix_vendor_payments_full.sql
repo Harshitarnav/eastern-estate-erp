@@ -15,6 +15,10 @@ ALTER TABLE vendor_payments ADD COLUMN IF NOT EXISTS journal_entry_id UUID;
 -- Make created_by nullable (entity service may not always have user context)
 ALTER TABLE vendor_payments ALTER COLUMN created_by DROP NOT NULL;
 
+-- Make the legacy payment_method column nullable (entity uses payment_mode instead)
+ALTER TABLE vendor_payments ALTER COLUMN payment_method DROP NOT NULL;
+ALTER TABLE vendor_payments ALTER COLUMN payment_method SET DEFAULT 'OTHER';
+
 -- Backfill payment_mode from the old payment_method column where possible
 UPDATE vendor_payments
 SET payment_mode = CASE
