@@ -48,24 +48,26 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
 
     setLoading(true);
     try {
+      // Strip empty strings so @IsOptional() skips validation on missing fields
+      const or = (v: string) => v?.trim() || undefined;
       await api.post('/vendors', {
         vendorName: formData.vendorName,
         vendorCode: formData.vendorCode || `VEN-${Date.now()}`,
         contactPerson: formData.contactPerson,
         phoneNumber: formData.phoneNumber,
-        email: formData.email || null,
-        address: formData.address || null,
-        city: formData.city || null,
-        state: formData.state || null,
-        pinCode: formData.pinCode || null,
-        gstNumber: formData.gstNumber || null,
-        panNumber: formData.panNumber || null,
+        email: or(formData.email),
+        address: or(formData.address),
+        city: or(formData.city),
+        state: or(formData.state),
+        pincode: or(formData.pinCode),
+        gstNumber: or(formData.gstNumber),
+        panNumber: or(formData.panNumber),
         materialsSupplied: formData.materialsSupplied,
         creditLimit: formData.creditLimit ? parseFloat(formData.creditLimit) : 0,
-        paymentTerms: formData.paymentTerms || null,
-        bankName: formData.bankName || null,
-        accountNumber: formData.accountNumber || null,
-        ifscCode: formData.ifscCode || null,
+        paymentTerms: or(formData.paymentTerms),
+        bankName: or(formData.bankName),
+        bankAccountNumber: or(formData.accountNumber),
+        ifscCode: or(formData.ifscCode),
         rating: parseFloat(formData.rating),
         isActive: true,
       });
@@ -258,9 +260,12 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
               <input
                 type="text"
                 value={formData.gstNumber}
-                onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value.toUpperCase() })}
+                placeholder="e.g. 22AAAAA0000A1Z5"
+                maxLength={15}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono uppercase"
               />
+              <p className="text-xs text-gray-400 mt-1">15 characters — leave blank if not registered</p>
             </div>
 
             <div>
@@ -270,9 +275,12 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
               <input
                 type="text"
                 value={formData.panNumber}
-                onChange={(e) => setFormData({ ...formData, panNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase() })}
+                placeholder="e.g. AAAAA0000A"
+                maxLength={10}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono uppercase"
               />
+              <p className="text-xs text-gray-400 mt-1">10 characters — leave blank if unavailable</p>
             </div>
           </div>
         </div>
@@ -385,9 +393,12 @@ export default function AddVendorModal({ isOpen, onClose, onSuccess }: AddVendor
               <input
                 type="text"
                 value={formData.ifscCode}
-                onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value.toUpperCase() })}
+                placeholder="e.g. SBIN0001234"
+                maxLength={11}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent font-mono uppercase"
               />
+              <p className="text-xs text-gray-400 mt-1">11 characters — leave blank if unavailable</p>
             </div>
           </div>
         </div>
