@@ -104,7 +104,7 @@ function ProjectAccessContent() {
     setLoadingUsers(true);
     try {
       const [usersRes, propsRes] = await Promise.all([
-        apiService.get('/users'),
+        apiService.get('/users?limit=500&isActive=true'),
         apiService.get('/properties'),
       ]);
       setUsers(usersRes.data || usersRes || []);
