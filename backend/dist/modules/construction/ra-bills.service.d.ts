@@ -12,6 +12,7 @@ export declare class RABillsService {
         vendorId?: string;
         status?: string;
         propertyId?: string;
+        accessiblePropertyIds?: string[] | null;
     }): Promise<RABill[]>;
     findOne(id: string): Promise<RABill>;
     update(id: string, updateDto: any): Promise<RABill>;

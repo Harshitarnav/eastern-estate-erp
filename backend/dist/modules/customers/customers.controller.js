@@ -24,8 +24,8 @@ let CustomersController = class CustomersController {
     async create(createCustomerDto) {
         return this.customersService.create(createCustomerDto);
     }
-    async findAll(query) {
-        return this.customersService.findAll(query);
+    async findAll(query, req) {
+        return this.customersService.findAll(query, req.accessiblePropertyIds);
     }
     async getStatistics() {
         return this.customersService.getStatistics();
@@ -52,8 +52,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryCustomerDto]),
+    __metadata("design:paramtypes", [dto_1.QueryCustomerDto, Object]),
     __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "findAll", null);
 __decorate([

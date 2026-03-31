@@ -15,10 +15,12 @@ export declare class PaymentsService {
         paymentType?: string;
         paymentMethod?: string;
         status?: PaymentStatus;
+        isVerified?: boolean;
         startDate?: Date;
         endDate?: Date;
         minAmount?: number;
         maxAmount?: number;
+        accessiblePropertyIds?: string[] | null;
     }): Promise<Payment[]>;
     findOne(id: string): Promise<Payment>;
     findByPaymentCode(paymentCode: string): Promise<Payment>;
@@ -30,6 +32,7 @@ export declare class PaymentsService {
         startDate?: Date;
         endDate?: Date;
         paymentType?: string;
+        accessiblePropertyIds?: string[] | null;
     }): Promise<{
         totalPayments: number;
         totalAmount: number;

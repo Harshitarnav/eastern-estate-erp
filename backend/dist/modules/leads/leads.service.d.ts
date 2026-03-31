@@ -8,13 +8,13 @@ export declare class LeadsService {
     constructor(leadsRepository: Repository<Lead>, notificationsService: NotificationsService);
     private generateLeadCode;
     create(createLeadDto: CreateLeadDto): Promise<LeadResponseDto>;
-    findAll(query: QueryLeadDto, user?: any): Promise<PaginatedLeadsResponse>;
+    findAll(query: QueryLeadDto, user?: any, accessiblePropertyIds?: string[] | null): Promise<PaginatedLeadsResponse>;
     findOne(id: string): Promise<LeadResponseDto>;
     update(id: string, updateLeadDto: UpdateLeadDto): Promise<LeadResponseDto>;
     remove(id: string): Promise<void>;
     assignLead(id: string, userId: string, assignedBy?: string): Promise<LeadResponseDto>;
     updateStatus(id: string, status: string, notes?: string): Promise<LeadResponseDto>;
-    getStatistics(): Promise<{
+    getStatistics(accessiblePropertyIds?: string[] | null): Promise<{
         total: number;
         newLeads: number;
         contacted: number;

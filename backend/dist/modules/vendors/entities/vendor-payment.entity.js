@@ -80,7 +80,7 @@ __decorate([
     __metadata("design:type", String)
 ], VendorPayment.prototype, "notes", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'created_by', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'created_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], VendorPayment.prototype, "createdBy", void 0);
 __decorate([

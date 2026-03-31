@@ -24,11 +24,11 @@ let BookingsController = class BookingsController {
     async create(createBookingDto, req) {
         return this.bookingsService.create(createBookingDto, req.user?.userId ?? req.user?.id);
     }
-    async findAll(query) {
-        return this.bookingsService.findAll(query);
+    async findAll(query, req) {
+        return this.bookingsService.findAll(query, req.accessiblePropertyIds);
     }
-    async getStatistics() {
-        return this.bookingsService.getStatistics();
+    async getStatistics(req) {
+        return this.bookingsService.getStatistics(req.accessiblePropertyIds);
     }
     async findOne(id) {
         return this.bookingsService.findOne(id);
@@ -56,14 +56,16 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryBookingDto]),
+    __metadata("design:paramtypes", [dto_1.QueryBookingDto, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('statistics'),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "getStatistics", null);
 __decorate([

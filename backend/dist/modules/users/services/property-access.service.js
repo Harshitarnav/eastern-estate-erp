@@ -41,7 +41,7 @@ let PropertyAccessService = PropertyAccessService_1 = class PropertyAccessServic
             order: { assignedAt: 'DESC' },
         });
     }
-    async grantAccess(userId, propertyId, role, assignedBy) {
+    async grantAccess(userId, propertyId, role = user_property_access_entity_1.PropertyRole.PROPERTY_ADMIN, assignedBy) {
         const user = await this.userRepo.findOne({ where: { id: userId } });
         if (!user) {
             throw new common_1.NotFoundException(`User with ID ${userId} not found`);
@@ -131,7 +131,7 @@ let PropertyAccessService = PropertyAccessService_1 = class PropertyAccessServic
         }
         queryBuilder.andWhere(`${propertyColumn} IN (:...propertyIds)`, { propertyIds });
     }
-    async bulkGrantAccess(userId, propertyIds, role, assignedBy) {
+    async bulkGrantAccess(userId, propertyIds, role = user_property_access_entity_1.PropertyRole.PROPERTY_ADMIN, assignedBy) {
         const accesses = [];
         for (const propertyId of propertyIds) {
             try {

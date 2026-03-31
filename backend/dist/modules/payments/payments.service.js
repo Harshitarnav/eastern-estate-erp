@@ -54,6 +54,14 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         if (filters?.status) {
             query.andWhere('payment.status = :status', { status: filters.status });
         }
+        if (filters?.isVerified !== undefined) {
+            if (filters.isVerified) {
+                query.andWhere('payment.verifiedBy IS NOT NULL');
+            }
+            else {
+                query.andWhere('payment.verifiedBy IS NULL');
+            }
+        }
         if (filters?.startDate && filters?.endDate) {
             query.andWhere('payment.paymentDate BETWEEN :startDate AND :endDate', {
                 startDate: filters.startDate,
@@ -65,6 +73,11 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         }
         if (filters?.maxAmount) {
             query.andWhere('payment.amount <= :maxAmount', { maxAmount: filters.maxAmount });
+        }
+        if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+            query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
+                accessiblePropertyIds: filters.accessiblePropertyIds,
+            });
         }
         query.orderBy('payment.paymentDate', 'DESC');
         return query.getMany();
@@ -132,7 +145,8 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         await this.paymentRepository.remove(payment);
     }
     async getStatistics(filters) {
-        const query = this.paymentRepository.createQueryBuilder('payment');
+        const query = this.paymentRepository.createQueryBuilder('payment')
+            .leftJoin('payment.booking', 'booking');
         if (filters?.startDate && filters?.endDate) {
             query.where('payment.paymentDate BETWEEN :startDate AND :endDate', {
                 startDate: filters.startDate,
@@ -141,6 +155,11 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         }
         if (filters?.paymentType) {
             query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
+        }
+        if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+            query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
+                accessiblePropertyIds: filters.accessiblePropertyIds,
+            });
         }
         const payments = await query.getMany();
         const totalPayments = payments.length;

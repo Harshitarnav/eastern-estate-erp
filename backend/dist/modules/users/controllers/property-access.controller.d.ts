@@ -19,7 +19,7 @@ export declare class PropertyAccessController {
     getUserPropertyAccess(userId: string): Promise<import("../entities/user-property-access.entity").UserPropertyAccess[]>;
     grantAccessToUser(userId: string, body: {
         propertyId: string;
-        role: string;
+        role?: string;
     }, req: any): Promise<import("../entities/user-property-access.entity").UserPropertyAccess>;
     revokeAccessFromUser(userId: string, propertyId: string, role: string, req: any): Promise<{
         message: string;

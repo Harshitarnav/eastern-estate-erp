@@ -24,9 +24,9 @@ let PaymentsController = class PaymentsController {
         this.paymentsService = paymentsService;
     }
     create(createPaymentDto, req) {
-        return this.paymentsService.create(createPaymentDto, req.user.userId);
+        return this.paymentsService.create(createPaymentDto, req.user.id);
     }
-    async findAll(bookingId, customerId, paymentType, paymentMethod, status, startDate, endDate, minAmount, maxAmount, page, limit) {
+    async findAll(bookingId, customerId, paymentType, paymentMethod, status, startDate, endDate, minAmount, maxAmount, isVerified, page, limit, req) {
         const filters = {};
         if (bookingId)
             filters.bookingId = bookingId;
@@ -38,6 +38,8 @@ let PaymentsController = class PaymentsController {
             filters.paymentMethod = paymentMethod;
         if (status)
             filters.status = status;
+        if (isVerified !== undefined)
+            filters.isVerified = isVerified === 'true';
         if (startDate)
             filters.startDate = new Date(startDate);
         if (endDate)
@@ -46,6 +48,7 @@ let PaymentsController = class PaymentsController {
             filters.minAmount = parseFloat(minAmount);
         if (maxAmount)
             filters.maxAmount = parseFloat(maxAmount);
+        filters.accessiblePropertyIds = req?.accessiblePropertyIds;
         const payments = await this.paymentsService.findAll(filters);
         const pageNum = page ? parseInt(page) : 1;
         const limitNum = limit ? parseInt(limit) : 10;
@@ -64,7 +67,7 @@ let PaymentsController = class PaymentsController {
             },
         };
     }
-    getStatistics(startDate, endDate, paymentType) {
+    getStatistics(startDate, endDate, paymentType, req) {
         const filters = {};
         if (startDate)
             filters.startDate = new Date(startDate);
@@ -72,6 +75,7 @@ let PaymentsController = class PaymentsController {
             filters.endDate = new Date(endDate);
         if (paymentType)
             filters.paymentType = paymentType;
+        filters.accessiblePropertyIds = req?.accessiblePropertyIds;
         return this.paymentsService.getStatistics(filters);
     }
     findByBooking(bookingId) {
@@ -90,7 +94,7 @@ let PaymentsController = class PaymentsController {
         return this.paymentsService.update(id, updatePaymentDto);
     }
     verify(id, req) {
-        return this.paymentsService.verify(id, req.user.userId);
+        return this.paymentsService.verify(id, req.user.id);
     }
     cancel(id) {
         return this.paymentsService.cancel(id);
@@ -119,10 +123,12 @@ __decorate([
     __param(6, (0, common_1.Query)('endDate')),
     __param(7, (0, common_1.Query)('minAmount')),
     __param(8, (0, common_1.Query)('maxAmount')),
-    __param(9, (0, common_1.Query)('page')),
-    __param(10, (0, common_1.Query)('limit')),
+    __param(9, (0, common_1.Query)('isVerified')),
+    __param(10, (0, common_1.Query)('page')),
+    __param(11, (0, common_1.Query)('limit')),
+    __param(12, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, String, String, String, String, String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, String, String, String, String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "findAll", null);
 __decorate([
@@ -130,8 +136,9 @@ __decorate([
     __param(0, (0, common_1.Query)('startDate')),
     __param(1, (0, common_1.Query)('endDate')),
     __param(2, (0, common_1.Query)('paymentType')),
+    __param(3, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "getStatistics", null);
 __decorate([

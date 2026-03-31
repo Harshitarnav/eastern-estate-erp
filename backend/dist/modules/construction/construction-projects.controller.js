@@ -24,8 +24,8 @@ let ConstructionProjectsController = class ConstructionProjectsController {
     create(createDto) {
         return this.constructionProjectsService.create(createDto);
     }
-    findAll(propertyId) {
-        return this.constructionProjectsService.findAll(propertyId);
+    findAll(propertyId, req) {
+        return this.constructionProjectsService.findAll(propertyId, req?.accessiblePropertyIds);
     }
     getByProperty(propertyId) {
         return this.constructionProjectsService.getByProperty(propertyId);
@@ -51,8 +51,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ConstructionProjectsController.prototype, "findAll", null);
 __decorate([

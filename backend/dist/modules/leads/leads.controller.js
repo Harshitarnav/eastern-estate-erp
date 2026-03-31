@@ -29,10 +29,10 @@ let LeadsController = class LeadsController {
         return this.leadsService.create(createLeadDto);
     }
     async findAll(query, req) {
-        return this.leadsService.findAll(query, req.user);
+        return this.leadsService.findAll(query, req.user, req.accessiblePropertyIds);
     }
-    async getStatistics() {
-        return this.leadsService.getStatistics();
+    async getStatistics(req) {
+        return this.leadsService.getStatistics(req.accessiblePropertyIds);
     }
     async getPrioritizedLeads(req, userId) {
         const leads = await this.leadsService.getMyLeads(this.getEffectiveUserId(req, userId));
@@ -140,8 +140,9 @@ __decorate([
 ], LeadsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('statistics'),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "getStatistics", null);
 __decorate([
