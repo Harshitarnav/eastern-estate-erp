@@ -23,7 +23,19 @@ export function parseApiErrors(error: any): string[] {
   }
   // 3. { message: string }
   if (typeof raw?.message === 'string') {
-    return [humanise(raw.message)];
+    const nestedMessages = extractNestedMessages(raw?.details);
+    if (nestedMessages.length > 0) {
+      return nestedMessages.map(humanise);
+    }
+
+    if (raw.message.trim().toLowerCase() !== 'internal server error') {
+      return [humanise(raw.message)];
+    }
+  }
+  // 4. Nested { details: { message | errors } }
+  const nestedMessages = extractNestedMessages(raw?.details);
+  if (nestedMessages.length > 0) {
+    return nestedMessages.map(humanise);
   }
   // 4. Network / unknown
   if (error?.message) {
@@ -31,6 +43,28 @@ export function parseApiErrors(error: any): string[] {
   }
 
   return ['Something went wrong. Please try again or contact support.'];
+}
+
+function extractNestedMessages(details: any): string[] {
+  if (!details) return [];
+
+  if (Array.isArray(details?.errors) && details.errors.length > 0) {
+    return details.errors.filter(Boolean);
+  }
+
+  if (Array.isArray(details?.message) && details.message.length > 0) {
+    return details.message.filter(Boolean);
+  }
+
+  if (typeof details?.message === 'string' && details.message.trim()) {
+    return [details.message.trim()];
+  }
+
+  if (typeof details === 'string' && details.trim()) {
+    return [details.trim()];
+  }
+
+  return [];
 }
 
 /** Map technical validation messages → plain English. */
@@ -52,6 +86,14 @@ export function humanise(msg: string): string {
     return 'PAN number must follow the format ABCDE1234F (5 letters, 4 digits, 1 letter).';
   if (lower.includes('already exists') || lower.includes('duplicate') || lower.includes('unique'))
     return 'An employee with this Employee Code or Email already exists. Please use a different value.';
+  if (lower.includes('employee code already exists'))
+    return 'Employee Code already exists. Please enter a different code.';
+  if (lower.includes('email already exists'))
+    return 'Email already exists. Please enter a different email address.';
+  if (lower.includes('is required'))
+    return msg.charAt(0).toUpperCase() + msg.slice(1);
+  if (lower.includes('invalid value'))
+    return msg.charAt(0).toUpperCase() + msg.slice(1);
   if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch'))
     return 'Unable to reach the server. Please check your internet connection and try again.';
   if (lower.includes('unauthorized') || lower.includes('401'))
