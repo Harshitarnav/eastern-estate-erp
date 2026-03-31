@@ -286,3 +286,33 @@
     @apply relative z-10;
   }
 }
+
+/* ─── Mobile PWA Fixes ──────────────────────────────────────────────────── */
+
+/* Make ALL tables horizontally scrollable on small screens */
+@media (max-width: 1023px) {
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure modals don't overflow on mobile */
+  [role="dialog"] {
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  
+  /* Safe area padding for bottom nav on phones with home indicators */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Prevent text from being too small to tap */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px; /* Prevents iOS auto-zoom on focus */
+  }
+}

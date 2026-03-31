@@ -38,6 +38,17 @@ let JournalEntriesService = class JournalEntriesService {
         if (Math.abs(totalDebit - totalCredit) > 0.01) {
             throw new common_1.BadRequestException(`Journal entry must balance. Debits: ${totalDebit}, Credits: ${totalCredit}`);
         }
+        for (let i = 0; i < createJournalEntryDto.lines.length; i++) {
+            const line = createJournalEntryDto.lines[i];
+            const d = Number(line.debitAmount) || 0;
+            const c = Number(line.creditAmount) || 0;
+            if (d > 0 && c > 0) {
+                throw new common_1.BadRequestException(`Line ${i + 1}: A journal line cannot have both a debit and a credit amount.`);
+            }
+            if (d === 0 && c === 0) {
+                throw new common_1.BadRequestException(`Line ${i + 1}: A journal line must have either a debit or a credit amount.`);
+            }
+        }
         for (const line of createJournalEntryDto.lines) {
             const account = await this.accountsRepository.findOne({
                 where: { id: line.accountId },
@@ -103,7 +114,7 @@ let JournalEntriesService = class JournalEntriesService {
     async findOne(id) {
         const journalEntry = await this.journalEntriesRepository.findOne({
             where: { id },
-            relations: ['lines', 'lines.account', 'creator', 'poster', 'voider'],
+            relations: ['lines', 'lines.account', 'creator', 'voider'],
         });
         if (!journalEntry) {
             throw new common_1.NotFoundException(`Journal entry with ID ${id} not found`);
@@ -138,12 +149,13 @@ let JournalEntriesService = class JournalEntriesService {
                 });
                 if (account) {
                     const isDebitAccount = ['ASSET', 'EXPENSE'].includes(account.accountType);
-                    if (isDebitAccount) {
-                        account.currentBalance = Number(account.currentBalance) + line.debitAmount - line.creditAmount;
-                    }
-                    else {
-                        account.currentBalance = Number(account.currentBalance) + line.creditAmount - line.debitAmount;
-                    }
+                    const currentBal = Number(account.currentBalance) || 0;
+                    const debit = Number(line.debitAmount) || 0;
+                    const credit = Number(line.creditAmount) || 0;
+                    const newBalance = isDebitAccount
+                        ? currentBal + debit - credit
+                        : currentBal + credit - debit;
+                    account.currentBalance = Math.round(newBalance * 100) / 100;
                     await queryRunner.manager.save(account);
                 }
             }
@@ -168,9 +180,9 @@ let JournalEntriesService = class JournalEntriesService {
         await queryRunner.startTransaction();
         try {
             journalEntry.status = journal_entry_entity_1.JournalEntryStatus.VOID;
+            journalEntry.voidReason = voidDto.voidReason;
             journalEntry.voidedBy = userId;
             journalEntry.voidedAt = new Date();
-            journalEntry.voidReason = voidDto.voidReason;
             await queryRunner.manager.save(journalEntry);
             for (const line of journalEntry.lines) {
                 const account = await queryRunner.manager.findOne(account_entity_1.Account, {
@@ -178,12 +190,13 @@ let JournalEntriesService = class JournalEntriesService {
                 });
                 if (account) {
                     const isDebitAccount = ['ASSET', 'EXPENSE'].includes(account.accountType);
-                    if (isDebitAccount) {
-                        account.currentBalance = Number(account.currentBalance) - line.debitAmount + line.creditAmount;
-                    }
-                    else {
-                        account.currentBalance = Number(account.currentBalance) - line.creditAmount + line.debitAmount;
-                    }
+                    const currentBal = Number(account.currentBalance) || 0;
+                    const debit = Number(line.debitAmount) || 0;
+                    const credit = Number(line.creditAmount) || 0;
+                    const newBalance = isDebitAccount
+                        ? currentBal - debit + credit
+                        : currentBal - credit + debit;
+                    account.currentBalance = Math.round(newBalance * 100) / 100;
                     await queryRunner.manager.save(account);
                 }
             }

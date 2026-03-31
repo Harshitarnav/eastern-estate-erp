@@ -3,11 +3,13 @@ import { VendorPayment } from './entities/vendor-payment.entity';
 import { Vendor } from './entities/vendor.entity';
 import { CreateVendorPaymentDto } from './dto/create-vendor-payment.dto';
 import { UpdateVendorPaymentDto } from './dto/update-vendor-payment.dto';
+import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 export declare class VendorPaymentsService {
     private paymentsRepository;
     private vendorsRepository;
     private dataSource;
-    constructor(paymentsRepository: Repository<VendorPayment>, vendorsRepository: Repository<Vendor>, dataSource: DataSource);
+    private readonly accountingIntegration;
+    constructor(paymentsRepository: Repository<VendorPayment>, vendorsRepository: Repository<Vendor>, dataSource: DataSource, accountingIntegration: AccountingIntegrationService);
     create(createDto: CreateVendorPaymentDto): Promise<VendorPayment>;
     findAll(filters?: {
         vendorId?: string;

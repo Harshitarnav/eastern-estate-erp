@@ -1,5 +1,6 @@
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
+import { User } from '../../users/entities/user.entity';
 export declare enum PaymentType {
     BOOKING = "BOOKING",
     SALARY = "SALARY",
@@ -40,4 +41,12 @@ export declare class Payment {
     upiId: string;
     status: string;
     receiptNumber: string;
+    notes: string;
+    verifiedBy: string;
+    verifier: User;
+    verifiedAt: Date;
+    createdBy: string;
+    creator: User;
+    createdAt: Date;
+    updatedAt: Date;
 }

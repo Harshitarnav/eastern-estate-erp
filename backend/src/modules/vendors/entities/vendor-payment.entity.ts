@@ -57,12 +57,16 @@ export class VendorPayment {
   @Column({ type: 'text', nullable: true })
   notes: string;
 
-  @Column({ name: 'created_by', type: 'uuid' })
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
   createdBy: string;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   creator: User;
+
+  /** Auto-generated journal entry when this payment is recorded */
+  @Column({ name: 'journal_entry_id', type: 'uuid', nullable: true })
+  journalEntryId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

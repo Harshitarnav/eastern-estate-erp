@@ -80,11 +80,11 @@ __decorate([
     __metadata("design:type", Date)
 ], MaterialEntry.prototype, "entryDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'entered_by', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'entered_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], MaterialEntry.prototype, "enteredBy", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => user_entity_1.User),
+    (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'entered_by' }),
     __metadata("design:type", user_entity_1.User)
 ], MaterialEntry.prototype, "enteredByUser", void 0);

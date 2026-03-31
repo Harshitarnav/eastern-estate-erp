@@ -7,6 +7,7 @@ export declare class JournalEntriesController {
     create(createJournalEntryDto: CreateJournalEntryDto, req: any): Promise<import("./entities/journal-entry.entity").JournalEntry>;
     findAll(status?: JournalEntryStatus, startDate?: string, endDate?: string, referenceType?: string): Promise<import("./entities/journal-entry.entity").JournalEntry[]>;
     findOne(id: string): Promise<import("./entities/journal-entry.entity").JournalEntry>;
+    findLines(id: string): Promise<import("./entities/journal-entry-line.entity").JournalEntryLine[]>;
     update(id: string, updateJournalEntryDto: UpdateJournalEntryDto): Promise<import("./entities/journal-entry.entity").JournalEntry>;
     post(id: string, req: any): Promise<import("./entities/journal-entry.entity").JournalEntry>;
     void(id: string, voidDto: VoidJournalEntryDto, req: any): Promise<import("./entities/journal-entry.entity").JournalEntry>;

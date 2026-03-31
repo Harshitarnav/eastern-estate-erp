@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Account, AccountType } from './entities/account.entity';
+import { JournalEntryLine } from './entities/journal-entry-line.entity';
+import { JournalEntryStatus } from './entities/journal-entry.entity';
 import { CreateAccountDto, UpdateAccountDto } from './dto/create-account.dto';
 
 @Injectable()
@@ -9,6 +11,9 @@ export class AccountsService {
   constructor(
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
+    @InjectRepository(JournalEntryLine)
+    private journalEntryLinesRepository: Repository<JournalEntryLine>,
+    private dataSource: DataSource,
   ) {}
 
   async create(createAccountDto: CreateAccountDto): Promise<Account> {
@@ -196,6 +201,115 @@ export class AccountsService {
       totalIncome,
       totalExpenses,
       netProfit,
+    };
+  }
+
+  // ============ TRIAL BALANCE ============
+  async getTrialBalance(): Promise<{
+    accounts: Array<{
+      accountCode: string;
+      accountName: string;
+      accountType: string;
+      debitBalance: number;
+      creditBalance: number;
+    }>;
+    totalDebit: number;
+    totalCredit: number;
+    isBalanced: boolean;
+  }> {
+    const allAccounts = await this.accountsRepository.find({
+      where: { isActive: true },
+      order: { accountCode: 'ASC' },
+    });
+
+    // Asset and Expense accounts carry debit balances normally
+    // Liability, Equity, Income accounts carry credit balances normally
+    const trialBalanceRows = allAccounts.map((account) => {
+      const balance = Number(account.currentBalance);
+      const isDebitNormal = [AccountType.ASSET, AccountType.EXPENSE].includes(account.accountType);
+      return {
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        accountType: account.accountType,
+        debitBalance: isDebitNormal ? (balance > 0 ? balance : 0) : (balance < 0 ? Math.abs(balance) : 0),
+        creditBalance: isDebitNormal ? (balance < 0 ? Math.abs(balance) : 0) : (balance > 0 ? balance : 0),
+      };
+    });
+
+    const totalDebit = trialBalanceRows.reduce((sum, row) => sum + row.debitBalance, 0);
+    const totalCredit = trialBalanceRows.reduce((sum, row) => sum + row.creditBalance, 0);
+
+    return {
+      accounts: trialBalanceRows,
+      totalDebit,
+      totalCredit,
+      isBalanced: Math.abs(totalDebit - totalCredit) < 0.01,
+    };
+  }
+
+  // ============ PROPERTY-WISE P&L ============
+  async getPropertyWisePL(propertyId: string): Promise<{
+    propertyId: string;
+    income: Array<{ accountName: string; accountCode: string; amount: number }>;
+    expenses: Array<{ accountName: string; accountCode: string; amount: number }>;
+    totalIncome: number;
+    totalExpenses: number;
+    netProfit: number;
+  }> {
+    // Get journal entry lines for this property via journal entries that reference this property
+    const incomeLines = await this.journalEntryLinesRepository
+      .createQueryBuilder('line')
+      .leftJoinAndSelect('line.account', 'account')
+      .leftJoin('line.journalEntry', 'entry')
+      .where('entry.referenceType = :refType', { refType: 'PROPERTY' })
+      .andWhere('entry.referenceId = :propertyId', { propertyId })
+      .andWhere('entry.status = :status', { status: JournalEntryStatus.POSTED })
+      .andWhere('account.accountType = :type', { type: AccountType.INCOME })
+      .getMany();
+
+    const expenseLines = await this.journalEntryLinesRepository
+      .createQueryBuilder('line')
+      .leftJoinAndSelect('line.account', 'account')
+      .leftJoin('line.journalEntry', 'entry')
+      .where('entry.referenceType = :refType', { refType: 'PROPERTY' })
+      .andWhere('entry.referenceId = :propertyId', { propertyId })
+      .andWhere('entry.status = :status', { status: JournalEntryStatus.POSTED })
+      .andWhere('account.accountType = :type', { type: AccountType.EXPENSE })
+      .getMany();
+
+    // Aggregate by account
+    const aggregateByAccount = (lines: JournalEntryLine[]) => {
+      const map = new Map<string, { accountName: string; accountCode: string; amount: number }>();
+      for (const line of lines) {
+        const key = line.accountId;
+        const existing = map.get(key);
+        const net = Number(line.creditAmount) - Number(line.debitAmount);
+        if (existing) {
+          existing.amount += net;
+        } else {
+          map.set(key, {
+            accountName: (line as any).account?.accountName || key,
+            accountCode: (line as any).account?.accountCode || '',
+            amount: net,
+          });
+        }
+      }
+      return Array.from(map.values());
+    };
+
+    const income = aggregateByAccount(incomeLines);
+    const expenses = aggregateByAccount(expenseLines).map(e => ({ ...e, amount: Math.abs(e.amount) }));
+
+    const totalIncome = income.reduce((sum, i) => sum + i.amount, 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    return {
+      propertyId,
+      income,
+      expenses,
+      totalIncome,
+      totalExpenses,
+      netProfit: totalIncome - totalExpenses,
     };
   }
 }

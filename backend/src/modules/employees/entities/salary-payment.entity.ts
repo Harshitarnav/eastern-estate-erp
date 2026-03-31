@@ -39,11 +39,11 @@ export class SalaryPayment {
   id: string;
 
   // Employee Reference
-  @Column('uuid')
+  @Column({ name: 'employee_id', type: 'uuid' })
   employeeId: string;
 
   @ManyToOne(() => Employee)
-  @JoinColumn({ name: 'employeeId' })
+  @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
   // Payment Period
@@ -116,18 +116,10 @@ export class SalaryPayment {
   netSalary: number;
 
   // Payment Details
-  @Column({
-    type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
-  })
+  @Column({ type: 'varchar', length: 50, default: 'PENDING' })
   paymentStatus: PaymentStatus;
 
-  @Column({
-    type: 'enum',
-    enum: PaymentMode,
-    nullable: true,
-  })
+  @Column({ type: 'varchar', length: 50, nullable: true })
   paymentMode: PaymentMode;
 
   @Column({ type: 'date', nullable: true })

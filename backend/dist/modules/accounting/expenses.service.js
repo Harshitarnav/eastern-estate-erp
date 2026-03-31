@@ -17,9 +17,11 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const expense_entity_1 = require("./entities/expense.entity");
+const accounting_integration_service_1 = require("./accounting-integration.service");
 let ExpensesService = class ExpensesService {
-    constructor(expensesRepository) {
+    constructor(expensesRepository, accountingIntegrationService) {
         this.expensesRepository = expensesRepository;
+        this.accountingIntegrationService = accountingIntegrationService;
     }
     generateExpenseCode() {
         const date = new Date();
@@ -87,7 +89,13 @@ let ExpensesService = class ExpensesService {
         if (expense.status === expense_entity_1.ExpenseStatus.APPROVED || expense.status === expense_entity_1.ExpenseStatus.PAID) {
             throw new common_1.BadRequestException('Cannot update approved or paid expenses');
         }
-        Object.assign(expense, updateExpenseDto);
+        const uuidFields = ['accountId', 'vendorId', 'employeeId', 'propertyId', 'constructionProjectId'];
+        const sanitized = { ...updateExpenseDto };
+        for (const field of uuidFields) {
+            if (sanitized[field] === '')
+                sanitized[field] = null;
+        }
+        Object.assign(expense, sanitized);
         return await this.expensesRepository.save(expense);
     }
     async approve(id, userId, approveDto) {
@@ -111,14 +119,28 @@ let ExpensesService = class ExpensesService {
         expense.rejectionReason = rejectDto.rejectionReason;
         return await this.expensesRepository.save(expense);
     }
-    async markAsPaid(id) {
+    async markAsPaid(id, userId) {
         const expense = await this.findOne(id);
         if (expense.status !== expense_entity_1.ExpenseStatus.APPROVED) {
             throw new common_1.BadRequestException('Only approved expenses can be marked as paid');
         }
         expense.status = expense_entity_1.ExpenseStatus.PAID;
         expense.paymentStatus = 'PAID';
-        return await this.expensesRepository.save(expense);
+        const saved = await this.expensesRepository.save(expense);
+        const je = await this.accountingIntegrationService.onExpensePaid({
+            id: saved.id,
+            expenseCode: saved.expenseCode,
+            amount: Number(saved.amount),
+            expenseDate: saved.expenseDate,
+            description: saved.description,
+            accountId: saved.accountId,
+            createdBy: userId,
+        });
+        if (je) {
+            await this.expensesRepository.update(saved.id, { journalEntryId: je.id });
+            saved.journalEntryId = je.id;
+        }
+        return saved;
     }
     async remove(id) {
         const expense = await this.findOne(id);
@@ -168,6 +190,7 @@ exports.ExpensesService = ExpensesService;
 exports.ExpensesService = ExpensesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(expense_entity_1.Expense)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        accounting_integration_service_1.AccountingIntegrationService])
 ], ExpensesService);
 //# sourceMappingURL=expenses.service.js.map

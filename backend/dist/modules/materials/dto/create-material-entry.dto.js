@@ -63,4 +63,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateMaterialEntryDto.prototype, "remarks", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateMaterialEntryDto.prototype, "enteredBy", void 0);
 //# sourceMappingURL=create-material-entry.dto.js.map

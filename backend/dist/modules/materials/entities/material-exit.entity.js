@@ -57,11 +57,11 @@ __decorate([
     __metadata("design:type", String)
 ], MaterialExit.prototype, "purpose", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'issued_to', type: 'uuid' }),
+    (0, typeorm_1.Column)({ name: 'issued_to', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], MaterialExit.prototype, "issuedTo", void 0);
 __decorate([
-    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee),
+    (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee, { nullable: true }),
     (0, typeorm_1.JoinColumn)({ name: 'issued_to' }),
     __metadata("design:type", employee_entity_1.Employee)
 ], MaterialExit.prototype, "issuedToEmployee", void 0);

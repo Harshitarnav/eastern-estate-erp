@@ -69,7 +69,7 @@ __decorate([
 ], JournalEntry.prototype, "createdBy", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'createdBy' }),
+    (0, typeorm_1.JoinColumn)({ name: 'created_by' }),
     __metadata("design:type", user_entity_1.User)
 ], JournalEntry.prototype, "creator", void 0);
 __decorate([
@@ -78,7 +78,7 @@ __decorate([
 ], JournalEntry.prototype, "approvedBy", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'approvedBy' }),
+    (0, typeorm_1.JoinColumn)({ name: 'approved_by' }),
     __metadata("design:type", user_entity_1.User)
 ], JournalEntry.prototype, "approver", void 0);
 __decorate([
@@ -91,7 +91,7 @@ __decorate([
 ], JournalEntry.prototype, "voidedBy", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, { nullable: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'voidedBy' }),
+    (0, typeorm_1.JoinColumn)({ name: 'voided_by' }),
     __metadata("design:type", user_entity_1.User)
 ], JournalEntry.prototype, "voider", void 0);
 __decorate([

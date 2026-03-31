@@ -188,11 +188,42 @@ export default function BookingViewPage() {
             {booking.status}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-end">
           <BrandSecondaryButton onClick={handleDownloadPdf}>
             <Download className="w-4 h-4" />
             Download Summary
           </BrandSecondaryButton>
+
+          {/* Payment Plan — prominent button in header */}
+          {paymentPlan === undefined ? (
+            <button
+              disabled
+              className="inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium opacity-50"
+              style={{ borderColor: '#16A34A', color: '#16A34A' }}
+            >
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Payment Plan
+            </button>
+          ) : paymentPlan ? (
+            <button
+              onClick={() => router.push(`/payment-plans/${paymentPlan.id}`)}
+              className="inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors hover:bg-green-50"
+              style={{ borderColor: '#16A34A', color: '#16A34A' }}
+            >
+              <LayoutList className="w-4 h-4" />
+              View Payment Plan
+            </button>
+          ) : (
+            <button
+              onClick={() => router.push(`/payment-plans?bookingId=${bookingId}`)}
+              className="inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium transition-colors hover:bg-orange-50"
+              style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
+            >
+              <LayoutList className="w-4 h-4" />
+              Create Payment Plan
+            </button>
+          )}
+
           <BrandPrimaryButton onClick={() => router.push(`/bookings/${bookingId}/edit`)}>
             <Edit className="w-4 h-4" />
             Edit Booking
@@ -297,7 +328,13 @@ export default function BookingViewPage() {
                   <User className="w-4 h-4" />
                   Customer
                 </p>
-                <p className="font-medium">{customerName}</p>
+                <button
+                  onClick={() => booking.customerId && router.push(`/customers/${booking.customerId}`)}
+                  className="font-medium text-left hover:underline"
+                  style={{ color: booking.customerId ? '#A8211B' : undefined }}
+                >
+                  {customerName}
+                </button>
                 <p className="text-xs text-gray-500 mt-1">{customerPhone}</p>
                 <p className="text-xs text-gray-500">{customerEmail}</p>
               </div>
@@ -306,7 +343,13 @@ export default function BookingViewPage() {
                   <Building className="w-4 h-4" />
                   Property
                 </p>
-                <p className="font-medium">{booking.property?.name || 'N/A'}</p>
+                <button
+                  onClick={() => booking.propertyId && router.push(`/properties/${booking.propertyId}`)}
+                  className="font-medium text-left hover:underline"
+                  style={{ color: booking.propertyId ? '#A8211B' : undefined }}
+                >
+                  {booking.property?.name || 'N/A'}
+                </button>
               </div>
               <div>
                 <p className="text-sm text-gray-600 flex items-center gap-2">
@@ -719,14 +762,19 @@ export default function BookingViewPage() {
                 </button>
               ) : paymentPlan === null ? (
                 <button
-                  onClick={() => router.push('/payment-plans')}
-                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                  onClick={() => router.push(`/payment-plans?bookingId=${bookingId}`)}
+                  className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-orange-50 flex items-center gap-2"
                   style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
                 >
                   <LayoutList className="w-4 h-4" />
                   Create Payment Plan
                 </button>
-              ) : null /* still loading */ }
+              ) : (
+                <button disabled className="w-full px-4 py-3 border rounded-lg text-sm font-medium flex items-center gap-2 opacity-50 cursor-default">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading…
+                </button>
+              )}
               {/* Ledger shortcut — only shown when a payment plan exists */}
               {paymentPlan && (
                 <button

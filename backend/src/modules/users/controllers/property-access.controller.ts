@@ -49,7 +49,7 @@ export class PropertyAccessController {
     await this.notificationsService.create({
       userId: grantAccessDto.userId,
       title: 'Property Access Granted',
-      message: `You have been granted ${grantAccessDto.role} access to a property.`,
+      message: `You have been granted access to a project.`,
       type: NotificationType.SUCCESS,
       category: NotificationCategory.SYSTEM,
       actionUrl: '/properties',
@@ -150,7 +150,7 @@ export class PropertyAccessController {
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
   async grantAccessToUser(
     @Param('userId') userId: string,
-    @Body() body: { propertyId: string; role: string },
+    @Body() body: { propertyId: string; role?: string },
     @Request() req: any,
   ) {
     const access = await this.propertyAccessService.grantAccess(
@@ -164,7 +164,7 @@ export class PropertyAccessController {
     await this.notificationsService.create({
       userId: userId,
       title: 'Property Access Granted',
-      message: `You have been granted ${body.role} access to a property.`,
+      message: `You have been granted access to a project.`,
       type: NotificationType.SUCCESS,
       category: NotificationCategory.SYSTEM,
       actionUrl: '/properties',

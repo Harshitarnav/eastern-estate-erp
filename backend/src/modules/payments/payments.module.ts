@@ -12,6 +12,7 @@ import { PaymentsController } from './payments.controller';
 import { InstallmentsController } from './installments.controller';
 import { RefundsController } from './refunds.controller';
 import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
+import { AccountingModule } from '../accounting/accounting.module';
 import { Flat } from '../flats/entities/flat.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
@@ -28,6 +29,7 @@ import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.ent
       FlatPaymentPlan,
     ]),
     PaymentPlansModule,
+    AccountingModule,
   ],
   controllers: [
     PaymentsController,

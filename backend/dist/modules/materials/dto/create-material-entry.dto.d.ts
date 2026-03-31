@@ -10,4 +10,5 @@ export declare class CreateMaterialEntryDto {
     entryDate?: string;
     invoiceNumber?: string;
     remarks?: string;
+    enteredBy?: string | null;
 }

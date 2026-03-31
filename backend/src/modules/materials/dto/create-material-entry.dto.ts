@@ -39,4 +39,8 @@ export class CreateMaterialEntryDto {
   @IsString()
   @IsOptional()
   remarks?: string;
+
+  @IsUUID()
+  @IsOptional()
+  enteredBy?: string | null;
 }

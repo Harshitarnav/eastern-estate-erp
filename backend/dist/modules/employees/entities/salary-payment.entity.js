@@ -35,12 +35,12 @@ __decorate([
     __metadata("design:type", String)
 ], SalaryPayment.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)('uuid'),
+    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid' }),
     __metadata("design:type", String)
 ], SalaryPayment.prototype, "employeeId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee),
-    (0, typeorm_1.JoinColumn)({ name: 'employeeId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'employee_id' }),
     __metadata("design:type", employee_entity_1.Employee)
 ], SalaryPayment.prototype, "employee", void 0);
 __decorate([
@@ -132,19 +132,11 @@ __decorate([
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "netSalary", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: PaymentStatus,
-        default: PaymentStatus.PENDING,
-    }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, default: 'PENDING' }),
     __metadata("design:type", String)
 ], SalaryPayment.prototype, "paymentStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        type: 'enum',
-        enum: PaymentMode,
-        nullable: true,
-    }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
     __metadata("design:type", String)
 ], SalaryPayment.prototype, "paymentMode", void 0);
 __decorate([

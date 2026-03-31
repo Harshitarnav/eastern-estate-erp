@@ -122,7 +122,7 @@ export class CustomersService {
     return CustomerResponseDto.fromEntity(savedCustomer);
   }
 
-  async findAll(query: QueryCustomerDto): Promise<PaginatedCustomersResponse> {
+  async findAll(query: QueryCustomerDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedCustomersResponse> {
     const {
       search,
       type,
@@ -194,10 +194,14 @@ export class CustomersService {
       }
 
       if (query.propertyId) {
-        // Keep the bookings subquery only; avoids JSON metadata dependency
         qb.andWhere(
           'EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))',
           { pid: query.propertyId },
+        );
+      } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+        qb.andWhere(
+          'EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))',
+          { pids: accessiblePropertyIds },
         );
       }
 

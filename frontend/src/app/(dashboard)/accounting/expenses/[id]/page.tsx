@@ -89,17 +89,19 @@ export default function ViewExpensePage() {
             <h1 className="text-2xl font-bold" style={{ color: '#7B1E12' }}>
               Expense Details
             </h1>
-            <p className="text-gray-600 mt-1">{expense.category}</p>
+            <p className="text-gray-600 mt-1">{expense.expenseCategory}</p>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={() => router.push(`/accounting/expenses/${id}/edit`)}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
-              style={{ borderColor: '#A8211B', color: '#A8211B' }}
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </button>
+            {expense.status === 'PENDING' && (
+              <button
+                onClick={() => router.push(`/accounting/expenses/${id}/edit`)}
+                className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                style={{ borderColor: '#A8211B', color: '#A8211B' }}
+              >
+                <Edit className="h-4 w-4" />
+                Edit
+              </button>
+            )}
             <button
               onClick={handleDelete}
               className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-2"
@@ -133,15 +135,35 @@ export default function ViewExpensePage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Category
             </label>
-            <p className="text-lg font-semibold">{expense.category}</p>
+            <p className="text-lg font-semibold">{expense.expenseCategory}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Type
+            </label>
+            <p className="text-lg font-semibold">
+              {expense.expenseType && expense.expenseType !== expense.expenseCategory
+                ? expense.expenseType
+                : <span className="text-gray-400 font-normal">—</span>}
+            </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Payment Method
             </label>
-            <p className="text-lg font-semibold">{expense.paymentMethod}</p>
+            <p className="text-lg font-semibold">{expense.paymentMethod || '—'}</p>
           </div>
+
+          {expense.paymentReference && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Payment Reference
+              </label>
+              <p className="text-lg font-semibold">{expense.paymentReference}</p>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -159,14 +181,6 @@ export default function ViewExpensePage() {
             </p>
           </div>
 
-          {expense.vendor && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Vendor
-              </label>
-              <p className="text-lg font-semibold">{expense.vendor}</p>
-            </div>
-          )}
 
           {expense.description && (
             <div className="md:col-span-2">

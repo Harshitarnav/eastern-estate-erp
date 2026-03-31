@@ -72,8 +72,8 @@ export class ExpensesController {
   }
 
   @Post(':id/paid')
-  markAsPaid(@Param('id') id: string) {
-    return this.expensesService.markAsPaid(id);
+  markAsPaid(@Param('id') id: string, @Request() req) {
+    return this.expensesService.markAsPaid(id, req.user?.userId);
   }
 
   @Delete(':id')

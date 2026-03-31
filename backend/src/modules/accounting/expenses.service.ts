@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Expense, ExpenseStatus } from './entities/expense.entity';
 import { CreateExpenseDto, UpdateExpenseDto, ApproveExpenseDto, RejectExpenseDto } from './dto/create-expense.dto';
+import { AccountingIntegrationService } from './accounting-integration.service';
 
 @Injectable()
 export class ExpensesService {
   constructor(
     @InjectRepository(Expense)
     private expensesRepository: Repository<Expense>,
+    private readonly accountingIntegrationService: AccountingIntegrationService,
   ) {}
 
   private generateExpenseCode(): string {
@@ -102,7 +104,14 @@ export class ExpensesService {
       throw new BadRequestException('Cannot update approved or paid expenses');
     }
 
-    Object.assign(expense, updateExpenseDto);
+    // Strip empty-string UUID fields — DB requires valid UUID or NULL
+    const uuidFields = ['accountId', 'vendorId', 'employeeId', 'propertyId', 'constructionProjectId'] as const;
+    const sanitized = { ...updateExpenseDto } as any;
+    for (const field of uuidFields) {
+      if (sanitized[field] === '') sanitized[field] = null;
+    }
+
+    Object.assign(expense, sanitized);
 
     return await this.expensesRepository.save(expense);
   }
@@ -139,7 +148,7 @@ export class ExpensesService {
     return await this.expensesRepository.save(expense);
   }
 
-  async markAsPaid(id: string): Promise<Expense> {
+  async markAsPaid(id: string, userId?: string): Promise<Expense> {
     const expense = await this.findOne(id);
 
     if (expense.status !== ExpenseStatus.APPROVED) {
@@ -149,7 +158,26 @@ export class ExpensesService {
     expense.status = ExpenseStatus.PAID;
     expense.paymentStatus = 'PAID';
 
-    return await this.expensesRepository.save(expense);
+    const saved = await this.expensesRepository.save(expense);
+
+    // Auto-create Journal Entry (best-effort)
+    const je = await this.accountingIntegrationService.onExpensePaid({
+      id: saved.id,
+      expenseCode: saved.expenseCode,
+      amount: Number(saved.amount),
+      expenseDate: saved.expenseDate,
+      description: saved.description,
+      accountId: saved.accountId,
+      createdBy: userId,
+    });
+
+    // Link JE to the expense if created
+    if (je) {
+      await this.expensesRepository.update(saved.id, { journalEntryId: je.id });
+      saved.journalEntryId = je.id;
+    }
+
+    return saved;
   }
 
   async remove(id: string): Promise<void> {

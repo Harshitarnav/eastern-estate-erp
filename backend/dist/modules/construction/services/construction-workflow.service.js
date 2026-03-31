@@ -68,7 +68,7 @@ let ConstructionWorkflowService = ConstructionWorkflowService_1 = class Construc
     async checkAndUpdateMilestones(paymentPlan, currentPhase, phaseProgress) {
         this.logger.log(`Checking milestones for payment plan ${paymentPlan.id}`);
         let planUpdated = false;
-        for (const milestone of paymentPlan.milestones) {
+        for (const milestone of (paymentPlan.milestones ?? [])) {
             if (milestone.status !== 'PENDING') {
                 continue;
             }

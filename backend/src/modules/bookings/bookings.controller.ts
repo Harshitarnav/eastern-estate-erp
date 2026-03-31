@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Request,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import {
@@ -28,18 +29,18 @@ export class BookingsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() createBookingDto: CreateBookingDto): Promise<BookingResponseDto> {
-    return this.bookingsService.create(createBookingDto);
+  async create(@Body() createBookingDto: CreateBookingDto, @Request() req: any): Promise<BookingResponseDto> {
+    return this.bookingsService.create(createBookingDto, req.user?.userId ?? req.user?.id);
   }
 
   @Get()
-  async findAll(@Query() query: QueryBookingDto): Promise<PaginatedBookingsResponse> {
-    return this.bookingsService.findAll(query);
+  async findAll(@Query() query: QueryBookingDto, @Request() req: any): Promise<PaginatedBookingsResponse> {
+    return this.bookingsService.findAll(query, req.accessiblePropertyIds);
   }
 
   @Get('statistics')
-  async getStatistics() {
-    return this.bookingsService.getStatistics();
+  async getStatistics(@Request() req: any) {
+    return this.bookingsService.getStatistics(req.accessiblePropertyIds);
   }
 
   @Get(':id')

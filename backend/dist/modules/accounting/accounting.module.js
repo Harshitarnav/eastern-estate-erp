@@ -22,11 +22,16 @@ const accounts_service_1 = require("./accounts.service");
 const expenses_service_1 = require("./expenses.service");
 const budgets_service_1 = require("./budgets.service");
 const journal_entries_service_1 = require("./journal-entries.service");
+const bank_accounts_service_1 = require("./bank-accounts.service");
+const bank_statements_service_1 = require("./bank-statements.service");
 const accounting_controller_1 = require("./accounting.controller");
 const accounts_controller_1 = require("./accounts.controller");
 const expenses_controller_1 = require("./expenses.controller");
 const budgets_controller_1 = require("./budgets.controller");
 const journal_entries_controller_1 = require("./journal-entries.controller");
+const bank_accounts_controller_1 = require("./bank-accounts.controller");
+const bank_statements_controller_1 = require("./bank-statements.controller");
+const accounting_integration_service_1 = require("./accounting-integration.service");
 let AccountingModule = class AccountingModule {
 };
 exports.AccountingModule = AccountingModule;
@@ -50,6 +55,8 @@ exports.AccountingModule = AccountingModule = __decorate([
             expenses_controller_1.ExpensesController,
             budgets_controller_1.BudgetsController,
             journal_entries_controller_1.JournalEntriesController,
+            bank_accounts_controller_1.BankAccountsController,
+            bank_statements_controller_1.BankStatementsController,
         ],
         providers: [
             accounting_service_1.AccountingService,
@@ -57,6 +64,9 @@ exports.AccountingModule = AccountingModule = __decorate([
             expenses_service_1.ExpensesService,
             budgets_service_1.BudgetsService,
             journal_entries_service_1.JournalEntriesService,
+            bank_accounts_service_1.BankAccountsService,
+            bank_statements_service_1.BankStatementsService,
+            accounting_integration_service_1.AccountingIntegrationService,
         ],
         exports: [
             accounting_service_1.AccountingService,
@@ -64,6 +74,9 @@ exports.AccountingModule = AccountingModule = __decorate([
             expenses_service_1.ExpensesService,
             budgets_service_1.BudgetsService,
             journal_entries_service_1.JournalEntriesService,
+            bank_accounts_service_1.BankAccountsService,
+            bank_statements_service_1.BankStatementsService,
+            accounting_integration_service_1.AccountingIntegrationService,
         ],
     })
 ], AccountingModule);

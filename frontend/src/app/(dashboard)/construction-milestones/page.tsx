@@ -267,7 +267,7 @@ export default function ConstructionMilestonesPage() {
   const handleSendDraft = async (draftId: string) => {
     setActionLoading(draftId);
     try {
-      await demandDraftsService.sendDemandDraft(draftId, `https://example.com/drafts/${draftId}.pdf`);
+      await demandDraftsService.sendDemandDraft(draftId);
       toast.success('Demand draft sent successfully');
       await loadData();
     } catch (error: any) {

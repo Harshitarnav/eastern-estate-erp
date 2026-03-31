@@ -1,295 +1,391 @@
 'use client';
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import AddVendorModal from '@/components/modals/AddVendorModal';
 import VendorPaymentModal from '@/components/modals/VendorPaymentModal';
-import { TableRowsSkeleton } from '@/components/Skeletons';
+import { CardGridSkeleton } from '@/components/Skeletons';
+import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
+import { BrandStatCard } from '@/components/layout/BrandStatCard';
+import { brandPalette, formatIndianNumber } from '@/utils/brand';
+import {
+  Users, Plus, Search, Star, Phone, Mail, DollarSign,
+  CreditCard, Package, AlertTriangle, Building2, Edit, Trash2, RefreshCw, ExternalLink,
+} from 'lucide-react';
 
 function VendorsPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const propertyId = searchParams.get('propertyId');
-
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [selectedVendor, setSelectedVendor] = useState<any | null>(null);
+  const [editingVendor, setEditingVendor] = useState<any | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadVendors();
-  }, []);
+  useEffect(() => { loadVendors(); }, []);
 
   const loadVendors = async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const response = await api.get('/vendors');
-      const data = Array.isArray(response.data) ? response.data : (response.data?.data || []);
+      const data = Array.isArray(response) ? response : (response?.data || []);
       setVendors((data || []).filter((v: any) => v.isActive));
-    } catch (error) {
-      console.error('Failed to load vendors:', error);
+    } catch (error: any) {
+      setLoadError(error?.response?.data?.message || error?.message || 'Failed to load vendors');
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const handleDeactivate = async (vendor: any) => {
+    if (!confirm(`Deactivate vendor "${vendor.vendorName}"? They will be hidden from active lists.`)) return;
+    setActionLoading(vendor.id);
+    try {
+      await api.patch(`/vendors/${vendor.id}`, { isActive: false });
+      await loadVendors();
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Failed to deactivate vendor');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const getRatingStars = (rating: number) => {
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5;
-    const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-    
-    return (
-      <div className="flex items-center">
-        {'⭐'.repeat(fullStars)}
-        {halfStar && '⭐'}
-        {'☆'.repeat(emptyStars)}
-        <span className="ml-2 text-sm text-gray-600">({rating.toFixed(1)})</span>
-      </div>
-    );
+  const fmtCur = (n: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+
+  const getRatingColor = (r: number) => {
+    if (r >= 4) return brandPalette.success;
+    if (r >= 3) return brandPalette.accent;
+    return '#EF4444';
   };
+
+  const totalOutstanding = vendors.reduce((s, v) => s + (Number(v.outstandingAmount) || 0), 0);
+  const avgRating = vendors.length
+    ? vendors.reduce((s, v) => s + (Number(v.rating) || 0), 0) / vendors.length
+    : 0;
+  const highOutstanding = vendors.filter(v => Number(v.outstandingAmount) > 100000).length;
+
+  const categories = [...new Set(
+    vendors.flatMap(v => Array.isArray(v.materialsSupplied) ? v.materialsSupplied : []).filter(Boolean)
+  )];
+
+  const filtered = vendors.filter(v => {
+    const q = search.toLowerCase();
+    const matchSearch = !search ||
+      v.vendorName?.toLowerCase().includes(q) ||
+      v.vendorCode?.toLowerCase().includes(q) ||
+      v.contactPerson?.toLowerCase().includes(q);
+    const matchCat = !filterCategory ||
+      (Array.isArray(v.materialsSupplied) && v.materialsSupplied.includes(filterCategory));
+    return matchSearch && matchCat;
+  });
 
   return (
-    <div className="p-6">
-      {/* Eastern Estate Branded Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => router.push('/construction')}
-          className="text-gray-600 hover:text-gray-900 mb-4 flex items-center"
-        >
-          ← Back to Construction Hub
-        </button>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl" style={{ backgroundColor: '#A8211B' }}>
-            🤝
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: '#A8211B' }}>
-              Vendors Management
-            </h1>
-            <p className="text-sm text-gray-500">Eastern Estate ERP System</p>
-          </div>
-        </div>
-        <p className="text-gray-600">Manage vendor relationships, payments, and ratings</p>
-      </div>
+    <div
+      className="p-6 md:p-8 space-y-8 min-h-full"
+      style={{ backgroundColor: brandPalette.background }}
+    >
+      {/* Hero */}
+      <BrandHero
+        eyebrow="Vendor Management"
+        title={<>Your supply chain, <span style={{ color: brandPalette.accent }}>always in control</span></>}
+        description="Manage all material suppliers, track outstanding payments, monitor credit limits, and maintain vendor ratings — everything in one place."
+        actions={
+          <>
+            <BrandPrimaryButton onClick={() => setShowAddModal(true)}>
+              <Plus className="w-4 h-4" /> Add Vendor
+            </BrandPrimaryButton>
+            <BrandSecondaryButton onClick={() => setShowPaymentModal(true)}>
+              <DollarSign className="w-4 h-4" /> Record Payment
+            </BrandSecondaryButton>
+          </>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-sm text-gray-600 mb-1">Total Vendors</p>
-          <p className="text-2xl font-bold text-gray-900">{(vendors || []).length}</p>
+      {/* Error banner */}
+      {loadError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span>{loadError}</span>
+          <button onClick={loadVendors} className="ml-auto flex items-center gap-1 text-xs underline">
+            <RefreshCw className="w-3.5 h-3.5" /> Retry
+          </button>
         </div>
-        <div className="bg-green-50 rounded-lg shadow p-4">
-          <p className="text-sm text-green-600 mb-1">Active Vendors</p>
-          <p className="text-2xl font-bold text-green-700">{(vendors || []).length}</p>
-        </div>
-        <div className="bg-red-50 rounded-lg shadow p-4">
-          <p className="text-sm text-red-600 mb-1">Total Outstanding</p>
-          <p className="text-2xl font-bold text-red-700">
-            {formatCurrency((vendors || []).reduce((sum: number, v: any) => sum + (v.outstandingAmount || 0), 0))}
-          </p>
-        </div>
-        <div className="bg-blue-50 rounded-lg shadow p-4">
-          <p className="text-sm text-blue-600 mb-1">Avg Rating</p>
-          <p className="text-2xl font-bold text-blue-700">
-            {(vendors || []).length > 0 
-              ? ((vendors || []).reduce((sum: number, v: any) => sum + (v.rating || 0), 0) / (vendors || []).length).toFixed(1)
-              : '0.0'
-            }⭐
-          </p>
-        </div>
-      </div>
+      )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-500 text-white rounded-lg shadow-lg p-4 hover:bg-green-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">➕</div>
-            <div>
-              <h3 className="font-bold">Add New Vendor</h3>
-              <p className="text-sm text-green-100">Register a new vendor</p>
-            </div>
-          </div>
-        </button>
+      {/* Stat Cards */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <BrandStatCard
+          title="Total Vendors"
+          primary={formatIndianNumber(vendors.length)}
+          subLabel={`${vendors.length} active suppliers`}
+          icon={<Building2 className="w-7 h-7" />}
+          accentColor={brandPalette.primary}
+        />
+        <BrandStatCard
+          title="Total Outstanding"
+          primary={fmtCur(totalOutstanding)}
+          subLabel={`${highOutstanding} vendors over ₹1L`}
+          icon={<CreditCard className="w-7 h-7" />}
+          accentColor={totalOutstanding > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(61,163,93,0.2)'}
+        />
+        <BrandStatCard
+          title="Average Rating"
+          primary={avgRating.toFixed(1)}
+          subLabel={`out of 5.0 stars`}
+          icon={<Star className="w-7 h-7" />}
+          accentColor="rgba(242,201,76,0.35)"
+        />
+        <BrandStatCard
+          title="Material Types"
+          primary={formatIndianNumber(categories.length)}
+          subLabel="Distinct supply categories"
+          icon={<Package className="w-7 h-7" />}
+          accentColor="rgba(61,163,93,0.2)"
+        />
+      </section>
 
-        <button
-          onClick={() => setShowPaymentModal(true)}
-          className="bg-blue-500 text-white rounded-lg shadow-lg p-4 hover:bg-blue-600 transition-all text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="text-3xl">💰</div>
-            <div>
-              <h3 className="font-bold">Record Payment</h3>
-              <p className="text-sm text-blue-100">Pay vendor invoices</p>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      {/* Vendors List */}
-      <div className="bg-white rounded-lg shadow mb-6">
-        {loading ? (
-          <div className="p-4"><TableRowsSkeleton rows={5} cols={5} /></div>
-        ) : (vendors || []).length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-4xl mb-4">🤝</p>
-            <p className="text-gray-600 mb-4">No vendors found. Contact admin to add vendors.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vendor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Materials</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rating</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Outstanding</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Credit Limit</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {((vendors || [])).map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <div className="font-medium text-gray-900">{vendor.vendorName}</div>
-                        <div className="text-sm text-gray-500">{vendor.vendorCode}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <div className="font-medium">{vendor.contactPerson}</div>
-                        <div className="text-gray-500">{vendor.phoneNumber}</div>
-                        {vendor.email && <div className="text-gray-500">{vendor.email}</div>}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {vendor.materialsSupplied && Array.isArray(vendor.materialsSupplied)
-                          ? (vendor.materialsSupplied || []).length + ' types'
-                          : 'N/A'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {getRatingStars(vendor.rating || 0)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`text-sm font-medium ${
-                        (vendor.outstandingAmount || 0) > 0 ? 'text-red-600' : 'text-green-600'
-                      }`}>
-                        {formatCurrency(vendor.outstandingAmount || 0)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium">
-                        {formatCurrency(vendor.creditLimit || 0)}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* How to Use Guide */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-lg p-6 border-2" style={{ borderColor: '#A8211B' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style={{ backgroundColor: '#A8211B' }}>
-            📖
-          </div>
-          <h3 className="text-xl font-bold" style={{ color: '#A8211B' }}>
-            How to Use Vendors Management
-          </h3>
-        </div>
-        <div className="space-y-4 text-gray-700">
-          <div>
-            <h4 className="font-semibold mb-2">What is this page for?</h4>
-            <p className="text-sm">
-              The Vendors Management page helps you maintain relationships with material suppliers, track payments, manage credit limits, 
-              and rate vendor performance. Keep organized records of all vendors supplying materials for your construction projects.
+      {/* Outstanding Alert */}
+      {totalOutstanding > 500000 && (
+        <div className="rounded-2xl border-l-4 border-yellow-500 bg-yellow-50 px-6 py-4 flex items-start gap-4 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-yellow-900">High Outstanding Balance</p>
+            <p className="text-sm text-yellow-800 mt-0.5">
+              Total outstanding across all vendors is {fmtCur(totalOutstanding)}. Review and schedule payments.
             </p>
           </div>
-          <div>
-            <h4 className="font-semibold mb-2">Key Features:</h4>
-            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-              <li><strong>Vendor Directory:</strong> Complete contact information for all suppliers</li>
-              <li><strong>Outstanding Tracking:</strong> Monitor pending payments to vendors</li>
-              <li><strong>Credit Management:</strong> Set and track credit limits for each vendor</li>
-              <li><strong>Rating System:</strong> Rate vendors based on quality, delivery time, and service</li>
-              <li><strong>Materials Supplied:</strong> Track which materials each vendor provides</li>
-              <li><strong>Payment Records:</strong> Maintain payment history and transactions</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">How to Use:</h4>
-            <ol className="list-decimal list-inside text-sm space-y-1 ml-2">
-              <li>Review vendor list to see all registered suppliers</li>
-              <li>Check outstanding amounts to track pending payments</li>
-              <li>Use "Add New Vendor" to register new material suppliers</li>
-              <li>Click "Record Payment" when making vendor payments</li>
-              <li>Monitor credit limits to manage vendor relationships</li>
-              <li>Review ratings to identify best-performing vendors</li>
-            </ol>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Best Practices:</h4>
-            <ul className="list-disc list-inside text-sm space-y-1 ml-2">
-              <li>Pay vendors on time to maintain good relationships</li>
-              <li>Keep vendor contact information up to date</li>
-              <li>Rate vendors after each delivery for better tracking</li>
-              <li>Monitor outstanding amounts to manage cash flow</li>
-              <li>Prefer highly-rated vendors for critical materials</li>
-            </ul>
-          </div>
         </div>
+      )}
+
+      {/* Filters */}
+      <div
+        className="rounded-2xl border bg-white/90 backdrop-blur-sm shadow-sm p-5 space-y-4"
+        style={{ borderColor: `${brandPalette.neutral}80` }}
+      >
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, code, or contact…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#A8211B]"
+            />
+          </div>
+          {categories.length > 0 && (
+            <select
+              value={filterCategory}
+              onChange={e => setFilterCategory(e.target.value)}
+              className="px-4 py-2.5 border rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#A8211B] bg-white"
+            >
+              <option value="">All Categories</option>
+              {categories.map(c => <option key={c as string} value={c as string}>{c as string}</option>)}
+            </select>
+          )}
+          {(search || filterCategory) && (
+            <button
+              onClick={() => { setSearch(''); setFilterCategory(''); }}
+              className="px-4 py-2.5 text-sm border rounded-xl hover:bg-gray-50 whitespace-nowrap"
+              style={{ borderColor: brandPalette.neutral, color: brandPalette.secondary }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Vendor Grid */}
+      {loading ? (
+        <CardGridSkeleton cards={6} />
+      ) : filtered.length === 0 ? (
+        <div
+          className="bg-white rounded-3xl border p-12 text-center shadow-sm"
+          style={{ borderColor: `${brandPalette.neutral}60` }}
+        >
+          <Users className="w-16 h-16 mx-auto mb-4" style={{ color: brandPalette.primary, opacity: 0.45 }} />
+          <h3 className="text-xl font-semibold mb-2" style={{ color: brandPalette.secondary }}>
+            {vendors.length === 0 ? 'No Vendors Yet' : 'No Vendors Match'}
+          </h3>
+          <p className="text-gray-500 text-sm mb-6">
+            {vendors.length === 0
+              ? 'Add your first vendor to start managing your supply chain.'
+              : 'Try adjusting your search or clear the filters.'}
+          </p>
+          {vendors.length === 0 && (
+            <BrandPrimaryButton onClick={() => setShowAddModal(true)}>
+              <Plus className="w-4 h-4" /> Add First Vendor
+            </BrandPrimaryButton>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filtered.map(vendor => {
+            const rating = Number(vendor.rating) || 0;
+            const outstanding = Number(vendor.outstandingAmount) || 0;
+            const creditLimit = Number(vendor.creditLimit) || 0;
+            const creditUsed = creditLimit > 0 ? Math.min((outstanding / creditLimit) * 100, 100) : 0;
+
+            return (
+              <div
+                key={vendor.id}
+                className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden"
+                style={{ borderColor: `${brandPalette.neutral}60` }}
+              >
+                {/* Top accent */}
+                <div className="h-1 w-full" style={{ backgroundColor: outstanding > creditLimit * 0.8 ? '#EF4444' : brandPalette.primary }} />
+
+                <div className="p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2 mb-4">
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => router.push(`/construction/vendors/${vendor.id}`)}>
+                      <h3 className="font-bold text-gray-900 text-lg line-clamp-1 hover:underline">{vendor.vendorName}</h3>
+                      <p className="text-xs text-gray-400 font-mono mt-0.5">{vendor.vendorCode}</p>
+                    </div>
+                    {/* Star rating */}
+                    <div className="shrink-0 flex items-center gap-1">
+                      <Star className="w-4 h-4" style={{ color: getRatingColor(rating), fill: getRatingColor(rating) }} />
+                      <span className="text-sm font-semibold" style={{ color: getRatingColor(rating) }}>
+                        {rating.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Contact */}
+                  <div className="space-y-1.5 mb-4">
+                    {vendor.contactPerson && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">{vendor.contactPerson}</span>
+                      </div>
+                    )}
+                    {vendor.phoneNumber && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span>{vendor.phoneNumber}</span>
+                      </div>
+                    )}
+                    {vendor.email && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">{vendor.email}</span>
+                      </div>
+                    )}
+                    {Array.isArray(vendor.materialsSupplied) && vendor.materialsSupplied.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Package className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">{(vendor.materialsSupplied as string[]).join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Financial summary */}
+                  <div className="rounded-xl bg-gray-50 p-3 space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-gray-500">Outstanding</span>
+                      <span className={`font-semibold ${outstanding > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {fmtCur(outstanding)}
+                      </span>
+                    </div>
+                    {creditLimit > 0 && (
+                      <>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-500">Credit Limit</span>
+                          <span className="font-medium text-gray-700">{fmtCur(creditLimit)}</span>
+                        </div>
+                        <div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className="h-1.5 rounded-full transition-all"
+                              style={{
+                                width: `${creditUsed}%`,
+                                backgroundColor: creditUsed > 80 ? '#EF4444' : brandPalette.primary,
+                              }}
+                            />
+                          </div>
+                          <p className="text-right text-xs text-gray-400 mt-0.5">{creditUsed.toFixed(0)}% utilised</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      onClick={() => { setSelectedVendor(vendor); setShowPaymentModal(true); }}
+                      className="flex-1 py-2 text-sm font-medium border rounded-xl transition-colors hover:bg-[#FEF3E2]"
+                      style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
+                    >
+                      Record Payment
+                    </button>
+                    <button
+                      onClick={() => router.push(`/construction/vendors/${vendor.id}`)}
+                      title="View details"
+                      className="p-2 border rounded-xl hover:bg-blue-50 transition-colors"
+                      style={{ borderColor: brandPalette.neutral }}
+                    >
+                      <ExternalLink className="w-4 h-4 text-blue-500" />
+                    </button>
+                    <button
+                      onClick={() => { setEditingVendor(vendor); setShowAddModal(true); }}
+                      title="Edit vendor"
+                      className="p-2 border rounded-xl hover:bg-gray-50 transition-colors"
+                      style={{ borderColor: brandPalette.neutral }}
+                    >
+                      <Edit className="w-4 h-4 text-gray-500" />
+                    </button>
+                    <button
+                      onClick={() => handleDeactivate(vendor)}
+                      title="Deactivate vendor"
+                      disabled={actionLoading === vendor.id}
+                      className="p-2 border rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50"
+                      style={{ borderColor: '#FCA5A5' }}
+                    >
+                      {actionLoading === vendor.id
+                        ? <RefreshCw className="w-4 h-4 animate-spin text-gray-400" />
+                        : <Trash2 className="w-4 h-4 text-red-400" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="pt-4 text-center text-sm text-gray-400">
+        Eastern Estate ERP • Building Homes, Nurturing Bonds
       </div>
 
       {/* Modals */}
       <AddVendorModal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={() => {
-          setShowAddModal(false);
-          loadVendors();
-        }}
+        vendor={editingVendor}
+        onClose={() => { setShowAddModal(false); setEditingVendor(null); }}
+        onSuccess={() => { setShowAddModal(false); setEditingVendor(null); loadVendors(); }}
       />
-
       <VendorPaymentModal
         isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onSuccess={() => {
-          setShowPaymentModal(false);
-          loadVendors();
-        }}
+        vendor={selectedVendor}
+        onClose={() => { setShowPaymentModal(false); setSelectedVendor(null); }}
+        onSuccess={() => { setShowPaymentModal(false); setSelectedVendor(null); loadVendors(); }}
       />
     </div>
   );
 }
 
-
 export default function VendorsPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    }>
+    <Suspense fallback={<CardGridSkeleton cards={6} />}>
       <VendorsPageContent />
     </Suspense>
   );
 }
-

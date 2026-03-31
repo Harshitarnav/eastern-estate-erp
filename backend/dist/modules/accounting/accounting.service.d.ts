@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Account } from './entities/account.entity';
 import { JournalEntry } from './entities/journal-entry.entity';
 import { JournalEntryLine } from './entities/journal-entry-line.entity';
@@ -10,11 +10,14 @@ export declare class AccountingService {
     private journalEntryLineRepository;
     private bankAccountRepository;
     private bankStatementRepository;
-    constructor(accountRepository: Repository<Account>, journalEntryRepository: Repository<JournalEntry>, journalEntryLineRepository: Repository<JournalEntryLine>, bankAccountRepository: Repository<BankAccount>, bankStatementRepository: Repository<BankStatement>);
+    private dataSource;
+    private readonly logger;
+    constructor(accountRepository: Repository<Account>, journalEntryRepository: Repository<JournalEntry>, journalEntryLineRepository: Repository<JournalEntryLine>, bankAccountRepository: Repository<BankAccount>, bankStatementRepository: Repository<BankStatement>, dataSource: DataSource);
     createAccount(data: any): Promise<Account[]>;
     getAllAccounts(): Promise<Account[]>;
     getAccountById(id: string): Promise<Account>;
     updateAccount(id: string, data: any): Promise<Account>;
+    private generateEntryNumber;
     createJournalEntry(data: any): Promise<JournalEntry>;
     getJournalEntryById(id: string): Promise<JournalEntry>;
     getJournalEntryLines(entryId: string): Promise<JournalEntryLine[]>;
@@ -72,10 +75,34 @@ export declare class AccountingService {
         total: number;
         imported: number;
         failed: number;
+        errors: {
+            row: number;
+            error: string;
+        }[];
         entries: any[];
     }>;
     exportLedgerToExcel(accountId: string, startDate: Date, endDate: Date): Promise<any>;
     exportTrialBalanceToExcel(date: Date): Promise<any>;
+    getPropertyWisePL(startDate: Date, endDate: Date): Promise<{
+        period: {
+            startDate: Date;
+            endDate: Date;
+        };
+        properties: {
+            propertyId: string;
+            propertyName: string;
+            revenue: number;
+            expenses: number;
+            netProfit: number;
+            margin: number;
+        }[];
+        totals: {
+            margin: number;
+            revenue: number;
+            expenses: number;
+            netProfit: number;
+        };
+    }>;
     exportForITR(financialYear: string): Promise<{
         financial_year: string;
         total_income: number;
@@ -99,6 +126,9 @@ export declare class AccountingService {
     getUnreconciledTransactions(bankAccountId: string): Promise<BankStatement[]>;
     reconcileTransaction(statementId: string, journalEntryId: string): Promise<BankStatement>;
     private getDateOfWeek;
+    getARAgingReport(asOf?: Date): Promise<any>;
+    getAPAgingReport(asOf?: Date): Promise<any>;
+    getCashFlowStatement(startDate: Date, endDate: Date): Promise<any>;
     createBankAccount(data: any): Promise<BankAccount[]>;
     getAllBankAccounts(): Promise<BankAccount[]>;
     getBankAccountById(id: string): Promise<BankAccount>;

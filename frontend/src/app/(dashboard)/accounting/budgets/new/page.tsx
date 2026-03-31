@@ -41,7 +41,15 @@ export default function NewBudgetPage() {
     setError('');
 
     try {
-      await budgetsService.create(formData);
+      await budgetsService.create({
+        budgetName: formData.budgetName,
+        fiscalYear: Number(formData.fiscalYear),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        accountId: formData.accountId || undefined,
+        budgetedAmount: Number(formData.allocatedAmount),  // map allocatedAmount → budgetedAmount
+        notes: formData.notes || undefined,
+      });
       window.location.href = '/accounting/budgets';
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create budget');

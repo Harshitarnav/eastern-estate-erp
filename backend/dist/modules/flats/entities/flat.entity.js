@@ -291,7 +291,7 @@ __decorate([
     __metadata("design:type", String)
 ], Flat.prototype, "furnishingStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
+    (0, typeorm_1.Column)({ type: 'text', array: true, nullable: true }),
     __metadata("design:type", Array)
 ], Flat.prototype, "amenities", void 0);
 __decorate([

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { ConstructionProject } from './entities/construction-project.entity';
 import { CreateConstructionProjectDto } from './dto/create-construction-project.dto';
 import { UpdateConstructionProjectDto } from './dto/update-construction-project.dto';
@@ -25,10 +25,12 @@ export class ConstructionProjectsService {
     return await this.constructionProjectRepository.save(project);
   }
 
-  async findAll(propertyId?: string) {
+  async findAll(propertyId?: string, accessiblePropertyIds?: string[] | null) {
     const where: any = {};
     if (propertyId) {
       where.propertyId = propertyId;
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      where.propertyId = In(accessiblePropertyIds);
     }
 
     return await this.constructionProjectRepository.find({

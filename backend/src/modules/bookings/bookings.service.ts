@@ -27,6 +27,7 @@ import {
   PaymentStatus,
   Payment,
 } from '../payments/entities/payment.entity';
+import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 
 /**
  * BookingsService
@@ -57,6 +58,7 @@ export class BookingsService {
     private paymentsService: PaymentsService,
     private emailService: EmailService,
     private dataSource: DataSource,
+    private readonly accountingIntegrationService: AccountingIntegrationService,
   ) {}
 
   /**
@@ -72,7 +74,7 @@ export class BookingsService {
    * 7. Update customer's last booking date
    * 8. Send email notifications (async, non-blocking)
    */
-  async create(createBookingDto: CreateBookingDto): Promise<BookingResponseDto> {
+  async create(createBookingDto: CreateBookingDto, userId?: string): Promise<BookingResponseDto> {
     this.logger.log(`Creating booking: ${createBookingDto.bookingNumber}`);
 
     // Start a database transaction
@@ -152,6 +154,8 @@ export class BookingsService {
 
       // === CREATE TOKEN PAYMENT RECORD ===
 
+      let savedTokenPayment: Payment | null = null;
+
       if (createBookingDto.tokenAmount && createBookingDto.tokenAmount > 0) {
         const paymentsRepo = queryRunner.manager.getRepository(Payment);
         const paymentCode = `PAY-${createBookingDto.bookingNumber}-TOKEN`;
@@ -178,7 +182,7 @@ export class BookingsService {
           upiId: createBookingDto.utrNumber,
         });
 
-        await paymentsRepo.save(tokenPayment);
+        savedTokenPayment = await paymentsRepo.save(tokenPayment);
         this.logger.log(`Token payment record created: ${paymentCode}`);
       }
 
@@ -218,6 +222,20 @@ export class BookingsService {
       this.logger.log(`Transaction committed for booking ${savedBooking.bookingNumber}`);
 
       // === POST-TRANSACTION OPERATIONS ===
+
+      // Auto-create Journal Entry for token payment (best-effort, non-blocking)
+      if (savedTokenPayment) {
+        this.accountingIntegrationService.onPaymentCompleted({
+          id: savedTokenPayment.id,
+          paymentCode: savedTokenPayment.paymentCode,
+          amount: Number(savedTokenPayment.amount),
+          paymentDate: savedTokenPayment.paymentDate,
+          paymentMethod: savedTokenPayment.paymentMethod,
+          createdBy: userId,
+        }).catch(err => {
+          this.logger.error(`Auto JE failed for token payment ${savedTokenPayment!.paymentCode}: ${err.message}`);
+        });
+      }
 
       // Send email notifications (async, non-blocking)
       this.sendBookingNotifications(savedBooking, customer, flat, property)
@@ -279,7 +297,7 @@ export class BookingsService {
     }
   }
 
-  async findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse> {
+  async findAll(query: QueryBookingDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedBookingsResponse> {
     const {
       search,
       status,
@@ -328,6 +346,8 @@ export class BookingsService {
 
     if (propertyId) {
       queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      queryBuilder.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
     }
 
     if (bookingDateFrom) {
@@ -455,8 +475,14 @@ export class BookingsService {
     return BookingResponseDto.fromEntity(cancelledBooking);
   }
 
-  async getStatistics() {
-    const bookings = await this.bookingsRepository.find({ where: { isActive: true } });
+  async getStatistics(accessiblePropertyIds?: string[] | null) {
+    const where: any = { isActive: true };
+    const bookings = accessiblePropertyIds && accessiblePropertyIds.length > 0
+      ? await this.bookingsRepository.createQueryBuilder('b')
+          .where('b.isActive = true')
+          .andWhere('b.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+          .getMany()
+      : await this.bookingsRepository.find({ where });
 
     const total = bookings.length;
     const tokenPaid = bookings.filter((b) => b.status === 'TOKEN_PAID').length;

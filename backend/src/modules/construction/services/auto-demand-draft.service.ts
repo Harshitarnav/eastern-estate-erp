@@ -228,7 +228,7 @@ export class AutoDemandDraftService {
       flatId: flatPaymentPlan.flatId,
       customerId: flatPaymentPlan.customerId,
       bookingId: flatPaymentPlan.bookingId,
-      milestoneId: milestone.name,
+      milestoneId: String(milestoneSequence),  // Use sequence number for consistent dedup with ConstructionWorkflowService
       title: draftTitle,
       amount,
       status: DemandDraftStatus.DRAFT,

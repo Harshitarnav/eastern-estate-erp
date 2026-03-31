@@ -29,7 +29,7 @@ __decorate([
     __metadata("design:type", bank_account_entity_1.BankAccount)
 ], BankStatement.prototype, "bankAccount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'statement_date', type: 'date' }),
+    (0, typeorm_1.Column)({ name: 'statement_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], BankStatement.prototype, "statementDate", void 0);
 __decorate([
@@ -37,7 +37,7 @@ __decorate([
     __metadata("design:type", Date)
 ], BankStatement.prototype, "transactionDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'transaction_id' }),
+    (0, typeorm_1.Column)({ name: 'transaction_id', nullable: true }),
     __metadata("design:type", String)
 ], BankStatement.prototype, "transactionId", void 0);
 __decorate([

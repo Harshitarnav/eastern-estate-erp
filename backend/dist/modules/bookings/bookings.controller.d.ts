@@ -3,7 +3,7 @@ import { CreateBookingDto, UpdateBookingDto, QueryBookingDto, BookingResponseDto
 export declare class BookingsController {
     private readonly bookingsService;
     constructor(bookingsService: BookingsService);
-    create(createBookingDto: CreateBookingDto): Promise<BookingResponseDto>;
+    create(createBookingDto: CreateBookingDto, req: any): Promise<BookingResponseDto>;
     findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse>;
     getStatistics(): Promise<{
         total: number;

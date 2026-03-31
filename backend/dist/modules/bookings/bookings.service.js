@@ -26,8 +26,9 @@ const customer_entity_1 = require("../customers/entities/customer.entity");
 const payments_service_1 = require("../payments/payments.service");
 const email_service_1 = require("../notifications/email.service");
 const payment_entity_1 = require("../payments/entities/payment.entity");
+const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
 let BookingsService = BookingsService_1 = class BookingsService {
-    constructor(bookingsRepository, flatsRepository, propertiesRepository, towersRepository, customersRepository, paymentsService, emailService, dataSource) {
+    constructor(bookingsRepository, flatsRepository, propertiesRepository, towersRepository, customersRepository, paymentsService, emailService, dataSource, accountingIntegrationService) {
         this.bookingsRepository = bookingsRepository;
         this.flatsRepository = flatsRepository;
         this.propertiesRepository = propertiesRepository;
@@ -36,9 +37,10 @@ let BookingsService = BookingsService_1 = class BookingsService {
         this.paymentsService = paymentsService;
         this.emailService = emailService;
         this.dataSource = dataSource;
+        this.accountingIntegrationService = accountingIntegrationService;
         this.logger = new common_1.Logger(BookingsService_1.name);
     }
-    async create(createBookingDto) {
+    async create(createBookingDto, userId) {
         this.logger.log(`Creating booking: ${createBookingDto.bookingNumber}`);
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
@@ -87,6 +89,7 @@ let BookingsService = BookingsService_1 = class BookingsService {
             flat.tokenAmount = savedBooking.tokenAmount;
             await queryRunner.manager.save(flat_entity_1.Flat, flat);
             this.logger.log(`Flat ${flat.flatNumber} status updated to BOOKED`);
+            let savedTokenPayment = null;
             if (createBookingDto.tokenAmount && createBookingDto.tokenAmount > 0) {
                 const paymentsRepo = queryRunner.manager.getRepository(payment_entity_1.Payment);
                 const paymentCode = `PAY-${createBookingDto.bookingNumber}-TOKEN`;
@@ -108,7 +111,7 @@ let BookingsService = BookingsService_1 = class BookingsService {
                     transactionReference: createBookingDto.utrNumber || createBookingDto.rtgsNumber,
                     upiId: createBookingDto.utrNumber,
                 });
-                await paymentsRepo.save(tokenPayment);
+                savedTokenPayment = await paymentsRepo.save(tokenPayment);
                 this.logger.log(`Token payment record created: ${paymentCode}`);
             }
             await queryRunner.manager.query(`
@@ -130,6 +133,18 @@ let BookingsService = BookingsService_1 = class BookingsService {
             this.logger.log(`Customer ${customer.id} last booking date updated`);
             await queryRunner.commitTransaction();
             this.logger.log(`Transaction committed for booking ${savedBooking.bookingNumber}`);
+            if (savedTokenPayment) {
+                this.accountingIntegrationService.onPaymentCompleted({
+                    id: savedTokenPayment.id,
+                    paymentCode: savedTokenPayment.paymentCode,
+                    amount: Number(savedTokenPayment.amount),
+                    paymentDate: savedTokenPayment.paymentDate,
+                    paymentMethod: savedTokenPayment.paymentMethod,
+                    createdBy: userId,
+                }).catch(err => {
+                    this.logger.error(`Auto JE failed for token payment ${savedTokenPayment.paymentCode}: ${err.message}`);
+                });
+            }
             this.sendBookingNotifications(savedBooking, customer, flat, property)
                 .catch(error => {
                 this.logger.error('Error sending booking notifications:', error);
@@ -327,6 +342,7 @@ exports.BookingsService = BookingsService = BookingsService_1 = __decorate([
         typeorm_2.Repository,
         payments_service_1.PaymentsService,
         email_service_1.EmailService,
-        typeorm_2.DataSource])
+        typeorm_2.DataSource,
+        accounting_integration_service_1.AccountingIntegrationService])
 ], BookingsService);
 //# sourceMappingURL=bookings.service.js.map

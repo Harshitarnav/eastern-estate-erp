@@ -1,9 +1,11 @@
 import { Repository } from 'typeorm';
 import { Expense, ExpenseStatus } from './entities/expense.entity';
 import { CreateExpenseDto, UpdateExpenseDto, ApproveExpenseDto, RejectExpenseDto } from './dto/create-expense.dto';
+import { AccountingIntegrationService } from './accounting-integration.service';
 export declare class ExpensesService {
     private expensesRepository;
-    constructor(expensesRepository: Repository<Expense>);
+    private readonly accountingIntegrationService;
+    constructor(expensesRepository: Repository<Expense>, accountingIntegrationService: AccountingIntegrationService);
     private generateExpenseCode;
     create(createExpenseDto: CreateExpenseDto, userId: string): Promise<Expense>;
     findAll(filters?: {
@@ -18,7 +20,7 @@ export declare class ExpensesService {
     update(id: string, updateExpenseDto: UpdateExpenseDto): Promise<Expense>;
     approve(id: string, userId: string, approveDto?: ApproveExpenseDto): Promise<Expense>;
     reject(id: string, userId: string, rejectDto: RejectExpenseDto): Promise<Expense>;
-    markAsPaid(id: string): Promise<Expense>;
+    markAsPaid(id: string, userId?: string): Promise<Expense>;
     remove(id: string): Promise<void>;
     getExpensesSummary(filters?: {
         startDate?: Date;

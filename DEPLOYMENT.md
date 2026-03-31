@@ -195,23 +195,72 @@ docker compose -f docker-compose.prod.yml logs frontend --tail 50
 
 ---
 
-## 🔄 Updating Deployment
+## 🗄️ Database Migrations (CRITICAL — Run Before Every New Deploy)
 
-### Your Standard Update Workflow
+### When Do You Need Migrations?
+Any time the backend entity files (`.entity.ts`) change, or new modules are added, you must run the corresponding SQL migrations on the production database **before** restarting the backend.
 
+### Quick Check — What's Missing in Prod?
 ```bash
-# SSH to server
 ssh root@143.244.135.165
 cd ~/eastern-estate-erp
 
-# Pull latest changes
+# Run the diagnostic — shows any tables/columns missing in prod
+docker exec -i $(docker ps -q --filter name=postgres) \
+  psql -U eastern_estate -d eastern_estate_erp \
+  < backend/src/database/migrations/check-prod-schema.sql
+```
+
+### Run All Migrations (One Command)
+```bash
+ssh root@143.244.135.165
+cd ~/eastern-estate-erp
+
+# After git pull, run this BEFORE restarting containers
+bash backend/src/database/migrations/run-prod-migrations.sh
+```
+
+This script runs all migrations in the correct order and is fully **idempotent** (safe to run multiple times — it won't break anything that already exists).
+
+### Migration File Reference
+
+| File | What It Does | Run on Prod? |
+|------|--------------|-------------|
+| `006_add_journal_entry_audit_columns.sql` | JE audit columns (created_by, approved_by, voided_by) | ✅ Yes |
+| `007_fix_journal_entry_lines_columns.sql` | JE lines FK columns | ✅ Yes |
+| `008_create_bank_tables.sql` | bank_accounts + bank_statements tables | ✅ Yes |
+| `009_accounting_integrations.sql` | Links payments/expenses/salary to JEs | ✅ Yes |
+| `009_rename_salary_payments_columns.sql` | camelCase → snake_case for salary_payments | ✅ Yes |
+| `010_cleanup_payments_table.sql` | Clean duplicate columns, add verified_by/at | ✅ Yes |
+| `011_seed_test_data.sql` | Dev test data | ❌ **Skip on prod** |
+| `012_seed_construction_data.sql` | Dev test data | ❌ **Skip on prod** |
+| `013_fix_material_columns.sql` | Make entered_by/issued_to nullable | ✅ Yes |
+| `014_create_ra_bills_and_qc_tables.sql` | RA Bills + QC Checklists tables | ✅ Yes |
+| `v002_fix_flats_array_columns.sql` | Fix flats.amenities TEXT → text[] | ✅ Yes |
+| `v003_prod_schema_sync.sql` | Comprehensive sync of all missing columns | ✅ Yes |
+
+---
+
+## 🔄 Updating Deployment
+
+### Your Standard Update Workflow (with Migrations)
+
+```bash
+# 1. SSH to server
+ssh root@143.244.135.165
+cd ~/eastern-estate-erp
+
+# 2. Pull latest changes
 git pull origin main
 
-# Rebuild and deploy
+# 3. Run database migrations FIRST (before restarting backend)
+bash backend/src/database/migrations/run-prod-migrations.sh
+
+# 4. Rebuild and deploy
 docker compose -f docker-compose.prod.yml build backend frontend
 docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend
 
-# Check logs
+# 5. Check logs
 docker compose -f docker-compose.prod.yml logs backend --tail 200 --since=5m
 ```
 

@@ -50,6 +50,16 @@ export class AccountsController {
     return this.accountsService.getProfitAndLoss();
   }
 
+  @Get('trial-balance')
+  getTrialBalance() {
+    return this.accountsService.getTrialBalance();
+  }
+
+  @Get('property-pl')
+  getPropertyWisePL(@Query('propertyId') propertyId: string) {
+    return this.accountsService.getPropertyWisePL(propertyId);
+  }
+
   @Get('code/:code')
   findByCode(@Param('code') code: string) {
     return this.accountsService.findByCode(code);

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
 import { ConstructionProjectsService } from './construction-projects.service';
 import { CreateConstructionProjectDto } from './dto/create-construction-project.dto';
 import { UpdateConstructionProjectDto } from './dto/update-construction-project.dto';
@@ -13,8 +13,8 @@ export class ConstructionProjectsController {
   }
 
   @Get()
-  findAll(@Query('propertyId') propertyId?: string) {
-    return this.constructionProjectsService.findAll(propertyId);
+  findAll(@Query('propertyId') propertyId?: string, @Req() req?: any) {
+    return this.constructionProjectsService.findAll(propertyId, req?.accessiblePropertyIds);
   }
 
   @Get('property/:propertyId')

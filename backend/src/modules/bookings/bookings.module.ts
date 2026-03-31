@@ -9,12 +9,14 @@ import { Tower } from '../towers/entities/tower.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AccountingModule } from '../accounting/accounting.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Booking, Flat, Property, Tower, Customer]),
     PaymentsModule,
     NotificationsModule,
+    AccountingModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService],

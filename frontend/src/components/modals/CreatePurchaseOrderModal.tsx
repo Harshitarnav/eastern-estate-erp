@@ -44,13 +44,14 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
 
   const loadData = async () => {
     try {
+      // api.get() returns response.data directly (not a full Axios response)
       const [vendorsRes, materialsRes] = await Promise.all([
         api.get('/vendors'),
         api.get('/materials')
       ]);
       
-      const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
-      const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
+      const vendorsData = Array.isArray(vendorsRes) ? vendorsRes : (vendorsRes?.data || []);
+      const materialsData = Array.isArray(materialsRes) ? materialsRes : (materialsRes?.data || []);
       
       setVendors((vendorsData || []).filter((v: any) => v.isActive));
       setMaterials((materialsData || []).filter((m: any) => m.isActive));
@@ -129,23 +130,32 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess, p
     
     setLoading(true);
     try {
-      await api.post('/purchase-orders', {
+      const po = await api.post('/purchase-orders', {
         vendorId: formData.vendorId,
-        orderDate: formData.orderDate,
-        expectedDeliveryDate: formData.expectedDeliveryDate || null,
-        totalAmount: totals.grandTotal,
+        poDate: formData.orderDate,
+        expectedDeliveryDate: formData.expectedDeliveryDate || undefined,
+        subtotal: totals.subtotal,
         taxAmount: totals.taxAmount,
-        discount: parseFloat(formData.discount || '0'),
-        paymentTerms: formData.paymentTerms || null,
-        status: 'PENDING',
-        remarks: formData.remarks || null,
-        items: ((items || [])).map(item => ({
-          materialId: item.materialId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-        })),
+        discountAmount: totals.discountAmount,
+        totalAmount: totals.grandTotal,
+        paymentTerms: formData.paymentTerms || undefined,
+        status: 'DRAFT',
+        notes: formData.remarks || undefined,
+        propertyId: propertyId || undefined,
       });
+      // Create PO items if PO was created successfully
+      const poId = po.data?.id;
+      if (poId) {
+        await Promise.all(items.map(item =>
+          api.post('/purchase-order-items', {
+            purchaseOrderId: poId,
+            materialId: item.materialId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          }).catch(e => console.warn('Could not save item:', e))
+        ));
+      }
 
       alert('Purchase order created successfully!');
       onSuccess();

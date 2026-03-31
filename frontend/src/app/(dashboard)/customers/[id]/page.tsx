@@ -349,9 +349,25 @@ export default function CustomerViewPage() {
             </h2>
             <div className="space-y-3">
               <button
-                onClick={() => router.push(`/customers/${customerId}/edit`)}
+                onClick={() => router.push(`/bookings?customerId=${customerId}`)}
                 className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
                 style={{ borderColor: brandPalette.primary, color: brandPalette.primary }}
+              >
+                <FileText className="w-4 h-4" />
+                View Bookings
+              </button>
+              <button
+                onClick={() => router.push(`/payments?customerId=${customerId}`)}
+                className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                style={{ borderColor: brandPalette.primary, color: brandPalette.primary }}
+              >
+                <Building className="w-4 h-4" />
+                View Payments
+              </button>
+              <button
+                onClick={() => router.push(`/customers/${customerId}/edit`)}
+                className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"
+                style={{ borderColor: brandPalette.accent, color: brandPalette.secondary }}
               >
                 <Edit className="w-4 h-4" />
                 Edit Customer

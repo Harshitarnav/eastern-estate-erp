@@ -2,12 +2,12 @@ import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { PaymentCompletionService } from './services/payment-completion.service';
+import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 export declare class PaymentsService {
     private paymentRepository;
-    private paymentCompletionService;
+    private readonly accountingIntegrationService;
     private readonly logger;
-    constructor(paymentRepository: Repository<Payment>, paymentCompletionService: PaymentCompletionService);
+    constructor(paymentRepository: Repository<Payment>, accountingIntegrationService: AccountingIntegrationService);
     create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment>;
     findAll(filters?: {
         bookingId?: string;

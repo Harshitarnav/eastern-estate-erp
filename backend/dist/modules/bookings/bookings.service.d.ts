@@ -7,6 +7,7 @@ import { Tower } from '../towers/entities/tower.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsService } from '../payments/payments.service';
 import { EmailService } from '../notifications/email.service';
+import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 export declare class BookingsService {
     private bookingsRepository;
     private flatsRepository;
@@ -16,9 +17,10 @@ export declare class BookingsService {
     private paymentsService;
     private emailService;
     private dataSource;
+    private readonly accountingIntegrationService;
     private readonly logger;
-    constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, emailService: EmailService, dataSource: DataSource);
-    create(createBookingDto: CreateBookingDto): Promise<BookingResponseDto>;
+    constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, emailService: EmailService, dataSource: DataSource, accountingIntegrationService: AccountingIntegrationService);
+    create(createBookingDto: CreateBookingDto, userId?: string): Promise<BookingResponseDto>;
     private sendBookingNotifications;
     findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse>;
     findOne(id: string): Promise<BookingResponseDto>;

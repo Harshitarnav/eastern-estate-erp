@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThan, MoreThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { PaymentCompletionService } from './services/payment-completion.service';
+import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 
 @Injectable()
 export class PaymentsService {
@@ -13,31 +13,24 @@ export class PaymentsService {
   constructor(
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
-    @Inject(forwardRef(() => PaymentCompletionService))
-    private paymentCompletionService: PaymentCompletionService,
+    private readonly accountingIntegrationService: AccountingIntegrationService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment> {
+    // Direct COMPLETED payments are not allowed — all payments must go through verify()
+    if ((createPaymentDto as any).status === PaymentStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Payments cannot be created in COMPLETED status directly. Create the payment as PENDING and use the verify action to complete it.',
+      );
+    }
+
     // Generate payment code if not provided
     if (!createPaymentDto.paymentCode) {
       createPaymentDto.paymentCode = await this.generatePaymentCode();
     }
 
     const payment = this.paymentRepository.create(createPaymentDto);
-    const savedPayment = await this.paymentRepository.save(payment);
-
-    // Automatically process payment completion workflow
-    if (savedPayment.status === PaymentStatus.COMPLETED) {
-      try {
-        await this.paymentCompletionService.processPaymentCompletion(savedPayment.id);
-        this.logger.log(`Payment completion workflow processed for payment ${savedPayment.id}`);
-      } catch (error) {
-        this.logger.error(`Failed to process payment completion workflow: ${error.message}`);
-        // Don't fail the payment creation if workflow processing fails
-      }
-    }
-
-    return savedPayment;
+    return this.paymentRepository.save(payment);
   }
 
   async findAll(filters?: {
@@ -46,10 +39,12 @@ export class PaymentsService {
     paymentType?: string;
     paymentMethod?: string;
     status?: PaymentStatus;
+    isVerified?: boolean;
     startDate?: Date;
     endDate?: Date;
     minAmount?: number;
     maxAmount?: number;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<Payment[]> {
     const query = this.paymentRepository.createQueryBuilder('payment')
       .leftJoinAndSelect('payment.booking', 'booking')
@@ -75,6 +70,14 @@ export class PaymentsService {
       query.andWhere('payment.status = :status', { status: filters.status });
     }
 
+    if (filters?.isVerified !== undefined) {
+      if (filters.isVerified) {
+        query.andWhere('payment.verifiedBy IS NOT NULL');
+      } else {
+        query.andWhere('payment.verifiedBy IS NULL');
+      }
+    }
+
     if (filters?.startDate && filters?.endDate) {
       query.andWhere('payment.paymentDate BETWEEN :startDate AND :endDate', {
         startDate: filters.startDate,
@@ -88,6 +91,12 @@ export class PaymentsService {
 
     if (filters?.maxAmount) {
       query.andWhere('payment.amount <= :maxAmount', { maxAmount: filters.maxAmount });
+    }
+
+    if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+      query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
+        accessiblePropertyIds: filters.accessiblePropertyIds,
+      });
     }
 
     query.orderBy('payment.paymentDate', 'DESC');
@@ -136,13 +145,26 @@ export class PaymentsService {
   async verify(id: string, userId: string): Promise<Payment> {
     const payment = await this.findOne(id);
 
-    if (payment.status === 'COMPLETED') {
+    if (payment.status === PaymentStatus.COMPLETED) {
       throw new BadRequestException('Payment is already verified');
     }
 
-    payment.status = 'COMPLETED';
+    payment.status = PaymentStatus.COMPLETED;
+    payment.verifiedBy = userId;
+    payment.verifiedAt = new Date();
+    const saved = await this.paymentRepository.save(payment);
 
-    return this.paymentRepository.save(payment);
+    // Auto-create Journal Entry (best-effort, never blocks the payment)
+    await this.accountingIntegrationService.onPaymentCompleted({
+      id: saved.id,
+      paymentCode: saved.paymentCode,
+      amount: Number(saved.amount),
+      paymentDate: saved.paymentDate,
+      paymentMethod: saved.paymentMethod,
+      createdBy: userId,
+    });
+
+    return saved;
   }
 
   async cancel(id: string): Promise<Payment> {
@@ -170,6 +192,7 @@ export class PaymentsService {
     startDate?: Date;
     endDate?: Date;
     paymentType?: string;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<{
     totalPayments: number;
     totalAmount: number;
@@ -180,7 +203,8 @@ export class PaymentsService {
     byMethod: Array<{ method: string; count: number; amount: number }>;
     byType: Array<{ type: string; count: number; amount: number }>;
   }> {
-    const query = this.paymentRepository.createQueryBuilder('payment');
+    const query = this.paymentRepository.createQueryBuilder('payment')
+      .leftJoin('payment.booking', 'booking');
 
     if (filters?.startDate && filters?.endDate) {
       query.where('payment.paymentDate BETWEEN :startDate AND :endDate', {
@@ -191,6 +215,12 @@ export class PaymentsService {
 
     if (filters?.paymentType) {
       query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
+    }
+
+    if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+      query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
+        accessiblePropertyIds: filters.accessiblePropertyIds,
+      });
     }
 
     const payments = await query.getMany();

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Pencil, Trash2 } from 'lucide-react';
 import { budgetsService, type Budget } from '@/services/accounting.service';
 import { format } from 'date-fns';
 import { TableRowsSkeleton } from '@/components/Skeletons';
@@ -28,12 +28,22 @@ export default function BudgetsPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: any) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number(amount) || 0);
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Delete budget "${name}"? This cannot be undone.`)) return;
+    try {
+      await budgetsService.delete(id);
+      setBudgets((prev) => prev.filter((b) => b.id !== id));
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete budget');
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -46,8 +56,9 @@ export default function BudgetsPage() {
     return <Badge className={variants[status] || ''}>{status}</Badge>;
   };
 
+  // variance = budgeted - actual: positive means under budget (good = green), negative = over budget (red)
   const getVarianceColor = (variance: number) => {
-    if (variance > 0) return 'text-green-600';
+    if (variance >= 0) return 'text-green-600';
     if (variance < 0) return 'text-red-600';
     return 'text-gray-600';
   };
@@ -61,8 +72,8 @@ export default function BudgetsPage() {
     return <div className="p-6"><TableRowsSkeleton rows={6} cols={5} /></div>;
   }
 
-  const totalBudgeted = ((budgets || [])).reduce((sum, b) => sum + b.budgetedAmount, 0);
-  const totalActual = ((budgets || [])).reduce((sum, b) => sum + b.actualAmount, 0);
+  const totalBudgeted = ((budgets || [])).reduce((sum, b) => sum + (Number(b.budgetedAmount) || 0), 0);
+  const totalActual = ((budgets || [])).reduce((sum, b) => sum + (Number(b.actualAmount) || 0), 0);
   const totalVariance = totalBudgeted - totalActual;
 
   return (
@@ -108,7 +119,7 @@ export default function BudgetsPage() {
               {formatCurrency(Math.abs(totalVariance))}
             </div>
             <p className="text-xs text-muted-foreground">
-              {totalVariance > 0 ? 'Under budget' : 'Over budget'}
+              {totalVariance >= 0 ? 'Under budget ✓' : 'Over budget ⚠'}
             </p>
           </CardContent>
         </Card>
@@ -123,8 +134,13 @@ export default function BudgetsPage() {
         <CardContent>
           <div className="space-y-4">
             {((budgets || [])).map((budget) => {
-              const progressPercentage = getProgressPercentage(budget.actualAmount, budget.budgetedAmount);
-              const isOverBudget = budget.actualAmount > budget.budgetedAmount;
+              const budgeted = Number(budget.budgetedAmount) || 0;
+              const actual = Number(budget.actualAmount) || 0;
+              // variance: positive = under budget (good), negative = over budget (bad)
+              const varianceAmt = budgeted - actual;
+              const variancePct = budgeted > 0 ? (varianceAmt / budgeted) * 100 : 0;
+              const progressPercentage = getProgressPercentage(actual, budgeted);
+              const isOverBudget = actual > budgeted;
               
               return (
                 <div key={budget.id} className="border rounded-lg p-4 space-y-3">
@@ -135,9 +151,28 @@ export default function BudgetsPage() {
                         {format(new Date(budget.startDate), 'MMM dd, yyyy')} - {format(new Date(budget.endDate), 'MMM dd, yyyy')}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       {getStatusBadge(budget.status)}
                       <Badge>FY {budget.fiscalYear}</Badge>
+                      {budget.status === 'DRAFT' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => (window.location.href = `/accounting/budgets/${budget.id}/edit`)}
+                          title="Edit"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        onClick={() => handleDelete(budget.id, budget.budgetName)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
 
@@ -152,8 +187,8 @@ export default function BudgetsPage() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">Variance</p>
-                      <p className={`font-semibold ${getVarianceColor(budget.varianceAmount)}`}>
-                        {formatCurrency(Math.abs(budget.varianceAmount))} ({Math.abs(budget.variancePercentage).toFixed(1)}%)
+                      <p className={`font-semibold ${getVarianceColor(varianceAmt)}`}>
+                        {varianceAmt >= 0 ? '−' : '+'}{formatCurrency(Math.abs(varianceAmt))} ({Math.abs(variancePct).toFixed(1)}%)
                       </p>
                     </div>
                   </div>

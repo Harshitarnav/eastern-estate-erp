@@ -4,802 +4,321 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import { DashboardSkeleton } from '@/components/Skeletons';
+import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
+import { BrandStatCard } from '@/components/layout/BrandStatCard';
+import { brandPalette, formatToCrore } from '@/utils/brand';
+import {
+  HardHat, Package, ShoppingCart, Users, AlertTriangle,
+  TrendingUp, ChevronRight, Plus, BarChart3,
+} from 'lucide-react';
+
+const MODULE_CARDS = [
+  { icon: '📋', label: 'Projects',        desc: 'Track all construction projects',       href: '/construction/projects',        color: 'blue' },
+  { icon: '🧱', label: 'Materials',       desc: 'Monitor stock levels & inventory',      href: '/construction/materials',       color: 'orange' },
+  { icon: '🛒', label: 'Purchase Orders', desc: 'Create & track material orders',        href: '/construction/purchase-orders', color: 'purple' },
+  { icon: '🤝', label: 'Vendors',         desc: 'Manage suppliers & payments',           href: '/construction/vendors',         color: 'green' },
+  { icon: '⚖️', label: 'RA Bills',        desc: 'Running account bills for contractors', href: '/construction/ra-bills',        color: 'amber' },
+  { icon: '✅', label: 'Quality Control', desc: 'Phase inspections & defect tracking',   href: '/construction/quality',         color: 'teal' },
+  { icon: '👥', label: 'Teams',           desc: 'Contractors, labour & in-house',        href: '/construction/teams',           color: 'indigo' },
+  { icon: '📊', label: 'Daily Logs',      desc: 'Site diary – track work daily',         href: '/construction/progress',        color: 'red' },
+  { icon: '📈', label: 'Reports',         desc: 'Budget, cost-to-complete, QC & more',   href: '/construction/reports',         color: 'pink' },
+];
+
+const COLOR_MAP: Record<string, { bg: string; hover: string; text: string; badge: string }> = {
+  blue:   { bg: 'bg-blue-50',   hover: 'hover:border-blue-400',   text: 'text-blue-600',   badge: 'bg-blue-100 text-blue-700' },
+  orange: { bg: 'bg-orange-50', hover: 'hover:border-orange-400', text: 'text-orange-600', badge: 'bg-orange-100 text-orange-700' },
+  purple: { bg: 'bg-purple-50', hover: 'hover:border-purple-400', text: 'text-purple-600', badge: 'bg-purple-100 text-purple-700' },
+  green:  { bg: 'bg-green-50',  hover: 'hover:border-green-400',  text: 'text-green-600',  badge: 'bg-green-100 text-green-700' },
+  amber:  { bg: 'bg-amber-50',  hover: 'hover:border-amber-400',  text: 'text-amber-600',  badge: 'bg-amber-100 text-amber-700' },
+  teal:   { bg: 'bg-teal-50',   hover: 'hover:border-teal-400',   text: 'text-teal-600',   badge: 'bg-teal-100 text-teal-700' },
+  indigo: { bg: 'bg-indigo-50', hover: 'hover:border-indigo-400', text: 'text-indigo-600', badge: 'bg-indigo-100 text-indigo-700' },
+  red:    { bg: 'bg-red-50',    hover: 'hover:border-red-400',    text: 'text-red-600',    badge: 'bg-red-100 text-red-700' },
+  pink:   { bg: 'bg-pink-50',   hover: 'hover:border-pink-400',   text: 'text-pink-600',   badge: 'bg-pink-100 text-pink-700' },
+};
 
 export default function ConstructionDashboard() {
   const router = useRouter();
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects]   = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
-  const [vendors, setVendors] = useState<any[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
-  const [properties, setProperties] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [vendors, setVendors]     = useState<any[]>([]);
+  const [purchaseOrders, setPOs]  = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
 
-  useEffect(() => {
-    loadAllData();
-  }, []);
+  useEffect(() => { loadAllData(); }, []);
 
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [projectsRes, materialsRes, vendorsRes, posRes, propsRes] = await Promise.all([
-        api.get('/construction-projects').catch(() => ({ data: [] })),
-        api.get('/materials').catch(() => ({ data: [] })),
-        api.get('/vendors').catch(() => ({ data: [] })),
-        api.get('/purchase-orders').catch(() => ({ data: [] })),
-        api.get('/properties').catch(() => ({ data: [] }))
+      const [projData, matsData, vendsData, posData] = await Promise.all([
+        api.get('/construction-projects').catch(() => []),
+        api.get('/materials').catch(() => []),
+        api.get('/vendors').catch(() => []),
+        api.get('/purchase-orders').catch(() => []),
       ]);
-
-      const projectsData = Array.isArray(projectsRes.data) ? projectsRes.data : (projectsRes.data?.data || []);
-      const materialsData = Array.isArray(materialsRes.data) ? materialsRes.data : (materialsRes.data?.data || []);
-      const vendorsData = Array.isArray(vendorsRes.data) ? vendorsRes.data : (vendorsRes.data?.data || []);
-      const posData = Array.isArray(posRes.data) ? posRes.data : (posRes.data?.data || []);
-      const propsData = Array.isArray(propsRes.data) ? propsRes.data : (propsRes.data?.data || []);
-
-      setProjects(projectsData);
-      setMaterials(materialsData);
-      setVendors(vendorsData);
-      setPurchaseOrders(posData);
-      setProperties(propsData);
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      setProjects(Array.isArray(projData) ? projData : (projData?.data || []));
+      setMaterials(Array.isArray(matsData) ? matsData : (matsData?.data || []));
+      setVendors(Array.isArray(vendsData) ? vendsData : (vendsData?.data || []));
+      setPOs(Array.isArray(posData) ? posData : (posData?.data || []));
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const fmtCur = (n: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
-  const activeProjects = ((projects || [])).filter(p => p.status === 'IN_PROGRESS');
-  const avgProgress = (projects || []).length > 0 
-    ? Math.round((projects || []).reduce((sum, p) => sum + (p.overallProgress || 0), 0) / (projects || []).length)
+  const activeProjects = projects.filter(p => p.status === 'IN_PROGRESS');
+  const avgProgress    = projects.length
+    ? Math.round(projects.reduce((s, p) => s + Number(p.overallProgress || 0), 0) / projects.length)
     : 0;
-  const lowStockMaterials = ((materials || [])).filter(m => (m.currentStock || 0) <= (m.minimumStock || 0));
-  const pendingPOs = ((purchaseOrders || [])).filter(po => po.status === 'PENDING' || po.status === 'PENDING_APPROVAL');
-  const activeVendors = ((vendors || [])).filter(v => v.isActive);
+  const lowStock       = materials.filter(m => (m.currentStock || 0) <= (m.minimumStockLevel || m.minimumStock || 0));
+  const pendingPOs     = purchaseOrders.filter(po => po.status === 'PENDING' || po.status === 'PENDING_APPROVAL');
+  const activeVendors  = vendors.filter(v => v.isActive);
+  const totalBudget    = projects.reduce((s, p) => s + Number(p.budgetAllocated || 0), 0);
+  const totalSpent     = projects.reduce((s, p) => s + Number(p.budgetSpent || 0), 0);
 
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
+  if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="p-6">
-      {/* Eastern Estate Branded Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-lg flex items-center justify-center text-3xl" style={{ backgroundColor: '#A8211B' }}>
-              🏗️
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold" style={{ color: '#A8211B' }}>
-                Construction & Purchases
-              </h1>
-              <p className="text-sm text-gray-500">Eastern Estate ERP System - Site Management Dashboard</p>
-            </div>
-          </div>
-          <button
-            onClick={() => router.push('/construction/projects/new')}
-            className="px-6 py-3 text-white rounded-lg font-semibold hover:opacity-90 transition-all shadow-lg flex items-center gap-2"
-            style={{ backgroundColor: '#A8211B' }}
-          >
-            <span className="text-2xl">➕</span>
-            Create New Project
-          </button>
-        </div>
-        <p className="text-gray-600 text-lg">
-          Comprehensive overview of all construction projects, materials, vendors, and purchases
-        </p>
-      </div>
+    <div
+      className="p-6 md:p-8 space-y-8 min-h-full"
+      style={{ backgroundColor: brandPalette.background, borderRadius: '24px' }}
+    >
+      {/* ── HERO ── */}
+      <BrandHero
+        eyebrow="Construction Management Hub"
+        title={<>Build smarter with <span style={{ color: brandPalette.accent }}>real-time visibility</span></>}
+        description="Track projects, manage materials & vendors, control budgets, and keep quality standards — all in one place."
+        actions={
+          <>
+            <BrandPrimaryButton onClick={() => router.push('/construction/projects/new')}>
+              <Plus className="w-4 h-4" /> New Project
+            </BrandPrimaryButton>
+            <BrandSecondaryButton onClick={() => router.push('/construction/projects')}>
+              <BarChart3 className="w-4 h-4" /> View All Projects
+            </BrandSecondaryButton>
+          </>
+        }
+      />
 
-      {/* Key Metrics Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-lg p-5 border-l-4" style={{ borderColor: '#A8211B' }}>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600">Total Projects</p>
-            <div className="text-2xl">🏗️</div>
-          </div>
-          <p className="text-3xl font-bold text-gray-900">{(projects || []).length}</p>
-          <p className="text-xs text-gray-500 mt-1">{(activeProjects || []).length} active</p>
-        </div>
+      {/* ── STAT CARDS ── */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <BrandStatCard
+          title="Total Projects"
+          primary={String(projects.length)}
+          subLabel={`${activeProjects.length} currently active`}
+          icon={<HardHat className="w-7 h-7 text-white" />}
+          accentColor={brandPalette.primary}
+        />
+        <BrandStatCard
+          title="Avg Progress"
+          primary={`${avgProgress}%`}
+          subLabel={`${projects.filter(p => p.status === 'COMPLETED').length} completed`}
+          icon={<TrendingUp className="w-7 h-7 text-white" />}
+          accentColor="rgba(61,163,93,0.85)"
+        />
+        <BrandStatCard
+          title="Total Budget"
+          primary={formatToCrore(totalBudget)}
+          subLabel={`${formatToCrore(totalSpent)} spent · ${totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(0) : 0}% utilized`}
+          icon={<BarChart3 className="w-7 h-7 text-white" />}
+          accentColor="rgba(168,33,27,0.75)"
+        />
+        <BrandStatCard
+          title="Materials"
+          primary={String(materials.length)}
+          subLabel={`${lowStock.length} low-stock alert${lowStock.length !== 1 ? 's' : ''}`}
+          icon={<Package className="w-7 h-7 text-white" />}
+          accentColor={lowStock.length > 0 ? '#D97706' : brandPalette.success}
+        />
+      </section>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg shadow-lg p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">Active Projects</p>
-            <div className="text-2xl">✅</div>
+      {/* ── ALERTS ── */}
+      {(lowStock.length > 0 || pendingPOs.length > 0) && (
+        <div className="rounded-2xl border-l-4 border-yellow-500 bg-yellow-50 px-6 py-5 flex items-start gap-4 shadow-sm">
+          <AlertTriangle className="w-6 h-6 text-yellow-600 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="font-semibold text-yellow-900 mb-1">Attention Required</p>
+            <ul className="text-sm text-yellow-800 space-y-0.5">
+              {lowStock.length > 0 && <li>• {lowStock.length} material{lowStock.length > 1 ? 's' : ''} running low on stock</li>}
+              {pendingPOs.length > 0 && <li>• {pendingPOs.length} purchase order{pendingPOs.length > 1 ? 's' : ''} pending approval</li>}
+            </ul>
           </div>
-          <p className="text-3xl font-bold">{(activeProjects || []).length}</p>
-          <p className="text-xs text-green-100 mt-1">In Progress</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">Avg Progress</p>
-            <div className="text-2xl">📊</div>
-          </div>
-          <p className="text-3xl font-bold">{avgProgress}%</p>
-          <p className="text-xs text-blue-100 mt-1">Completion rate</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-lg shadow-lg p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">Materials</p>
-            <div className="text-2xl">🧱</div>
-          </div>
-          <p className="text-3xl font-bold">{(materials || []).length}</p>
-          <p className="text-xs text-orange-100 mt-1">{(lowStockMaterials || []).length} low stock</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-lg shadow-lg p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium">Purchase Orders</p>
-            <div className="text-2xl">🛒</div>
-          </div>
-          <p className="text-3xl font-bold">{(purchaseOrders || []).length}</p>
-          <p className="text-xs text-purple-100 mt-1">{(pendingPOs || []).length} pending</p>
-        </div>
-      </div>
-
-      {/* Quick Navigation Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-        <button
-          onClick={() => router.push('/construction/inventory')}
-          className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all text-left border-2 border-transparent hover:border-blue-500 group"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-blue-100 group-hover:bg-blue-500 group-hover:text-white transition-all">
-              🏗️
-            </div>
-          </div>
-          <h3 className="text-xl font-bold mb-2 text-gray-900">Site Inventory</h3>
-          <p className="text-gray-600 text-sm mb-3">View all properties, towers & flats</p>
-          <div className="flex gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Properties</p>
-              <p className="font-bold text-gray-900">{(properties || []).length}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Quick Access</p>
-              <p className="font-bold text-blue-600">View Hierarchy</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push('/construction/materials')}
-          className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all text-left border-2 border-transparent hover:border-orange-500 group"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-orange-100 group-hover:bg-orange-500 group-hover:text-white transition-all">
-              🧱
-            </div>
-            {(lowStockMaterials || []).length > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                {(lowStockMaterials || []).length} Alert{(lowStockMaterials || []).length > 1 ? 's' : ''}
-              </span>
+          <div className="flex gap-2 shrink-0">
+            {lowStock.length > 0 && (
+              <button onClick={() => router.push('/construction/materials')} className="text-xs px-3 py-1.5 bg-yellow-200 hover:bg-yellow-300 text-yellow-900 rounded-full font-medium transition">
+                View Materials
+              </button>
             )}
-          </div>
-          <h3 className="text-xl font-bold mb-2 text-gray-900">Material Inventory</h3>
-          <p className="text-gray-600 text-sm mb-3">Track stock levels, entries & exits</p>
-          <div className="flex gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Total Items</p>
-              <p className="font-bold text-gray-900">{(materials || []).length}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Low Stock</p>
-              <p className="font-bold text-red-600">{(lowStockMaterials || []).length}</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push('/construction/purchase-orders')}
-          className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all text-left border-2 border-transparent hover:border-purple-500 group"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-purple-100 group-hover:bg-purple-500 group-hover:text-white transition-all">
-              🛒
-            </div>
-            {(pendingPOs || []).length > 0 && (
-              <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-                {(pendingPOs || []).length} Pending
-              </span>
+            {pendingPOs.length > 0 && (
+              <button onClick={() => router.push('/construction/purchase-orders')} className="text-xs px-3 py-1.5 bg-yellow-200 hover:bg-yellow-300 text-yellow-900 rounded-full font-medium transition">
+                View Orders
+              </button>
             )}
-          </div>
-          <h3 className="text-xl font-bold mb-2 text-gray-900">Purchase Orders</h3>
-          <p className="text-gray-600 text-sm mb-3">Create & track material orders</p>
-          <div className="flex gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Total POs</p>
-              <p className="font-bold text-gray-900">{(purchaseOrders || []).length}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Pending</p>
-              <p className="font-bold text-yellow-600">{(pendingPOs || []).length}</p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push('/construction/vendors')}
-          className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all text-left border-2 border-transparent hover:border-green-500 group"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-green-100 group-hover:bg-green-500 group-hover:text-white transition-all">
-              🤝
-            </div>
-            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-              {(activeVendors || []).length} Active
-            </span>
-          </div>
-          <h3 className="text-xl font-bold mb-2 text-gray-900">Vendors</h3>
-          <p className="text-gray-600 text-sm mb-3">Manage suppliers & payments</p>
-          <div className="flex gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Total</p>
-              <p className="font-bold text-gray-900">{(vendors || []).length}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Outstanding</p>
-              <p className="font-bold text-red-600">
-                {formatCurrency((vendors || []).reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
-              </p>
-            </div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => router.push('/construction/projects')}
-          className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-all text-left border-2 border-transparent hover:border-blue-500 group"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl bg-blue-100 group-hover:bg-blue-500 group-hover:text-white transition-all">
-              📋
-            </div>
-          </div>
-          <h3 className="text-xl font-bold mb-2 text-gray-900">All Projects</h3>
-          <p className="text-gray-600 text-sm mb-3">View detailed project list</p>
-          <div className="flex gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">Total</p>
-              <p className="font-bold text-gray-900">{(projects || []).length}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Progress</p>
-              <p className="font-bold text-blue-600">{avgProgress}%</p>
-            </div>
-          </div>
-        </button>
-      </div>
-
-      {/* Active Projects Overview */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold" style={{ color: '#A8211B' }}>
-            Active Construction Projects
-          </h2>
-          <button
-            onClick={() => router.push('/construction/projects')}
-            className="text-sm font-medium hover:underline"
-            style={{ color: '#A8211B' }}
-          >
-            View All →
-          </button>
-        </div>
-
-        {(activeProjects || []).length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-4xl mb-3">🏗️</p>
-            <p className="text-gray-600">No active construction projects</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeProjects.slice(0, 6).map((project) => (
-              <div
-                key={project.id}
-                className="border-2 border-gray-200 rounded-lg p-4 hover:border-red-500 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => router.push(`/construction/projects/${project.id}`)}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-bold text-gray-900 text-lg">{project.projectName}</h3>
-                  <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                    Active
-                  </span>
-                </div>
-                
-                <div className="space-y-2 text-sm mb-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Property:</span>
-                    <span className="font-medium">{project.property?.name || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Started:</span>
-                    <span>{new Date(project.startDate).toLocaleDateString('en-IN')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Budget:</span>
-                    <span className="font-medium">{formatCurrency(project.budgetAllocated || 0)}</span>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">Progress</span>
-                    <span className="font-bold" style={{ color: '#A8211B' }}>
-                      {project.overallProgress}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="h-2.5 rounded-full transition-all"
-                      style={{
-                        width: `${project.overallProgress}%`,
-                        backgroundColor: '#A8211B'
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Alerts & Notifications */}
-      {((lowStockMaterials || []).length > 0 || (pendingPOs || []).length > 0) && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-6 mb-6">
-          <div className="flex items-start gap-3">
-            <div className="text-3xl">⚠️</div>
-            <div className="flex-1">
-              <h3 className="font-bold text-yellow-900 mb-2">Attention Required</h3>
-              <ul className="space-y-1 text-sm text-yellow-800">
-                {(lowStockMaterials || []).length > 0 && (
-                  <li>• {(lowStockMaterials || []).length} material{(lowStockMaterials || []).length > 1 ? 's' : ''} running low on stock</li>
-                )}
-                {(pendingPOs || []).length > 0 && (
-                  <li>• {(pendingPOs || []).length} purchase order{(pendingPOs || []).length > 1 ? 's' : ''} pending approval/action</li>
-                )}
-              </ul>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Quick Stats Summary */}
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-lg p-6 border-2" style={{ borderColor: '#A8211B' }}>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style={{ backgroundColor: '#A8211B' }}>
-            📊
-          </div>
-          <h3 className="text-xl font-bold" style={{ color: '#A8211B' }}>
-            Dashboard Overview
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div>
-            <p className="text-sm text-gray-600 mb-2">Construction Status</p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>In Progress:</span>
-                <span className="font-bold text-green-600">{(activeProjects || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Planning:</span>
-                <span className="font-bold text-blue-600">
-                  {((projects || [])).filter(p => p.status === 'PLANNING').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>On Hold:</span>
-                <span className="font-bold text-yellow-600">
-                  {((projects || [])).filter(p => p.status === 'ON_HOLD').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Completed:</span>
-                <span className="font-bold text-gray-600">
-                  {((projects || [])).filter(p => p.status === 'COMPLETED').length}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-600 mb-2">Material Status</p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Total Items:</span>
-                <span className="font-bold">{(materials || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Active:</span>
-                <span className="font-bold text-green-600">
-                  {((materials || [])).filter(m => m.isActive).length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Low Stock:</span>
-                <span className="font-bold text-red-600">{(lowStockMaterials || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Value:</span>
-                <span className="font-bold">
-                  {formatCurrency((materials || []).reduce((sum, m) => sum + ((m.currentStock || 0) * (m.unitPrice || 0)), 0))}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-600 mb-2">Vendor Status</p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Total Vendors:</span>
-                <span className="font-bold">{(vendors || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Active:</span>
-                <span className="font-bold text-green-600">{(activeVendors || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Outstanding:</span>
-                <span className="font-bold text-red-600">
-                  {formatCurrency((vendors || []).reduce((sum, v) => sum + (v.outstandingAmount || 0), 0))}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Avg Rating:</span>
-                <span className="font-bold">
-                  {(vendors || []).length > 0 
-                    ? ((vendors || []).reduce((sum, v) => sum + (v.rating || 0), 0) / (vendors || []).length).toFixed(1)
-                    : '0.0'
-                  }⭐
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-600 mb-2">Purchase Orders</p>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span>Total POs:</span>
-                <span className="font-bold">{(purchaseOrders || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Pending:</span>
-                <span className="font-bold text-yellow-600">{(pendingPOs || []).length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Approved:</span>
-                <span className="font-bold text-blue-600">
-                  {((purchaseOrders || [])).filter(po => po.status === 'APPROVED' || po.status === 'SENT').length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Total Value:</span>
-                <span className="font-bold">
-                  {formatCurrency((purchaseOrders || []).reduce((sum, po) => sum + (po.totalAmount || 0), 0))}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Comprehensive Help & Instructions Section */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-lg p-8 border-2 border-blue-200">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-lg flex items-center justify-center text-3xl" style={{ backgroundColor: '#A8211B' }}>
-            📚
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold" style={{ color: '#A8211B' }}>
-              Construction & Purchases Dashboard Guide
-            </h2>
-            <p className="text-gray-600">Complete guide for site engineers, project managers, and procurement teams</p>
-          </div>
+      {/* ── ACTIVE PROJECTS ── */}
+      <section className="bg-white rounded-3xl border shadow-sm overflow-hidden" style={{ borderColor: `${brandPalette.neutral}80` }}>
+        <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: `${brandPalette.neutral}80` }}>
+          <h2 className="font-bold text-lg" style={{ color: brandPalette.secondary }}>Active Construction Projects</h2>
+          <button
+            onClick={() => router.push('/construction/projects')}
+            className="inline-flex items-center gap-1 text-sm font-medium hover:underline"
+            style={{ color: brandPalette.primary }}
+          >
+            View All <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* What is this page for? */}
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-xl font-bold mb-4 text-blue-900">🎯 What is this Dashboard For?</h3>
-            <p className="text-gray-700 mb-4">
-              The Construction & Purchases Dashboard is the central hub for managing all construction-related activities 
-              and material procurement for Eastern Estate projects. It provides real-time visibility into:
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-gray-700 ml-2">
-              <li><strong>Active Projects:</strong> Track progress, budget, and timelines across all construction sites</li>
-              <li><strong>Material Inventory:</strong> Monitor stock levels, identify low inventory, prevent shortages</li>
-              <li><strong>Purchase Orders:</strong> Create and track material orders, manage vendor relationships</li>
-              <li><strong>Vendor Management:</strong> Track supplier performance, payments, and outstanding amounts</li>
-              <li><strong>Budget Control:</strong> Monitor spending against allocated budgets for each project</li>
-              <li><strong>Resource Planning:</strong> Ensure materials are available when needed for construction activities</li>
-            </ul>
+        {activeProjects.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="text-5xl mb-3">🏗️</div>
+            <p className="text-gray-500 mb-4">No active projects right now.</p>
+            <button
+              onClick={() => router.push('/construction/projects/new')}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-white rounded-full text-sm font-semibold"
+              style={{ backgroundColor: brandPalette.primary }}
+            >
+              <Plus className="w-4 h-4" /> Create Project
+            </button>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+            {activeProjects.slice(0, 6).map((project) => {
+              const budget    = Number(project.budgetAllocated) || 0;
+              const spent     = Number(project.budgetSpent) || 0;
+              const budgetPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+              const progress  = Number(project.overallProgress) || 0;
+              return (
+                <div
+                  key={project.id}
+                  onClick={() => router.push(`/construction/projects/${project.id}`)}
+                  className="p-6 hover:bg-gray-50 cursor-pointer transition-colors group"
+                >
+                  {/* Progress accent bar */}
+                  <div className="h-1 w-full rounded-full bg-gray-100 mb-4 overflow-hidden">
+                    <div className="h-1 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: brandPalette.primary }} />
+                  </div>
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-bold text-gray-900 group-hover:text-[#A8211B] transition-colors line-clamp-1 flex-1">{project.projectName}</h3>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#A8211B] shrink-0 mt-0.5 ml-2 transition-colors" />
+                  </div>
+                  <p className="text-xs text-gray-500 mb-4">{project.property?.name || 'No property'}</p>
 
-          {/* Who should use this? */}
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-xl font-bold mb-4 text-green-900">👥 Who Should Use This Dashboard?</h3>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">🏗️ Site Engineers & Project Managers</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Monitor project progress and timelines</li>
-                  <li>• Request materials for ongoing work</li>
-                  <li>• Log daily progress and issues</li>
-                  <li>• Track team performance and schedules</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">🛒 Procurement Team</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Create and approve purchase orders</li>
-                  <li>• Manage vendor relationships</li>
-                  <li>• Track material deliveries</li>
-                  <li>• Monitor inventory levels</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">💼 Management & Executives</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Get high-level overview of all projects</li>
-                  <li>• Monitor budget utilization</li>
-                  <li>• Review vendor performance</li>
-                  <li>• Identify potential bottlenecks</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">📊 Accounts & Finance</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Track vendor payments and outstanding amounts</li>
-                  <li>• Review purchase order costs</li>
-                  <li>• Monitor project budget vs actual spend</li>
-                  <li>• Process vendor invoices</li>
-                </ul>
-              </div>
-            </div>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Progress</span>
+                        <span className="font-semibold" style={{ color: brandPalette.primary }}>{progress}%</span>
+                      </div>
+                      <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: brandPalette.primary }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Budget</span>
+                        <span className="font-semibold text-gray-700">{fmtCur(spent)} / {fmtCur(budget)}</span>
+                      </div>
+                      <div className="bg-gray-100 rounded-full h-2 overflow-hidden">
+                        <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${budgetPct}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        )}
+      </section>
 
-          {/* How to use each section */}
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-xl font-bold mb-4 text-purple-900">📖 How to Use Each Section</h3>
-            <div className="space-y-4">
-              <div className="border-l-4 border-orange-500 pl-4">
-                <h4 className="font-semibold text-gray-900 mb-2">🧱 Material Inventory</h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  <strong>Purpose:</strong> Track all construction materials, from cement to paint
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>Quick Actions:</strong> Add materials → Record entries (when stock arrives) → 
-                  Issue exits (when used on site) → Monitor low stock alerts
-                </p>
-              </div>
-
-              <div className="border-l-4 border-purple-500 pl-4">
-                <h4 className="font-semibold text-gray-900 mb-2">🛒 Purchase Orders</h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  <strong>Purpose:</strong> Formal orders to vendors for material procurement
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>Quick Actions:</strong> Create PO → Add line items → Calculate totals → 
-                  Send to vendor → Track delivery → Record payment
-                </p>
-              </div>
-
-              <div className="border-l-4 border-green-500 pl-4">
-                <h4 className="font-semibold text-gray-900 mb-2">🤝 Vendors</h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  <strong>Purpose:</strong> Manage supplier relationships and track payments
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>Quick Actions:</strong> Register vendor → Set credit limits → 
-                  Record payments → Rate performance → Monitor outstanding amounts
-                </p>
-              </div>
-
-              <div className="border-l-4 border-blue-500 pl-4">
-                <h4 className="font-semibold text-gray-900 mb-2">📋 All Projects</h4>
-                <p className="text-sm text-gray-700 mb-2">
-                  <strong>Purpose:</strong> Detailed view of construction projects
-                </p>
-                <p className="text-sm text-gray-700">
-                  <strong>Quick Actions:</strong> View project details → Update progress → 
-                  Log daily work → Manage teams → Track milestones
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Common workflows */}
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-xl font-bold mb-4 text-red-900">🔄 Common Workflows</h3>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">📦 Ordering Materials</h4>
-                <ol className="text-sm text-gray-700 space-y-1 ml-4 list-decimal">
-                  <li>Check Material Inventory for low stock items</li>
-                  <li>Click "Purchase Orders" → Create new PO</li>
-                  <li>Select vendor and add required materials</li>
-                  <li>Review totals and submit for approval</li>
-                  <li>Once delivered, record material entry in Inventory</li>
-                </ol>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">🏗️ Using Materials on Site</h4>
-                <ol className="text-sm text-gray-700 space-y-1 ml-4 list-decimal">
-                  <li>Go to Material Inventory page</li>
-                  <li>Find the material you need to issue</li>
-                  <li>Click "Issue Material" button</li>
-                  <li>Select project, enter quantity and purpose</li>
-                  <li>System updates stock automatically</li>
-                </ol>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">💰 Paying Vendors</h4>
-                <ol className="text-sm text-gray-700 space-y-1 ml-4 list-decimal">
-                  <li>Go to Vendors page</li>
-                  <li>Find vendor with outstanding amount</li>
-                  <li>Click "Record Payment" button</li>
-                  <li>Enter amount, payment method, and reference</li>
-                  <li>System updates outstanding balance</li>
-                </ol>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">📊 Tracking Project Progress</h4>
-                <ol className="text-sm text-gray-700 space-y-1 ml-4 list-decimal">
-                  <li>View project card on main dashboard</li>
-                  <li>Click project to see detailed view</li>
-                  <li>Log daily progress with work completed</li>
-                  <li>Upload photos showing construction status</li>
-                  <li>Update completion percentage</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-
-          {/* Key metrics explained */}
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-xl font-bold mb-4 text-indigo-900">📊 Understanding Dashboard Metrics</h3>
-            <div className="space-y-3">
-              <div>
-                <h4 className="font-semibold text-gray-900">Total Projects</h4>
-                <p className="text-sm text-gray-700">
-                  Count of all construction projects (active, planning, on-hold, completed)
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Active Projects</h4>
-                <p className="text-sm text-gray-700">
-                  Projects currently under construction (status: IN_PROGRESS)
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Average Progress</h4>
-                <p className="text-sm text-gray-700">
-                  Average completion percentage across all projects
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Materials Count</h4>
-                <p className="text-sm text-gray-700">
-                  Total unique materials in inventory, with low stock alert count
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Purchase Orders</h4>
-                <p className="text-sm text-gray-700">
-                  Total POs created, with count of those pending approval
-                </p>
-              </div>
-              <div>
-                <h4 className="font-semibold text-red-600">⚠️ Alert Badge</h4>
-                <p className="text-sm text-gray-700">
-                  Red/Yellow badges indicate items needing immediate attention
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Troubleshooting */}
-          <div className="bg-white rounded-lg p-6 shadow">
-            <h3 className="text-xl font-bold mb-4 text-orange-900">🔧 Troubleshooting & Tips</h3>
-            <div className="space-y-3">
-              <div>
-                <h4 className="font-semibold text-gray-900">No Projects Showing?</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Ensure test data has been loaded (run construction-complete-test-data.sql)</li>
-                  <li>• Check that backend API is running (port 3001)</li>
-                  <li>• Verify database connection is active</li>
-                  <li>• Try refreshing the page</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Low Stock Alerts Not Showing?</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Go to Material Inventory and check minimum stock levels</li>
-                  <li>• Materials show as low stock when current ≤ minimum</li>
-                  <li>• Update minimum stock thresholds if needed</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Cannot Create Purchase Order?</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Ensure at least one vendor is registered</li>
-                  <li>• Add materials to inventory first</li>
-                  <li>• Check that all required fields are filled</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Pro Tips for Efficient Use:</h4>
-                <ul className="text-sm text-gray-700 space-y-1 ml-4">
-                  <li>• Set minimum stock levels 20-30% above normal usage</li>
-                  <li>• Review low stock alerts every morning</li>
-                  <li>• Create POs in batches to negotiate better prices</li>
-                  <li>• Update project progress daily for accurate tracking</li>
-                  <li>• Use material exit feature to track which projects use what</li>
-                  <li>• Pay vendors on time to maintain good relationships</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+      {/* ── MODULE QUICK-LINKS ── */}
+      <section>
+        <h2 className="font-bold text-lg mb-4" style={{ color: brandPalette.secondary }}>Quick Access</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {MODULE_CARDS.map(({ icon, label, desc, href, color }) => {
+            const cfg = COLOR_MAP[color];
+            return (
+              <button
+                key={label}
+                onClick={() => router.push(href)}
+                className={`group relative bg-white rounded-2xl border-2 border-gray-100 ${cfg.hover} p-5 text-left transition-all hover:shadow-md`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className={`w-11 h-11 ${cfg.bg} rounded-xl flex items-center justify-center text-xl`}>
+                    {icon}
+                  </div>
+                  <ChevronRight className={`w-4 h-4 text-gray-200 group-hover:${cfg.text} transition-colors mt-1`} />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-0.5 text-sm">{label}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+              </button>
+            );
+          })}
         </div>
+      </section>
 
-        {/* Quick reference card */}
-        <div className="mt-6 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6 border-2 border-red-200">
-          <h3 className="text-xl font-bold mb-4" style={{ color: '#A8211B' }}>
-            ⚡ Quick Reference Card
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">📦 Need Materials?</h4>
-              <p className="text-gray-700">Materials → Check Stock → Create PO → Record Entry</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">🏗️ Use Materials?</h4>
-              <p className="text-gray-700">Materials → Find Item → Issue Exit → Select Project</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">💰 Pay Vendor?</h4>
-              <p className="text-gray-700">Vendors → Find Vendor → Record Payment → Enter Details</p>
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">📊 Update Progress?</h4>
-              <p className="text-gray-700">Projects → Select Project → Log Progress → Upload Photos</p>
-            </div>
+      {/* ── SUMMARY STATS STRIP ── */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'In Progress',   value: activeProjects.length,                                  color: 'text-green-600' },
+          { label: 'Planning',      value: projects.filter(p => p.status === 'PLANNING').length,   color: 'text-blue-600' },
+          { label: 'On Hold',       value: projects.filter(p => p.status === 'ON_HOLD').length,    color: 'text-yellow-600' },
+          { label: 'Completed',     value: projects.filter(p => p.status === 'COMPLETED').length,  color: 'text-purple-600' },
+          { label: 'Active Vendors',value: activeVendors.length,                                   color: 'text-green-600' },
+          { label: 'Pending POs',   value: pendingPOs.length,                                      color: 'text-yellow-600' },
+          { label: 'Low Stock',     value: lowStock.length,                                        color: lowStock.length > 0 ? 'text-red-600' : 'text-gray-600' },
+          { label: 'Total Vendors', value: vendors.length,                                         color: 'text-gray-700' },
+        ].map(s => (
+          <div key={s.label} className="bg-white rounded-2xl border px-5 py-4 shadow-sm" style={{ borderColor: `${brandPalette.neutral}80` }}>
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{s.label}</p>
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
           </div>
-        </div>
+        ))}
+      </section>
 
-        {/* Data setup instructions */}
-        <div className="mt-6 bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6">
-          <div className="flex items-start gap-3">
-            <div className="text-3xl">⚠️</div>
-            <div>
-              <h3 className="text-lg font-bold text-yellow-900 mb-2">First Time Setup Required</h3>
-              <p className="text-yellow-800 mb-3">
-                If you're seeing empty data or no projects, you need to load the test data first:
-              </p>
-              <div className="bg-white rounded p-4 border border-yellow-300">
-                <p className="font-mono text-sm text-gray-800 mb-2">
-                  cd backend && psql -U your_username -d your_database -f construction-complete-test-data.sql
-                </p>
-                <p className="text-xs text-gray-600">
-                  This will create: 5 projects, 26 materials, 7 vendors, 5 purchase orders, and sample transactions
-                </p>
-              </div>
+      {/* ── SECONDARY STAT ROW ── */}
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border p-5 shadow-sm" style={{ borderColor: `${brandPalette.neutral}80` }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${brandPalette.primary}15` }}>
+              <ShoppingCart className="w-5 h-5" style={{ color: brandPalette.primary }} />
             </div>
+            <p className="text-sm font-semibold text-gray-700">Purchase Orders</p>
           </div>
+          <p className="text-3xl font-bold text-gray-900">{purchaseOrders.length}</p>
+          <p className="text-xs text-gray-500 mt-1">{pendingPOs.length} awaiting approval</p>
         </div>
+        <div className="bg-white rounded-2xl border p-5 shadow-sm" style={{ borderColor: `${brandPalette.neutral}80` }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `rgba(61,163,93,0.1)` }}>
+              <Users className="w-5 h-5 text-green-600" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700">Vendors</p>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">{vendors.length}</p>
+          <p className="text-xs text-gray-500 mt-1">{activeVendors.length} currently active</p>
+        </div>
+        <div className="bg-white rounded-2xl border p-5 shadow-sm" style={{ borderColor: `${brandPalette.neutral}80` }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `rgba(168,33,27,0.1)` }}>
+              <Package className="w-5 h-5" style={{ color: brandPalette.primary }} />
+            </div>
+            <p className="text-sm font-semibold text-gray-700">Material Items</p>
+          </div>
+          <p className="text-3xl font-bold text-gray-900">{materials.length}</p>
+          <p className={`text-xs mt-1 ${lowStock.length > 0 ? 'text-red-600 font-medium' : 'text-gray-500'}`}>
+            {lowStock.length > 0 ? `⚠ ${lowStock.length} below minimum stock` : 'All stock levels healthy'}
+          </p>
+        </div>
+      </section>
+
+      <div className="pt-2 text-center text-sm text-gray-400">
+        Eastern Estate ERP • Building Homes, Nurturing Bonds
       </div>
     </div>
   );

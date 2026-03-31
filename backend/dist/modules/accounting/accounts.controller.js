@@ -40,6 +40,12 @@ let AccountsController = class AccountsController {
     getProfitAndLoss() {
         return this.accountsService.getProfitAndLoss();
     }
+    getTrialBalance() {
+        return this.accountsService.getTrialBalance();
+    }
+    getPropertyWisePL(propertyId) {
+        return this.accountsService.getPropertyWisePL(propertyId);
+    }
     findByCode(code) {
         return this.accountsService.findByCode(code);
     }
@@ -87,6 +93,19 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "getProfitAndLoss", null);
+__decorate([
+    (0, common_1.Get)('trial-balance'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AccountsController.prototype, "getTrialBalance", null);
+__decorate([
+    (0, common_1.Get)('property-pl'),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AccountsController.prototype, "getPropertyWisePL", null);
 __decorate([
     (0, common_1.Get)('code/:code'),
     __param(0, (0, common_1.Param)('code')),

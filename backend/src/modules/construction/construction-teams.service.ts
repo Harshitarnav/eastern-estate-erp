@@ -15,10 +15,20 @@ export class ConstructionTeamsService {
     return await this.constructionTeamRepository.save(team);
   }
 
+  async findAll(filters?: { constructionProjectId?: string; propertyId?: string }) {
+    const where: any = { isActive: true };
+    if (filters?.constructionProjectId) where.constructionProjectId = filters.constructionProjectId;
+    if (filters?.propertyId) where.propertyId = filters.propertyId;
+
+    return await this.constructionTeamRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findByProject(constructionProjectId: string) {
     return await this.constructionTeamRepository.find({
       where: { constructionProjectId, isActive: true },
-      relations: ['employee', 'constructionProject'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -26,11 +36,10 @@ export class ConstructionTeamsService {
   async findOne(id: string) {
     const team = await this.constructionTeamRepository.findOne({
       where: { id },
-      relations: ['employee', 'constructionProject'],
     });
 
     if (!team) {
-      throw new NotFoundException(`Team member with ID ${id} not found`);
+      throw new NotFoundException(`Team with ID ${id} not found`);
     }
 
     return team;
@@ -46,5 +55,6 @@ export class ConstructionTeamsService {
     const team = await this.findOne(id);
     team.isActive = false;
     await this.constructionTeamRepository.save(team);
+    return { success: true };
   }
 }

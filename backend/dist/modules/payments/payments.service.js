@@ -18,29 +18,22 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const payment_entity_1 = require("./entities/payment.entity");
-const payment_completion_service_1 = require("./services/payment-completion.service");
+const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
 let PaymentsService = PaymentsService_1 = class PaymentsService {
-    constructor(paymentRepository, paymentCompletionService) {
+    constructor(paymentRepository, accountingIntegrationService) {
         this.paymentRepository = paymentRepository;
-        this.paymentCompletionService = paymentCompletionService;
+        this.accountingIntegrationService = accountingIntegrationService;
         this.logger = new common_1.Logger(PaymentsService_1.name);
     }
     async create(createPaymentDto, userId) {
+        if (createPaymentDto.status === payment_entity_1.PaymentStatus.COMPLETED) {
+            throw new common_1.BadRequestException('Payments cannot be created in COMPLETED status directly. Create the payment as PENDING and use the verify action to complete it.');
+        }
         if (!createPaymentDto.paymentCode) {
             createPaymentDto.paymentCode = await this.generatePaymentCode();
         }
         const payment = this.paymentRepository.create(createPaymentDto);
-        const savedPayment = await this.paymentRepository.save(payment);
-        if (savedPayment.status === payment_entity_1.PaymentStatus.COMPLETED) {
-            try {
-                await this.paymentCompletionService.processPaymentCompletion(savedPayment.id);
-                this.logger.log(`Payment completion workflow processed for payment ${savedPayment.id}`);
-            }
-            catch (error) {
-                this.logger.error(`Failed to process payment completion workflow: ${error.message}`);
-            }
-        }
-        return savedPayment;
+        return this.paymentRepository.save(payment);
     }
     async findAll(filters) {
         const query = this.paymentRepository.createQueryBuilder('payment')
@@ -106,11 +99,22 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
     }
     async verify(id, userId) {
         const payment = await this.findOne(id);
-        if (payment.status === 'COMPLETED') {
+        if (payment.status === payment_entity_1.PaymentStatus.COMPLETED) {
             throw new common_1.BadRequestException('Payment is already verified');
         }
-        payment.status = 'COMPLETED';
-        return this.paymentRepository.save(payment);
+        payment.status = payment_entity_1.PaymentStatus.COMPLETED;
+        payment.verifiedBy = userId;
+        payment.verifiedAt = new Date();
+        const saved = await this.paymentRepository.save(payment);
+        await this.accountingIntegrationService.onPaymentCompleted({
+            id: saved.id,
+            paymentCode: saved.paymentCode,
+            amount: Number(saved.amount),
+            paymentDate: saved.paymentDate,
+            paymentMethod: saved.paymentMethod,
+            createdBy: userId,
+        });
+        return saved;
     }
     async cancel(id) {
         const payment = await this.findOne(id);
@@ -200,8 +204,7 @@ exports.PaymentsService = PaymentsService;
 exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(payment_entity_1.Payment)),
-    __param(1, (0, common_1.Inject)((0, common_1.forwardRef)(() => payment_completion_service_1.PaymentCompletionService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        payment_completion_service_1.PaymentCompletionService])
+        accounting_integration_service_1.AccountingIntegrationService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

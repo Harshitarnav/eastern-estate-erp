@@ -20,13 +20,13 @@ export class BankAccount {
   @Column({ name: 'bank_name' })
   bankName: string;
 
-  @Column({ name: 'branch_name' })
+  @Column({ name: 'branch_name', nullable: true })
   branchName: string;
 
-  @Column({ name: 'ifsc_code' })
+  @Column({ name: 'ifsc_code', nullable: true })
   ifscCode: string;
 
-  @Column({ name: 'account_type' })
+  @Column({ name: 'account_type', default: 'Current' })
   accountType: string; // Current, Savings, OD
 
   @Column({

@@ -15,7 +15,7 @@ import { CreateJournalEntryDto, UpdateJournalEntryDto, VoidJournalEntryDto } fro
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { JournalEntryStatus } from './entities/journal-entry.entity';
 
-@Controller('journal-entries')
+@Controller('accounting/journal-entries')
 @UseGuards(JwtAuthGuard)
 export class JournalEntriesController {
   constructor(private readonly journalEntriesService: JournalEntriesService) {}
@@ -43,6 +43,12 @@ export class JournalEntriesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.journalEntriesService.findOne(id);
+  }
+
+  @Get(':id/lines')
+  async findLines(@Param('id') id: string) {
+    const entry = await this.journalEntriesService.findOne(id);
+    return entry.lines ?? [];
   }
 
   @Patch(':id')

@@ -17,6 +17,7 @@ exports.MilestoneDetectionService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const schedule_1 = require("@nestjs/schedule");
 const construction_flat_progress_entity_1 = require("../entities/construction-flat-progress.entity");
 const flat_payment_plan_entity_1 = require("../../payment-plans/entities/flat-payment-plan.entity");
 const flat_entity_1 = require("../../flats/entities/flat.entity");
@@ -26,6 +27,24 @@ let MilestoneDetectionService = MilestoneDetectionService_1 = class MilestoneDet
         this.paymentPlanRepository = paymentPlanRepository;
         this.flatRepository = flatRepository;
         this.logger = new common_1.Logger(MilestoneDetectionService_1.name);
+    }
+    async checkMilestones() {
+        this.logger.log('Starting scheduled milestone detection check...');
+        try {
+            const matches = await this.detectMilestones();
+            if (matches.length > 0) {
+                this.logger.log(`Milestone detection: found ${matches.length} milestone(s) ready to trigger`);
+                matches.forEach(m => {
+                    this.logger.log(`  ↳ Flat ${m.flatPaymentPlan.flatId} · "${m.milestoneName}" (seq ${m.milestoneSequence}) · ₹${m.amount}`);
+                });
+            }
+            else {
+                this.logger.debug('Milestone detection: no new milestones triggered');
+            }
+        }
+        catch (error) {
+            this.logger.error('Error during scheduled milestone detection:', error);
+        }
     }
     async detectMilestones() {
         const matches = [];
@@ -142,6 +161,12 @@ let MilestoneDetectionService = MilestoneDetectionService_1 = class MilestoneDet
     }
 };
 exports.MilestoneDetectionService = MilestoneDetectionService;
+__decorate([
+    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_HOUR),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], MilestoneDetectionService.prototype, "checkMilestones", null);
 exports.MilestoneDetectionService = MilestoneDetectionService = MilestoneDetectionService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(construction_flat_progress_entity_1.ConstructionFlatProgress)),

@@ -8,7 +8,7 @@ import {
   Calendar, DollarSign, Calculator, Hammer, Package, 
   ShoppingCart, Briefcase, MessageSquare, BarChart3, 
   Settings, ChevronDown, Target, Database, Table as TableIcon,
-  FileText, AlertTriangle
+  FileText, AlertTriangle, BookOpen, Shield, KeyRound, UserCog
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { hasModuleAccess, isAdminRole } from '@/lib/roles';
@@ -81,30 +81,36 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'construction-milestones', label: 'Construction Milestones', icon: Target, href: '/construction-milestones' },
       ]
     },
-    // { 
-    //   id: 'accounting', 
-    //   label: 'Accounting', 
-    //   icon: Calculator,
-    //   children: [
-    //     { id: 'accounting-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/accounting' },
-    //     { id: 'accounts', label: 'Chart of Accounts', icon: BarChart3, href: '/accounting/accounts' },
-    //     { id: 'expenses', label: 'Expenses', icon: DollarSign, href: '/accounting/expenses' },
-    //     { id: 'budgets', label: 'Budgets', icon: TrendingUp, href: '/accounting/budgets' },
-    //     { id: 'reports', label: 'Reports', icon: BarChart3, href: '/accounting/reports' },
-    //   ]
-    // },
+    { 
+      id: 'accounting', 
+      label: 'Accounting', 
+      icon: Calculator,
+      children: [
+        { id: 'accounting-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/accounting' },
+        { id: 'accounts', label: 'Chart of Accounts', icon: BarChart3, href: '/accounting/accounts' },
+        { id: 'journal-entries', label: 'Journal Entries', icon: FileText, href: '/accounting/journal-entries' },
+        { id: 'expenses', label: 'Expenses', icon: DollarSign, href: '/accounting/expenses' },
+        { id: 'budgets', label: 'Budgets', icon: TrendingUp, href: '/accounting/budgets' },
+        { id: 'bank-accounts', label: 'Bank Accounts', icon: Database, href: '/accounting/bank-accounts' },
+        { id: 'cash-bank-book', label: 'Cash & Bank Book', icon: BookOpen, href: '/accounting/cash-bank-book' },
+        { id: 'accounting-reports', label: 'Reports', icon: BarChart3, href: '/accounting/reports' },
+      ]
+    },
     { 
       id: 'construction', 
       label: 'Construction', 
       icon: Hammer,
       children: [
-        { id: 'construction-progress-simple', label: 'Progress Log', icon: TrendingUp, href: '/construction-progress-simple' },
-        // { id: 'construction-overview', label: 'Overview', icon: LayoutDashboard, href: '/construction' },
-        // { id: 'projects', label: 'Projects', icon: Building2, href: '/construction/projects' },
-        // { id: 'teams', label: 'Teams', icon: Users, href: '/construction/teams' },
-        // { id: 'materials', label: 'Materials', icon: Package, href: '/construction/materials' },
-        // { id: 'vendors', label: 'Vendors', icon: Users, href: '/construction/vendors' },
-        // { id: 'purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, href: '/construction/purchase-orders' },
+        { id: 'construction-overview', label: 'Overview', icon: LayoutDashboard, href: '/construction' },
+        { id: 'projects', label: 'Projects', icon: Building2, href: '/construction/projects' },
+        { id: 'teams', label: 'Teams', icon: Users, href: '/construction/teams' },
+        { id: 'construction-progress', label: 'Daily Logs', icon: TrendingUp, href: '/construction/progress' },
+        { id: 'materials', label: 'Materials', icon: Package, href: '/construction/materials' },
+        { id: 'vendors', label: 'Vendors', icon: Users, href: '/construction/vendors' },
+        { id: 'purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, href: '/construction/purchase-orders' },
+        { id: 'ra-bills', label: 'RA Bills', icon: FileText, href: '/construction/ra-bills' },
+        { id: 'quality-control', label: 'Quality Control', icon: AlertTriangle, href: '/construction/quality' },
+        { id: 'construction-reports', label: 'Reports', icon: BarChart3, href: '/construction/reports' },
       ]
     },
     { 
@@ -114,6 +120,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       children: [
         { id: 'hr-dashboard', label: 'HR Dashboard', icon: LayoutDashboard, href: '/hr' },
         { id: 'employees', label: 'Employees', icon: Users, href: '/employees' },
+        { id: 'payroll', label: 'Payroll', icon: DollarSign, href: '/hr/payroll' },
       ]
     },
     {
@@ -139,10 +146,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       ]
     },
     {
+      id: 'user-management', label: 'User Management', icon: UserCog, adminOnly: true,
+      children: [
+        { id: 'users-list',       label: 'Users',               icon: Users,    href: '/settings/users' },
+        { id: 'roles',            label: 'Roles & Permissions',  icon: Shield,   href: '/roles' },
+        { id: 'property-access',  label: 'Project Access',       icon: KeyRound, href: '/property-access' },
+      ]
+    },
+    {
       id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
       children: [
         { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
-        { id: 'settings-users',   label: 'User Management', icon: Users, href: '/settings/users', superAdminOnly: true },
       ]
     },
   ];

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Plus, BookOpen } from 'lucide-react';
 import { accountsService, type Account } from '@/services/accounting.service';
 import { TableRowsSkeleton } from '@/components/Skeletons';
 
@@ -53,7 +54,7 @@ export default function AccountsPage() {
   }
 
   const totalsByType = (accounts || []).reduce((acc, account) => {
-    acc[account.accountType] = (acc[account.accountType] || 0) + account.currentBalance;
+    acc[account.accountType] = (acc[account.accountType] || 0) + (Number(account.currentBalance) || 0);
     return acc;
   }, {} as Record<string, number>);
 
@@ -122,17 +123,22 @@ export default function AccountsPage() {
                   <th className="text-left p-2">Category</th>
                   <th className="text-right p-2">Balance</th>
                   <th className="text-center p-2">Status</th>
+                  <th className="text-center p-2">Ledger</th>
                 </tr>
               </thead>
               <tbody>
                 {(accounts || []).map((account) => (
-                  <tr key={account.id} className="border-b hover:bg-gray-50">
+                  <tr
+                    key={account.id}
+                    className="border-b hover:bg-gray-50 cursor-pointer"
+                    onClick={() => (window.location.href = `/accounting/accounts/${account.id}`)}
+                  >
                     <td className="p-2 font-mono text-sm">{account.accountCode}</td>
-                    <td className="p-2 font-medium">{account.accountName}</td>
+                    <td className="p-2 font-medium text-blue-600 hover:underline">{account.accountName}</td>
                     <td className="p-2">{getTypeBadge(account.accountType)}</td>
                     <td className="p-2 text-sm">{account.accountCategory}</td>
                     <td className="p-2 text-right font-medium">
-                      {formatCurrency(account.currentBalance)}
+                      {formatCurrency(Number(account.currentBalance) || 0)}
                     </td>
                     <td className="p-2 text-center">
                       {account.isActive ? (
@@ -140,6 +146,13 @@ export default function AccountsPage() {
                       ) : (
                         <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
                       )}
+                    </td>
+                    <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <Link href={`/accounting/accounts/${account.id}/ledger`}>
+                        <Button size="sm" variant="ghost" className="text-xs" title="View ledger">
+                          <BookOpen className="h-3 w-3 mr-1" /> Ledger
+                        </Button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

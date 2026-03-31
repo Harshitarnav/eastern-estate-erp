@@ -126,7 +126,7 @@ let TowerProgressService = class TowerProgressService {
             phase,
             phaseProgress: 0,
             overallProgress: 0,
-            status: 'NOT_STARTED',
+            status: construction_tower_progress_entity_1.PhaseStatus.NOT_STARTED,
         }));
         return this.towerProgressRepo.save(progressRecords);
     }

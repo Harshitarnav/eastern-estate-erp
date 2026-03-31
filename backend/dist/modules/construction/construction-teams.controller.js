@@ -22,6 +22,9 @@ let ConstructionTeamsController = class ConstructionTeamsController {
     create(createDto) {
         return this.constructionTeamsService.create(createDto);
     }
+    findAll(constructionProjectId, propertyId) {
+        return this.constructionTeamsService.findAll({ constructionProjectId, propertyId });
+    }
     findByProject(projectId) {
         return this.constructionTeamsService.findByProject(projectId);
     }
@@ -43,6 +46,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], ConstructionTeamsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('constructionProjectId')),
+    __param(1, (0, common_1.Query)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], ConstructionTeamsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('project/:projectId'),
     __param(0, (0, common_1.Param)('projectId')),

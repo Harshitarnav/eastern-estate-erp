@@ -26,4 +26,8 @@ export class CreateVendorPaymentDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsUUID()
+  @IsOptional()
+  createdBy?: string;
 }

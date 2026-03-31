@@ -31,10 +31,10 @@ export class MaterialExit {
   @Column({ type: 'text' })
   purpose: string;
 
-  @Column({ name: 'issued_to', type: 'uuid' })
-  issuedTo: string;
+  @Column({ name: 'issued_to', type: 'uuid', nullable: true })
+  issuedTo: string | null;
 
-  @ManyToOne(() => Employee)
+  @ManyToOne(() => Employee, { nullable: true })
   @JoinColumn({ name: 'issued_to' })
   issuedToEmployee: Employee;
 

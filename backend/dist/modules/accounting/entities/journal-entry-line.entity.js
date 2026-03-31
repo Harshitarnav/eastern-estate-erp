@@ -21,21 +21,21 @@ __decorate([
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'journal_entry_id' }),
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "journalEntryId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => journal_entry_entity_1.JournalEntry, (entry) => entry.lines, { onDelete: 'CASCADE' }),
-    (0, typeorm_1.JoinColumn)({ name: 'journalEntryId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'journal_entry_id' }),
     __metadata("design:type", journal_entry_entity_1.JournalEntry)
 ], JournalEntryLine.prototype, "journalEntry", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ name: 'account_id' }),
     __metadata("design:type", String)
 ], JournalEntryLine.prototype, "accountId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => account_entity_1.Account),
-    (0, typeorm_1.JoinColumn)({ name: 'accountId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'account_id' }),
     __metadata("design:type", account_entity_1.Account)
 ], JournalEntryLine.prototype, "account", void 0);
 __decorate([

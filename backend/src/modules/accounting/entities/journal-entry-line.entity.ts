@@ -14,18 +14,18 @@ export class JournalEntryLine {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ name: 'journal_entry_id' })
   journalEntryId: string;
 
   @ManyToOne(() => JournalEntry, (entry) => entry.lines, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'journalEntryId' })
+  @JoinColumn({ name: 'journal_entry_id' })
   journalEntry: JournalEntry;
 
-  @Column()
+  @Column({ name: 'account_id' })
   accountId: string;
 
   @ManyToOne(() => Account)
-  @JoinColumn({ name: 'accountId' })
+  @JoinColumn({ name: 'account_id' })
   account: Account;
 
   @Column('decimal', { precision: 15, scale: 2, default: 0 })

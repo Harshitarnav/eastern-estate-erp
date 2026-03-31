@@ -1,16 +1,15 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
-  OneToMany,
+ Entity,
+ PrimaryGeneratedColumn,
+ Column,
+ CreateDateColumn,
+ UpdateDateColumn,
+ ManyToOne,
+ JoinColumn,
+ OneToMany,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
-import { Employee } from '../../employees/entities/employee.entity';
 import { User } from '../../users/entities/user.entity';
 import { PaymentRefund } from './payment-refund.entity';
 
@@ -99,4 +98,31 @@ export class Payment {
   // Receipt
   @Column({ name: 'receipt_number', nullable: true })
   receiptNumber: string;
+
+  // Audit / Extra DB columns
+  @Column({ name: 'notes', type: 'text', nullable: true })
+  notes: string;
+
+  @Column({ name: 'verified_by', nullable: true })
+  verifiedBy: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'verified_by' })
+  verifier: User;
+
+  @Column({ name: 'verified_at', type: 'timestamp', nullable: true })
+  verifiedAt: Date;
+
+  @Column({ name: 'created_by', nullable: true })
+  createdBy: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by' })
+  creator: User;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

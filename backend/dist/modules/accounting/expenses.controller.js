@@ -51,8 +51,8 @@ let ExpensesController = class ExpensesController {
     reject(id, rejectDto, req) {
         return this.expensesService.reject(id, req.user.userId, rejectDto);
     }
-    markAsPaid(id) {
-        return this.expensesService.markAsPaid(id);
+    markAsPaid(id, req) {
+        return this.expensesService.markAsPaid(id, req.user?.userId);
     }
     remove(id) {
         return this.expensesService.remove(id);
@@ -121,8 +121,9 @@ __decorate([
 __decorate([
     (0, common_1.Post)(':id/paid'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ExpensesController.prototype, "markAsPaid", null);
 __decorate([

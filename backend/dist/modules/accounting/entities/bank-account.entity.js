@@ -31,15 +31,15 @@ __decorate([
     __metadata("design:type", String)
 ], BankAccount.prototype, "bankName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'branch_name' }),
+    (0, typeorm_1.Column)({ name: 'branch_name', nullable: true }),
     __metadata("design:type", String)
 ], BankAccount.prototype, "branchName", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'ifsc_code' }),
+    (0, typeorm_1.Column)({ name: 'ifsc_code', nullable: true }),
     __metadata("design:type", String)
 ], BankAccount.prototype, "ifscCode", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'account_type' }),
+    (0, typeorm_1.Column)({ name: 'account_type', default: 'Current' }),
     __metadata("design:type", String)
 ], BankAccount.prototype, "accountType", void 0);
 __decorate([
