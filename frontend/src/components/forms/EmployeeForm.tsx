@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Form, FormField } from './Form';
+import { Form, FormField, FormSection } from './Form';
 
 interface EmployeeFormProps {
   onSubmit: (data: any) => void;
@@ -10,7 +10,6 @@ interface EmployeeFormProps {
 }
 
 export default function EmployeeForm({ onSubmit, initialData, onCancel }: EmployeeFormProps) {
-  const [activeTab, setActiveTab] = useState('basic');
   const [formValues, setFormValues] = useState<Record<string, any>>(initialData || {});
 
 
@@ -593,53 +592,27 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
     },
   ];
 
-  const tabs = [
-    { id: 'basic', label: 'Basic Info', fields: basicFields },
-    { id: 'address', label: 'Address', fields: addressFields },
-    { id: 'employment', label: 'Employment', fields: employmentFields },
-    { id: 'salary', label: 'Salary', fields: salaryFields },
-    { id: 'bank', label: 'Bank Details', fields: bankFields },
-    { id: 'documents', label: 'Documents', fields: documentsFields },
-    { id: 'emergency', label: 'Emergency Contact', fields: emergencyFields },
-    { id: 'leave', label: 'Leave & Attendance', fields: leaveFields },
-    { id: 'performance', label: 'Performance', fields: performanceFields },
-    { id: 'notes', label: 'Notes', fields: notesFields },
+  const sections: FormSection[] = [
+    { title: 'Basic Info', fields: basicFields },
+    { title: 'Address', fields: addressFields },
+    { title: 'Employment', fields: employmentFields },
+    { title: 'Salary', fields: salaryFields },
+    { title: 'Bank Details', fields: bankFields },
+    { title: 'Documents', fields: documentsFields },
+    { title: 'Emergency Contact', fields: emergencyFields },
+    { title: 'Leave & Attendance', fields: leaveFields },
+    { title: 'Performance', fields: performanceFields },
+    { title: 'Notes', fields: notesFields },
   ];
 
-  const currentFields = tabs.find(t => t.id === activeTab)?.fields || [];
-
   return (
-    <div className="space-y-6">
-      {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex space-x-4 overflow-x-auto" aria-label="Tabs">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors
-                ${activeTab === tab.id
-                  ? 'border-[#A8211B] text-[#A8211B]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }
-              `}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Form */}
-      <Form
-        fields={currentFields}
-        onSubmit={onSubmit}
-        initialValues={initialData}
-        submitLabel={initialData ? 'Update Employee' : 'Add Employee'}
-        onCancel={onCancel}
-        onValuesChange={setFormValues}
-      />
-    </div>
+    <Form
+      sections={sections}
+      onSubmit={onSubmit}
+      initialValues={initialData}
+      submitLabel={initialData ? 'Update Employee' : 'Add Employee'}
+      onCancel={onCancel}
+      onValuesChange={setFormValues}
+    />
   );
 }

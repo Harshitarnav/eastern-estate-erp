@@ -488,7 +488,7 @@ export default function Form({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-5xl mx-auto">
+    <form onSubmit={handleSubmit} className="w-full mx-auto">
       <div className="bg-white rounded-lg shadow-sm">
         {/* Header */}
         {(title || description) && (
@@ -504,7 +504,13 @@ export default function Form({
             sections.map((section, idx) => (
               <div key={idx}>
                 <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+                  <div className="mb-4">
+                    <div className="bg-[#7B1E12] text-white px-5 py-2.5 border-t-2 border-l-2 border-r-2 border-red-800 rounded-t-2xl shadow-sm">
+                      <h3 className="text-lg font-semibold tracking-wide">
+                        {section.title}
+                      </h3>
+                    </div>
+                  </div>
                   {section.description && (
                     <p className="mt-1 text-sm text-gray-600">{section.description}</p>
                   )}
@@ -545,7 +551,7 @@ export default function Form({
                 type="button"
                 onClick={onCancel}
                 disabled={loading}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-2 border border-yellow-500 text-gray-700 rounded-lg hover:text-white hover:bg-yellow-500 transition-colors disabled:opacity-50 flex items-center gap-2 hover:cursor-pointer"
               >
                 <X className="w-4 h-4" />
                 {cancelLabel}
@@ -554,7 +560,7 @@ export default function Form({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+              className="px-6 py-2 bg-[#7B1E12] text-white rounded-lg hover:bg-[#5A150D] transition-colors disabled:opacity-50 flex items-center gap-2 hover:cursor-pointer"
             >
               {loading ? (
                 <>
