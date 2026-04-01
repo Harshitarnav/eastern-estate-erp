@@ -124,6 +124,12 @@ run_migration "$MIGRATIONS_DIR/v011_drop_flat_doc_url_columns.sql"
 
 echo ""
 echo "======================================================"
+echo " STEP 13: FIX EMPLOYEES NULLABLE COLUMNS"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v012_fix_employees_nullable_columns.sql"
+
+echo ""
+echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
 echo " Now restart the application:"
 echo "   docker compose -f docker-compose.prod.yml restart backend frontend"

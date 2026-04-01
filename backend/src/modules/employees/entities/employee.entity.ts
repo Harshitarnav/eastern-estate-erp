@@ -60,7 +60,7 @@ export class Employee {
   @Column({ length: 200, nullable: true })
   email: string;
 
-  @Column({ length: 50 })
+  @Column({ length: 50, nullable: true })
   phoneNumber: string;
 
   @Column({ length: 50, nullable: true })
@@ -69,10 +69,10 @@ export class Employee {
   @Column({ type: 'text', nullable: true })
   profilePicture: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   dateOfBirth: Date;
 
-  @Column({ length: 20 })
+  @Column({ length: 20, nullable: true })
   gender: string;
 
   @Column({ length: 50, nullable: true })
@@ -82,7 +82,7 @@ export class Employee {
   maritalStatus: string;
 
   // Address
-  @Column({ type: 'text' })
+  @Column({ type: 'text', nullable: true })
   currentAddress: string;
 
   @Column({ type: 'text', nullable: true })
@@ -101,15 +101,17 @@ export class Employee {
   @Column({
     type: 'enum',
     enum: Department,
+    nullable: true,
   })
   department: Department;
 
-  @Column({ length: 200 })
+  @Column({ length: 200, nullable: true })
   designation: string;
 
   @Column({
     type: 'enum',
     enum: EmploymentType,
+    nullable: true,
   })
   employmentType: EmploymentType;
 
@@ -120,7 +122,7 @@ export class Employee {
   })
   employmentStatus: EmploymentStatus;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'date', nullable: true })
   joiningDate: Date;
 
   @Column({ type: 'date', nullable: true })
@@ -140,7 +142,7 @@ export class Employee {
   reportingManagerName: string;
 
   // Salary & Compensation
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column('decimal', { precision: 15, scale: 2, default: 0 })
   basicSalary: number;
 
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
@@ -155,7 +157,7 @@ export class Employee {
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
   otherAllowances: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column('decimal', { precision: 15, scale: 2, default: 0 })
   grossSalary: number;
 
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
@@ -170,7 +172,7 @@ export class Employee {
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
   otherDeductions: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column('decimal', { precision: 15, scale: 2, default: 0 })
   netSalary: number;
 
   // Bank Details

@@ -60,7 +60,7 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "email", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 50 }),
+    (0, typeorm_1.Column)({ length: 50, nullable: true }),
     __metadata("design:type", String)
 ], Employee.prototype, "phoneNumber", void 0);
 __decorate([
@@ -72,11 +72,11 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "profilePicture", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date' }),
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Employee.prototype, "dateOfBirth", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 20 }),
+    (0, typeorm_1.Column)({ length: 20, nullable: true }),
     __metadata("design:type", String)
 ], Employee.prototype, "gender", void 0);
 __decorate([
@@ -88,7 +88,7 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "maritalStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text' }),
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Employee.prototype, "currentAddress", void 0);
 __decorate([
@@ -111,17 +111,19 @@ __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: Department,
+        nullable: true,
     }),
     __metadata("design:type", String)
 ], Employee.prototype, "department", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 200 }),
+    (0, typeorm_1.Column)({ length: 200, nullable: true }),
     __metadata("design:type", String)
 ], Employee.prototype, "designation", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         type: 'enum',
         enum: EmploymentType,
+        nullable: true,
     }),
     __metadata("design:type", String)
 ], Employee.prototype, "employmentType", void 0);
@@ -134,7 +136,7 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "employmentStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date' }),
+    (0, typeorm_1.Column)({ type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Employee.prototype, "joiningDate", void 0);
 __decorate([
@@ -158,7 +160,7 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "reportingManagerName", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "basicSalary", void 0);
 __decorate([
@@ -178,7 +180,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Employee.prototype, "otherAllowances", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "grossSalary", void 0);
 __decorate([
@@ -198,7 +200,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Employee.prototype, "otherDeductions", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "netSalary", void 0);
 __decorate([
