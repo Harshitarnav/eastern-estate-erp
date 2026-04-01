@@ -2,7 +2,6 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  customWorkerPath: require('path').join(__dirname, 'worker'),
   // Disable SW in development (next dev), enable for production build
   disable: process.env.NODE_ENV === 'development',
   // Allow testing over local network HTTP (Android Chrome allows this)
