@@ -64,6 +64,9 @@ let RABillsService = class RABillsService {
         if (filters?.propertyId) {
             qb.andWhere('bill.propertyId = :propertyId', { propertyId: filters.propertyId });
         }
+        else if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+            qb.andWhere('bill.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds: filters.accessiblePropertyIds });
+        }
         return qb.getMany();
     }
     async findOne(id) {

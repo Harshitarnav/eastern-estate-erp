@@ -32,10 +32,13 @@ let ConstructionProjectsService = class ConstructionProjectsService {
         });
         return await this.constructionProjectRepository.save(project);
     }
-    async findAll(propertyId) {
+    async findAll(propertyId, accessiblePropertyIds) {
         const where = {};
         if (propertyId) {
             where.propertyId = propertyId;
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            where.propertyId = (0, typeorm_2.In)(accessiblePropertyIds);
         }
         return await this.constructionProjectRepository.find({
             where,

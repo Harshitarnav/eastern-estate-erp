@@ -24,14 +24,14 @@ let FlatsController = class FlatsController {
     constructor(flatsService) {
         this.flatsService = flatsService;
     }
-    async getGlobalStats() {
-        return this.flatsService.getGlobalStats();
+    async getGlobalStats(req) {
+        return this.flatsService.getGlobalStats(req.accessiblePropertyIds);
     }
     async create(createFlatDto) {
         return this.flatsService.create(createFlatDto);
     }
-    async findAll(query) {
-        return this.flatsService.findAll(query);
+    async findAll(query, req) {
+        return this.flatsService.findAll(query, req.accessiblePropertyIds);
     }
     async findOne(id) {
         return this.flatsService.findOne(id);
@@ -61,8 +61,9 @@ let FlatsController = class FlatsController {
 exports.FlatsController = FlatsController;
 __decorate([
     (0, common_1.Get)('stats'),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], FlatsController.prototype, "getGlobalStats", null);
 __decorate([
@@ -77,8 +78,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryFlatDto]),
+    __metadata("design:paramtypes", [dto_1.QueryFlatDto, Object]),
     __metadata("design:returntype", Promise)
 ], FlatsController.prototype, "findAll", null);
 __decorate([

@@ -29,8 +29,8 @@ let TowersController = class TowersController {
     async create(createTowerDto) {
         return this.towersService.create(createTowerDto);
     }
-    async findAll(queryDto) {
-        return this.towersService.findAll(queryDto);
+    async findAll(queryDto, req) {
+        return this.towersService.findAll(queryDto, req.accessiblePropertyIds);
     }
     async findOne(id) {
         return this.towersService.findOne(id);
@@ -101,8 +101,9 @@ __decorate([
         type: dto_1.PaginatedTowerResponseDto,
     }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.QueryTowerDto]),
+    __metadata("design:paramtypes", [dto_1.QueryTowerDto, Object]),
     __metadata("design:returntype", Promise)
 ], TowersController.prototype, "findAll", null);
 __decorate([

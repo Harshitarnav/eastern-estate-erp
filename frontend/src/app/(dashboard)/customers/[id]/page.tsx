@@ -16,6 +16,8 @@ import {
   FileText,
   TrendingUp,
   Loader2,
+  UserPlus,
+  ExternalLink,
 } from 'lucide-react';
 import { customersService, Customer } from '@/services/customers.service';
 import { BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
@@ -23,6 +25,8 @@ import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
+import { apiService } from '@/services/api';
+import { toast } from 'sonner';
 
 export default function CustomerViewPage() {
   const router = useRouter();
@@ -32,6 +36,10 @@ export default function CustomerViewPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [portalAccount, setPortalAccount] = useState<{ hasAccount: boolean; user?: any } | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [invitePassword, setInvitePassword] = useState('');
 
   useEffect(() => {
     if (customerId) {
@@ -45,11 +53,34 @@ export default function CustomerViewPage() {
       const response = await customersService.getCustomer(customerId);
       setCustomer(response);
       setError('');
+      // Also check portal account status
+      apiService.get(`/customer-portal/check/${customerId}`)
+        .then((r: any) => setPortalAccount(r))
+        .catch(() => {});
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch customer');
       console.error('Error fetching customer:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleInvite = async () => {
+    if (!invitePassword || invitePassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+    try {
+      setInviting(true);
+      await apiService.post(`/customer-portal/invite/${customerId}`, { password: invitePassword });
+      toast.success('Portal account created! Customer can now log in at /portal/login');
+      setShowInviteModal(false);
+      setInvitePassword('');
+      setPortalAccount({ hasAccount: true });
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to create portal account');
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -123,10 +154,66 @@ export default function CustomerViewPage() {
             </span>
           )}
         </div>
-        <BrandPrimaryButton onClick={() => router.push(`/customers/${customerId}/edit`)}>
-          <Edit className="w-4 h-4" />
-          Edit Customer
-        </BrandPrimaryButton>
+        <div className="flex items-center gap-2">
+          {/* Portal invite/status button */}
+          {portalAccount?.hasAccount ? (
+            <a href="/portal" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition">
+              <ExternalLink className="w-4 h-4" /> Portal Active
+            </a>
+          ) : (
+            <button onClick={() => setShowInviteModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">
+              <UserPlus className="w-4 h-4" /> Invite to Portal
+            </button>
+          )}
+          <BrandPrimaryButton onClick={() => router.push(`/customers/${customerId}/edit`)}>
+            <Edit className="w-4 h-4" />
+            Edit Customer
+          </BrandPrimaryButton>
+        </div>
+
+        {/* Invite modal */}
+        {showInviteModal && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">Create Portal Account</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                This will create a login account for <strong>{customer?.fullName}</strong> at
+                <code className="ml-1 text-xs bg-gray-100 px-1 py-0.5 rounded">/portal/login</code>
+              </p>
+              {!customer?.email && (
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg mb-4">
+                  ⚠️ This customer has no email address. Please add one before creating a portal account.
+                </p>
+              )}
+              <div className="mb-4">
+                <label className="text-xs font-bold text-gray-600 uppercase tracking-wide block mb-1">
+                  Temporary Password
+                </label>
+                <input
+                  type="text"
+                  value={invitePassword}
+                  onChange={(e) => setInvitePassword(e.target.value)}
+                  placeholder="Min. 8 characters"
+                  className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition"
+                />
+                <p className="text-xs text-gray-400 mt-1">Share this with the customer so they can log in.</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setShowInviteModal(false); setInvitePassword(''); }}
+                  className="flex-1 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition">
+                  Cancel
+                </button>
+                <button onClick={handleInvite} disabled={inviting || !customer?.email}
+                  className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition flex items-center justify-center gap-2">
+                  {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                  Create Account
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}

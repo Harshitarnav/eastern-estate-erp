@@ -47,4 +47,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateVendorPaymentDto.prototype, "notes", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateVendorPaymentDto.prototype, "createdBy", void 0);
 //# sourceMappingURL=create-vendor-payment.dto.js.map

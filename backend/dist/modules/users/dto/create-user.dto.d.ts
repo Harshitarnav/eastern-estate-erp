@@ -10,4 +10,5 @@ export declare class CreateUserDto {
     gender?: string;
     profileImage?: string;
     roleIds?: string[];
+    customerId?: string;
 }

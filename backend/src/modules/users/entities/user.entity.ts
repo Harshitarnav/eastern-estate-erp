@@ -79,6 +79,10 @@ export class User {
   @OneToMany(() => UserPropertyAccess, (access) => access.user)
   propertyAccess: UserPropertyAccess[];
 
+  // Customer portal link — set when this user is a customer account
+  @Column({ name: 'customer_id', type: 'uuid', nullable: true })
+  customerId: string | null;
+
   // @ManyToMany(() => Role, role => role.users, { eager: true })
   // @JoinTable({ name: 'user_roles' })
   // roles: Role[];

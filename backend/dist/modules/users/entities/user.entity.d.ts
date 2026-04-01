@@ -22,6 +22,7 @@ export declare class User {
     allowedDomain: string;
     isDomainVerified: boolean;
     propertyAccess: UserPropertyAccess[];
+    customerId: string | null;
     createdBy: string;
     updatedBy: string;
     createdAt: Date;

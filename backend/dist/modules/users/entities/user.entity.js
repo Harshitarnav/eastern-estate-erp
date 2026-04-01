@@ -101,6 +101,10 @@ __decorate([
     __metadata("design:type", Array)
 ], User.prototype, "propertyAccess", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'customer_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "customerId", void 0);
+__decorate([
     (0, typeorm_1.Column)({ type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "createdBy", void 0);

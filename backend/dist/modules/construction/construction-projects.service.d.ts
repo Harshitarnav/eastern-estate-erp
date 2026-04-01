@@ -6,7 +6,7 @@ export declare class ConstructionProjectsService {
     private readonly constructionProjectRepository;
     constructor(constructionProjectRepository: Repository<ConstructionProject>);
     create(createDto: CreateConstructionProjectDto): Promise<ConstructionProject>;
-    findAll(propertyId?: string): Promise<ConstructionProject[]>;
+    findAll(propertyId?: string, accessiblePropertyIds?: string[] | null): Promise<ConstructionProject[]>;
     findOne(id: string): Promise<ConstructionProject>;
     update(id: string, updateDto: UpdateConstructionProjectDto): Promise<ConstructionProject>;
     remove(id: string): Promise<void>;

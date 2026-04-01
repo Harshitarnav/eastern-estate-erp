@@ -41,23 +41,25 @@ let PropertyAccessGuard = PropertyAccessGuard_1 = class PropertyAccessGuard {
             throw new common_1.ForbiddenException('User not authenticated');
         }
         const userRoles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
-        const isAdmin = userRoles.includes('super_admin') || userRoles.includes('admin');
-        if (isAdmin) {
-            this.logger.debug(`User ${user.email} is global admin - bypassing property access check`);
+        if (userRoles.includes('super_admin')) {
+            this.logger.debug(`User ${user.email} is super_admin - full bypass`);
             request.isGlobalAdmin = true;
-            return true;
-        }
-        if (userRoles.includes('hr')) {
-            this.logger.debug(`User ${user.email} has HR role - bypassing property access check`);
-            request.isGlobalAdmin = false;
-            request.accessiblePropertyIds = [];
+            request.accessiblePropertyIds = null;
             return true;
         }
         const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
+        const isPrivilegedRole = userRoles.includes('admin') || userRoles.includes('hr');
+        if (isPrivilegedRole && (!userPropertyIds || userPropertyIds.length === 0)) {
+            this.logger.debug(`User ${user.email} has ${userRoles.join(',')} role with no assignments - full bypass`);
+            request.isGlobalAdmin = true;
+            request.accessiblePropertyIds = null;
+            return true;
+        }
         if (!userPropertyIds || userPropertyIds.length === 0) {
             this.logger.warn(`User ${user.email} has no property access - denying request`);
-            throw new common_1.ForbiddenException('You do not have access to any properties. Please contact your administrator.');
+            throw new common_1.ForbiddenException('You have not been assigned to any projects yet. Please contact your administrator.');
         }
+        request.isGlobalAdmin = false;
         request.accessiblePropertyIds = userPropertyIds;
         const propertyId = request.params?.propertyId ||
             request.query?.propertyId ||

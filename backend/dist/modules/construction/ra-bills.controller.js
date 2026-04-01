@@ -23,8 +23,14 @@ let RABillsController = class RABillsController {
     create(createDto, req) {
         return this.raBillsService.create(createDto, req.user?.id);
     }
-    findAll(constructionProjectId, vendorId, status, propertyId) {
-        return this.raBillsService.findAll({ constructionProjectId, vendorId, status, propertyId });
+    findAll(constructionProjectId, vendorId, status, propertyId, req) {
+        return this.raBillsService.findAll({
+            constructionProjectId,
+            vendorId,
+            status,
+            propertyId,
+            accessiblePropertyIds: req?.accessiblePropertyIds,
+        });
     }
     getSummary(projectId) {
         return this.raBillsService.getSummaryByProject(projectId);
@@ -69,8 +75,9 @@ __decorate([
     __param(1, (0, common_1.Query)('vendorId')),
     __param(2, (0, common_1.Query)('status')),
     __param(3, (0, common_1.Query)('propertyId')),
+    __param(4, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], RABillsController.prototype, "findAll", null);
 __decorate([

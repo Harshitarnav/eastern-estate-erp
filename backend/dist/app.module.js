@@ -38,6 +38,7 @@ const reports_module_1 = require("./modules/reports/reports.module");
 const documents_module_1 = require("./modules/documents/documents.module");
 const settings_module_1 = require("./modules/settings/settings.module");
 const mail_module_1 = require("./common/mail/mail.module");
+const customer_portal_module_1 = require("./modules/customer-portal/customer-portal.module");
 const typeorm_naming_strategies_1 = require("typeorm-naming-strategies");
 const upload_module_1 = require("./common/upload/upload.module");
 const health_module_1 = require("./health/health.module");
@@ -122,6 +123,7 @@ exports.AppModule = AppModule = __decorate([
             documents_module_1.DocumentsModule,
             settings_module_1.SettingsModule,
             mail_module_1.MailModule,
+            customer_portal_module_1.CustomerPortalModule,
             upload_module_1.UploadModule,
             health_module_1.HealthModule,
         ],

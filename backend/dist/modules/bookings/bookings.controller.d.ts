@@ -4,8 +4,8 @@ export declare class BookingsController {
     private readonly bookingsService;
     constructor(bookingsService: BookingsService);
     create(createBookingDto: CreateBookingDto, req: any): Promise<BookingResponseDto>;
-    findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse>;
-    getStatistics(): Promise<{
+    findAll(query: QueryBookingDto, req: any): Promise<PaginatedBookingsResponse>;
+    getStatistics(req: any): Promise<{
         total: number;
         tokenPaid: number;
         agreementPending: number;

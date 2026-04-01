@@ -100,7 +100,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
         const savedCustomer = await this.customersRepository.save(customer);
         return dto_1.CustomerResponseDto.fromEntity(savedCustomer);
     }
-    async findAll(query) {
+    async findAll(query, accessiblePropertyIds) {
         const { search, type, kycStatus, needsHomeLoan, isVIP, city, createdFrom, createdTo, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const allowedSortFields = [
             'createdAt',
@@ -144,6 +144,9 @@ let CustomersService = CustomersService_1 = class CustomersService {
             }
             if (query.propertyId) {
                 qb.andWhere('EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))', { pid: query.propertyId });
+            }
+            else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+                qb.andWhere('EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))', { pids: accessiblePropertyIds });
             }
             qb.orderBy(`customer.${safeSortBy}`, sortOrder);
         };

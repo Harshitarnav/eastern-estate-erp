@@ -45,6 +45,7 @@ export declare class AuthService {
         allowedDomain: string;
         isDomainVerified: boolean;
         propertyAccess: import("../modules/users/entities/user-property-access.entity").UserPropertyAccess[];
+        customerId: string | null;
         createdBy: string;
         updatedBy: string;
         createdAt: Date;

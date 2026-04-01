@@ -185,7 +185,7 @@ let FlatsService = class FlatsService {
         const savedFlat = await this.flatsRepository.save(flat);
         return dto_1.FlatResponseDto.fromEntity(savedFlat);
     }
-    async findAll(query) {
+    async findAll(query, accessiblePropertyIds) {
         const { search, propertyId, towerId, type, status, isAvailable, minPrice, maxPrice, floor, bedrooms, vastuCompliant, cornerUnit, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const queryBuilder = this.flatsRepository
             .createQueryBuilder('flat')
@@ -196,6 +196,9 @@ let FlatsService = class FlatsService {
         }
         if (propertyId) {
             queryBuilder.andWhere('flat.propertyId = :propertyId', { propertyId });
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            queryBuilder.andWhere('flat.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
         }
         if (towerId) {
             queryBuilder.andWhere('flat.towerId = :towerId', { towerId });
@@ -512,9 +515,12 @@ let FlatsService = class FlatsService {
             occupancyRate: total > 0 ? ((booked + sold) / total) * 100 : 0,
         };
     }
-    async getGlobalStats() {
-        const record = await this.flatsRepository
-            .createQueryBuilder('flat')
+    async getGlobalStats(accessiblePropertyIds) {
+        const qb = this.flatsRepository.createQueryBuilder('flat');
+        if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            qb.where('flat.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
+        }
+        const record = await qb
             .select('COUNT(*)', 'total')
             .addSelect("SUM(CASE WHEN flat.status = :available THEN 1 ELSE 0 END)", 'available')
             .addSelect("SUM(CASE WHEN flat.status = :sold THEN 1 ELSE 0 END)", 'sold')

@@ -31,7 +31,7 @@ let PropertyAccessController = class PropertyAccessController {
         await this.notificationsService.create({
             userId: grantAccessDto.userId,
             title: 'Property Access Granted',
-            message: `You have been granted ${grantAccessDto.role} access to a property.`,
+            message: `You have been granted access to a project.`,
             type: notification_entity_1.NotificationType.SUCCESS,
             category: notification_entity_1.NotificationCategory.SYSTEM,
             actionUrl: '/properties',
@@ -74,7 +74,7 @@ let PropertyAccessController = class PropertyAccessController {
         await this.notificationsService.create({
             userId: userId,
             title: 'Property Access Granted',
-            message: `You have been granted ${body.role} access to a property.`,
+            message: `You have been granted access to a project.`,
             type: notification_entity_1.NotificationType.SUCCESS,
             category: notification_entity_1.NotificationCategory.SYSTEM,
             actionUrl: '/properties',

@@ -26,7 +26,9 @@ let VendorPaymentsService = class VendorPaymentsService {
         this.dataSource = dataSource;
         this.accountingIntegration = accountingIntegration;
     }
-    async create(createDto) {
+    async create(createDto, userId) {
+        if (userId)
+            createDto.createdBy = userId;
         const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         await queryRunner.startTransaction();

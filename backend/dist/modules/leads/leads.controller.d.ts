@@ -7,8 +7,8 @@ export declare class LeadsController {
     private readonly priorityService;
     constructor(leadsService: LeadsService, priorityService: PriorityService);
     create(createLeadDto: CreateLeadDto): Promise<LeadResponseDto>;
-    findAll(query: QueryLeadDto, req: Request): Promise<PaginatedLeadsResponse>;
-    getStatistics(): Promise<{
+    findAll(query: QueryLeadDto, req: any): Promise<PaginatedLeadsResponse>;
+    getStatistics(req: any): Promise<{
         total: number;
         newLeads: number;
         contacted: number;

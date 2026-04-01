@@ -71,7 +71,7 @@ let LeadsService = class LeadsService {
         const savedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(savedLead);
     }
-    async findAll(query, user) {
+    async findAll(query, user, accessiblePropertyIds) {
         const { search, status, source, priority, assignedTo, propertyId, towerId, flatId, isQualified, needsHomeLoan, hasSiteVisit, minBudget, maxBudget, createdFrom, createdTo, followUpDue, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const queryBuilder = this.leadsRepository
             .createQueryBuilder('lead')
@@ -90,6 +90,9 @@ let LeadsService = class LeadsService {
         }
         if (propertyId) {
             queryBuilder.andWhere('lead.propertyId = :propertyId', { propertyId });
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            queryBuilder.andWhere('lead.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
         }
         if (towerId) {
             queryBuilder.andWhere('lead.towerId = :towerId', { towerId });
@@ -231,10 +234,13 @@ let LeadsService = class LeadsService {
         const updatedLead = await this.leadsRepository.save(lead);
         return dto_1.LeadResponseDto.fromEntity(updatedLead);
     }
-    async getStatistics() {
-        const leads = await this.leadsRepository.find({
-            where: { isActive: true },
-        });
+    async getStatistics(accessiblePropertyIds) {
+        const leads = accessiblePropertyIds && accessiblePropertyIds.length > 0
+            ? await this.leadsRepository.createQueryBuilder('lead')
+                .where('lead.isActive = true')
+                .andWhere('lead.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+                .getMany()
+            : await this.leadsRepository.find({ where: { isActive: true } });
         const total = leads.length;
         const newLeads = leads.filter((l) => l.status === 'NEW').length;
         const contacted = leads.filter((l) => l.status === 'CONTACTED').length;

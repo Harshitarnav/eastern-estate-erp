@@ -15,7 +15,7 @@ export declare class FlatsService {
     private buildChecklist;
     private evaluateFlatMetadata;
     create(createFlatDto: CreateFlatDto): Promise<FlatResponseDto>;
-    findAll(query: QueryFlatDto): Promise<PaginatedFlatsResponse>;
+    findAll(query: QueryFlatDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedFlatsResponse>;
     findOne(id: string): Promise<FlatResponseDto>;
     findByTower(towerId: string): Promise<FlatResponseDto[]>;
     findByProperty(propertyId: string): Promise<FlatResponseDto[]>;
@@ -42,7 +42,7 @@ export declare class FlatsService {
         totalRevenue: number;
         occupancyRate: number;
     }>;
-    getGlobalStats(): Promise<{
+    getGlobalStats(accessiblePropertyIds?: string[] | null): Promise<{
         total: number;
         available: number;
         sold: number;

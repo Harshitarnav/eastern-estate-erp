@@ -58,4 +58,8 @@ export class CreateUserDto {
   @IsUUID('4', { each: true })
   @IsOptional()
   roleIds?: string[];
+
+  @IsUUID()
+  @IsOptional()
+  customerId?: string;
 }

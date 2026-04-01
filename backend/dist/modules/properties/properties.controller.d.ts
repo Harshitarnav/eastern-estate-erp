@@ -3,6 +3,7 @@ import { CreatePropertyDto, UpdatePropertyDto, QueryPropertyDto, PaginatedProper
 export declare class PropertiesController {
     private readonly propertiesService;
     constructor(propertiesService: PropertiesService);
+    private assertPropertyAccess;
     create(createPropertyDto: CreatePropertyDto, req: any): Promise<PropertyResponseDto>;
     findAll(queryDto: QueryPropertyDto, req: any): Promise<PaginatedPropertyResponseDto>;
     getStats(req: any): Promise<any>;
