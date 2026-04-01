@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Building2, Home, Users, TrendingUp, DollarSign, Package, 
-  Sparkles, Target, CheckCircle, ArrowUpRight, BarChart3,
-  Calendar, Bell, Award, Shield, Zap, Heart
+  Sparkles, CheckCircle, ArrowUpRight, BarChart3,
+  Calendar, Bell, Award, Shield, Heart
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import apiService from '@/services/api';
@@ -417,12 +417,12 @@ export default function DashboardPage() {
             
             <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {[
-                { href: '/properties',           label: 'Properties', sub: 'Manage',   Icon: Building2,    from: 'from-red-50',    to: 'to-orange-50',   border: 'hover:border-red-200',    color: 'text-red-600' },
-                { href: '/towers',               label: 'Inventory',  sub: 'View',     Icon: Home,         from: 'from-blue-50',   to: 'to-indigo-50',   border: 'hover:border-blue-200',   color: 'text-blue-600' },
-                { href: '/leads',                label: 'Leads',      sub: 'Track',    Icon: Target,       from: 'from-yellow-50', to: 'to-amber-50',    border: 'hover:border-yellow-200', color: 'text-yellow-600' },
-                { href: '/customers',            label: 'Customers',  sub: 'Manage',   Icon: Users,        from: 'from-green-50',  to: 'to-emerald-50',  border: 'hover:border-green-200',  color: 'text-green-600' },
-                { href: '/bookings',             label: 'Bookings',   sub: 'Review',   Icon: CheckCircle,  from: 'from-purple-50', to: 'to-pink-50',     border: 'hover:border-purple-200', color: 'text-purple-600' },
-                { href: '/construction/inventory', label: 'Materials', sub: 'Stock',   Icon: Package,      from: 'from-orange-50', to: 'to-red-50',      border: 'hover:border-orange-200', color: 'text-orange-600' },
+                { href: '/properties',              label: 'Properties', sub: 'Manage',   Icon: Building2,    from: 'from-red-50',    to: 'to-orange-50',   border: 'hover:border-red-200',    color: 'text-red-600' },
+                { href: '/towers',                  label: 'Inventory',  sub: 'View',     Icon: Home,         from: 'from-blue-50',   to: 'to-indigo-50',   border: 'hover:border-blue-200',   color: 'text-blue-600' },
+                { href: '/customers',               label: 'Customers',  sub: 'Manage',   Icon: Users,        from: 'from-green-50',  to: 'to-emerald-50',  border: 'hover:border-green-200',  color: 'text-green-600' },
+                { href: '/bookings',                label: 'Bookings',   sub: 'Review',   Icon: CheckCircle,  from: 'from-purple-50', to: 'to-pink-50',     border: 'hover:border-purple-200', color: 'text-purple-600' },
+                { href: '/construction/materials',  label: 'Materials',  sub: 'Stock',    Icon: Package,      from: 'from-orange-50', to: 'to-red-50',      border: 'hover:border-orange-200', color: 'text-orange-600' },
+                { href: '/payments',                label: 'Payments',   sub: 'Track',    Icon: DollarSign,   from: 'from-yellow-50', to: 'to-amber-50',    border: 'hover:border-yellow-200', color: 'text-yellow-600' },
               ].map(({ href, label, sub, Icon, from, to, border, color }) => (
                 <Link
                   key={href}
