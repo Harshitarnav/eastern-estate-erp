@@ -191,8 +191,6 @@ export function NotificationBell() {
   const handleTogglePush = async () => {
     if (typeof window === 'undefined') return;
 
-    // iOS requires the app to be installed as a PWA (Home Screen) for push to work.
-    // We detect this by checking for all required APIs together.
     if (!('serviceWorker' in navigator)) {
       alert('Push notifications require a service worker. Please use a modern browser.');
       return;
@@ -200,16 +198,12 @@ export function NotificationBell() {
     if (!('PushManager' in window)) {
       alert(
         'Push notifications are not supported.\n\n' +
-        'On iPhone/iPad: iOS 16.4+ is required, and the app must be installed to your Home Screen via Safari → Share → Add to Home Screen.'
+        'On iPhone/iPad: iOS 16.4+ is required and the app must be installed to your Home Screen via Safari → Share → Add to Home Screen.'
       );
       return;
     }
-    // iOS Safari in browser (not PWA) has PushManager but Notification may be absent
     if (!('Notification' in window)) {
-      alert(
-        'Notifications are not available in this context.\n\n' +
-        'Please open the app from your Home Screen icon, not directly in Safari.'
-      );
+      alert('Please open the app from your Home Screen icon, not directly in Safari.');
       return;
     }
 
@@ -224,47 +218,70 @@ export function NotificationBell() {
           await apiService.post('/notifications/push/unsubscribe', { endpoint: sub.endpoint });
         }
         setPushSubscribed(false);
-      } else {
-        // ── Subscribe ──
-
-        // If already denied, iOS/macOS won't show the prompt — tell the user to fix it in Settings
-        if (Notification.permission === 'denied') {
-          alert(
-            'Notifications are blocked.\n\n' +
-            'Go to Settings → Notifications → Eastern Estate and enable Allow Notifications.'
-          );
-          return;
-        }
-
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          alert('Please tap "Allow" when asked to receive notifications.');
-          return;
-        }
-
-        const reg = await getSwRegistration();
-
-        const vapidData: any = await apiService.get('/notifications/push/vapid-public-key');
-        if (!vapidData?.publicKey) {
-          alert('Push notifications are not configured on the server yet. Please contact support.');
-          return;
-        }
-
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
-        });
-        const { endpoint, keys } = sub.toJSON() as any;
-        await apiService.post('/notifications/push/subscribe', {
-          endpoint,
-          p256dh: keys.p256dh,
-          auth: keys.auth,
-        });
-        setPushSubscribed(true);
+        return;
       }
+
+      // ── Subscribe ──
+
+      if (Notification.permission === 'denied') {
+        alert('Notifications are blocked.\n\nGo to Settings → Notifications → Eastern Estate and enable Allow Notifications.');
+        return;
+      }
+
+      // Get SW registration BEFORE requesting permission —
+      // iOS can fail subscribe() if the SW isn't controlling the page yet.
+      const reg = await getSwRegistration();
+
+      // On iOS, pushManager.subscribe() requires navigator.serviceWorker.controller
+      // to be set (i.e. the page must have been loaded while a SW was active).
+      // If it's null, the only fix is to reload the page so the SW claims it.
+      if (!navigator.serviceWorker.controller) {
+        alert(
+          'The app needs to reload once to activate push notifications.\n\n' +
+          'The page will now refresh — please tap "Enable mobile notifications" again after it reloads.'
+        );
+        window.location.reload();
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Please tap "Allow" when asked to receive notifications.');
+        return;
+      }
+
+      const vapidData: any = await apiService.get('/notifications/push/vapid-public-key');
+      if (!vapidData?.publicKey) {
+        alert('Push notifications are not configured on the server yet.');
+        return;
+      }
+
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
+      });
+
+      const { endpoint, keys } = sub.toJSON() as any;
+      await apiService.post('/notifications/push/subscribe', {
+        endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      });
+      setPushSubscribed(true);
     } catch (err: any) {
-      // Show the raw message so we can debug easily
-      alert('Could not enable notifications:\n\n' + (err?.message || String(err)));
+      const msg = err?.message || String(err);
+      // Give actionable advice for the most common iOS error
+      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('subscribe')) {
+        alert(
+          'Subscription failed. Please try:\n\n' +
+          '1. Close the app fully (swipe up)\n' +
+          '2. Reopen from Home Screen\n' +
+          '3. Tap "Enable mobile notifications" again\n\n' +
+          'Error: ' + msg
+        );
+      } else {
+        alert('Could not enable notifications:\n\n' + msg);
+      }
     } finally {
       setPushLoading(false);
     }
