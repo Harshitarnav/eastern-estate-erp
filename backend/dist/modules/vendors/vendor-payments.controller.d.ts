@@ -4,7 +4,7 @@ import { UpdateVendorPaymentDto } from './dto/update-vendor-payment.dto';
 export declare class VendorPaymentsController {
     private readonly paymentsService;
     constructor(paymentsService: VendorPaymentsService);
-    create(createDto: CreateVendorPaymentDto): Promise<import("./entities/vendor-payment.entity").VendorPayment>;
+    create(createDto: CreateVendorPaymentDto, req: any): Promise<import("./entities/vendor-payment.entity").VendorPayment>;
     findAll(vendorId?: string, poId?: string): Promise<import("./entities/vendor-payment.entity").VendorPayment[]>;
     getTotalPaid(vendorId: string): Promise<number>;
     findOne(id: string): Promise<import("./entities/vendor-payment.entity").VendorPayment>;

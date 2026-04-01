@@ -22,12 +22,12 @@ export declare class BookingsService {
     constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, emailService: EmailService, dataSource: DataSource, accountingIntegrationService: AccountingIntegrationService);
     create(createBookingDto: CreateBookingDto, userId?: string): Promise<BookingResponseDto>;
     private sendBookingNotifications;
-    findAll(query: QueryBookingDto): Promise<PaginatedBookingsResponse>;
+    findAll(query: QueryBookingDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedBookingsResponse>;
     findOne(id: string): Promise<BookingResponseDto>;
     update(id: string, updateBookingDto: UpdateBookingDto): Promise<BookingResponseDto>;
     remove(id: string): Promise<void>;
     cancelBooking(id: string, reason: string, refundAmount?: number): Promise<BookingResponseDto>;
-    getStatistics(): Promise<{
+    getStatistics(accessiblePropertyIds?: string[] | null): Promise<{
         total: number;
         tokenPaid: number;
         agreementPending: number;

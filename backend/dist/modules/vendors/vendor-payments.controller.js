@@ -22,8 +22,8 @@ let VendorPaymentsController = class VendorPaymentsController {
     constructor(paymentsService) {
         this.paymentsService = paymentsService;
     }
-    create(createDto) {
-        return this.paymentsService.create(createDto);
+    create(createDto, req) {
+        return this.paymentsService.create(createDto, req.user?.id);
     }
     findAll(vendorId, poId) {
         const filters = {};
@@ -50,8 +50,9 @@ exports.VendorPaymentsController = VendorPaymentsController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_vendor_payment_dto_1.CreateVendorPaymentDto]),
+    __metadata("design:paramtypes", [create_vendor_payment_dto_1.CreateVendorPaymentDto, Object]),
     __metadata("design:returntype", void 0)
 ], VendorPaymentsController.prototype, "create", null);
 __decorate([

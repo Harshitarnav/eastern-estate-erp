@@ -6,7 +6,7 @@ export declare class PaymentsController {
     private readonly paymentsService;
     constructor(paymentsService: PaymentsService);
     create(createPaymentDto: CreatePaymentDto, req: any): Promise<import("./entities/payment.entity").Payment>;
-    findAll(bookingId?: string, customerId?: string, paymentType?: string, paymentMethod?: string, status?: PaymentStatus, startDate?: string, endDate?: string, minAmount?: string, maxAmount?: string, page?: string, limit?: string): Promise<{
+    findAll(bookingId?: string, customerId?: string, paymentType?: string, paymentMethod?: string, status?: PaymentStatus, startDate?: string, endDate?: string, minAmount?: string, maxAmount?: string, isVerified?: string, page?: string, limit?: string, req?: any): Promise<{
         data: import("./entities/payment.entity").Payment[];
         meta: {
             total: number;
@@ -15,7 +15,7 @@ export declare class PaymentsController {
             totalPages: number;
         };
     }>;
-    getStatistics(startDate?: string, endDate?: string, paymentType?: string): Promise<{
+    getStatistics(startDate?: string, endDate?: string, paymentType?: string, req?: any): Promise<{
         totalPayments: number;
         totalAmount: number;
         completedPayments: number;

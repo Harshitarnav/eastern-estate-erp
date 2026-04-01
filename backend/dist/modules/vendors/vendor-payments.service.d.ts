@@ -10,7 +10,7 @@ export declare class VendorPaymentsService {
     private dataSource;
     private readonly accountingIntegration;
     constructor(paymentsRepository: Repository<VendorPayment>, vendorsRepository: Repository<Vendor>, dataSource: DataSource, accountingIntegration: AccountingIntegrationService);
-    create(createDto: CreateVendorPaymentDto): Promise<VendorPayment>;
+    create(createDto: CreateVendorPaymentDto, userId?: string): Promise<VendorPayment>;
     findAll(filters?: {
         vendorId?: string;
         poId?: string;

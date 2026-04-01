@@ -7,7 +7,7 @@ export declare class CustomersService {
     constructor(customersRepository: Repository<Customer>);
     private generateCustomerCode;
     create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto>;
-    findAll(query: QueryCustomerDto): Promise<PaginatedCustomersResponse>;
+    findAll(query: QueryCustomerDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedCustomersResponse>;
     findOne(id: string): Promise<CustomerResponseDto>;
     update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<CustomerResponseDto>;
     remove(id: string): Promise<void>;

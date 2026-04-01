@@ -3,7 +3,7 @@ export declare class RABillsController {
     private readonly raBillsService;
     constructor(raBillsService: RABillsService);
     create(createDto: any, req: any): Promise<import("./entities/ra-bill.entity").RABill>;
-    findAll(constructionProjectId?: string, vendorId?: string, status?: string, propertyId?: string): Promise<import("./entities/ra-bill.entity").RABill[]>;
+    findAll(constructionProjectId?: string, vendorId?: string, status?: string, propertyId?: string, req?: any): Promise<import("./entities/ra-bill.entity").RABill[]>;
     getSummary(projectId: string): Promise<{
         total: number;
         totalGrossAmount: number;

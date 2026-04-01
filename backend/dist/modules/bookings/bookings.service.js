@@ -175,7 +175,7 @@ let BookingsService = BookingsService_1 = class BookingsService {
             this.logger.error('Error in sendBookingNotifications:', error);
         }
     }
-    async findAll(query) {
+    async findAll(query, accessiblePropertyIds) {
         const { search, status, paymentStatus, customerId, flatId, propertyId, bookingDateFrom, bookingDateTo, isHomeLoan, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const queryBuilder = this.bookingsRepository
             .createQueryBuilder('booking')
@@ -199,6 +199,9 @@ let BookingsService = BookingsService_1 = class BookingsService {
         }
         if (propertyId) {
             queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            queryBuilder.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
         }
         if (bookingDateFrom) {
             queryBuilder.andWhere('booking.bookingDate >= :bookingDateFrom', { bookingDateFrom });
@@ -294,8 +297,14 @@ let BookingsService = BookingsService_1 = class BookingsService {
         const cancelledBooking = await this.bookingsRepository.save(booking);
         return dto_1.BookingResponseDto.fromEntity(cancelledBooking);
     }
-    async getStatistics() {
-        const bookings = await this.bookingsRepository.find({ where: { isActive: true } });
+    async getStatistics(accessiblePropertyIds) {
+        const where = { isActive: true };
+        const bookings = accessiblePropertyIds && accessiblePropertyIds.length > 0
+            ? await this.bookingsRepository.createQueryBuilder('b')
+                .where('b.isActive = true')
+                .andWhere('b.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+                .getMany()
+            : await this.bookingsRepository.find({ where });
         const total = bookings.length;
         const tokenPaid = bookings.filter((b) => b.status === 'TOKEN_PAID').length;
         const agreementPending = bookings.filter((b) => b.status === 'AGREEMENT_PENDING').length;

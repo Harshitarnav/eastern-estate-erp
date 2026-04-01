@@ -4,7 +4,7 @@ export declare class CustomersController {
     private readonly customersService;
     constructor(customersService: CustomersService);
     create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto>;
-    findAll(query: QueryCustomerDto): Promise<PaginatedCustomersResponse>;
+    findAll(query: QueryCustomerDto, req: any): Promise<PaginatedCustomersResponse>;
     getStatistics(): Promise<{
         total: number;
         individual: number;

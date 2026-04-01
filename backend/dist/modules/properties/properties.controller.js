@@ -24,6 +24,12 @@ let PropertiesController = class PropertiesController {
     constructor(propertiesService) {
         this.propertiesService = propertiesService;
     }
+    assertPropertyAccess(req, propertyId) {
+        const ids = req.accessiblePropertyIds;
+        if (ids && !ids.includes(propertyId)) {
+            throw new common_1.ForbiddenException('You do not have access to this property');
+        }
+    }
     async create(createPropertyDto, req) {
         return this.propertiesService.create(createPropertyDto, req.user?.id);
     }
@@ -37,21 +43,27 @@ let PropertiesController = class PropertiesController {
         return this.propertiesService.findByCode(code, req.user?.id);
     }
     async getHierarchy(id, req) {
+        this.assertPropertyAccess(req, id);
         return this.propertiesService.getHierarchy(id, req.user?.id);
     }
     async getInventorySummary(id, req) {
+        this.assertPropertyAccess(req, id);
         return this.propertiesService.getInventorySummary(id, req.user?.id);
     }
     async findOne(id, req) {
+        this.assertPropertyAccess(req, id);
         return this.propertiesService.findOne(id, req.user?.id);
     }
     async update(id, updatePropertyDto, req) {
+        this.assertPropertyAccess(req, id);
         return this.propertiesService.update(id, updatePropertyDto, req.user?.id);
     }
     async remove(id, req) {
+        this.assertPropertyAccess(req, id);
         return this.propertiesService.remove(id, req.user?.id);
     }
     async toggleActive(id, req) {
+        this.assertPropertyAccess(req, id);
         return this.propertiesService.toggleActive(id, req.user?.id);
     }
 };

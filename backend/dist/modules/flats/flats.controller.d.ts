@@ -3,7 +3,7 @@ import { CreateFlatDto, UpdateFlatDto, QueryFlatDto, FlatResponseDto, PaginatedF
 export declare class FlatsController {
     private readonly flatsService;
     constructor(flatsService: FlatsService);
-    getGlobalStats(): Promise<{
+    getGlobalStats(req: any): Promise<{
         total: number;
         available: number;
         sold: number;
@@ -13,7 +13,7 @@ export declare class FlatsController {
         underConstruction: number;
     }>;
     create(createFlatDto: CreateFlatDto): Promise<FlatResponseDto>;
-    findAll(query: QueryFlatDto): Promise<PaginatedFlatsResponse>;
+    findAll(query: QueryFlatDto, req: any): Promise<PaginatedFlatsResponse>;
     findOne(id: string): Promise<FlatResponseDto>;
     findByTower(towerId: string): Promise<FlatResponseDto[]>;
     findByProperty(propertyId: string): Promise<FlatResponseDto[]>;

@@ -11,6 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateVendorDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
+const toUpperOrUndefined = ({ value }) => value === null || value === undefined || value === '' ? undefined : String(value).trim().toUpperCase();
 class CreateVendorDto {
 }
 exports.CreateVendorDto = CreateVendorDto;
@@ -75,8 +77,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Length)(15, 15),
     (0, class_validator_1.Matches)(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, {
-        message: 'Invalid GST number format',
+        message: 'Invalid GST number format (expected: 22AAAAA0000A1Z5)',
     }),
+    (0, class_transformer_1.Transform)(toUpperOrUndefined),
     __metadata("design:type", String)
 ], CreateVendorDto.prototype, "gstNumber", void 0);
 __decorate([
@@ -84,8 +87,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Length)(10, 10),
     (0, class_validator_1.Matches)(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, {
-        message: 'Invalid PAN number format',
+        message: 'Invalid PAN number format (expected: AAAAA0000A)',
     }),
+    (0, class_transformer_1.Transform)(toUpperOrUndefined),
     __metadata("design:type", String)
 ], CreateVendorDto.prototype, "panNumber", void 0);
 __decorate([
@@ -105,8 +109,9 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.Length)(11, 11),
     (0, class_validator_1.Matches)(/^[A-Z]{4}0[A-Z0-9]{6}$/, {
-        message: 'Invalid IFSC code format',
+        message: 'Invalid IFSC code format (expected: SBIN0001234)',
     }),
+    (0, class_transformer_1.Transform)(toUpperOrUndefined),
     __metadata("design:type", String)
 ], CreateVendorDto.prototype, "ifscCode", void 0);
 __decorate([

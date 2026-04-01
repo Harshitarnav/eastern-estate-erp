@@ -12,7 +12,7 @@ export declare class TowersService {
     private readonly logger;
     constructor(towerRepository: Repository<Tower>, propertyRepository: Repository<Property>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>);
     create(createTowerDto: CreateTowerDto): Promise<TowerResponseDto>;
-    findAll(queryDto: QueryTowerDto): Promise<PaginatedTowerResponseDto>;
+    findAll(queryDto: QueryTowerDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedTowerResponseDto>;
     findOne(id: string): Promise<TowerResponseDto>;
     update(id: string, updateTowerDto: UpdateTowerDto): Promise<TowerResponseDto>;
     remove(id: string): Promise<{

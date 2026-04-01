@@ -81,7 +81,7 @@ let TowersService = TowersService_1 = class TowersService {
         await this.generateDefaultFlatsForTower(savedTower, property);
         return this.formatTowerResponse(savedTower);
     }
-    async findAll(queryDto) {
+    async findAll(queryDto, accessiblePropertyIds) {
         const { page = 1, limit = 10, search, propertyId, constructionStatus, vastuCompliant, facing, minFloors, maxFloors, isActive = true, sortBy = 'displayOrder', sortOrder = 'ASC', } = queryDto;
         const where = {};
         if (isActive !== undefined) {
@@ -89,6 +89,9 @@ let TowersService = TowersService_1 = class TowersService {
         }
         if (propertyId) {
             where.propertyId = propertyId;
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            where.propertyId = (0, typeorm_2.In)(accessiblePropertyIds);
         }
         if (constructionStatus) {
             where.constructionStatus = constructionStatus;
