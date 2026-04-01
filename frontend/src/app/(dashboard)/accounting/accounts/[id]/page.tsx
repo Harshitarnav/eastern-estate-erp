@@ -84,14 +84,14 @@ export default function ViewAccountPage() {
       </button>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#7B1E12' }}>
+        <div className="flex flex-wrap justify-between items-start mb-6 gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#7B1E12' }}>
               Account Details
             </h1>
-            <p className="text-gray-600 mt-1">{account.accountCode}</p>
+            <p className="text-gray-600 mt-1 truncate">{account.accountCode}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 shrink-0 flex-wrap">
             <button
               onClick={() => router.push(`/accounting/accounts/${id}/edit`)}
               className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"

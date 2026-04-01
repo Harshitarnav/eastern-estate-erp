@@ -161,17 +161,17 @@ export default function BookingViewPage() {
   return (
     <div className="p-6 md:p-8 space-y-6" style={{ backgroundColor: brandPalette.background }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-4 min-w-0">
           <button
             onClick={() => router.push('/bookings')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
             title="Back to bookings list"
           >
             <ArrowLeft className="w-5 h-5" style={{ color: brandPalette.secondary }} />
           </button>
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: brandPalette.secondary }}>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold truncate" style={{ color: brandPalette.secondary }}>
               {booking.bookingNumber}
             </h1>
             <p className="text-gray-600 text-sm mt-1">

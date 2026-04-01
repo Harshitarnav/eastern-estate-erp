@@ -348,7 +348,7 @@ export default function FlatDetailPage() {
 
   return (
     <div className="space-y-6 p-6 md:p-8" style={{ backgroundColor: brandPalette.background, borderRadius: '24px' }}>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push('/flats')}
@@ -362,7 +362,7 @@ export default function FlatDetailPage() {
             Refresh
           </BrandSecondaryButton>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {flat && flat.status !== 'BOOKED' && flat.status !== 'SOLD' && (
             <button
               onClick={handleDeactivate}

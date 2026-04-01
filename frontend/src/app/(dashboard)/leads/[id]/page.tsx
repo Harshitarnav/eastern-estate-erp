@@ -62,12 +62,12 @@ export default function LeadDetailPage() {
 
   return (
     <div className="p-6 space-y-4 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{lead.firstName} {lead.lastName}</h1>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">{lead.firstName} {lead.lastName}</h1>
           <p className="text-sm text-gray-600">Lead Code: {lead.leadCode}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button variant="outline" onClick={() => router.back()}>Back</Button>
           <Button asChild>
             <Link href={`/leads/${lead.id}/edit`}>Edit Lead</Link>

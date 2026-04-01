@@ -392,8 +392,8 @@ export default function EmployeeDetailPage() {
           <span>Back to Employees</span>
         </button>
 
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex items-start gap-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4 min-w-0">
             {employee.profilePicture ? (
               <img
                 src={employee.profilePicture}
@@ -437,7 +437,7 @@ export default function EmployeeDetailPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => router.push(`/employees/${employeeId}/edit`)}
               className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"

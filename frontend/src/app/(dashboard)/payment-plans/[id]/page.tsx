@@ -495,23 +495,24 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
   return (
     <div className="space-y-6 p-6">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-4 min-w-0">
           <Button
             variant="ghost"
             size="icon"
+            className="shrink-0"
             onClick={() => router.push('/payment-plans')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Payment Plan Details</h1>
-            <p className="text-muted-foreground">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight truncate">Payment Plan Details</h1>
+            <p className="text-muted-foreground text-sm truncate">
               {plan.flat?.property?.name} – {plan.flat?.tower?.name} – {plan.flat?.flatNumber}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Badge className={getStatusColor(plan.status)} variant="default">
             {plan.status}
           </Badge>

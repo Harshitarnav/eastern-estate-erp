@@ -132,17 +132,17 @@ export default function CustomerViewPage() {
   return (
     <div className="p-6 md:p-8 space-y-6" style={{ backgroundColor: brandPalette.background }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-4 min-w-0">
           <button
             onClick={() => router.push('/customers')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0"
             title="Back to customers list"
           >
             <ArrowLeft className="w-5 h-5" style={{ color: brandPalette.secondary }} />
           </button>
-          <div>
-            <h1 className="text-3xl font-bold truncate" style={{ color: brandPalette.secondary }}>
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold truncate" style={{ color: brandPalette.secondary }}>
               {customer.fullName || `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'Customer'}
             </h1>
             <p className="text-gray-600 text-sm mt-1">
@@ -155,7 +155,7 @@ export default function CustomerViewPage() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Portal invite/status button */}
           {portalAccount?.hasAccount ? (
             <div className="flex items-center gap-1.5">

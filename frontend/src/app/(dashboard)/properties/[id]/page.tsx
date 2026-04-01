@@ -127,8 +127,8 @@ export default function PropertyDetailPage() {
     <div className="p-6 md:p-8 space-y-6" style={{ backgroundColor: brandPalette.background }}>
 
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-4 min-w-0">
           <button onClick={() => router.push('/properties')}
             className="p-2 hover:bg-gray-100 rounded-lg mt-1">
             <ArrowLeft className="w-5 h-5" style={{ color: brandPalette.secondary }} />

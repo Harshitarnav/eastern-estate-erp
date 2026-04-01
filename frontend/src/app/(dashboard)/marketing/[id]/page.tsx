@@ -128,11 +128,11 @@ export default function CampaignDetailPage() {
           <span>Back to Campaigns</span>
         </button>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Megaphone className="h-8 w-8" style={{ color: '#A8211B' }} />
-            <div>
-              <h1 className="text-3xl font-bold" style={{ color: '#7B1E12' }}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Megaphone className="h-7 w-7 shrink-0" style={{ color: '#A8211B' }} />
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold truncate" style={{ color: '#7B1E12' }}>
                 {campaign.name}
               </h1>
               <div className="flex items-center gap-2 mt-1">
@@ -158,7 +158,7 @@ export default function CampaignDetailPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 shrink-0 flex-wrap">
             <button
               onClick={() => router.push(`/marketing/${id}/edit`)}
               className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"

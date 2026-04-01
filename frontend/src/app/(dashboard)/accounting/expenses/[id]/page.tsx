@@ -84,14 +84,14 @@ export default function ViewExpensePage() {
       </button>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#7B1E12' }}>
+        <div className="flex flex-wrap justify-between items-start mb-6 gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#7B1E12' }}>
               Expense Details
             </h1>
-            <p className="text-gray-600 mt-1">{expense.expenseCategory}</p>
+            <p className="text-gray-600 mt-1 truncate">{expense.expenseCategory}</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 shrink-0 flex-wrap">
             {expense.status === 'PENDING' && (
               <button
                 onClick={() => router.push(`/accounting/expenses/${id}/edit`)}

@@ -193,14 +193,14 @@ export default function ViewPaymentPage() {
       </button>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#7B1E12' }}>
+        <div className="flex flex-wrap justify-between items-start mb-6 gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold" style={{ color: '#7B1E12' }}>
               Payment Details
             </h1>
-            <p className="text-gray-600 mt-1">{payment.paymentNumber}</p>
+            <p className="text-gray-600 mt-1 truncate">{payment.paymentNumber}</p>
           </div>
-          <div className="flex gap-3 flex-wrap justify-end">
+          <div className="flex gap-3 flex-wrap justify-end shrink-0">
             {/* Generate Receipt button */}
             <Button
               onClick={handleOpenReceiptDialog}
