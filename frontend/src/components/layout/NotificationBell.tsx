@@ -94,6 +94,22 @@ async function getSwRegistration(): Promise<ServiceWorkerRegistration> {
   ]);
 }
 
+// ─── Push state machine ───────────────────────────────────────────────────────
+// unsupported : browser/OS can't do push at all (hide button)
+// denied      : user blocked — point to Settings
+// unsubscribed: permission granted (or default) but no active subscription
+// subscribed  : active subscription saved in backend
+type PushState = 'unsupported' | 'denied' | 'unsubscribed' | 'subscribed';
+
+function isPushCapable(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    'Notification' in window
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function NotificationBell() {
@@ -102,7 +118,7 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
-  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushState, setPushState] = useState<PushState>('unsupported');
   const [pushLoading, setPushLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -132,14 +148,28 @@ export function NotificationBell() {
     return () => clearInterval(t);
   }, [loadUnreadCount]);
 
-  // Check current push subscription state
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    getSwRegistration()
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setPushSubscribed(!!sub))
-      .catch(() => {});
+  // Determine initial push state from permission + active subscription
+  const refreshPushState = useCallback(async () => {
+    if (!isPushCapable()) { setPushState('unsupported'); return; }
+    if (Notification.permission === 'denied') { setPushState('denied'); return; }
+    try {
+      const reg = await getSwRegistration();
+      const sub = await reg.pushManager.getSubscription();
+      setPushState(sub ? 'subscribed' : 'unsubscribed');
+    } catch {
+      // SW not ready — treat as unsubscribed (user can still try to enable)
+      setPushState('unsubscribed');
+    }
   }, []);
+
+  useEffect(() => { refreshPushState(); }, [refreshPushState]);
+
+  // Re-check when the user comes back from Settings (e.g. after unblocking)
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshPushState(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refreshPushState]);
 
   // Close on outside click
   useEffect(() => {
@@ -189,94 +219,84 @@ export function NotificationBell() {
   };
 
   const handleTogglePush = async () => {
-    if (typeof window === 'undefined') return;
-
-    if (!('serviceWorker' in navigator)) {
-      alert('Push notifications require a service worker. Please use a modern browser.');
-      return;
-    }
-    if (!('PushManager' in window)) {
-      alert(
-        'Push notifications are not supported.\n\n' +
-        'On iPhone/iPad: iOS 16.4+ is required and the app must be installed to your Home Screen via Safari → Share → Add to Home Screen.'
-      );
-      return;
-    }
-    if (!('Notification' in window)) {
-      alert('Please open the app from your Home Screen icon, not directly in Safari.');
+    if (!isPushCapable()) return;
+    if (pushState === 'denied') {
+      alert('Notifications are blocked.\n\nGo to Settings → Notifications → Eastern Estate and enable Allow Notifications.');
       return;
     }
 
     setPushLoading(true);
     try {
-      if (pushSubscribed) {
-        // ── Unsubscribe ──
+      // ── Disable ───────────────────────────────────────────────────────────
+      if (pushState === 'subscribed') {
         const reg = await getSwRegistration();
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
           await sub.unsubscribe();
           await apiService.post('/notifications/push/unsubscribe', { endpoint: sub.endpoint });
         }
-        setPushSubscribed(false);
+        setPushState('unsubscribed');
         return;
       }
 
-      // ── Subscribe ──
+      // ── Enable ────────────────────────────────────────────────────────────
 
-      if (Notification.permission === 'denied') {
-        alert('Notifications are blocked.\n\nGo to Settings → Notifications → Eastern Estate and enable Allow Notifications.');
+      // Step 1 — Request permission (must be called from user gesture)
+      const permission = await Notification.requestPermission();
+      if (permission === 'denied') {
+        setPushState('denied');
+        alert('Notifications blocked.\n\nGo to Settings → Notifications → Eastern Estate and enable Allow Notifications.');
         return;
       }
+      if (permission !== 'granted') return; // user dismissed — do nothing
 
-      // Get SW registration BEFORE requesting permission —
-      // iOS can fail subscribe() if the SW isn't controlling the page yet.
+      // Step 2 — Get (or wait for) an active SW registration
       const reg = await getSwRegistration();
 
-      // On iOS, pushManager.subscribe() requires navigator.serviceWorker.controller
-      // to be set (i.e. the page must have been loaded while a SW was active).
-      // If it's null, the only fix is to reload the page so the SW claims it.
+      // Step 3 — iOS requires navigator.serviceWorker.controller to be set before
+      // pushManager.subscribe() will work. If it's not set yet (first launch after
+      // SW install), wait up to 3 s for the SW to claim the page via clientsClaim().
       if (!navigator.serviceWorker.controller) {
-        alert(
-          'The app needs to reload once to activate push notifications.\n\n' +
-          'The page will now refresh — please tap "Enable mobile notifications" again after it reloads.'
-        );
-        window.location.reload();
-        return;
+        await new Promise<void>((resolve) => {
+          const t = setTimeout(resolve, 3000);
+          navigator.serviceWorker.addEventListener(
+            'controllerchange',
+            () => { clearTimeout(t); resolve(); },
+            { once: true },
+          );
+        });
       }
 
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        alert('Please tap "Allow" when asked to receive notifications.');
-        return;
-      }
-
+      // Step 4 — Fetch VAPID public key from backend
       const vapidData: any = await apiService.get('/notifications/push/vapid-public-key');
       if (!vapidData?.publicKey) {
-        alert('Push notifications are not configured on the server yet.');
+        alert('Push notifications are not configured on the server yet. Please contact support.');
         return;
       }
 
+      // Step 5 — Subscribe via PushManager
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
       });
 
+      // Step 6 — Save subscription in backend
       const { endpoint, keys } = sub.toJSON() as any;
       await apiService.post('/notifications/push/subscribe', {
         endpoint,
         p256dh: keys.p256dh,
         auth: keys.auth,
       });
-      setPushSubscribed(true);
+
+      setPushState('subscribed');
     } catch (err: any) {
       const msg = err?.message || String(err);
-      // Give actionable advice for the most common iOS error
-      if (msg.toLowerCase().includes('abort') || msg.toLowerCase().includes('subscribe')) {
+      if (msg.toLowerCase().includes('abort')) {
         alert(
-          'Subscription failed. Please try:\n\n' +
-          '1. Close the app fully (swipe up)\n' +
-          '2. Reopen from Home Screen\n' +
-          '3. Tap "Enable mobile notifications" again\n\n' +
+          'Subscription failed (iOS).\n\n' +
+          '1. Close the app fully (swipe it up)\n' +
+          '2. Reopen from your Home Screen icon\n' +
+          '3. Tap "Enable notifications" again\n\n' +
           'Error: ' + msg
         );
       } else {
@@ -412,21 +432,30 @@ export function NotificationBell() {
                 View all notifications <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
-            {/* Push notification toggle */}
-            <button
-              onClick={handleTogglePush}
-              disabled={pushLoading}
-              className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50 ${
-                pushSubscribed
-                  ? 'text-gray-500 hover:bg-gray-100'
-                  : 'text-emerald-700 hover:bg-emerald-50'
-              }`}
-            >
-              {pushSubscribed
-                ? <><BellOff className="w-3.5 h-3.5" /> {pushLoading ? 'Disabling…' : 'Disable mobile notifications'}</>
-                : <><Smartphone className="w-3.5 h-3.5" /> {pushLoading ? 'Enabling…' : 'Enable mobile notifications'}</>
-              }
-            </button>
+            {/* Push notification toggle — hidden when unsupported */}
+            {pushState !== 'unsupported' && (
+              <button
+                onClick={handleTogglePush}
+                disabled={pushLoading || pushState === 'denied'}
+                className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-60 ${
+                  pushState === 'subscribed'
+                    ? 'text-gray-500 hover:bg-gray-100'
+                    : pushState === 'denied'
+                    ? 'text-red-400 cursor-default'
+                    : 'text-emerald-700 hover:bg-emerald-50'
+                }`}
+              >
+                {pushLoading ? (
+                  <><Smartphone className="w-3.5 h-3.5 animate-pulse" /> {pushState === 'subscribed' ? 'Disabling…' : 'Enabling…'}</>
+                ) : pushState === 'subscribed' ? (
+                  <><BellOff className="w-3.5 h-3.5" /> Disable mobile notifications</>
+                ) : pushState === 'denied' ? (
+                  <><BellOff className="w-3.5 h-3.5" /> Notifications blocked · Open Settings</>
+                ) : (
+                  <><Smartphone className="w-3.5 h-3.5" /> Enable mobile notifications</>
+                )}
+              </button>
+            )}
           </div>
         </div>
       )}
