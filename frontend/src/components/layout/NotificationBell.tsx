@@ -104,12 +104,12 @@ export function NotificationBell() {
 
   // Check current push subscription state
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => {
-        setPushSubscribed(!!sub);
-      }).catch(() => {});
-    }).catch(() => {});
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(), 3000));
+    Promise.race([navigator.serviceWorker.ready, timeout])
+      .then((reg) => (reg as ServiceWorkerRegistration).pushManager.getSubscription())
+      .then((sub) => setPushSubscribed(!!sub))
+      .catch(() => {});
   }, []);
 
   // Close on outside click
@@ -166,7 +166,11 @@ export function NotificationBell() {
     }
     setPushLoading(true);
     try {
-      const reg = await navigator.serviceWorker.ready;
+      // serviceWorker.ready hangs forever if no SW is active (e.g. dev mode). Add a 5-second timeout.
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Service worker not ready. Please make sure you are using the installed PWA on your device.')), 5000)),
+      ]);
       if (pushSubscribed) {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {

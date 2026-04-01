@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Building2, Home, Users, TrendingUp, DollarSign, Package, 
-  Sparkles, Target, CheckCircle, ArrowUpRight, BarChart3,
+  Sparkles, CheckCircle, ArrowUpRight, BarChart3,
   Calendar, Bell, Award, Shield, Heart
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -218,22 +218,22 @@ export default function DashboardPage() {
             </div>
           </Link>
 
-          {/* Leads Card */}
-          <Link href="/leads" className="group bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden relative">
+          {/* Employees Card */}
+          <Link href="/employees" className="group bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="relative">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                  <Target className="h-6 w-6 text-yellow-600" />
+                  <Users className="h-6 w-6 text-yellow-600" />
                 </div>
                 <ArrowUpRight className="h-5 w-5 text-gray-400 group-hover:text-yellow-600 transition-colors" />
               </div>
-              <p className="text-sm text-gray-600 mb-1 font-medium">Leads</p>
-              {loading ? <Skeleton className="h-9 w-16 mb-2" /> : <p className="text-3xl font-bold text-gray-900 mb-2">{stats.leads.total}</p>}
+              <p className="text-sm text-gray-600 mb-1 font-medium">Team</p>
+              {loading ? <Skeleton className="h-9 w-16 mb-2" /> : <p className="text-3xl font-bold text-gray-900 mb-2">{stats.employees.total}</p>}
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-yellow-600 font-medium flex items-center gap-1">
                   <Sparkles className="h-4 w-4" />
-                  {loading ? '—' : stats.leads.qualified} Qualified
+                  Active employees
                 </span>
               </div>
             </div>
@@ -267,41 +267,41 @@ export default function DashboardPage() {
             mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}
         >
-          {/* Sales Pipeline */}
+          {/* Bookings Overview */}
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-xl">
-                <Target className="h-6 w-6 text-yellow-600" />
+              <div className="p-3 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Sales Pipeline</h3>
-                <p className="text-sm text-gray-600">Track your leads</p>
+                <h3 className="text-lg font-bold text-gray-900">Bookings Overview</h3>
+                <p className="text-sm text-gray-600">Current status</p>
               </div>
             </div>
-            
+
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Total Leads</p>
-                  <p className="text-xs text-gray-600">Active prospects</p>
-                </div>
-                {loading ? <Skeleton className="h-8 w-10" /> : <div className="text-2xl font-bold text-yellow-600">{stats.leads.total}</div>}
-              </div>
-              
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Qualified</p>
-                  <p className="text-xs text-gray-600">Ready to close</p>
-                </div>
-                {loading ? <Skeleton className="h-8 w-10" /> : <div className="text-2xl font-bold text-blue-600">{stats.leads.qualified}</div>}
-              </div>
-              
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">Conversion</p>
-                  <p className="text-xs text-gray-600">{loading ? '—' : stats.leads.won} Closed</p>
+                  <p className="text-sm font-medium text-gray-900">Total Bookings</p>
+                  <p className="text-xs text-gray-600">All time</p>
                 </div>
-                {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold text-green-600">{stats.leads.conversionRate}%</div>}
+                {loading ? <Skeleton className="h-8 w-10" /> : <div className="text-2xl font-bold text-green-600">{stats.bookings.total}</div>}
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Confirmed</p>
+                  <p className="text-xs text-gray-600">Active bookings</p>
+                </div>
+                {loading ? <Skeleton className="h-8 w-10" /> : <div className="text-2xl font-bold text-blue-600">{stats.bookings.confirmed}</div>}
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Revenue</p>
+                  <p className="text-xs text-gray-600">{loading ? '—' : fmt(stats.bookings.totalPaid)} collected</p>
+                </div>
+                {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold text-purple-600">{fmt(stats.bookings.totalRevenue)}</div>}
               </div>
             </div>
           </div>
