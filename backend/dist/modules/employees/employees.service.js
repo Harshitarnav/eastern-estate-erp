@@ -132,8 +132,10 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         }
     }
     async findAll(query) {
-        const { search, department, employmentStatus, isActive, page = 1, limit = 10 } = query;
+        const { search, department, employmentStatus, page = 1, limit = 10 } = query;
+        const isActive = query.isActive !== undefined ? query.isActive : true;
         const queryBuilder = this.employeesRepository.createQueryBuilder('employee');
+        queryBuilder.andWhere('employee.isActive = :isActive', { isActive });
         if (search) {
             queryBuilder.andWhere('(employee.fullName LIKE :search OR employee.employeeCode LIKE :search OR employee.phoneNumber LIKE :search OR employee.email LIKE :search)', { search: `%${search}%` });
         }
@@ -144,9 +146,6 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
             queryBuilder.andWhere('employee.employmentStatus = :employmentStatus', {
                 employmentStatus,
             });
-        }
-        if (isActive !== undefined) {
-            queryBuilder.andWhere('employee.isActive = :isActive', { isActive });
         }
         queryBuilder
             .orderBy('employee.createdAt', 'DESC')

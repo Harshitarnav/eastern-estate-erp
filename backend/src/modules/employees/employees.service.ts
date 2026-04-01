@@ -163,9 +163,13 @@ export class EmployeesService {
   async findAll(
     query: QueryEmployeeDto,
   ): Promise<PaginatedEmployeeResponseDto> {
-    const { search, department, employmentStatus, isActive, page = 1, limit = 10 } = query;
+    const { search, department, employmentStatus, page = 1, limit = 10 } = query;
+    // Default to active-only; caller must explicitly pass isActive=false to see deactivated records
+    const isActive = query.isActive !== undefined ? query.isActive : true;
 
     const queryBuilder = this.employeesRepository.createQueryBuilder('employee');
+
+    queryBuilder.andWhere('employee.isActive = :isActive', { isActive });
 
     if (search) {
       queryBuilder.andWhere(
@@ -182,10 +186,6 @@ export class EmployeesService {
       queryBuilder.andWhere('employee.employmentStatus = :employmentStatus', {
         employmentStatus,
       });
-    }
-
-    if (isActive !== undefined) {
-      queryBuilder.andWhere('employee.isActive = :isActive', { isActive });
     }
 
     queryBuilder
