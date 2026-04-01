@@ -291,22 +291,38 @@
 
 /* Make ALL tables horizontally scrollable on small screens */
 @media (max-width: 1023px) {
+  /* Wrap bare tables in a scroll container unless already wrapped */
   table {
     display: block;
     max-width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  
+
+  /* Restore table layout inside an explicit overflow-x-auto wrapper
+     (those are already constrained and the inner table should stay as table) */
+  .overflow-x-auto table {
+    display: table;
+    width: 100%;
+    overflow-x: visible;
+  }
+
   /* Ensure modals don't overflow on mobile */
   [role="dialog"] {
+    max-width: calc(100vw - 1rem) !important;
     max-height: 92dvh;
     overflow-y: auto;
   }
-  
+
   /* Safe area padding for bottom nav on phones with home indicators */
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Reduce page-level padding on very small screens */
+  main > div.p-6,
+  main > div > div.p-6 {
+    padding: 1rem;
   }
 }
 
@@ -314,6 +330,11 @@
 @media (max-width: 767px) {
   input, select, textarea {
     font-size: 16px; /* Prevents iOS auto-zoom on focus */
+  }
+
+  /* Cards that use fixed widths should go full-width */
+  .w-\[380px\], .w-\[360px\], .w-\[480px\] {
+    width: min(100vw - 1rem, 380px);
   }
 }
 

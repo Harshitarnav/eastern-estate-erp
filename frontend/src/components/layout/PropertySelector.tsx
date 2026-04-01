@@ -113,7 +113,7 @@ export function PropertySelector() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="min-w-[280px] justify-between h-10 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 shadow-sm hover:shadow-md"
+          className="w-full sm:min-w-[280px] justify-between h-10 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {loading ? (
@@ -133,7 +133,7 @@ export function PropertySelector() {
           <ChevronDown className={`ml-2 h-4 w-4 flex-shrink-0 text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[380px] p-0" align="start">
+      <PopoverContent className="w-[min(380px,calc(100vw-1rem))] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search properties..." className="h-9" />
           <CommandEmpty>

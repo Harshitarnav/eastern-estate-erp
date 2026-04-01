@@ -153,7 +153,7 @@ export default function EmployeesPage() {
           </select>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={() => router.push('/users')}
             className="px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2"

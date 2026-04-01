@@ -415,7 +415,7 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4">
               {[
                 { href: '/properties',              label: 'Properties', sub: 'Manage',   Icon: Building2,    from: 'from-red-50',    to: 'to-orange-50',   border: 'hover:border-red-200',    color: 'text-red-600' },
                 { href: '/towers',                  label: 'Inventory',  sub: 'View',     Icon: Home,         from: 'from-blue-50',   to: 'to-indigo-50',   border: 'hover:border-blue-200',   color: 'text-blue-600' },

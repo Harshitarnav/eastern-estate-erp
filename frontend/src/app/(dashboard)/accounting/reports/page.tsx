@@ -57,7 +57,7 @@ function BalanceSheetReport({ data }: { data: any }) {
       {/* Assets */}
       <div className="mb-6">
         <h3 className="text-base font-bold text-green-700 mb-2 border-b pb-1">ASSETS</h3>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
           <thead><tr className="bg-gray-50"><th className="text-left p-2">Account</th><th className="text-right p-2">Balance</th></tr></thead>
           <tbody>
             {(data.assets || []).map((a: any) => (
@@ -68,12 +68,12 @@ function BalanceSheetReport({ data }: { data: any }) {
             ))}
           </tbody>
           <tfoot><tr className="bg-green-50 font-bold"><td className="p-2">Total Assets</td><td className="p-2 text-right text-green-700">{fmt(data.totalAssets)}</td></tr></tfoot>
-        </table>
+        </table></div>
       </div>
       {/* Liabilities */}
       <div className="mb-6">
         <h3 className="text-base font-bold text-red-700 mb-2 border-b pb-1">LIABILITIES</h3>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
           <thead><tr className="bg-gray-50"><th className="text-left p-2">Account</th><th className="text-right p-2">Balance</th></tr></thead>
           <tbody>
             {(data.liabilities || []).map((a: any) => (
@@ -84,12 +84,12 @@ function BalanceSheetReport({ data }: { data: any }) {
             ))}
           </tbody>
           <tfoot><tr className="bg-red-50 font-bold"><td className="p-2">Total Liabilities</td><td className="p-2 text-right text-red-700">{fmt(data.totalLiabilities)}</td></tr></tfoot>
-        </table>
+        </table></div>
       </div>
       {/* Equity */}
       <div className="mb-6">
         <h3 className="text-base font-bold text-blue-700 mb-2 border-b pb-1">EQUITY</h3>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
           <thead><tr className="bg-gray-50"><th className="text-left p-2">Account</th><th className="text-right p-2">Balance</th></tr></thead>
           <tbody>
             {(data.equity || []).map((a: any) => (
@@ -100,10 +100,10 @@ function BalanceSheetReport({ data }: { data: any }) {
             ))}
           </tbody>
           <tfoot><tr className="bg-blue-50 font-bold"><td className="p-2">Total Equity</td><td className="p-2 text-right text-blue-700">{fmt(data.totalEquity)}</td></tr></tfoot>
-        </table>
+        </table></div>
       </div>
       {/* Equation */}
-      <div className="bg-gray-50 rounded-lg p-4 text-sm text-center font-mono border">
+      <div className="bg-gray-50 rounded-lg p-4 text-xs sm:text-sm text-center font-mono border break-words">
         Assets <strong>{fmt(data.totalAssets)}</strong> = Liabilities <strong>{fmt(data.totalLiabilities)}</strong> + Equity <strong>{fmt(data.totalEquity)}</strong>
         {Math.abs((Number(data.totalAssets) || 0) - ((Number(data.totalLiabilities) || 0) + (Number(data.totalEquity) || 0))) < 1 ? (
           <span className="ml-3 text-green-600 font-sans">✓ Balanced</span>
@@ -123,7 +123,7 @@ function PLReport({ data }: { data: any }) {
     <div id="print-area">
       <div className="mb-6">
         <h3 className="text-base font-bold text-green-700 mb-2 border-b pb-1">INCOME</h3>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
           <thead><tr className="bg-gray-50"><th className="text-left p-2">Account</th><th className="text-right p-2">Amount</th></tr></thead>
           <tbody>
             {(data.income || []).map((a: any) => (
@@ -134,11 +134,11 @@ function PLReport({ data }: { data: any }) {
             ))}
           </tbody>
           <tfoot><tr className="bg-green-50 font-bold"><td className="p-2">Total Income</td><td className="p-2 text-right text-green-700">{fmt(data.totalIncome)}</td></tr></tfoot>
-        </table>
+        </table></div>
       </div>
       <div className="mb-6">
         <h3 className="text-base font-bold text-red-700 mb-2 border-b pb-1">EXPENSES</h3>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[320px]">
           <thead><tr className="bg-gray-50"><th className="text-left p-2">Account</th><th className="text-right p-2">Amount</th></tr></thead>
           <tbody>
             {(data.expenses || []).map((a: any) => (
@@ -149,7 +149,7 @@ function PLReport({ data }: { data: any }) {
             ))}
           </tbody>
           <tfoot><tr className="bg-red-50 font-bold"><td className="p-2">Total Expenses</td><td className="p-2 text-right text-red-700">{fmt(data.totalExpenses)}</td></tr></tfoot>
-        </table>
+        </table></div>
       </div>
       <div className={`rounded-lg p-5 border-2 ${netProfit >= 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
         <div className="flex justify-between items-center">
@@ -327,7 +327,7 @@ function ITRExport() {
 
       {data && (
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Total Income</CardTitle></CardHeader>
               <CardContent><p className="text-xl font-bold text-green-700">{fmt(data.total_income)}</p></CardContent></Card>
             <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-gray-500">Total Expenses</CardTitle></CardHeader>
@@ -425,7 +425,7 @@ function PropertyWisePL() {
           </div>
 
           {/* Per-property table */}
-          <table className="w-full text-sm border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto"><table className="w-full text-sm border rounded-lg overflow-hidden min-w-[500px]">
             <thead>
               <tr className="bg-gray-100">
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Property</th>
@@ -467,7 +467,7 @@ function PropertyWisePL() {
                 </td>
               </tr>
             </tfoot>
-          </table>
+          </table></div>
 
           {data.properties?.length === 0 && (
             <div className="text-center py-10 text-gray-400">
@@ -509,7 +509,7 @@ function ARAgingReport({ data }: { data: any }) {
           <p>No outstanding receivables. All customers are up to date!</p>
         </div>
       ) : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 border-b">
               <th className="text-left p-3 font-medium">Customer</th>
@@ -547,7 +547,7 @@ function ARAgingReport({ data }: { data: any }) {
               <td className="p-3 text-right font-mono">{fmt(totals?.total)}</td>
             </tr>
           </tfoot>
-        </table>
+        </table></div>
       )}
     </div>
   );
@@ -580,7 +580,7 @@ function APAgingReport({ data }: { data: any }) {
           <p>No outstanding payables. All vendor balances are cleared!</p>
         </div>
       ) : (
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto"><table className="w-full text-sm min-w-[600px]">
           <thead>
             <tr className="bg-gray-50 border-b">
               <th className="text-left p-3 font-medium">Vendor</th>
@@ -618,7 +618,7 @@ function APAgingReport({ data }: { data: any }) {
               <td className="p-3 text-right font-mono">{fmt(totals?.total)}</td>
             </tr>
           </tfoot>
-        </table>
+        </table></div>
       )}
     </div>
   );
@@ -668,7 +668,7 @@ function CashFlowReport({ data }: { data: any }) {
             </span>
           </div>
           {(s.data?.items || []).length > 0 ? (
-            <table className="w-full text-sm border border-t-0 rounded-b-lg">
+            <div className="overflow-x-auto"><table className="w-full text-sm border border-t-0 rounded-b-lg min-w-[480px]">
               <thead>
                 <tr className="bg-gray-50 border-b">
                   <th className="text-left p-2 font-medium text-xs">Date</th>
@@ -691,7 +691,7 @@ function CashFlowReport({ data }: { data: any }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           ) : (
             <div className="border border-t-0 rounded-b-lg p-4 text-center text-sm text-gray-400">No transactions in this category</div>
           )}
@@ -806,22 +806,23 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-        <h1 className="text-3xl font-bold">Financial Reports</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Financial Reports</h1>
           <p className="text-sm text-gray-500 mt-1">As of {format(new Date(), 'dd MMM yyyy')}</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b">
+      {/* Tabs — scrollable on mobile */}
+      <div className="overflow-x-auto no-scrollbar">
+      <div className="flex gap-1 border-b min-w-max">
         {tabConfig.map(t => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`flex items-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors -mb-px whitespace-nowrap ${
               tab === t.id
                 ? 'border-[#A8211B] text-[#A8211B]'
                 : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -830,7 +831,7 @@ export default function ReportsPage() {
             {t.icon}{t.label}
           </button>
         ))}
-      </div>
+      </div></div>
 
       {/* Report Panel */}
       <Card>

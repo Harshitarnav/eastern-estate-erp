@@ -176,7 +176,7 @@ export default function BudgetsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">Budgeted</p>
                       <p className="font-semibold">{formatCurrency(budget.budgetedAmount)}</p>

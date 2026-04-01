@@ -159,7 +159,7 @@ function CashBook() {
           </div>
 
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card><CardContent className="pt-4">
               <p className="text-xs text-gray-500">Opening Balance</p>
               <p className="text-xl font-bold text-blue-700">{fmt(data.openingBalance)}</p>
@@ -327,7 +327,7 @@ function BankBook() {
             {' '}— select this account in Journal Entries for transactions to appear here.
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Card><CardContent className="pt-4">
               <p className="text-xs text-gray-500">Opening Balance</p>
               <p className="text-xl font-bold text-blue-700">{fmt(data.openingBalance)}</p>

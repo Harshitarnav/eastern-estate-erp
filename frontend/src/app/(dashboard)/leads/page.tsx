@@ -806,7 +806,7 @@ export default function LeadsListPage() {
                   {selectedLeads.size} selected
                 </span>
                 <Select value={bulkAction} onValueChange={setBulkAction}>
-                  <SelectTrigger className="h-9 w-[200px] bg-white">
+                  <SelectTrigger className="h-9 w-full sm:w-[200px] bg-white">
                     <SelectValue placeholder="Bulk action..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -906,7 +906,7 @@ export default function LeadsListPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-white rounded-lg border border-gray-200 p-4">
                 <div className="text-sm text-gray-700">
                   Page {filters.page} of {totalPages} • Showing {leads.length} of {total} leads
                 </div>
