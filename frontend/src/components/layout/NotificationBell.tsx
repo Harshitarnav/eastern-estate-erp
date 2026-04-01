@@ -66,20 +66,28 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
 
 /**
  * Returns the active service worker registration.
- * Uses getRegistration() first (instant) so it works on PWA without waiting.
- * Falls back to serviceWorker.ready with a 10-second timeout.
+ * Tries multiple strategies so it works on iOS PWA, Android, and desktop.
  */
 async function getSwRegistration(): Promise<ServiceWorkerRegistration> {
-  // getRegistration is instant — returns the existing registration if one exists
-  const existing = await navigator.serviceWorker.getRegistration('/');
-  if (existing?.active) return existing;
+  // Strategy 1: check the root scope directly (fastest, works most of the time)
+  const byScope = await navigator.serviceWorker.getRegistration('/');
+  if (byScope?.active) return byScope;
 
-  // SW exists but is still installing/waiting — or no SW yet. Wait for ready.
+  // Strategy 2: scan ALL registrations — handles iOS where scope can differ
+  const allRegs = await navigator.serviceWorker.getRegistrations();
+  const withActive = allRegs.find(r => r.active);
+  if (withActive) return withActive;
+
+  // Strategy 3: wait for the SW to become active (first install / updating)
   return Promise.race([
     navigator.serviceWorker.ready,
     new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error('Service worker is not ready. Please refresh the page and try again.')),
+        () => reject(new Error(
+          'Service worker is not active.\n\n' +
+          '• Make sure you opened the app from your Home Screen (not Safari).\n' +
+          '• Close and reopen the app, then try again.'
+        )),
         10_000,
       )
     ),
@@ -181,14 +189,35 @@ export function NotificationBell() {
   };
 
   const handleTogglePush = async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('Push notifications are not supported by this browser.');
+    if (typeof window === 'undefined') return;
+
+    // iOS requires the app to be installed as a PWA (Home Screen) for push to work.
+    // We detect this by checking for all required APIs together.
+    if (!('serviceWorker' in navigator)) {
+      alert('Push notifications require a service worker. Please use a modern browser.');
       return;
     }
+    if (!('PushManager' in window)) {
+      alert(
+        'Push notifications are not supported.\n\n' +
+        'On iPhone/iPad: iOS 16.4+ is required, and the app must be installed to your Home Screen via Safari → Share → Add to Home Screen.'
+      );
+      return;
+    }
+    // iOS Safari in browser (not PWA) has PushManager but Notification may be absent
+    if (!('Notification' in window)) {
+      alert(
+        'Notifications are not available in this context.\n\n' +
+        'Please open the app from your Home Screen icon, not directly in Safari.'
+      );
+      return;
+    }
+
     setPushLoading(true);
     try {
-      const reg = await getSwRegistration();
       if (pushSubscribed) {
+        // ── Unsubscribe ──
+        const reg = await getSwRegistration();
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
           await sub.unsubscribe();
@@ -196,26 +225,46 @@ export function NotificationBell() {
         }
         setPushSubscribed(false);
       } else {
+        // ── Subscribe ──
+
+        // If already denied, iOS/macOS won't show the prompt — tell the user to fix it in Settings
+        if (Notification.permission === 'denied') {
+          alert(
+            'Notifications are blocked.\n\n' +
+            'Go to Settings → Notifications → Eastern Estate and enable Allow Notifications.'
+          );
+          return;
+        }
+
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-          alert('Please allow notifications in your browser / device settings to enable push notifications.');
+          alert('Please tap "Allow" when asked to receive notifications.');
           return;
         }
+
+        const reg = await getSwRegistration();
+
         const vapidData: any = await apiService.get('/notifications/push/vapid-public-key');
         if (!vapidData?.publicKey) {
-          alert('Push notifications are not configured on the server yet.');
+          alert('Push notifications are not configured on the server yet. Please contact support.');
           return;
         }
+
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
         });
         const { endpoint, keys } = sub.toJSON() as any;
-        await apiService.post('/notifications/push/subscribe', { endpoint, p256dh: keys.p256dh, auth: keys.auth });
+        await apiService.post('/notifications/push/subscribe', {
+          endpoint,
+          p256dh: keys.p256dh,
+          auth: keys.auth,
+        });
         setPushSubscribed(true);
       }
     } catch (err: any) {
-      alert(err?.message || 'Failed to toggle push notifications');
+      // Show the raw message so we can debug easily
+      alert('Could not enable notifications:\n\n' + (err?.message || String(err)));
     } finally {
       setPushLoading(false);
     }

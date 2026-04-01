@@ -1,24 +1,23 @@
 // Custom service worker — handles PWA push notifications
+// iOS requires showNotification() to always be called inside the push handler.
 
 self.addEventListener('push', (event) => {
-  if (!event.data) return;
-
   let data = {};
   try {
-    data = event.data.json();
+    data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: 'Eastern Estate', body: event.data.text() };
+    data = { title: 'Eastern Estate', body: event.data ? event.data.text() : '' };
   }
 
   const title = data.title || 'Eastern Estate';
   const options = {
-    body: data.body || '',
+    body: data.body || 'You have a new notification.',
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    // badge and vibrate omitted — not supported on iOS and can cause silent failures
     data: { url: data.url || '/' },
-    vibrate: [200, 100, 200],
   };
 
+  // iOS mandates that showNotification() is always called — never skip it
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
