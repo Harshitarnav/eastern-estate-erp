@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Building2, Home, Users, TrendingUp, DollarSign, Package, 
-  Sparkles, CheckCircle, ArrowUpRight, BarChart3,
+  Sparkles, Target, CheckCircle, ArrowUpRight, BarChart3,
   Calendar, Bell, Award, Shield, Heart
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
