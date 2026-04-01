@@ -130,6 +130,12 @@ run_migration "$MIGRATIONS_DIR/v012_fix_employees_nullable_columns.sql"
 
 echo ""
 echo "======================================================"
+echo " STEP 14: PUSH SUBSCRIPTIONS TABLE"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v013_push_subscriptions.sql"
+
+echo ""
+echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
 echo " Now restart the application:"
 echo "   docker compose -f docker-compose.prod.yml restart backend frontend"

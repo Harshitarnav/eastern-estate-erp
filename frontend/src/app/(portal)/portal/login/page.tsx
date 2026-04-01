@@ -119,7 +119,7 @@ export default function PortalLoginPage() {
 
         <p className="text-center text-xs text-gray-400 mt-6">
           Need help? Contact{' '}
-          <a href="mailto:support@eecd.in" className="text-[#A8211B] font-medium">support@eecd.in</a>
+          <a href="mailto:hr@eecd.in" className="text-[#A8211B] font-medium">hr@eecd.in</a>
         </p>
       </div>
     </div>

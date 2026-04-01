@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Bell, X, CheckCheck, CreditCard, Building2,
+  Bell, BellOff, X, CheckCheck, CreditCard, Building2,
   HardHat, Users, Calculator, Settings, AlertTriangle,
-  Calendar, ChevronRight, Inbox,
+  Calendar, ChevronRight, Inbox, Smartphone,
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { formatDistanceToNow } from 'date-fns';
@@ -50,12 +50,25 @@ const TYPE_RING: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return new Uint8Array([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -83,6 +96,16 @@ export function NotificationBell() {
     const t = setInterval(loadUnreadCount, 30_000);
     return () => clearInterval(t);
   }, [loadUnreadCount]);
+
+  // Check current push subscription state
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.pushManager.getSubscription().then((sub) => {
+        setPushSubscribed(!!sub);
+      }).catch(() => {});
+    }).catch(() => {});
+  }, []);
 
   // Close on outside click
   useEffect(() => {
@@ -129,6 +152,47 @@ export function NotificationBell() {
   const handleViewAll = () => {
     setIsOpen(false);
     router.push('/notifications');
+  };
+
+  const handleTogglePush = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Push notifications are not supported by this browser.');
+      return;
+    }
+    setPushLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (pushSubscribed) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+          await apiService.post('/notifications/push/unsubscribe', { endpoint: sub.endpoint });
+        }
+        setPushSubscribed(false);
+      } else {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          alert('Please allow notifications in your browser / device settings to enable push notifications.');
+          return;
+        }
+        const vapidData: any = await apiService.get('/notifications/push/vapid-public-key');
+        if (!vapidData?.publicKey) {
+          alert('Push notifications are not configured on the server yet.');
+          return;
+        }
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
+        });
+        const { endpoint, keys } = sub.toJSON() as any;
+        await apiService.post('/notifications/push/subscribe', { endpoint, p256dh: keys.p256dh, auth: keys.auth });
+        setPushSubscribed(true);
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Failed to toggle push notifications');
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -249,14 +313,29 @@ export function NotificationBell() {
           </div>
 
           {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="border-t border-gray-50 p-2">
+          <div className="border-t border-gray-50 p-2 space-y-1">
+            {notifications.length > 0 && (
               <button onClick={handleViewAll}
                 className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-[#A8211B] hover:bg-[#FEF3E2] transition">
                 View all notifications <ChevronRight className="w-3.5 h-3.5" />
               </button>
-            </div>
-          )}
+            )}
+            {/* Push notification toggle */}
+            <button
+              onClick={handleTogglePush}
+              disabled={pushLoading}
+              className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition disabled:opacity-50 ${
+                pushSubscribed
+                  ? 'text-gray-500 hover:bg-gray-100'
+                  : 'text-emerald-700 hover:bg-emerald-50'
+              }`}
+            >
+              {pushSubscribed
+                ? <><BellOff className="w-3.5 h-3.5" /> {pushLoading ? 'Disabling…' : 'Disable mobile notifications'}</>
+                : <><Smartphone className="w-3.5 h-3.5" /> {pushLoading ? 'Enabling…' : 'Enable mobile notifications'}</>
+              }
+            </button>
+          </div>
         </div>
       )}
     </div>

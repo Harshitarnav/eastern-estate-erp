@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, QueryFailedError } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { EmailService } from './email.service';
+import { PushService } from './push.service';
 import { User } from '../users/entities/user.entity';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class NotificationsService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private emailService: EmailService,
+    @Optional() private pushService: PushService,
   ) {}
 
   private isMissingNotificationsTable(error: any): boolean {
@@ -96,6 +98,15 @@ export class NotificationsService {
         });
         const saved = await this.notificationRepository.save(notification);
         notifications.push(saved);
+      }
+
+      // Fire push notifications (non-blocking)
+      if (this.pushService) {
+        for (const n of notifications) {
+          if (n.userId) {
+            this.pushService.sendToUser(n.userId, n.title, n.message, n.actionUrl).catch(() => {});
+          }
+        }
       }
 
       this.logger.log(`Created ${notifications.length} notification(s)`);

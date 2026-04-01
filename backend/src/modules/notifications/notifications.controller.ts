@@ -11,13 +11,17 @@ import {
   Req,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { PushService } from './push.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly pushService: PushService,
+  ) {}
 
   @Post()
   async create(@Body() createNotificationDto: CreateNotificationDto, @Req() req: any) {
@@ -80,5 +84,26 @@ export class NotificationsController {
     const userId = req.user?.userId || req.user?.id;
     await this.notificationsService.clearRead(userId);
     return { message: 'Read notifications cleared successfully' };
+  }
+
+  // ── Push subscription endpoints ──────────────────────────────────────────
+
+  @Get('push/vapid-public-key')
+  getVapidPublicKey() {
+    return { publicKey: this.pushService.getPublicKey() };
+  }
+
+  @Post('push/subscribe')
+  async pushSubscribe(@Body() body: { endpoint: string; p256dh: string; auth: string }, @Req() req: any) {
+    const userId = req.user?.userId || req.user?.id;
+    await this.pushService.subscribe(userId, body.endpoint, body.p256dh, body.auth);
+    return { message: 'Subscribed' };
+  }
+
+  @Post('push/unsubscribe')
+  async pushUnsubscribe(@Body() body: { endpoint: string }, @Req() req: any) {
+    const userId = req.user?.userId || req.user?.id;
+    await this.pushService.unsubscribe(userId, body.endpoint);
+    return { message: 'Unsubscribed' };
   }
 }

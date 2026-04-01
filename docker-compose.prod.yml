@@ -70,6 +70,10 @@ services:
       
       # CORS
       CORS_ORIGINS: ${CORS_ORIGINS}
+
+      # PWA Push Notifications (VAPID)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
     volumes:
       - backend_uploads:/app/uploads
     networks:

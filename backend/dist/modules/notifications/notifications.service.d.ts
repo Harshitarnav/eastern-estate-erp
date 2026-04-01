@@ -2,13 +2,15 @@ import { Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { EmailService } from './email.service';
+import { PushService } from './push.service';
 import { User } from '../users/entities/user.entity';
 export declare class NotificationsService {
     private notificationRepository;
     private userRepository;
     private emailService;
+    private pushService;
     private readonly logger;
-    constructor(notificationRepository: Repository<Notification>, userRepository: Repository<User>, emailService: EmailService);
+    constructor(notificationRepository: Repository<Notification>, userRepository: Repository<User>, emailService: EmailService, pushService: PushService);
     private isMissingNotificationsTable;
     create(createNotificationDto: CreateNotificationDto, createdBy?: string): Promise<Notification[]>;
     private getUsersByRoles;

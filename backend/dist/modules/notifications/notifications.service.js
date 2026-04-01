@@ -19,12 +19,14 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const notification_entity_1 = require("./entities/notification.entity");
 const email_service_1 = require("./email.service");
+const push_service_1 = require("./push.service");
 const user_entity_1 = require("../users/entities/user.entity");
 let NotificationsService = NotificationsService_1 = class NotificationsService {
-    constructor(notificationRepository, userRepository, emailService) {
+    constructor(notificationRepository, userRepository, emailService, pushService) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.pushService = pushService;
         this.logger = new common_1.Logger(NotificationsService_1.name);
     }
     isMissingNotificationsTable(error) {
@@ -84,6 +86,13 @@ let NotificationsService = NotificationsService_1 = class NotificationsService {
                 });
                 const saved = await this.notificationRepository.save(notification);
                 notifications.push(saved);
+            }
+            if (this.pushService) {
+                for (const n of notifications) {
+                    if (n.userId) {
+                        this.pushService.sendToUser(n.userId, n.title, n.message, n.actionUrl).catch(() => { });
+                    }
+                }
             }
             this.logger.log(`Created ${notifications.length} notification(s)`);
             return notifications;
@@ -285,8 +294,10 @@ exports.NotificationsService = NotificationsService = NotificationsService_1 = _
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(notification_entity_1.Notification)),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(3, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        email_service_1.EmailService])
+        email_service_1.EmailService,
+        push_service_1.PushService])
 ], NotificationsService);
 //# sourceMappingURL=notifications.service.js.map

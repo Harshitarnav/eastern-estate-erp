@@ -15,11 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.NotificationsController = void 0;
 const common_1 = require("@nestjs/common");
 const notifications_service_1 = require("./notifications.service");
+const push_service_1 = require("./push.service");
 const create_notification_dto_1 = require("./dto/create-notification.dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 let NotificationsController = class NotificationsController {
-    constructor(notificationsService) {
+    constructor(notificationsService, pushService) {
         this.notificationsService = notificationsService;
+        this.pushService = pushService;
     }
     async create(createNotificationDto, req) {
         const userId = req.user?.userId || req.user?.id;
@@ -69,6 +71,19 @@ let NotificationsController = class NotificationsController {
         const userId = req.user?.userId || req.user?.id;
         await this.notificationsService.clearRead(userId);
         return { message: 'Read notifications cleared successfully' };
+    }
+    getVapidPublicKey() {
+        return { publicKey: this.pushService.getPublicKey() };
+    }
+    async pushSubscribe(body, req) {
+        const userId = req.user?.userId || req.user?.id;
+        await this.pushService.subscribe(userId, body.endpoint, body.p256dh, body.auth);
+        return { message: 'Subscribed' };
+    }
+    async pushUnsubscribe(body, req) {
+        const userId = req.user?.userId || req.user?.id;
+        await this.pushService.unsubscribe(userId, body.endpoint);
+        return { message: 'Unsubscribed' };
     }
 };
 exports.NotificationsController = NotificationsController;
@@ -125,9 +140,32 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], NotificationsController.prototype, "clearRead", null);
+__decorate([
+    (0, common_1.Get)('push/vapid-public-key'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], NotificationsController.prototype, "getVapidPublicKey", null);
+__decorate([
+    (0, common_1.Post)('push/subscribe'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "pushSubscribe", null);
+__decorate([
+    (0, common_1.Post)('push/unsubscribe'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], NotificationsController.prototype, "pushUnsubscribe", null);
 exports.NotificationsController = NotificationsController = __decorate([
     (0, common_1.Controller)('notifications'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [notifications_service_1.NotificationsService])
+    __metadata("design:paramtypes", [notifications_service_1.NotificationsService,
+        push_service_1.PushService])
 ], NotificationsController);
 //# sourceMappingURL=notifications.controller.js.map

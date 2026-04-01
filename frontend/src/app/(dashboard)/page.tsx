@@ -20,6 +20,7 @@ export default function DashboardPage() {
     leads: { total: 0, qualified: 0, won: 0, conversionRate: 0 },
     bookings: { total: 0, confirmed: 0, totalRevenue: 0, totalPaid: 0 },
     payments: { totalPayments: 0, completedAmount: 0, pendingAmount: 0 },
+    employees: { total: 0 },
   });
 
   useEffect(() => { setMounted(true); }, []);
@@ -31,20 +32,27 @@ export default function DashboardPage() {
   const fetchAllStatistics = async () => {
     try {
       setLoading(true);
-      const [flatsRes, bookingsRes, paymentsRes, leadsRes] = await Promise.allSettled([
+      const [flatsRes, bookingsRes, paymentsRes, leadsRes, propertiesRes, employeesRes] = await Promise.allSettled([
         apiService.get('/flats/stats'),
         apiService.get('/bookings/statistics'),
         apiService.get('/payments/statistics'),
         apiService.get('/leads/statistics'),
+        apiService.get('/properties'),
+        apiService.get('/employees?limit=1'),
       ]);
 
-      const flats   = flatsRes.status    === 'fulfilled' ? (flatsRes.value as any)    : null;
-      const bookings = bookingsRes.status === 'fulfilled' ? (bookingsRes.value as any) : null;
-      const payments = paymentsRes.status === 'fulfilled' ? (paymentsRes.value as any) : null;
-      const leads    = leadsRes.status    === 'fulfilled' ? (leadsRes.value as any)    : null;
+      const flats      = flatsRes.status      === 'fulfilled' ? (flatsRes.value as any)      : null;
+      const bookings   = bookingsRes.status   === 'fulfilled' ? (bookingsRes.value as any)   : null;
+      const payments   = paymentsRes.status   === 'fulfilled' ? (paymentsRes.value as any)   : null;
+      const leads      = leadsRes.status      === 'fulfilled' ? (leadsRes.value as any)      : null;
+      const properties = propertiesRes.status === 'fulfilled' ? (propertiesRes.value as any) : null;
+      const employees  = employeesRes.status  === 'fulfilled' ? (employeesRes.value as any)  : null;
 
       setStats({
-        properties: { total: 0, active: 0 },
+        properties: {
+          total:  Array.isArray(properties) ? properties.length : (properties?.total ?? properties?.data?.length ?? 0),
+          active: Array.isArray(properties) ? properties.filter((p: any) => p.isActive !== false).length : 0,
+        },
         flats: {
           total:     flats?.total     ?? 0,
           available: flats?.available ?? 0,
@@ -67,6 +75,9 @@ export default function DashboardPage() {
           totalPayments:   payments?.totalPayments   ?? 0,
           completedAmount: payments?.completedAmount ?? 0,
           pendingAmount:   payments?.pendingAmount   ?? 0,
+        },
+        employees: {
+          total: employees?.meta?.total ?? employees?.total ?? 0,
         },
       });
     } catch (error) {
@@ -113,9 +124,9 @@ export default function DashboardPage() {
                     <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-red-700 via-red-600 to-orange-600 bg-clip-text text-transparent">
                       Eastern Estate
                     </h1>
-                    <p className="text-gray-600 mt-0.5 flex items-center gap-2 text-sm md:text-base">
-                      <Heart className="h-3.5 w-3.5 text-red-500" />
-                      Building Homes, Nurturing Bonds
+                    <p className="text-gray-600 mt-0.5 flex items-center gap-2 text-sm md:text-base italic">
+                      <Heart className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                      Life Long Bonding...
                     </p>
                   </div>
                 </div>
@@ -347,44 +358,44 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20">
+          {/* Properties & Team */}
+          <Link href="/properties" className="group bg-white/80 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-white/20 hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl">
+              <div className="p-3 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl group-hover:scale-110 transition-transform">
                 <Award className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">Achievements</h3>
-                <p className="text-sm text-gray-600">Your milestones</p>
+                <h3 className="text-lg font-bold text-gray-900">At a Glance</h3>
+                <p className="text-sm text-gray-600">Portfolio overview</p>
               </div>
             </div>
-            
+
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl">
-                <Shield className="h-5 w-5 text-red-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">System Active</p>
-                  <p className="text-xs text-gray-600">All systems operational</p>
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-purple-600" />
+                  <p className="text-sm font-medium text-gray-900">Projects</p>
                 </div>
+                {loading ? <Skeleton className="h-7 w-8" /> : <p className="text-xl font-bold text-purple-600">{stats.properties.total}</p>}
               </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-                <Zap className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Fast Access</p>
-                  <p className="text-xs text-gray-600">Quick navigation ready</p>
+
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-red-600" />
+                  <p className="text-sm font-medium text-gray-900">Units Booked</p>
                 </div>
+                {loading ? <Skeleton className="h-7 w-8" /> : <p className="text-xl font-bold text-red-600">{stats.flats.booked}</p>}
               </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Data Secure</p>
-                  <p className="text-xs text-gray-600">Protected & encrypted</p>
+
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-green-600" />
+                  <p className="text-sm font-medium text-gray-900">Team Members</p>
                 </div>
+                {loading ? <Skeleton className="h-7 w-8" /> : <p className="text-xl font-bold text-green-600">{stats.employees.total}</p>}
               </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Quick Actions */}
@@ -435,8 +446,9 @@ export default function DashboardPage() {
             mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
           }`}
         >
-          <p className="text-gray-600 text-sm">
-            Powered by Eastern Estate ERP • Making property management seamless
+          <p className="text-gray-500 text-sm flex items-center justify-center gap-2">
+            <Heart className="h-3.5 w-3.5 text-red-400" />
+            Eastern Estate — <span className="italic">Life Long Bonding...</span>
           </p>
         </div>
       </div>

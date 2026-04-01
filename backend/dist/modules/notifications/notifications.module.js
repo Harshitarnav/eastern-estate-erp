@@ -12,8 +12,10 @@ const typeorm_1 = require("@nestjs/typeorm");
 const email_service_1 = require("./email.service");
 const reminder_service_1 = require("./reminder.service");
 const notifications_service_1 = require("./notifications.service");
+const push_service_1 = require("./push.service");
 const notifications_controller_1 = require("./notifications.controller");
 const notification_entity_1 = require("./entities/notification.entity");
+const push_subscription_entity_1 = require("./entities/push-subscription.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 const lead_entity_1 = require("../leads/entities/lead.entity");
 const sales_task_entity_1 = require("../leads/entities/sales-task.entity");
@@ -22,10 +24,10 @@ let NotificationsModule = class NotificationsModule {
 exports.NotificationsModule = NotificationsModule;
 exports.NotificationsModule = NotificationsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([notification_entity_1.Notification, user_entity_1.User, lead_entity_1.Lead, sales_task_entity_1.SalesTask])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([notification_entity_1.Notification, push_subscription_entity_1.PushSubscription, user_entity_1.User, lead_entity_1.Lead, sales_task_entity_1.SalesTask])],
         controllers: [notifications_controller_1.NotificationsController],
-        providers: [email_service_1.EmailService, reminder_service_1.ReminderService, notifications_service_1.NotificationsService],
-        exports: [email_service_1.EmailService, reminder_service_1.ReminderService, notifications_service_1.NotificationsService],
+        providers: [email_service_1.EmailService, reminder_service_1.ReminderService, notifications_service_1.NotificationsService, push_service_1.PushService],
+        exports: [email_service_1.EmailService, reminder_service_1.ReminderService, notifications_service_1.NotificationsService, push_service_1.PushService],
     })
 ], NotificationsModule);
 //# sourceMappingURL=notifications.module.js.map
