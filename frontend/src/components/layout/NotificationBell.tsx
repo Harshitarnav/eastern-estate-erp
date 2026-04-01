@@ -64,6 +64,28 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   return output;
 }
 
+/**
+ * Returns the active service worker registration.
+ * Uses getRegistration() first (instant) so it works on PWA without waiting.
+ * Falls back to serviceWorker.ready with a 10-second timeout.
+ */
+async function getSwRegistration(): Promise<ServiceWorkerRegistration> {
+  // getRegistration is instant — returns the existing registration if one exists
+  const existing = await navigator.serviceWorker.getRegistration('/');
+  if (existing?.active) return existing;
+
+  // SW exists but is still installing/waiting — or no SW yet. Wait for ready.
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error('Service worker is not ready. Please refresh the page and try again.')),
+        10_000,
+      )
+    ),
+  ]);
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function NotificationBell() {
@@ -105,9 +127,8 @@ export function NotificationBell() {
   // Check current push subscription state
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    const timeout = new Promise<never>((_, reject) => setTimeout(() => reject(), 3000));
-    Promise.race([navigator.serviceWorker.ready, timeout])
-      .then((reg) => (reg as ServiceWorkerRegistration).pushManager.getSubscription())
+    getSwRegistration()
+      .then((reg) => reg.pushManager.getSubscription())
       .then((sub) => setPushSubscribed(!!sub))
       .catch(() => {});
   }, []);
@@ -166,11 +187,7 @@ export function NotificationBell() {
     }
     setPushLoading(true);
     try {
-      // serviceWorker.ready hangs forever if no SW is active (e.g. dev mode). Add a 5-second timeout.
-      const reg = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Service worker not ready. Please make sure you are using the installed PWA on your device.')), 5000)),
-      ]);
+      const reg = await getSwRegistration();
       if (pushSubscribed) {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
