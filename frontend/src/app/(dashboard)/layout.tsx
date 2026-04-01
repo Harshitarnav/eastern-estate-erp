@@ -7,7 +7,7 @@ import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { NotificationBell } from '@/components/layout/NotificationBell';
-import ChatButton from '@/components/layout/ChatButton';
+// import ChatButton from '@/components/layout/ChatButton'; // hidden until ready
 import { Menu, LogOut, Building2 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import apiService from '@/services/api';
@@ -117,7 +117,7 @@ export default function DashboardLayout({
           {/* Right */}
           <div className="flex items-center gap-1 ml-auto">
             <NotificationBell />
-            <ChatButton />
+            {/* <ChatButton /> */}
             
             <button
               onClick={handleLogout}

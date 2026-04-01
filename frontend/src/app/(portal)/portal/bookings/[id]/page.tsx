@@ -112,12 +112,17 @@ export default function BookingDetailPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 text-sm">
-        {(['overview', 'milestones', 'payments', 'drafts'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`flex-1 py-2 rounded-lg font-semibold capitalize transition ${
-              tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}>{t === 'drafts' ? 'DDs' : t}
+      <div className="flex gap-1 bg-gray-100 rounded-xl p-1 text-sm overflow-x-auto no-scrollbar">
+        {([
+          { key: 'overview',    label: 'Overview'   },
+          { key: 'milestones',  label: 'Milestones' },
+          { key: 'payments',    label: 'Payments'   },
+          { key: 'drafts',      label: 'Drafts'     },
+        ] as const).map(({ key, label }) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`flex-shrink-0 flex-1 min-w-[72px] py-2 px-3 rounded-lg font-semibold transition whitespace-nowrap ${
+              tab === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}>{label}
           </button>
         ))}
       </div>

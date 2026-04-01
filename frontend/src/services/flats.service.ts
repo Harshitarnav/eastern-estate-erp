@@ -49,26 +49,12 @@ export interface Flat {
   floorPlanUrl?: string;
   images?: string[];
   virtualTourUrl?: string;
-  saleAgreementUrl?: string;
-  allotmentLetterUrl?: string;
-  possessionLetterUrl?: string;
-  paymentPlanUrl?: string;
-  registrationReceiptUrls?: string[];
-  paymentReceiptUrls?: string[];
   // Booking link (populated when flat is booked)
   bookingId?: string;
   // Construction tracking fields
   constructionStage?: 'FOUNDATION' | 'STRUCTURE' | 'WALLS' | 'PLUMBING' | 'ELECTRICAL' | 'FINISHING' | 'COMPLETE' | null;
   constructionProgress?: number;
   lastConstructionUpdate?: string;
-  demandLetterUrls?: string[];
-  nocUrl?: string;
-  handoverDocumentUrl?: string;
-  reraCertificateUrl?: string;
-  kycDocsUrls?: string[];
-  snagListUrl?: string;
-  handoverChecklistUrl?: string;
-  otherDocuments?: string[];
   agreementDate?: string;
   registrationDate?: string;
   handoverDate?: string;

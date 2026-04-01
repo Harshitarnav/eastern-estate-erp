@@ -149,6 +149,16 @@ let FlatsService = class FlatsService {
         };
     }
     async create(createFlatDto) {
+        const tower = await this.towersRepository.findOne({ where: { id: createFlatDto.towerId } });
+        if (!tower) {
+            throw new common_1.BadRequestException(`Tower with ID ${createFlatDto.towerId} not found`);
+        }
+        if (createFlatDto.propertyId && tower.propertyId !== createFlatDto.propertyId) {
+            throw new common_1.BadRequestException(`Tower "${tower.name}" does not belong to the selected property. Please select the correct tower.`);
+        }
+        if (!createFlatDto.propertyId) {
+            createFlatDto.propertyId = tower.propertyId;
+        }
         const existingFlat = await this.flatsRepository.findOne({
             where: {
                 towerId: createFlatDto.towerId,
@@ -463,8 +473,8 @@ let FlatsService = class FlatsService {
         if (!flat) {
             throw new common_1.NotFoundException(`Flat with ID ${id} not found`);
         }
-        if (flat.status === 'BOOKED' || flat.status === 'SOLD') {
-            throw new common_1.BadRequestException('Cannot delete a flat that is booked or sold');
+        if (flat.status === flat_entity_1.FlatStatus.BOOKED || flat.status === flat_entity_1.FlatStatus.SOLD) {
+            throw new common_1.BadRequestException('Cannot deactivate a flat that is booked or sold');
         }
         flat.isActive = false;
         await this.flatsRepository.save(flat);

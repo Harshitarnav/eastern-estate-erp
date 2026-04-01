@@ -6,6 +6,7 @@ import {
   UploadedFiles,
   UseInterceptors,
   BadRequestException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { FileValidationPipe, FilesValidationPipe } from './pipes/file-validation.pipe';
@@ -76,7 +77,16 @@ export class UploadController {
     }
 
     // Save the main file (moves from tmpdir to final destination)
-    await this.storage.save(file, file.filename);
+    try {
+      await this.storage.save(file, file.filename);
+    } catch (err: any) {
+      if (err?.code === 'ECONNREFUSED' || err?.name === 'AggregateError') {
+        throw new ServiceUnavailableException(
+          'File storage is unavailable right now. Please try again later or contact your administrator.',
+        );
+      }
+      throw err;
+    }
     response.url = this.storage.getUrl(file.filename);
 
     return response;
@@ -136,7 +146,16 @@ export class UploadController {
         }
       }
 
-      await this.storage.save(file, file.filename);
+      try {
+        await this.storage.save(file, file.filename);
+      } catch (err: any) {
+        if (err?.code === 'ECONNREFUSED' || err?.name === 'AggregateError') {
+          throw new ServiceUnavailableException(
+            'File storage is unavailable right now. Please try again later or contact your administrator.',
+          );
+        }
+        throw err;
+      }
       response.url = this.storage.getUrl(file.filename);
 
       responses.push(response);

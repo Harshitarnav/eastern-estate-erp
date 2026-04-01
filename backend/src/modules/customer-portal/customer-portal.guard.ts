@@ -31,7 +31,10 @@ export class CustomerPortalGuard implements CanActivate {
       typeof r === 'string' ? r : r.name,
     );
 
-    if (!roles.includes('customer') && !roles.includes('super_admin') && !roles.includes('admin')) {
+    const isCustomer = roles.includes('customer');
+    const isAdmin = roles.includes('super_admin') || roles.includes('admin');
+
+    if (!isCustomer && !isAdmin) {
       throw new ForbiddenException('Customer portal access only');
     }
 
@@ -42,6 +45,12 @@ export class CustomerPortalGuard implements CanActivate {
     });
 
     if (!fullUser?.customerId) {
+      if (isAdmin) {
+        // ERP admins browsing the portal without a linked customer account:
+        // pass through with null so the portal shows empty data rather than crashing.
+        request.customerId = null;
+        return true;
+      }
       throw new ForbiddenException(
         'Your account is not linked to a customer profile. Please contact support.',
       );

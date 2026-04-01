@@ -2,11 +2,14 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Param,
   Body,
   Req,
   UseGuards,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CustomerPortalService } from './customer-portal.service';
 import { CustomerPortalGuard } from './customer-portal.guard';
@@ -155,5 +158,122 @@ export class CustomerPortalController {
       select: ['id', 'email', 'isActive', 'lastLoginAt'],
     });
     return { hasAccount: !!user, user: user || null };
+  }
+
+  // ── ERP admin: list all portal accounts ──────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('accounts')
+  async listPortalAccounts(@Req() req: any) {
+    this.assertAdmin(req);
+
+    const accounts = await this.usersRepo
+      .createQueryBuilder('u')
+      .innerJoin('u.roles', 'r', "r.name = 'customer'")
+      .leftJoinAndMapOne(
+        'u.customer',
+        Customer,
+        'c',
+        'c.id = u.customer_id',
+      )
+      .select([
+        'u.id',
+        'u.email',
+        'u.firstName',
+        'u.lastName',
+        'u.phone',
+        'u.isActive',
+        'u.lastLoginAt',
+        'u.createdAt',
+        'u.customerId',
+        'c.id',
+        'c.fullName',
+        'c.customerCode',
+        'c.email',
+        'c.phoneNumber',
+      ])
+      .orderBy('u.createdAt', 'DESC')
+      .getMany();
+
+    return accounts;
+  }
+
+  // ── ERP admin: deactivate / reactivate portal account ────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('accounts/:userId/status')
+  async toggleAccountStatus(
+    @Param('userId') userId: string,
+    @Body() body: { isActive: boolean },
+    @Req() req: any,
+  ) {
+    this.assertAdmin(req);
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const roles: string[] = (user.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    if (!roles.includes('customer'))
+      throw new ForbiddenException('This endpoint only manages customer accounts');
+
+    user.isActive = body.isActive;
+    await this.usersRepo.save(user);
+    return { message: `Account ${body.isActive ? 'activated' : 'deactivated'}`, userId };
+  }
+
+  // ── ERP admin: reset portal account password ─────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('accounts/:userId/reset-password')
+  async resetPassword(
+    @Param('userId') userId: string,
+    @Body() body: { newPassword: string },
+    @Req() req: any,
+  ) {
+    this.assertAdmin(req);
+    if (!body.newPassword || body.newPassword.length < 6)
+      throw new BadRequestException('Password must be at least 6 characters');
+
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'roles'],
+    });
+    if (!user) throw new BadRequestException('User not found');
+
+    await this.usersRepo.update(userId, {
+      password: await bcrypt.hash(body.newPassword, 12),
+    });
+
+    return { message: 'Password reset successfully', userId };
+  }
+
+  // ── ERP admin: revoke portal access (delete account) ─────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('accounts/:userId')
+  async revokePortalAccess(@Param('userId') userId: string, @Req() req: any) {
+    this.assertAdmin(req);
+    const user = await this.usersRepo.findOne({ where: { id: userId } });
+    if (!user) throw new BadRequestException('User not found');
+
+    const roles: string[] = (user.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    if (!roles.includes('customer'))
+      throw new ForbiddenException('This endpoint only manages customer accounts');
+
+    await this.usersRepo.remove(user);
+    return { message: 'Portal access revoked', userId };
+  }
+
+  // ── private helpers ───────────────────────────────────────────────────────
+
+  private assertAdmin(req: any) {
+    const roles: string[] = (req.user?.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    const ok = roles.some((r) => ['admin', 'super_admin', 'hr'].includes(r));
+    if (!ok) throw new ForbiddenException('Insufficient permissions');
   }
 }

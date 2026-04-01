@@ -18,11 +18,18 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const payment_entity_1 = require("./entities/payment.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
+const user_entity_1 = require("../users/entities/user.entity");
 const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
+const notifications_service_1 = require("../notifications/notifications.service");
+const notification_entity_1 = require("../notifications/entities/notification.entity");
 let PaymentsService = PaymentsService_1 = class PaymentsService {
-    constructor(paymentRepository, accountingIntegrationService) {
+    constructor(paymentRepository, bookingRepository, userRepository, accountingIntegrationService, notificationsService) {
         this.paymentRepository = paymentRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
         this.accountingIntegrationService = accountingIntegrationService;
+        this.notificationsService = notificationsService;
         this.logger = new common_1.Logger(PaymentsService_1.name);
     }
     async create(createPaymentDto, userId) {
@@ -127,7 +134,38 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             paymentMethod: saved.paymentMethod,
             createdBy: userId,
         });
+        this.notifyCustomerOnPaymentVerified(saved).catch(e => this.logger.warn(`Failed to send payment notification: ${e.message}`));
         return saved;
+    }
+    async notifyCustomerOnPaymentVerified(payment) {
+        if (!payment.bookingId)
+            return;
+        const booking = await this.bookingRepository.findOne({
+            where: { id: payment.bookingId },
+            select: ['id', 'customerId', 'bookingNumber'],
+        });
+        if (!booking?.customerId)
+            return;
+        const customerUser = await this.userRepository.findOne({
+            where: { customerId: booking.customerId },
+            select: ['id'],
+        });
+        if (!customerUser)
+            return;
+        const amt = new Intl.NumberFormat('en-IN', {
+            style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+        }).format(Number(payment.amount));
+        await this.notificationsService.create({
+            userId: customerUser.id,
+            title: 'Payment Verified',
+            message: `Your payment of ${amt} has been verified and recorded for booking #${booking.bookingNumber}.`,
+            type: notification_entity_1.NotificationType.SUCCESS,
+            category: notification_entity_1.NotificationCategory.PAYMENT,
+            actionUrl: `/portal/bookings/${payment.bookingId}`,
+            actionLabel: 'View Booking',
+            relatedEntityId: payment.id,
+            relatedEntityType: 'payment',
+        });
     }
     async cancel(id) {
         const payment = await this.findOne(id);
@@ -223,7 +261,12 @@ exports.PaymentsService = PaymentsService;
 exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(payment_entity_1.Payment)),
+    __param(1, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        accounting_integration_service_1.AccountingIntegrationService])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        accounting_integration_service_1.AccountingIntegrationService,
+        notifications_service_1.NotificationsService])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

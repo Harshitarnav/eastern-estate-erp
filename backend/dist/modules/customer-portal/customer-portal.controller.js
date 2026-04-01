@@ -104,6 +104,76 @@ let CustomerPortalController = class CustomerPortalController {
         });
         return { hasAccount: !!user, user: user || null };
     }
+    async listPortalAccounts(req) {
+        this.assertAdmin(req);
+        const accounts = await this.usersRepo
+            .createQueryBuilder('u')
+            .innerJoin('u.roles', 'r', "r.name = 'customer'")
+            .leftJoinAndMapOne('u.customer', customer_entity_1.Customer, 'c', 'c.id = u.customer_id')
+            .select([
+            'u.id',
+            'u.email',
+            'u.firstName',
+            'u.lastName',
+            'u.phone',
+            'u.isActive',
+            'u.lastLoginAt',
+            'u.createdAt',
+            'u.customerId',
+            'c.id',
+            'c.fullName',
+            'c.customerCode',
+            'c.email',
+            'c.phoneNumber',
+        ])
+            .orderBy('u.createdAt', 'DESC')
+            .getMany();
+        return accounts;
+    }
+    async toggleAccountStatus(userId, body, req) {
+        this.assertAdmin(req);
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        if (!user)
+            throw new common_1.BadRequestException('User not found');
+        const roles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        if (!roles.includes('customer'))
+            throw new common_1.ForbiddenException('This endpoint only manages customer accounts');
+        user.isActive = body.isActive;
+        await this.usersRepo.save(user);
+        return { message: `Account ${body.isActive ? 'activated' : 'deactivated'}`, userId };
+    }
+    async resetPassword(userId, body, req) {
+        this.assertAdmin(req);
+        if (!body.newPassword || body.newPassword.length < 6)
+            throw new common_1.BadRequestException('Password must be at least 6 characters');
+        const user = await this.usersRepo.findOne({
+            where: { id: userId },
+            select: ['id', 'roles'],
+        });
+        if (!user)
+            throw new common_1.BadRequestException('User not found');
+        await this.usersRepo.update(userId, {
+            password: await bcrypt.hash(body.newPassword, 12),
+        });
+        return { message: 'Password reset successfully', userId };
+    }
+    async revokePortalAccess(userId, req) {
+        this.assertAdmin(req);
+        const user = await this.usersRepo.findOne({ where: { id: userId } });
+        if (!user)
+            throw new common_1.BadRequestException('User not found');
+        const roles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        if (!roles.includes('customer'))
+            throw new common_1.ForbiddenException('This endpoint only manages customer accounts');
+        await this.usersRepo.remove(user);
+        return { message: 'Portal access revoked', userId };
+    }
+    assertAdmin(req) {
+        const roles = (req.user?.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        const ok = roles.some((r) => ['admin', 'super_admin', 'hr'].includes(r));
+        if (!ok)
+            throw new common_1.ForbiddenException('Insufficient permissions');
+    }
 };
 exports.CustomerPortalController = CustomerPortalController;
 __decorate([
@@ -173,6 +243,43 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], CustomerPortalController.prototype, "checkPortalAccount", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('accounts'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CustomerPortalController.prototype, "listPortalAccounts", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('accounts/:userId/status'),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], CustomerPortalController.prototype, "toggleAccountStatus", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Patch)('accounts/:userId/reset-password'),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], CustomerPortalController.prototype, "resetPassword", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Delete)('accounts/:userId'),
+    __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], CustomerPortalController.prototype, "revokePortalAccess", null);
 exports.CustomerPortalController = CustomerPortalController = __decorate([
     (0, common_1.Controller)('customer-portal'),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),

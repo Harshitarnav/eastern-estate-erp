@@ -48,7 +48,7 @@ class EmployeesService {
     if (filters.limit) params.append('limit', filters.limit.toString());
     if (filters.search) params.append('search', filters.search);
     if (filters.department) params.append('department', filters.department);
-    if (filters.employmentStatus) params.append('status', filters.employmentStatus);
+    if (filters.employmentStatus) params.append('employmentStatus', filters.employmentStatus);
     if (filters.isActive !== undefined) params.append('isActive', String(filters.isActive));
 
     const response = await api.get<EmployeesResponse>(`/employees?${params.toString()}`);

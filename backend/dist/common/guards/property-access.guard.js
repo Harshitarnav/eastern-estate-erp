@@ -47,6 +47,10 @@ let PropertyAccessGuard = PropertyAccessGuard_1 = class PropertyAccessGuard {
             request.accessiblePropertyIds = null;
             return true;
         }
+        if (userRoles.includes('customer')) {
+            this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);
+            return true;
+        }
         const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
         const isPrivilegedRole = userRoles.includes('admin') || userRoles.includes('hr');
         if (isPrivilegedRole && (!userPropertyIds || userPropertyIds.length === 0)) {

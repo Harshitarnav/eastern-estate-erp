@@ -40,6 +40,7 @@ import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
 import { SettingsModule } from '../settings/settings.module';
 import { MailModule } from '../../common/mail/mail.module';
 import { AccountingModule } from '../accounting/accounting.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 import { PaymentSchedule } from '../payments/entities/payment-schedule.entity';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
@@ -48,6 +49,7 @@ import { Customer } from '../customers/entities/customer.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Property } from '../properties/entities/property.entity';
 import { Tower } from '../towers/entities/tower.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
@@ -69,11 +71,13 @@ import { Tower } from '../towers/entities/tower.entity';
       Booking,
       Property,
       Tower,
+      User,
     ]),
     PaymentPlansModule,
     SettingsModule,
     MailModule,
     AccountingModule,
+    NotificationsModule,
   ],
   controllers: [
     ConstructionProjectsController,

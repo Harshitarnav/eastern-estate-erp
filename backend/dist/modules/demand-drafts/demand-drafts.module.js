@@ -15,13 +15,14 @@ const demand_drafts_controller_1 = require("./demand-drafts.controller");
 const demand_drafts_schema_sync_service_1 = require("./demand-drafts.schema-sync.service");
 const construction_module_1 = require("../construction/construction.module");
 const notifications_module_1 = require("../notifications/notifications.module");
+const user_entity_1 = require("../users/entities/user.entity");
 let DemandDraftsModule = class DemandDraftsModule {
 };
 exports.DemandDraftsModule = DemandDraftsModule;
 exports.DemandDraftsModule = DemandDraftsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([demand_draft_entity_1.DemandDraft]),
+            typeorm_1.TypeOrmModule.forFeature([demand_draft_entity_1.DemandDraft, user_entity_1.User]),
             construction_module_1.ConstructionModule,
             notifications_module_1.NotificationsModule,
         ],

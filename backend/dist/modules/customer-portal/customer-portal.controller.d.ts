@@ -62,4 +62,22 @@ export declare class CustomerPortalController {
         hasAccount: boolean;
         user: User;
     }>;
+    listPortalAccounts(req: any): Promise<User[]>;
+    toggleAccountStatus(userId: string, body: {
+        isActive: boolean;
+    }, req: any): Promise<{
+        message: string;
+        userId: string;
+    }>;
+    resetPassword(userId: string, body: {
+        newPassword: string;
+    }, req: any): Promise<{
+        message: string;
+        userId: string;
+    }>;
+    revokePortalAccess(userId: string, req: any): Promise<{
+        message: string;
+        userId: string;
+    }>;
+    private assertAdmin;
 }

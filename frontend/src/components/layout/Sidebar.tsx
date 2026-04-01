@@ -84,6 +84,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         // { id: 'sales-dashboard', label: 'Sales Dashboard', icon: BarChart3, href: '/sales' },
         // { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
         { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
+        { id: 'portal-accounts', label: 'Portal Accounts', icon: Shield, href: '/customers/portal-accounts' },
         { id: 'bookings', label: 'Bookings', icon: Calendar, href: '/bookings' },
       ]
     },

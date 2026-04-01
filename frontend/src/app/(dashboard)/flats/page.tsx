@@ -1,7 +1,7 @@
 'use client';
 
-import { ChangeEvent, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { ChangeEvent, useEffect, useMemo, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -85,11 +85,14 @@ const STATUS_COLORS: Record<string, string> = {
   UNDER_CONSTRUCTION: '#94A3B8',
 };
 
-export default function FlatsInventoryPage() {
+function FlatsInventoryContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedPropertyId = searchParams.get('propertyId') || '';
+
   const [properties, setProperties] = useState<Property[]>([]);
   const [towers, setTowers] = useState<Tower[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [selectedProperty, setSelectedProperty] = useState<string>(preselectedPropertyId);
   const [selectedTower, setSelectedTower] = useState<string>('');
   const [summary, setSummary] = useState<FlatInventorySummary | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -103,7 +106,7 @@ export default function FlatsInventoryPage() {
       try {
         const response = await propertiesService.getProperties({ limit: 50, isActive: true, sortBy: 'name', sortOrder: 'ASC' });
         setProperties(response.data ?? []);
-        if ((response.data?.length ?? 0) > 0) {
+        if ((response.data?.length ?? 0) > 0 && !preselectedPropertyId) {
           setSelectedProperty(response.data![0].id);
         }
       } catch (err: any) {
@@ -619,4 +622,10 @@ function EmptyTowerState({ onAdd }: { onAdd: () => void }) {
     </div>
   );
 }
-// *** End of File
+export default function FlatsInventoryPage() {
+  return (
+    <Suspense>
+      <FlatsInventoryContent />
+    </Suspense>
+  );
+}

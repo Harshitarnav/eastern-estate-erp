@@ -61,7 +61,15 @@ let UploadController = class UploadController {
                 await fs.unlink(thumbTempPath).catch(() => { });
             }
         }
-        await this.storage.save(file, file.filename);
+        try {
+            await this.storage.save(file, file.filename);
+        }
+        catch (err) {
+            if (err?.code === 'ECONNREFUSED' || err?.name === 'AggregateError') {
+                throw new common_1.ServiceUnavailableException('File storage is unavailable right now. Please try again later or contact your administrator.');
+            }
+            throw err;
+        }
         response.url = this.storage.getUrl(file.filename);
         return response;
     }
@@ -102,7 +110,15 @@ let UploadController = class UploadController {
                     await fs.unlink(thumbTempPath).catch(() => { });
                 }
             }
-            await this.storage.save(file, file.filename);
+            try {
+                await this.storage.save(file, file.filename);
+            }
+            catch (err) {
+                if (err?.code === 'ECONNREFUSED' || err?.name === 'AggregateError') {
+                    throw new common_1.ServiceUnavailableException('File storage is unavailable right now. Please try again later or contact your administrator.');
+                }
+                throw err;
+            }
             response.url = this.storage.getUrl(file.filename);
             responses.push(response);
         }

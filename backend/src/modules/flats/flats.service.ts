@@ -184,6 +184,21 @@ export class FlatsService {
    * Create a new flat
    */
   async create(createFlatDto: CreateFlatDto): Promise<FlatResponseDto> {
+    // Validate tower belongs to the specified property
+    const tower = await this.towersRepository.findOne({ where: { id: createFlatDto.towerId } });
+    if (!tower) {
+      throw new BadRequestException(`Tower with ID ${createFlatDto.towerId} not found`);
+    }
+    if (createFlatDto.propertyId && tower.propertyId !== createFlatDto.propertyId) {
+      throw new BadRequestException(
+        `Tower "${tower.name}" does not belong to the selected property. Please select the correct tower.`,
+      );
+    }
+    // Auto-set propertyId from tower if not provided
+    if (!createFlatDto.propertyId) {
+      createFlatDto.propertyId = tower.propertyId;
+    }
+
     // Check if flat number already exists for this tower
     const existingFlat = await this.flatsRepository.findOne({
       where: {
@@ -637,9 +652,9 @@ export class FlatsService {
     }
 
     // Check if flat is booked or sold
-    if (flat.status === 'BOOKED' || flat.status === 'SOLD') {
+    if (flat.status === FlatStatus.BOOKED || flat.status === FlatStatus.SOLD) {
       throw new BadRequestException(
-        'Cannot delete a flat that is booked or sold',
+        'Cannot deactivate a flat that is booked or sold',
       );
     }
 

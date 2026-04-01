@@ -32,6 +32,9 @@ let EmployeesController = class EmployeesController {
     getStatistics() {
         return this.employeesService.getStatistics();
     }
+    getNextCode() {
+        return this.employeesService.generateNextCode().then(code => ({ code }));
+    }
     findOne(id) {
         return this.employeesService.findOne(id);
     }
@@ -43,6 +46,30 @@ let EmployeesController = class EmployeesController {
     }
     remove(id) {
         return this.employeesService.remove(id);
+    }
+    getFeedback(id) {
+        return this.employeesService.getFeedback(id);
+    }
+    createFeedback(id, body, req) {
+        return this.employeesService.createFeedback(id, body, req.user?.id);
+    }
+    updateFeedback(id, feedbackId, body, req) {
+        return this.employeesService.updateFeedback(id, feedbackId, body, req.user?.id);
+    }
+    deleteFeedback(id, feedbackId) {
+        return this.employeesService.deleteFeedback(id, feedbackId);
+    }
+    getReviews(id) {
+        return this.employeesService.getReviews(id);
+    }
+    createReview(id, body, req) {
+        return this.employeesService.createReview(id, body, req.user?.id);
+    }
+    updateReview(id, reviewId, body, req) {
+        return this.employeesService.updateReview(id, reviewId, body, req.user?.id);
+    }
+    deleteReview(id, reviewId) {
+        return this.employeesService.deleteReview(id, reviewId);
     }
 };
 exports.EmployeesController = EmployeesController;
@@ -67,6 +94,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], EmployeesController.prototype, "getStatistics", null);
+__decorate([
+    (0, common_1.Get)('next-code'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "getNextCode", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -100,6 +133,80 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], EmployeesController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)(':id/feedback'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "getFeedback", null);
+__decorate([
+    (0, common_1.Post)(':id/feedback'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "createFeedback", null);
+__decorate([
+    (0, common_1.Patch)(':id/feedback/:feedbackId'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('feedbackId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "updateFeedback", null);
+__decorate([
+    (0, common_1.Delete)(':id/feedback/:feedbackId'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('feedbackId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "deleteFeedback", null);
+__decorate([
+    (0, common_1.Get)(':id/reviews'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "getReviews", null);
+__decorate([
+    (0, common_1.Post)(':id/reviews'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "createReview", null);
+__decorate([
+    (0, common_1.Patch)(':id/reviews/:reviewId'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('reviewId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "updateReview", null);
+__decorate([
+    (0, common_1.Delete)(':id/reviews/:reviewId'),
+    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('reviewId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "deleteReview", null);
 exports.EmployeesController = EmployeesController = __decorate([
     (0, common_1.Controller)('employees'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

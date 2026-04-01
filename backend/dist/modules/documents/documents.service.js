@@ -25,7 +25,15 @@ let DocumentsService = class DocumentsService {
         this.storage = storage;
     }
     async create(file, dto, userId) {
-        await this.storage.save(file, file.filename);
+        try {
+            await this.storage.save(file, file.filename);
+        }
+        catch (err) {
+            if (err?.code === 'ECONNREFUSED' || err?.name === 'AggregateError') {
+                throw new common_1.ServiceUnavailableException('File storage is unavailable right now. Please try again later or contact your administrator.');
+            }
+            throw err;
+        }
         const doc = this.repo.create({
             ...dto,
             fileUrl: this.storage.getUrl(file.filename),

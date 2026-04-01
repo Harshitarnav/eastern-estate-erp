@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Building2, CheckCircle, ChevronRight, ExternalLink,
-  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload,
+  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload, Trash2,
 } from 'lucide-react';
 import { flatsService, Flat } from '@/services/flats.service';
 import { customersService, Customer } from '@/services/customers.service';
@@ -59,6 +59,7 @@ export default function FlatDetailPage() {
     bankIfsc: '',
   });
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
 
   useEffect(() => {
     if (!flatId) {
@@ -178,6 +179,24 @@ export default function FlatDetailPage() {
       setError(message);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!flat) return;
+    if (flat.status === 'BOOKED' || flat.status === 'SOLD') {
+      alert('Cannot deactivate a unit that is booked or sold.');
+      return;
+    }
+    if (!confirm(`Are you sure you want to deactivate unit ${flat.flatNumber}? It will be hidden from inventory until reactivated.`)) return;
+    try {
+      setDeactivating(true);
+      await flatsService.deleteFlat(flatId);
+      router.push('/flats');
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to deactivate unit.');
+    } finally {
+      setDeactivating(false);
     }
   };
 
@@ -343,13 +362,25 @@ export default function FlatDetailPage() {
             Refresh
           </BrandSecondaryButton>
         </div>
-        <button
-          onClick={() => router.push(`/flats/${flatId}/edit`)}
-          className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition"
-          style={{ backgroundColor: brandPalette.primary }}
-        >
-          Edit Flat
-        </button>
+        <div className="flex items-center gap-2">
+          {flat && flat.status !== 'BOOKED' && flat.status !== 'SOLD' && (
+            <button
+              onClick={handleDeactivate}
+              disabled={deactivating}
+              className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {deactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Deactivate
+            </button>
+          )}
+          <button
+            onClick={() => router.push(`/flats/${flatId}/edit`)}
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm transition"
+            style={{ backgroundColor: brandPalette.primary }}
+          >
+            Edit Flat
+          </button>
+        </div>
       </div>
 
       <BrandHero
@@ -802,267 +833,6 @@ export default function FlatDetailPage() {
               </div>
             </section>
 
-            {/* ── old section start placeholder (now replaced) ── */}
-            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm hidden">
-              <header className="border-b border-gray-100 pb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Demand Drafts</h2>
-                <p className="mt-1 text-sm text-gray-600">Generate, edit, and mark demand drafts for this flat.</p>
-              </header>
-              <div className="mt-4 space-y-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Milestone</label>
-                    <input
-                      name="milestoneId"
-                      value={draftForm.milestoneId}
-                      onChange={handleDraftChange}
-                      placeholder="e.g., On Starting of 5th floor"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Amount</label>
-                    <input
-                      name="amount"
-                      type="number"
-                      value={draftForm.amount}
-                      onChange={handleDraftChange}
-                      placeholder={flat ? String(flat.finalPrice || 0) : '0'}
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Amount (in words)</label>
-                    <input
-                      name="amountWords"
-                      value={draftForm.amountWords}
-                      onChange={handleDraftChange}
-                      placeholder="Four Lakh Eighty Nine Thousand…"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Reference</label>
-                    <input
-                      name="reference"
-                      value={draftForm.reference}
-                      onChange={handleDraftChange}
-                      placeholder="EECD/DEMAND/AUG/2025"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer Name</label>
-                    <input
-                      name="customerName"
-                      value={draftForm.customerName}
-                      onChange={handleDraftChange}
-                      placeholder="Customer full name"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Spouse Name</label>
-                    <input
-                      name="spouseName"
-                      value={draftForm.spouseName}
-                      onChange={handleDraftChange}
-                      placeholder="Spouse name (optional)"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Customer Address</label>
-                    <input
-                      name="customerAddress"
-                      value={draftForm.customerAddress}
-                      onChange={handleDraftChange}
-                      placeholder="Postal address"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Flat Label</label>
-                    <input
-                      name="flatLabel"
-                      value={draftForm.flatLabel}
-                      onChange={handleDraftChange}
-                      placeholder="Block C , Flat No-912, in Diamond City"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">BHK / Typology</label>
-                    <input
-                      name="bhk"
-                      value={draftForm.bhk}
-                      onChange={handleDraftChange}
-                      placeholder="3 BHK"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Date</label>
-                    <input
-                      name="date"
-                      value={draftForm.date}
-                      onChange={handleDraftChange}
-                      placeholder="06/08/2025"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Place</label>
-                    <input
-                      name="place"
-                      value={draftForm.place}
-                      onChange={handleDraftChange}
-                      placeholder="Cuttack"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Bank Account Holder</label>
-                    <input
-                      name="bankAccountHolder"
-                      value={draftForm.bankAccountHolder}
-                      onChange={handleDraftChange}
-                      placeholder="Eastern Estate Construction & Developer’s Pvt. Ltd."
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Account Number</label>
-                    <input
-                      name="bankAccountNumber"
-                      value={draftForm.bankAccountNumber}
-                      onChange={handleDraftChange}
-                      placeholder="40683619139"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">IFSC</label>
-                    <input
-                      name="bankIfsc"
-                      value={draftForm.bankIfsc}
-                      onChange={handleDraftChange}
-                      placeholder="SBIN0063835"
-                      className="w-full rounded-lg border px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Custom Content (optional)</label>
-                  <textarea
-                    name="content"
-                    value={draftForm.content}
-                    onChange={handleDraftChange}
-                    placeholder="Paste or edit the draft body before export."
-                    rows={4}
-                    className="w-full rounded-lg border px-3 py-2 text-sm"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleCreateDraft}
-                    className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-700"
-                    disabled={draftLoading}
-                  >
-                    {draftLoading ? 'Working…' : 'Create Draft'}
-                  </button>
-                  <button
-                    onClick={() => loadDrafts(flat?.id)}
-                    className="rounded-lg border px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                    disabled={draftLoading}
-                  >
-                    Refresh
-                  </button>
-                </div>
-                {draftMessage && (
-                  <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">
-                    {draftMessage}
-                  </div>
-                )}
-                <div className="space-y-3">
-                  {draftLoading ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading drafts…</span>
-                    </div>
-                  ) : drafts.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-600">
-                      No drafts yet. Create one to start editing before export.
-                    </div>
-                  ) : (
-                    drafts.map((draft) => (
-                      <div key={draft.id} className="rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {draft.milestoneId || 'Milestone'}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {draft.status} · {formatCurrency(draft.amount ?? 0)}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {draft.fileUrl ? (
-                              <a
-                                href={draft.fileUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-xs font-semibold text-blue-600 hover:underline"
-                              >
-                                Download
-                              </a>
-                            ) : null}
-                            {draft.status !== 'SENT' && (
-                              <button
-                                onClick={() => handleMarkSent(draft.id)}
-                                className="rounded-md border px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                              >
-                                Mark sent
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handlePreviewDraft(draft.id)}
-                              className="rounded-md border px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                            >
-                              Preview / PDF
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDraft(draft.id)}
-                              className="rounded-md border px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-3">
-                          <textarea
-                            defaultValue={draft.content || ''}
-                            onBlur={(e) => handleUpdateDraft(draft.id, e.target.value, Number(draft.amount || 0))}
-                            className="w-full rounded-lg border px-3 py-2 text-sm"
-                            rows={4}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </section>
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Completion score</h2>
@@ -1113,99 +883,6 @@ export default function FlatDetailPage() {
               </ul>
             </section>
 
-            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
-              <header className="border-b border-gray-100 pb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Documents & Compliance</h2>
-                <p className="mt-1 text-sm text-gray-500">
-                  {flatDocs.length > 0 ? `${flatDocs.length} document${flatDocs.length === 1 ? '' : 's'} uploaded` : 'Click Upload next to each item to attach files.'}
-                </p>
-              </header>
-              <div className="mt-4 divide-y divide-gray-100">
-                {(
-                  [
-                    { label: 'Sale Agreement',    category: DocumentCategory.AGREEMENT },
-                    { label: 'Allotment Letter',  category: DocumentCategory.OTHER },
-                    { label: 'Possession Letter', category: DocumentCategory.POSSESSION_LETTER },
-                    { label: 'Payment Plan',      category: DocumentCategory.OTHER },
-                    { label: 'NOC / No Dues',     category: DocumentCategory.NOC },
-                    { label: 'RERA Certificate',  category: DocumentCategory.OTHER },
-                    { label: 'Snag / Defect List',category: DocumentCategory.OTHER },
-                    { label: 'Handover Checklist',category: DocumentCategory.OTHER },
-                  ] as { label: string; category: DocumentCategory }[]
-                ).map(({ label, category }) => (
-                  <DocRow
-                    key={label}
-                    label={label}
-                    category={category}
-                    docs={flatDocs}
-                    uploading={docUploading === label}
-                    onUpload={(file) => handleDocUpload(label, category, file)}
-                    onDelete={async (docId) => {
-                      await documentsService.remove(docId);
-                      const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
-                      setFlatDocs(updated);
-                    }}
-                  />
-                ))}
-              </div>
-              {/* Other / additional uploads */}
-              <div className="mt-4 border-t pt-4">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Other Documents</p>
-                <DocUploadOther
-                  flatId={flat.id}
-                  customerId={flat.customerId || undefined}
-                  bookingId={flat.bookingId || undefined}
-                  docs={flatDocs.filter((d) =>
-                    !['Sale Agreement','Allotment Letter','Possession Letter','Payment Plan',
-                       'NOC / No Dues','RERA Certificate','Snag / Defect List','Handover Checklist'].includes(d.name)
-                  )}
-                  onUpload={async (file, name) => {
-                    await handleDocUpload(name, DocumentCategory.OTHER, file);
-                  }}
-                  onDelete={async (docId) => {
-                    await documentsService.remove(docId);
-                    const updated = await documentsService.getByEntity(DocumentEntityType.FLAT, flat.id);
-                    setFlatDocs(updated);
-                  }}
-                  uploading={docUploading !== null && !['Sale Agreement','Allotment Letter','Possession Letter','Payment Plan',
-                    'NOC / No Dues','RERA Certificate','Snag / Defect List','Handover Checklist'].includes(docUploading)}
-                />
-              </div>
-            </section>
-
-            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
-              <header className="border-b border-gray-100 pb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Statuses & Dates</h2>
-              </header>
-              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                <DetailItem label="Agreement Date" value={flat.agreementDate} />
-                <DetailItem label="Registration Date" value={flat.registrationDate} />
-                <DetailItem label="Handover Date" value={flat.handoverDate} />
-                <DetailItem label="Loan Status" value={flat.loanStatus} />
-                <DetailItem label="Handover Status" value={flat.handoverStatus} />
-                <DetailItem label="Verification Status" value={flat.verificationStatus} />
-                <DetailItem label="Verified At" value={flat.verifiedAt} />
-                <DetailItem label="Verified By" value={flat.verifiedBy} />
-              </dl>
-            </section>
-
-            <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
-              <header className="border-b border-gray-100 pb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Assignments & Extras</h2>
-              </header>
-              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                <DetailItem label="Salesperson ID" value={flat.salespersonId} />
-                <DetailItem label="Service Contact ID" value={flat.serviceContactId} />
-                <DetailItem label="Co-buyer Name" value={flat.coBuyerName} />
-                <DetailItem label="Co-buyer Email" value={flat.coBuyerEmail} />
-                <DetailItem label="Co-buyer Phone" value={flat.coBuyerPhone} />
-                <DetailItem label="Parking Number" value={flat.parkingNumber} />
-                <DetailItem label="Parking Type" value={flat.parkingType} />
-                <DetailItem label="Storage / Locker ID" value={flat.storageId} />
-                <DetailItem label="Furnishing Pack" value={flat.furnishingPack} />
-                <DetailItem label="Appliance Pack Applied" value={flat.appliancePack ? 'Yes' : 'No'} />
-              </dl>
-            </section>
           </div>
         </div>
       ) : null}

@@ -69,39 +69,27 @@ export const mapFlatFormToPayload = (data: any): Partial<Flat> => {
   if (data.registrationDate) payload.registrationDate = data.registrationDate;
   if (data.handoverDate) payload.handoverDate = data.handoverDate;
 
-  // Document URLs and lists
-  const docFields = [
-    'saleAgreementUrl',
-    'allotmentLetterUrl',
-    'possessionLetterUrl',
-    'paymentPlanUrl',
-    'nocUrl',
-    'reraCertificateUrl',
-    'snagListUrl',
-    'handoverChecklistUrl',
-  ] as const;
+  // Statuses
+  if (data.loanStatus) payload.loanStatus = data.loanStatus;
+  if (data.handoverStatus) payload.handoverStatus = data.handoverStatus;
+  if (data.verificationStatus) payload.verificationStatus = data.verificationStatus;
 
-  docFields.forEach((field) => {
-    if (data[field]) {
-      // @ts-ignore dynamic assign
-      payload[field] = data[field];
-    }
-  });
+  // Assignments
+  if (data.salespersonId) payload.salespersonId = data.salespersonId;
+  if (data.serviceContactId) payload.serviceContactId = data.serviceContactId;
 
-  const kycDocs = toList(data.kycDocsUrls);
-  if (kycDocs.length) payload.kycDocsUrls = kycDocs;
+  // Co-buyer
+  if (data.coBuyerName) payload.coBuyerName = data.coBuyerName;
+  if (data.coBuyerEmail) payload.coBuyerEmail = data.coBuyerEmail;
+  if (data.coBuyerPhone) payload.coBuyerPhone = data.coBuyerPhone;
 
-  const paymentReceipts = toList(data.paymentReceiptUrls);
-  if (paymentReceipts.length) payload.paymentReceiptUrls = paymentReceipts;
-
-  const demandLetters = toList(data.demandLetterUrls);
-  if (demandLetters.length) payload.demandLetterUrls = demandLetters;
-
-  const registrationReceipts = toList(data.registrationReceiptUrls);
-  if (registrationReceipts.length) payload.registrationReceiptUrls = registrationReceipts;
-
-  const otherDocs = toList(data.otherDocuments);
-  if (otherDocs.length) payload.otherDocuments = otherDocs;
+  // Parking / storage extras
+  if (data.parkingNumber) payload.parkingNumber = data.parkingNumber;
+  if (data.parkingType) payload.parkingType = data.parkingType;
+  if (data.storageId) payload.storageId = data.storageId;
+  if (data.furnishingPack) payload.furnishingPack = data.furnishingPack;
+  // appliancePack is a boolean — always include if present
+  if (data.appliancePack !== undefined) payload.appliancePack = data.appliancePack;
 
   if (Array.isArray(data.issues)) {
     payload.issues = data.issues;

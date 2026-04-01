@@ -115,12 +115,12 @@ __decorate([
 ], QueryFlatDto.prototype, "limit", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsIn)(['createdAt', 'updatedAt', 'flatNumber', 'floor', 'finalPrice', 'basePrice', 'status', 'displayOrder']),
     __metadata("design:type", String)
 ], QueryFlatDto.prototype, "sortBy", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsEnum)(['ASC', 'DESC']),
+    (0, class_validator_1.IsIn)(['ASC', 'DESC']),
     __metadata("design:type", String)
 ], QueryFlatDto.prototype, "sortOrder", void 0);
 //# sourceMappingURL=query-flat.dto.js.map

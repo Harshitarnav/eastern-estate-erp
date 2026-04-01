@@ -85,6 +85,24 @@ export default function EditFlatPage() {
         isActive: flat.isActive !== false,
         displayOrder: flat.displayOrder || 0,
         customerId: flat.customerId || '',
+        // Statuses & dates
+        agreementDate: flat.agreementDate || '',
+        registrationDate: flat.registrationDate || '',
+        handoverDate: flat.handoverDate || '',
+        loanStatus: flat.loanStatus || '',
+        handoverStatus: flat.handoverStatus || '',
+        verificationStatus: flat.verificationStatus || '',
+        // Assignments & extras
+        salespersonId: flat.salespersonId || '',
+        serviceContactId: flat.serviceContactId || '',
+        coBuyerName: flat.coBuyerName || '',
+        coBuyerEmail: flat.coBuyerEmail || '',
+        coBuyerPhone: flat.coBuyerPhone || '',
+        parkingNumber: flat.parkingNumber || '',
+        parkingType: flat.parkingType || '',
+        storageId: flat.storageId || '',
+        furnishingPack: flat.furnishingPack || '',
+        appliancePack: flat.appliancePack || false,
       });
     } catch (error) {
       console.error('Error fetching flat:', error);

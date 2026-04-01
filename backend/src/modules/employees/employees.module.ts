@@ -5,6 +5,8 @@ import { EmployeesController } from './employees.controller';
 import { Employee } from './entities/employee.entity';
 import { SalesTarget } from './entities/sales-target.entity';
 import { SalaryPayment } from './entities/salary-payment.entity';
+import { EmployeeFeedback } from './entities/employee-feedback.entity';
+import { EmployeeReview } from './entities/employee-review.entity';
 import { SalesTargetService } from './sales-target.service';
 import { SalesTargetController } from './sales-target.controller';
 import { SalaryPaymentsService } from './salary-payments.service';
@@ -17,7 +19,7 @@ import { AccountingModule } from '../accounting/accounting.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Employee, SalesTarget, SalaryPayment, Lead, Booking]),
+    TypeOrmModule.forFeature([Employee, SalesTarget, SalaryPayment, EmployeeFeedback, EmployeeReview, Lead, Booking]),
     forwardRef(() => UsersModule),
     NotificationsModule,
     AccountingModule,

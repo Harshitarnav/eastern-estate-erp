@@ -13,9 +13,11 @@ import { InstallmentsController } from './installments.controller';
 import { RefundsController } from './refunds.controller';
 import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
 import { AccountingModule } from '../accounting/accounting.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { Flat } from '../flats/entities/flat.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
@@ -27,9 +29,11 @@ import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.ent
       Flat,
       Booking,
       FlatPaymentPlan,
+      User,
     ]),
     PaymentPlansModule,
     AccountingModule,
+    NotificationsModule,
   ],
   controllers: [
     PaymentsController,

@@ -72,7 +72,9 @@ class ApiService {
           } catch (refreshError) {
             this.clearTokens();
             if (typeof window !== 'undefined') {
-              window.location.href = '/login';
+              // Redirect to the correct login page based on where the user is
+              const isPortal = window.location.pathname.startsWith('/portal');
+              window.location.href = isPortal ? '/portal/login' : '/login';
             }
             return Promise.reject(refreshError);
           }

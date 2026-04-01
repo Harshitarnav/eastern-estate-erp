@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var ConstructionProgressLogsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConstructionProgressLogsService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,10 +19,18 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const construction_progress_log_entity_1 = require("./entities/construction-progress-log.entity");
 const construction_project_entity_1 = require("./entities/construction-project.entity");
-let ConstructionProgressLogsService = class ConstructionProgressLogsService {
-    constructor(constructionProgressLogRepository, constructionProjectRepository) {
+const booking_entity_1 = require("../bookings/entities/booking.entity");
+const user_entity_1 = require("../users/entities/user.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
+const notification_entity_1 = require("../notifications/entities/notification.entity");
+let ConstructionProgressLogsService = ConstructionProgressLogsService_1 = class ConstructionProgressLogsService {
+    constructor(constructionProgressLogRepository, constructionProjectRepository, bookingRepository, userRepository, notificationsService) {
         this.constructionProgressLogRepository = constructionProgressLogRepository;
         this.constructionProjectRepository = constructionProjectRepository;
+        this.bookingRepository = bookingRepository;
+        this.userRepository = userRepository;
+        this.notificationsService = notificationsService;
+        this.logger = new common_1.Logger(ConstructionProgressLogsService_1.name);
     }
     async create(createDto) {
         let propertyId = createDto.propertyId || null;
@@ -55,7 +64,49 @@ let ConstructionProgressLogsService = class ConstructionProgressLogsService {
             nextDayPlan: createDto.nextDayPlan || null,
             remarks: createDto.remarks || null,
         });
-        return await this.constructionProgressLogRepository.save(log);
+        const saved = await this.constructionProgressLogRepository.save(log);
+        if (propertyId) {
+            this.notifyCustomersOnProgressLog(saved, propertyId).catch(e => this.logger.warn(`Failed to send construction notification: ${e.message}`));
+        }
+        return saved;
+    }
+    async notifyCustomersOnProgressLog(log, propertyId) {
+        const bookings = await this.bookingRepository
+            .createQueryBuilder('b')
+            .select('DISTINCT b.customerId', 'customerId')
+            .where('b.propertyId = :propertyId', { propertyId })
+            .andWhere('b.customerId IS NOT NULL')
+            .getRawMany();
+        if (!bookings.length)
+            return;
+        const customerIds = bookings.map((b) => b.customerId).filter(Boolean);
+        if (!customerIds.length)
+            return;
+        const users = await this.userRepository
+            .createQueryBuilder('u')
+            .where('u.customerId IN (:...customerIds)', { customerIds })
+            .select(['u.id', 'u.customerId'])
+            .getMany();
+        if (!users.length)
+            return;
+        const logDate = log.logDate
+            ? new Date(log.logDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+            : 'today';
+        const workType = log.progressType || log.workType || 'Construction';
+        const pct = log.progressPercentage;
+        for (const user of users) {
+            await this.notificationsService.create({
+                userId: user.id,
+                title: 'Construction Update',
+                message: `New site update logged on ${logDate}${workType ? ` for ${workType.replace(/_/g, ' ')}` : ''}${pct != null ? ` — ${Math.round(Number(pct))}% progress` : ''}.`,
+                type: notification_entity_1.NotificationType.INFO,
+                category: notification_entity_1.NotificationCategory.CONSTRUCTION,
+                actionUrl: '/portal/construction',
+                actionLabel: 'View Updates',
+                relatedEntityId: log.id,
+                relatedEntityType: 'construction_log',
+            });
+        }
     }
     async findAll(filters) {
         const where = {};
@@ -117,11 +168,16 @@ let ConstructionProgressLogsService = class ConstructionProgressLogsService {
     }
 };
 exports.ConstructionProgressLogsService = ConstructionProgressLogsService;
-exports.ConstructionProgressLogsService = ConstructionProgressLogsService = __decorate([
+exports.ConstructionProgressLogsService = ConstructionProgressLogsService = ConstructionProgressLogsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(construction_progress_log_entity_1.ConstructionProgressLog)),
     __param(1, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
+    __param(2, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __param(3, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], ConstructionProgressLogsService);
 //# sourceMappingURL=construction-progress-logs.service.js.map

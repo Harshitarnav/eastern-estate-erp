@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   Inject,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -26,7 +27,16 @@ export class DocumentsService {
     userId: string,
   ): Promise<Document> {
     // Move the multer temp file to its final destination (local or MinIO)
-    await this.storage.save(file, file.filename);
+    try {
+      await this.storage.save(file, file.filename);
+    } catch (err: any) {
+      if (err?.code === 'ECONNREFUSED' || err?.name === 'AggregateError') {
+        throw new ServiceUnavailableException(
+          'File storage is unavailable right now. Please try again later or contact your administrator.',
+        );
+      }
+      throw err;
+    }
 
     const doc = this.repo.create({
       ...dto,

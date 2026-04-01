@@ -22,9 +22,11 @@ const installments_controller_1 = require("./installments.controller");
 const refunds_controller_1 = require("./refunds.controller");
 const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
 const accounting_module_1 = require("../accounting/accounting.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 const flat_entity_1 = require("../flats/entities/flat.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
+const user_entity_1 = require("../users/entities/user.entity");
 let PaymentsModule = class PaymentsModule {
 };
 exports.PaymentsModule = PaymentsModule;
@@ -39,9 +41,11 @@ exports.PaymentsModule = PaymentsModule = __decorate([
                 flat_entity_1.Flat,
                 booking_entity_1.Booking,
                 flat_payment_plan_entity_1.FlatPaymentPlan,
+                user_entity_1.User,
             ]),
             payment_plans_module_1.PaymentPlansModule,
             accounting_module_1.AccountingModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [
             payments_controller_1.PaymentsController,

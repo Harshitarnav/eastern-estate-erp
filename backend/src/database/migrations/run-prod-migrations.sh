@@ -88,9 +88,43 @@ echo " STEP 7: FIX VENDORS.NAME LEGACY COLUMN"
 echo "======================================================"
 run_migration "$MIGRATIONS_DIR/v005_fix_vendors_name_column.sql"
 
+# ── STEP 8: Fix vendor_payments missing columns ───────────────────────────
+echo ""
+echo "======================================================"
+echo " STEP 8: FIX VENDOR PAYMENTS COLUMNS"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v006_fix_vendor_payments_columns.sql"
+run_migration "$MIGRATIONS_DIR/v007_fix_vendor_payments_full.sql"
+
+# ── STEP 9: Add construction project columns ──────────────────────────────
+echo ""
+echo "======================================================"
+echo " STEP 9: ADD CONSTRUCTION PROJECT COLUMNS"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v008_add_construction_project_columns.sql"
+
+# ── STEP 10: Customer portal (customer_id on users, customer role) ─────────
+echo ""
+echo "======================================================"
+echo " STEP 10: CUSTOMER PORTAL SETUP"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v009_customer_portal.sql"
+
+echo ""
+echo "======================================================"
+echo " STEP 11: EMPLOYEE FEEDBACK & REVIEWS TABLES"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v010_employee_feedback_reviews.sql"
+
+echo ""
+echo "======================================================"
+echo " STEP 12: DROP FLAT DOCUMENT URL COLUMNS"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v011_drop_flat_doc_url_columns.sql"
+
 echo ""
 echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
 echo " Now restart the application:"
-echo "   docker compose -f docker-compose.prod.yml restart backend"
+echo "   docker compose -f docker-compose.prod.yml restart backend frontend"
 echo "======================================================"

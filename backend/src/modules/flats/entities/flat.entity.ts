@@ -301,46 +301,6 @@ export class Flat {
   @Column({ type: 'text', nullable: true })
   remarks: string;
 
-  // Documents & Compliance
-  @Column({ name: 'sale_agreement_url', type: 'text', nullable: true })
-  saleAgreementUrl: string | null;
-
-  @Column({ name: 'allotment_letter_url', type: 'text', nullable: true })
-  allotmentLetterUrl: string | null;
-
-  @Column({ name: 'possession_letter_url', type: 'text', nullable: true })
-  possessionLetterUrl: string | null;
-
-  @Column({ name: 'payment_plan_url', type: 'text', nullable: true })
-  paymentPlanUrl: string | null;
-
-  @Column({ name: 'registration_receipt_urls', type: 'jsonb', nullable: true })
-  registrationReceiptUrls: string[] | null;
-
-  @Column({ name: 'payment_receipt_urls', type: 'jsonb', nullable: true })
-  paymentReceiptUrls: string[] | null;
-
-  @Column({ name: 'demand_letter_urls', type: 'jsonb', nullable: true })
-  demandLetterUrls: string[] | null;
-
-  @Column({ name: 'noc_url', type: 'text', nullable: true })
-  nocUrl: string | null;
-
-  @Column({ name: 'rera_certificate_url', type: 'text', nullable: true })
-  reraCertificateUrl: string | null;
-
-  @Column({ name: 'kyc_docs_urls', type: 'jsonb', nullable: true })
-  kycDocsUrls: string[] | null;
-
-  @Column({ name: 'snag_list_url', type: 'text', nullable: true })
-  snagListUrl: string | null;
-
-  @Column({ name: 'handover_checklist_url', type: 'text', nullable: true })
-  handoverChecklistUrl: string | null;
-
-  @Column({ name: 'other_documents', type: 'jsonb', nullable: true })
-  otherDocuments: string[] | null;
-
   // Status & Dates
   @Column({ name: 'agreement_date', type: 'date', nullable: true })
   agreementDate: Date | null;

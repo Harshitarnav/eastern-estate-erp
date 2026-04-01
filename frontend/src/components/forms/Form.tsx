@@ -124,6 +124,7 @@ export default function Form({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   const allFields = sections 
@@ -169,6 +170,17 @@ export default function Form({
     const fileArray = Array.from(files);
     setUploadedFiles(prev => ({ ...prev, [name]: fileArray }));
     handleChange(name, fileArray);
+
+    // Generate preview URL for image files
+    const firstFile = fileArray[0];
+    if (firstFile && firstFile.type.startsWith('image/')) {
+      const url = URL.createObjectURL(firstFile);
+      setPreviewUrls(prev => {
+        // Revoke old object URL if any
+        if (prev[name] && prev[name].startsWith('blob:')) URL.revokeObjectURL(prev[name]);
+        return { ...prev, [name]: url };
+      });
+    }
   };
 
   const handleRemoveFile = (fieldName: string, index: number) => {
@@ -397,7 +409,87 @@ export default function Form({
           </div>
         );
 
-      case 'file':
+      case 'file': {
+        const isImage = field.accept?.includes('image');
+        // Priority: newly-picked preview > existing URL from form values
+        const existingUrl = typeof formValues[field.name] === 'string' ? formValues[field.name] : null;
+        const activePreview = previewUrls[field.name] || existingUrl;
+
+        if (isImage) {
+          return (
+            <div className="flex items-center gap-5">
+              {/* Avatar / preview circle */}
+              <div className="relative flex-shrink-0">
+                {activePreview ? (
+                  <img
+                    src={activePreview}
+                    alt="Profile"
+                    className="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-sm"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
+                    <User className="w-10 h-10 text-gray-400" />
+                  </div>
+                )}
+                {/* Overlay edit button */}
+                <label className="absolute inset-0 rounded-full flex items-center justify-center cursor-pointer bg-black/0 hover:bg-black/30 transition group">
+                  <Upload className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition" />
+                  <input
+                    type="file"
+                    accept={field.accept}
+                    onChange={(e) => handleFileChange(field.name, e.target.files)}
+                    disabled={field.disabled}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Right-side info / actions */}
+              <div className="flex-1 space-y-1.5">
+                {uploadedFiles[field.name]?.[0] ? (
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 truncate">{uploadedFiles[field.name][0].name}</p>
+                      <p className="text-xs text-gray-500">{(uploadedFiles[field.name][0].size / 1024).toFixed(1)} KB · ready to save</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleRemoveFile(field.name, 0);
+                        setPreviewUrls(prev => { URL.revokeObjectURL(prev[field.name]); const n = { ...prev }; delete n[field.name]; return n; });
+                        handleChange(field.name, existingUrl || '');
+                      }}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded"
+                      title="Remove new photo"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : existingUrl ? (
+                  <p className="text-sm text-gray-500">Current photo saved. Hover the circle to change it.</p>
+                ) : (
+                  <p className="text-sm text-gray-500">No photo yet. Hover the circle to upload one.</p>
+                )}
+                {field.helperText && (
+                  <p className="text-xs text-gray-400">{field.helperText}</p>
+                )}
+                <label className="inline-flex items-center gap-1.5 text-xs font-medium text-[#A8211B] cursor-pointer hover:underline">
+                  <Upload className="w-3.5 h-3.5" />
+                  {activePreview ? 'Change photo' : 'Upload photo'}
+                  <input
+                    type="file"
+                    accept={field.accept}
+                    onChange={(e) => handleFileChange(field.name, e.target.files)}
+                    disabled={field.disabled}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          );
+        }
+
+        // Non-image file upload (original behaviour)
         return (
           <div className="space-y-2">
             <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
@@ -428,9 +520,7 @@ export default function Form({
                   <File className="w-5 h-5 text-blue-600" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                    <p className="text-xs text-gray-500">
-                      {(file.size / 1024).toFixed(2)} KB
-                    </p>
+                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
                   </div>
                 </div>
                 <button
@@ -444,6 +534,7 @@ export default function Form({
             ))}
           </div>
         );
+      }
 
       default:
         return null;

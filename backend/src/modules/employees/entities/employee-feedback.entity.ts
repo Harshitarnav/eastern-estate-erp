@@ -42,11 +42,11 @@ export class EmployeeFeedback {
   id: string;
 
   // Employee Reference (Recipient)
-  @Column('uuid')
+  @Column({ name: 'employee_id', type: 'uuid' })
   employeeId: string;
 
   @ManyToOne(() => Employee)
-  @JoinColumn({ name: 'employeeId' })
+  @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
   // Feedback Provider

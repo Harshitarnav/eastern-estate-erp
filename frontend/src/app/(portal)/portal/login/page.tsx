@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Building2 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -11,8 +11,16 @@ export default function PortalLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login } = useAuthStore();
+  const { login, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => { checkAuth(); }, [checkAuth]);
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/portal');
+    }
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

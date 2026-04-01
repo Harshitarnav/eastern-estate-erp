@@ -27,7 +27,9 @@ let CustomerPortalGuard = class CustomerPortalGuard {
         if (!user)
             throw new common_1.UnauthorizedException();
         const roles = (user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
-        if (!roles.includes('customer') && !roles.includes('super_admin') && !roles.includes('admin')) {
+        const isCustomer = roles.includes('customer');
+        const isAdmin = roles.includes('super_admin') || roles.includes('admin');
+        if (!isCustomer && !isAdmin) {
             throw new common_1.ForbiddenException('Customer portal access only');
         }
         const fullUser = await this.usersRepository.findOne({
@@ -35,6 +37,10 @@ let CustomerPortalGuard = class CustomerPortalGuard {
             select: ['id', 'customerId'],
         });
         if (!fullUser?.customerId) {
+            if (isAdmin) {
+                request.customerId = null;
+                return true;
+            }
             throw new common_1.ForbiddenException('Your account is not linked to a customer profile. Please contact support.');
         }
         request.customerId = fullUser.customerId;

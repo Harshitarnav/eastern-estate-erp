@@ -1,16 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConstructionProgressLog, ShiftType } from './entities/construction-progress-log.entity';
 import { ConstructionProject } from './entities/construction-project.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import { User } from '../users/entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationCategory, NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class ConstructionProgressLogsService {
+  private readonly logger = new Logger(ConstructionProgressLogsService.name);
+
   constructor(
     @InjectRepository(ConstructionProgressLog)
     private readonly constructionProgressLogRepository: Repository<ConstructionProgressLog>,
     @InjectRepository(ConstructionProject)
     private readonly constructionProjectRepository: Repository<ConstructionProject>,
+    @InjectRepository(Booking)
+    private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createDto: any) {
@@ -52,7 +63,64 @@ export class ConstructionProgressLogsService {
       remarks: createDto.remarks || null,
     });
 
-    return await this.constructionProgressLogRepository.save(log);
+    const saved = await this.constructionProgressLogRepository.save(log);
+
+    // Notify customers whose bookings are for this property (best-effort)
+    if (propertyId) {
+      this.notifyCustomersOnProgressLog(saved, propertyId).catch(e =>
+        this.logger.warn(`Failed to send construction notification: ${e.message}`),
+      );
+    }
+
+    return saved;
+  }
+
+  private async notifyCustomersOnProgressLog(
+    log: ConstructionProgressLog,
+    propertyId: string,
+  ): Promise<void> {
+    // Find all unique customerIds with bookings for this property
+    const bookings = await this.bookingRepository
+      .createQueryBuilder('b')
+      .select('DISTINCT b.customerId', 'customerId')
+      .where('b.propertyId = :propertyId', { propertyId })
+      .andWhere('b.customerId IS NOT NULL')
+      .getRawMany();
+
+    if (!bookings.length) return;
+
+    const customerIds = bookings.map((b: any) => b.customerId).filter(Boolean);
+    if (!customerIds.length) return;
+
+    // Find portal user accounts linked to these customers
+    const users = await this.userRepository
+      .createQueryBuilder('u')
+      .where('u.customerId IN (:...customerIds)', { customerIds })
+      .select(['u.id', 'u.customerId'])
+      .getMany();
+
+    if (!users.length) return;
+
+    const logDate = log.logDate
+      ? new Date(log.logDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+      : 'today';
+
+    const workType = (log as any).progressType || (log as any).workType || 'Construction';
+    const pct = (log as any).progressPercentage;
+
+    for (const user of users) {
+      await this.notificationsService.create({
+        userId: user.id,
+        title: 'Construction Update',
+        message: `New site update logged on ${logDate}${workType ? ` for ${workType.replace(/_/g, ' ')}` : ''}${pct != null ? ` — ${Math.round(Number(pct))}% progress` : ''}.`,
+        type: NotificationType.INFO,
+        category: NotificationCategory.CONSTRUCTION,
+        actionUrl: '/portal/construction',
+        actionLabel: 'View Updates',
+        relatedEntityId: log.id,
+        relatedEntityType: 'construction_log',
+      });
+    }
   }
 
   async findAll(filters?: { constructionProjectId?: string; propertyId?: string }) {

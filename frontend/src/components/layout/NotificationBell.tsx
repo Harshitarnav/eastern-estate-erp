@@ -1,88 +1,129 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, X } from 'lucide-react';
-import notificationsService, { Notification } from '@/services/notifications.service';
+import {
+  Bell, X, CheckCheck, CreditCard, Building2,
+  HardHat, Users, Calculator, Settings, AlertTriangle,
+  Calendar, ChevronRight, Inbox,
+} from 'lucide-react';
+import { apiService } from '@/services/api';
 import { formatDistanceToNow } from 'date-fns';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR' | 'ALERT';
+  category: string;
+  isRead: boolean;
+  actionUrl?: string;
+  actionLabel?: string;
+  createdAt: string;
+  priority?: number;
+}
+
+// ─── Category config ──────────────────────────────────────────────────────────
+
+const CATEGORY_CONFIG: Record<string, { icon: React.ElementType; bg: string; iconColor: string; label: string }> = {
+  PAYMENT:      { icon: CreditCard,    bg: 'bg-green-50',   iconColor: 'text-green-600',  label: 'Payment'      },
+  BOOKING:      { icon: Building2,     bg: 'bg-blue-50',    iconColor: 'text-blue-600',   label: 'Booking'      },
+  CONSTRUCTION: { icon: HardHat,       bg: 'bg-orange-50',  iconColor: 'text-orange-600', label: 'Construction' },
+  EMPLOYEE:     { icon: Users,         bg: 'bg-purple-50',  iconColor: 'text-purple-600', label: 'HR'           },
+  ACCOUNTING:   { icon: Calculator,    bg: 'bg-teal-50',    iconColor: 'text-teal-600',   label: 'Accounting'   },
+  LEAD:         { icon: Users,         bg: 'bg-yellow-50',  iconColor: 'text-yellow-600', label: 'Lead'         },
+  CUSTOMER:     { icon: Users,         bg: 'bg-pink-50',    iconColor: 'text-pink-600',   label: 'Customer'     },
+  TASK:         { icon: Calendar,      bg: 'bg-indigo-50',  iconColor: 'text-indigo-600', label: 'Task'         },
+  REMINDER:     { icon: AlertTriangle, bg: 'bg-amber-50',   iconColor: 'text-amber-600',  label: 'Reminder'     },
+  SYSTEM:       { icon: Settings,      bg: 'bg-gray-100',   iconColor: 'text-gray-500',   label: 'System'       },
+};
+
+const TYPE_RING: Record<string, string> = {
+  SUCCESS: 'border-l-2 border-green-400',
+  WARNING: 'border-l-2 border-amber-400',
+  ERROR:   'border-l-2 border-red-400',
+  ALERT:   'border-l-2 border-red-400',
+  INFO:    '',
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    loadNotifications();
-    loadUnreadCount();
+  // ── Data loading ──────────────────────────────────────────────────────────
 
-    // Poll for new notifications every 30 seconds
-    const interval = setInterval(() => {
-      loadUnreadCount();
-    }, 30000);
-
-    return () => clearInterval(interval);
+  const loadUnreadCount = useCallback(async () => {
+    try {
+      const data: any = await apiService.get('/notifications/unread-count');
+      setUnreadCount(data?.count ?? 0);
+    } catch { /* silent */ }
   }, []);
 
+  const loadNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data: any = await apiService.get('/notifications?includeRead=true');
+      setNotifications(Array.isArray(data) ? data.slice(0, 8) : []);
+    } catch { /* silent */ }
+    finally { setLoading(false); }
+  }, []);
+
+  // Poll unread count every 30s
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    loadUnreadCount();
+    const t = setInterval(loadUnreadCount, 30_000);
+    return () => clearInterval(t);
+  }, [loadUnreadCount]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsOpen(false);
       }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
     };
+    if (isOpen) document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, [isOpen]);
 
-  const loadNotifications = async () => {
-    try {
-      setLoading(true);
-      const data = await notificationsService.getAll(true);
-      // Show only the 5 most recent - handle if data is undefined
-      setNotifications(Array.isArray(data) ? data.slice(0, 5) : []);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    } finally {
-      setLoading(false);
-    }
+  // ── Actions ───────────────────────────────────────────────────────────────
+
+  const toggleOpen = () => {
+    if (!isOpen) loadNotifications();
+    setIsOpen(v => !v);
   };
 
-  const loadUnreadCount = async () => {
-    try {
-      const count = await notificationsService.getUnreadCount();
-      setUnreadCount(count);
-    } catch (error) {
-      console.error('Failed to load unread count:', error);
-    }
-  };
-
-  const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read if unread
-    if (!notification.isRead) {
+  const handleClick = async (n: Notification) => {
+    if (!n.isRead) {
       try {
-        await notificationsService.markAsRead(notification.id);
-        setNotifications(prev =>
-          prev.map(n => (n.id === notification.id ? { ...n, isRead: true } : n))
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      } catch (error) {
-        console.error('Failed to mark as read:', error);
-      }
+        await apiService.patch(`/notifications/${n.id}/read`, {});
+        setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, isRead: true } : x));
+        setUnreadCount(c => Math.max(0, c - 1));
+      } catch { /* silent */ }
     }
-
-    // Navigate if there's an action URL
-    if (notification.actionUrl) {
+    if (n.actionUrl) {
       setIsOpen(false);
-      router.push(notification.actionUrl);
+      router.push(n.actionUrl);
     }
+  };
+
+  const handleMarkAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await apiService.patch('/notifications/mark-all-read', {});
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch { /* silent */ }
+    finally { setMarkingAll(false); }
   };
 
   const handleViewAll = () => {
@@ -90,105 +131,129 @@ export function NotificationBell() {
     router.push('/notifications');
   };
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
-      loadNotifications();
-    }
-  };
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const unread = notifications.filter(n => !n.isRead);
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button
-        onClick={toggleDropdown}
-        className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
-      >
-        <Bell className="h-5 w-5" />
+
+      {/* Bell button */}
+      <button onClick={toggleOpen}
+        className="relative p-2 rounded-xl transition-colors hover:bg-[#FEF3E2]"
+        aria-label="Notifications">
+        <Bell className="h-5 w-5 text-[#A8211B]" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 h-5 w-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
-            {unreadCount > 9 ? '9+' : unreadCount}
+          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-0.5 bg-[#A8211B] text-white text-[10px] font-black rounded-full flex items-center justify-center leading-none">
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
+      {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[600px] flex flex-col">
+        <div className="
+            fixed left-2 right-2 top-16
+            sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[360px]
+            bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 flex flex-col overflow-hidden
+          "
+          style={{ maxHeight: '80vh' }}>
+
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="font-semibold text-gray-900">Notifications</h3>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-gray-100 rounded transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-[#A8211B]" />
+              <span className="font-bold text-gray-900 text-sm">Notifications</span>
+              {unreadCount > 0 && (
+                <span className="text-[10px] font-black bg-[#A8211B] text-white px-1.5 py-0.5 rounded-full leading-none">
+                  {unreadCount}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {unread.length > 0 && (
+                <button onClick={handleMarkAllRead} disabled={markingAll}
+                  className="flex items-center gap-1 text-xs font-semibold text-[#A8211B] hover:bg-[#FEF3E2] px-2 py-1 rounded-lg transition disabled:opacity-40">
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  {markingAll ? 'Marking…' : 'Mark all read'}
+                </button>
+              )}
+              <button onClick={() => setIsOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
             {loading ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2">Loading...</p>
+              <div className="space-y-3 p-4 animate-pulse">
+                {[1,2,3].map(i => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-9 h-9 bg-gray-100 rounded-xl shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 bg-gray-100 rounded w-3/4" />
+                      <div className="h-3 bg-gray-100 rounded w-full" />
+                      <div className="h-2.5 bg-gray-100 rounded w-1/3" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="text-4xl mb-2">📬</div>
-                <p className="text-sm">No notifications yet</p>
+              <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
+                  <Inbox className="w-6 h-6 text-gray-300" />
+                </div>
+                <p className="text-sm font-semibold text-gray-500">All caught up</p>
+                <p className="text-xs text-gray-400 mt-0.5">No notifications yet</p>
               </div>
             ) : (
-              <div className="divide-y">
-                {notifications.map((notification) => (
-                  <button
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                      !notification.isRead ? 'bg-blue-50' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-2xl flex-shrink-0">
-                        {notificationsService.getNotificationIcon(notification.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h4 className="font-medium text-sm text-gray-900 line-clamp-1">
-                            {notification.title}
-                          </h4>
-                          {!notification.isRead && (
-                            <span className="flex-shrink-0 w-2 h-2 bg-blue-600 rounded-full mt-1"></span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 line-clamp-2 mb-1">
-                          {notification.message}
+              notifications.map((n) => {
+                const cat = CATEGORY_CONFIG[n.category] ?? CATEGORY_CONFIG.SYSTEM;
+                const Icon = cat.icon;
+                return (
+                  <button key={n.id} onClick={() => handleClick(n)}
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-50/80 transition-colors flex items-start gap-3 ${!n.isRead ? 'bg-[#FEF9F0]' : ''} ${TYPE_RING[n.type] ?? ''}`}>
+
+                    {/* Category icon */}
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${cat.bg}`}>
+                      <Icon className={`w-4 h-4 ${cat.iconColor}`} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-xs leading-snug line-clamp-1 ${!n.isRead ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>
+                          {n.title}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <span className="font-medium">
-                            {notificationsService.getCategoryLabel(notification.category)}
-                          </span>
-                          <span>•</span>
-                          <span>
-                            {formatDistanceToNow(new Date(notification.createdAt), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        </div>
+                        {!n.isRead && (
+                          <span className="mt-1 w-2 h-2 rounded-full bg-[#A8211B] shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2 mt-0.5 leading-relaxed">
+                        {n.message}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cat.bg} ${cat.iconColor}`}>
+                          {cat.label}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                        </span>
                       </div>
                     </div>
                   </button>
-                ))}
-              </div>
+                );
+              })
             )}
           </div>
 
           {/* Footer */}
           {notifications.length > 0 && (
-            <div className="p-3 border-t bg-gray-50">
-              <button
-                onClick={handleViewAll}
-                className="w-full text-center text-sm font-medium text-blue-600 hover:text-blue-700 py-2"
-              >
-                View All Notifications
+            <div className="border-t border-gray-50 p-2">
+              <button onClick={handleViewAll}
+                className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-[#A8211B] hover:bg-[#FEF3E2] transition">
+                View all notifications <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}

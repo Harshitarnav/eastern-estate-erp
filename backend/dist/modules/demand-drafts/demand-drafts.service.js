@@ -11,15 +11,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var DemandDraftsService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DemandDraftsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const demand_draft_entity_1 = require("./entities/demand-draft.entity");
-let DemandDraftsService = class DemandDraftsService {
-    constructor(demandDraftRepository) {
+const user_entity_1 = require("../users/entities/user.entity");
+const notifications_service_1 = require("../notifications/notifications.service");
+const notification_entity_1 = require("../notifications/entities/notification.entity");
+let DemandDraftsService = DemandDraftsService_1 = class DemandDraftsService {
+    constructor(demandDraftRepository, userRepository, notificationsService) {
         this.demandDraftRepository = demandDraftRepository;
+        this.userRepository = userRepository;
+        this.notificationsService = notificationsService;
+        this.logger = new common_1.Logger(DemandDraftsService_1.name);
     }
     async findAll(query) {
         const queryBuilder = this.demandDraftRepository.createQueryBuilder('draft');
@@ -56,8 +63,35 @@ let DemandDraftsService = class DemandDraftsService {
             createdBy: userId,
             updatedBy: userId,
         });
-        const saved = await this.demandDraftRepository.save(draft);
+        const saved = (await this.demandDraftRepository.save(draft));
+        if (saved.customerId) {
+            this.notifyCustomerOnDraftCreated(saved).catch(e => this.logger.warn(`Failed to send demand draft notification: ${e.message}`));
+        }
         return saved;
+    }
+    async notifyCustomerOnDraftCreated(draft) {
+        const customerUser = await this.userRepository.findOne({
+            where: { customerId: draft.customerId },
+            select: ['id'],
+        });
+        if (!customerUser)
+            return;
+        const amt = draft.amount
+            ? new Intl.NumberFormat('en-IN', {
+                style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+            }).format(Number(draft.amount))
+            : '';
+        await this.notificationsService.create({
+            userId: customerUser.id,
+            title: 'Demand Draft Issued',
+            message: `A demand draft${amt ? ` of ${amt}` : ''} has been generated${draft.title ? ` for "${draft.title}"` : ''}.`,
+            type: notification_entity_1.NotificationType.INFO,
+            category: notification_entity_1.NotificationCategory.PAYMENT,
+            actionUrl: draft.bookingId ? `/portal/bookings/${draft.bookingId}` : '/portal/payments',
+            actionLabel: 'View Details',
+            relatedEntityId: draft.id,
+            relatedEntityType: 'demand_draft',
+        });
     }
     async update(id, updateDto, userId) {
         const draft = await this.findOne(id);
@@ -75,9 +109,12 @@ let DemandDraftsService = class DemandDraftsService {
     }
 };
 exports.DemandDraftsService = DemandDraftsService;
-exports.DemandDraftsService = DemandDraftsService = __decorate([
+exports.DemandDraftsService = DemandDraftsService = DemandDraftsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(demand_draft_entity_1.DemandDraft)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService])
 ], DemandDraftsService);
 //# sourceMappingURL=demand-drafts.service.js.map

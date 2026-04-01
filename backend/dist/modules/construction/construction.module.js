@@ -49,6 +49,7 @@ const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
 const settings_module_1 = require("../settings/settings.module");
 const mail_module_1 = require("../../common/mail/mail.module");
 const accounting_module_1 = require("../accounting/accounting.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 const demand_draft_entity_1 = require("../demand-drafts/entities/demand-draft.entity");
 const payment_schedule_entity_1 = require("../payments/entities/payment-schedule.entity");
 const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
@@ -57,6 +58,7 @@ const customer_entity_1 = require("../customers/entities/customer.entity");
 const booking_entity_1 = require("../bookings/entities/booking.entity");
 const property_entity_1 = require("../properties/entities/property.entity");
 const tower_entity_1 = require("../towers/entities/tower.entity");
+const user_entity_1 = require("../users/entities/user.entity");
 let ConstructionModule = class ConstructionModule {
 };
 exports.ConstructionModule = ConstructionModule;
@@ -81,11 +83,13 @@ exports.ConstructionModule = ConstructionModule = __decorate([
                 booking_entity_1.Booking,
                 property_entity_1.Property,
                 tower_entity_1.Tower,
+                user_entity_1.User,
             ]),
             payment_plans_module_1.PaymentPlansModule,
             settings_module_1.SettingsModule,
             mail_module_1.MailModule,
             accounting_module_1.AccountingModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [
             construction_projects_controller_1.ConstructionProjectsController,

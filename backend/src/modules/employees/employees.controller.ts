@@ -9,6 +9,7 @@ import {
   Delete,
   Query,
   UseGuards,
+  Request,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto, UpdateEmployeeDto, QueryEmployeeDto } from './dto';
@@ -64,6 +65,11 @@ export class EmployeesController {
     return this.employeesService.getStatistics();
   }
 
+  @Get('next-code')
+  getNextCode() {
+    return this.employeesService.generateNextCode().then(code => ({ code }));
+  }
+
   /**
    * Get single employee by ID
    * Any authenticated user can view employee details
@@ -101,5 +107,55 @@ export class EmployeesController {
   @Roles('admin', 'super_admin')
   remove(@Param('id') id: string) {
     return this.employeesService.remove(id);
+  }
+
+  // ─── Feedback routes ──────────────────────────────────────────────────────
+
+  @Get(':id/feedback')
+  getFeedback(@Param('id') id: string) {
+    return this.employeesService.getFeedback(id);
+  }
+
+  @Post(':id/feedback')
+  @Roles('hr', 'admin', 'super_admin')
+  createFeedback(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.employeesService.createFeedback(id, body, req.user?.id);
+  }
+
+  @Patch(':id/feedback/:feedbackId')
+  @Roles('hr', 'admin', 'super_admin')
+  updateFeedback(@Param('id') id: string, @Param('feedbackId') feedbackId: string, @Body() body: any, @Request() req: any) {
+    return this.employeesService.updateFeedback(id, feedbackId, body, req.user?.id);
+  }
+
+  @Delete(':id/feedback/:feedbackId')
+  @Roles('hr', 'admin', 'super_admin')
+  deleteFeedback(@Param('id') id: string, @Param('feedbackId') feedbackId: string) {
+    return this.employeesService.deleteFeedback(id, feedbackId);
+  }
+
+  // ─── Review routes ────────────────────────────────────────────────────────
+
+  @Get(':id/reviews')
+  getReviews(@Param('id') id: string) {
+    return this.employeesService.getReviews(id);
+  }
+
+  @Post(':id/reviews')
+  @Roles('hr', 'admin', 'super_admin')
+  createReview(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.employeesService.createReview(id, body, req.user?.id);
+  }
+
+  @Patch(':id/reviews/:reviewId')
+  @Roles('hr', 'admin', 'super_admin')
+  updateReview(@Param('id') id: string, @Param('reviewId') reviewId: string, @Body() body: any, @Request() req: any) {
+    return this.employeesService.updateReview(id, reviewId, body, req.user?.id);
+  }
+
+  @Delete(':id/reviews/:reviewId')
+  @Roles('hr', 'admin', 'super_admin')
+  deleteReview(@Param('id') id: string, @Param('reviewId') reviewId: string) {
+    return this.employeesService.deleteReview(id, reviewId);
   }
 }

@@ -61,6 +61,12 @@ export class PropertyAccessGuard implements CanActivate {
       return true;
     }
 
+    // Customer portal users — scoped by customerId, not property assignments
+    if (userRoles.includes('customer')) {
+      this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);
+      return true;
+    }
+
     // For all other users (admin, hr, staff, etc.) check assigned properties first
     const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
 

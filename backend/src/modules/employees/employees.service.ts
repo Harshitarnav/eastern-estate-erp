@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Employee, EmploymentStatus } from './entities/employee.entity';
+import { EmployeeFeedback } from './entities/employee-feedback.entity';
+import { EmployeeReview } from './entities/employee-review.entity';
 import {
   CreateEmployeeDto,
   UpdateEmployeeDto,
@@ -19,19 +21,45 @@ export class EmployeesService {
   constructor(
     @InjectRepository(Employee)
     private employeesRepository: Repository<Employee>,
+    @InjectRepository(EmployeeFeedback)
+    private feedbackRepository: Repository<EmployeeFeedback>,
+    @InjectRepository(EmployeeReview)
+    private reviewRepository: Repository<EmployeeReview>,
     private usersService: UsersService,
     private notificationsService: NotificationsService,
   ) {}
 
+  async generateNextCode(): Promise<string> {
+    let attempt = 0;
+    while (attempt < 100) {
+      const count = await this.employeesRepository.count();
+      const candidate = `EMP-${String(count + 1 + attempt).padStart(4, '0')}`;
+      const exists = await this.employeesRepository.findOne({ where: { employeeCode: candidate } });
+      if (!exists) return candidate;
+      attempt++;
+    }
+    return `EMP-${Date.now()}`;
+  }
+
   async create(createEmployeeDto: CreateEmployeeDto, createdBy?: string): Promise<Employee> {
+    // Auto-generate employee code if not provided or blank
+    if (!createEmployeeDto.employeeCode?.trim()) {
+      createEmployeeDto.employeeCode = await this.generateNextCode();
+    }
+
     // Calculate gross and net salary
     const grossSalary =
       (createEmployeeDto.basicSalary || 0) +
       (createEmployeeDto.houseRentAllowance || 0) +
       (createEmployeeDto.transportAllowance || 0) +
-      (createEmployeeDto.medicalAllowance || 0);
+      (createEmployeeDto.medicalAllowance || 0) +
+      (createEmployeeDto.otherAllowances || 0);
 
-    const netSalary = grossSalary; // Deductions will be calculated later
+    const pfDeduction = createEmployeeDto.pfDeduction || 0;
+    const esiDeduction = createEmployeeDto.esiDeduction || 0;
+    const taxDeduction = createEmployeeDto.taxDeduction || 0;
+    const otherDeductions = createEmployeeDto.otherDeductions || 0;
+    const netSalary = createEmployeeDto.netSalary ?? (grossSalary - pfDeduction - esiDeduction - taxDeduction - otherDeductions);
 
     // Create employee entity
     const employee = new Employee();
@@ -49,7 +77,15 @@ export class EmployeesService {
       employee.earnedLeaveBalance = 15;
     }
 
-    const savedEmployee = await this.employeesRepository.save(employee);
+    let savedEmployee: Employee;
+    try {
+      savedEmployee = await this.employeesRepository.save(employee);
+    } catch (err: any) {
+      if (err?.code === '23505' && err?.detail?.includes('employee_code')) {
+        throw new ConflictException(`Employee code "${employee.employeeCode}" is already in use. Please choose a different code.`);
+      }
+      throw err;
+    }
 
     // Auto-create user account for employee
     try {
@@ -225,6 +261,69 @@ export class EmployeesService {
     const employee = await this.findOne(id);
     employee.isActive = false;
     await this.employeesRepository.save(employee);
+  }
+
+  // ─── Feedback ─────────────────────────────────────────────────────────────
+
+  async createFeedback(employeeId: string, data: Partial<EmployeeFeedback>, createdBy?: string): Promise<EmployeeFeedback> {
+    await this.findOne(employeeId); // ensure employee exists
+    const feedback = this.feedbackRepository.create({ ...data, employeeId, createdBy });
+    return this.feedbackRepository.save(feedback);
+  }
+
+  async getFeedback(employeeId: string): Promise<EmployeeFeedback[]> {
+    await this.findOne(employeeId);
+    return this.feedbackRepository.find({
+      where: { employeeId, isActive: true },
+      order: { feedbackDate: 'DESC' },
+    });
+  }
+
+  async updateFeedback(employeeId: string, feedbackId: string, data: Partial<EmployeeFeedback>, updatedBy?: string): Promise<EmployeeFeedback> {
+    const feedback = await this.feedbackRepository.findOne({ where: { id: feedbackId, employeeId } });
+    if (!feedback) throw new NotFoundException('Feedback not found');
+    Object.assign(feedback, data, { updatedBy });
+    return this.feedbackRepository.save(feedback);
+  }
+
+  async deleteFeedback(employeeId: string, feedbackId: string): Promise<void> {
+    const feedback = await this.feedbackRepository.findOne({ where: { id: feedbackId, employeeId } });
+    if (!feedback) throw new NotFoundException('Feedback not found');
+    feedback.isActive = false;
+    await this.feedbackRepository.save(feedback);
+  }
+
+  // ─── Reviews ──────────────────────────────────────────────────────────────
+
+  async createReview(employeeId: string, data: Partial<EmployeeReview>, createdBy?: string): Promise<EmployeeReview> {
+    await this.findOne(employeeId);
+    const review = this.reviewRepository.create({ ...data, employeeId, createdBy });
+    const saved = await this.reviewRepository.save(review);
+    // Update employee's lastReviewDate
+    await this.employeesRepository.update(employeeId, { lastReviewDate: (data.reviewDate as any) || new Date() });
+    return saved;
+  }
+
+  async getReviews(employeeId: string): Promise<EmployeeReview[]> {
+    await this.findOne(employeeId);
+    return this.reviewRepository.find({
+      where: { employeeId, isActive: true },
+      order: { reviewDate: 'DESC' },
+    });
+  }
+
+  async updateReview(employeeId: string, reviewId: string, data: Partial<EmployeeReview>, updatedBy?: string): Promise<EmployeeReview> {
+    const review = await this.reviewRepository.findOne({ where: { id: reviewId, employeeId } });
+    if (!review) throw new NotFoundException('Review not found');
+    Object.assign(review, data, { updatedBy });
+    return this.reviewRepository.save(review);
+  }
+
+  async deleteReview(employeeId: string, reviewId: string): Promise<void> {
+    const review = await this.reviewRepository.findOne({ where: { id: reviewId, employeeId } });
+    if (!review) throw new NotFoundException('Review not found');
+    review.isActive = false;
+    await this.reviewRepository.save(review);
   }
 
   async getStatistics() {

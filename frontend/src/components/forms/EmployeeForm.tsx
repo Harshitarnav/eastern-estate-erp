@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, FormField } from './Form';
+import api from '@/services/api';
 
 interface EmployeeFormProps {
   onSubmit: (data: any) => void;
@@ -12,6 +13,15 @@ interface EmployeeFormProps {
 export default function EmployeeForm({ onSubmit, initialData, onCancel }: EmployeeFormProps) {
   const [activeTab, setActiveTab] = useState('basic');
   const [formValues, setFormValues] = useState<Record<string, any>>(initialData || {});
+
+  // Pre-fill employee code for new employees
+  useEffect(() => {
+    if (!initialData?.employeeCode) {
+      api.get<{ code: string }>('/employees/next-code')
+        .then(res => setFormValues(prev => ({ ...prev, employeeCode: (res as any).code })))
+        .catch(() => {});
+    }
+  }, [initialData?.employeeCode]);
 
 
   // Tab 1: Basic Information

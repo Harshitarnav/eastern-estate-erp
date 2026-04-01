@@ -1,13 +1,19 @@
 import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import { User } from '../users/entities/user.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { NotificationsService } from '../notifications/notifications.service';
 export declare class PaymentsService {
     private paymentRepository;
+    private bookingRepository;
+    private userRepository;
     private readonly accountingIntegrationService;
+    private readonly notificationsService;
     private readonly logger;
-    constructor(paymentRepository: Repository<Payment>, accountingIntegrationService: AccountingIntegrationService);
+    constructor(paymentRepository: Repository<Payment>, bookingRepository: Repository<Booking>, userRepository: Repository<User>, accountingIntegrationService: AccountingIntegrationService, notificationsService: NotificationsService);
     create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment>;
     findAll(filters?: {
         bookingId?: string;
@@ -26,6 +32,7 @@ export declare class PaymentsService {
     findByPaymentCode(paymentCode: string): Promise<Payment>;
     update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<Payment>;
     verify(id: string, userId: string): Promise<Payment>;
+    private notifyCustomerOnPaymentVerified;
     cancel(id: string): Promise<Payment>;
     remove(id: string): Promise<void>;
     getStatistics(filters?: {

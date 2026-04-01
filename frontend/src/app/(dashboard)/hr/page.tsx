@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { 
   Users, 
   UserPlus, 
@@ -15,14 +16,27 @@ import {
   Briefcase,
   GraduationCap
 } from 'lucide-react';
+import { api } from '@/services/api';
+
+interface HRStats {
+  total: number;
+  active: number;
+  onLeave: number;
+  departmentCounts: { department: string; count: string }[];
+}
 
 export default function HRPage() {
   const router = useRouter();
+  const [stats, setStats] = useState<HRStats | null>(null);
+
+  useEffect(() => {
+    api.get('/employees/statistics').then((s: any) => setStats(s)).catch(() => {});
+  }, []);
 
   const hrModules = [
     {
       id: 'employees',
-      title: 'Employee Login',
+      title: 'Employees',
       description: 'Manage employee records, profiles, and employment details',
       icon: Users,
       status: 'active',
@@ -137,45 +151,26 @@ export default function HRPage() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4" style={{ borderColor: '#10B981' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Total Employees</p>
-              <p className="text-2xl font-bold" style={{ color: '#7B1E12' }}>-</p>
+        {[
+          { label: 'Total Employees', value: stats?.total, icon: Users, color: '#10B981' },
+          { label: 'Active', value: stats?.active, icon: Calendar, color: '#3B82F6' },
+          { label: 'On Leave', value: stats?.onLeave, icon: Clock, color: '#F59E0B' },
+          { label: 'Departments', value: stats?.departmentCounts?.length, icon: ClipboardList, color: '#EF4444' },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="bg-white rounded-lg shadow-md p-6 border-l-4" style={{ borderColor: color }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">{label}</p>
+                {stats === null ? (
+                  <div className="h-7 w-10 bg-gray-200 rounded animate-pulse mt-1" />
+                ) : (
+                  <p className="text-2xl font-bold" style={{ color: '#7B1E12' }}>{value ?? 0}</p>
+                )}
+              </div>
+              <Icon className="h-10 w-10" style={{ color, opacity: 0.3 }} />
             </div>
-            <Users className="h-10 w-10" style={{ color: '#10B981', opacity: 0.3 }} />
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4" style={{ borderColor: '#3B82F6' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Active Today</p>
-              <p className="text-2xl font-bold" style={{ color: '#7B1E12' }}>-</p>
-            </div>
-            <Calendar className="h-10 w-10" style={{ color: '#3B82F6', opacity: 0.3 }} />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4" style={{ borderColor: '#F59E0B' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">On Leave</p>
-              <p className="text-2xl font-bold" style={{ color: '#7B1E12' }}>-</p>
-            </div>
-            <Clock className="h-10 w-10" style={{ color: '#F59E0B', opacity: 0.3 }} />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-md p-6 border-l-4" style={{ borderColor: '#EF4444' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Pending Actions</p>
-              <p className="text-2xl font-bold" style={{ color: '#7B1E12' }}>-</p>
-            </div>
-            <ClipboardList className="h-10 w-10" style={{ color: '#EF4444', opacity: 0.3 }} />
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Active Modules */}

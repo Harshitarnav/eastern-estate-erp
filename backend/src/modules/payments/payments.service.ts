@@ -2,9 +2,13 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Booking } from '../bookings/entities/booking.entity';
+import { User } from '../users/entities/user.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationCategory, NotificationType } from '../notifications/entities/notification.entity';
 
 @Injectable()
 export class PaymentsService {
@@ -13,7 +17,12 @@ export class PaymentsService {
   constructor(
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
+    @InjectRepository(Booking)
+    private bookingRepository: Repository<Booking>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly accountingIntegrationService: AccountingIntegrationService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment> {
@@ -164,7 +173,43 @@ export class PaymentsService {
       createdBy: userId,
     });
 
+    // Notify the customer (best-effort)
+    this.notifyCustomerOnPaymentVerified(saved).catch(e =>
+      this.logger.warn(`Failed to send payment notification: ${e.message}`),
+    );
+
     return saved;
+  }
+
+  private async notifyCustomerOnPaymentVerified(payment: Payment): Promise<void> {
+    if (!payment.bookingId) return;
+    const booking = await this.bookingRepository.findOne({
+      where: { id: payment.bookingId },
+      select: ['id', 'customerId', 'bookingNumber'],
+    });
+    if (!booking?.customerId) return;
+
+    const customerUser = await this.userRepository.findOne({
+      where: { customerId: booking.customerId },
+      select: ['id'],
+    });
+    if (!customerUser) return;
+
+    const amt = new Intl.NumberFormat('en-IN', {
+      style: 'currency', currency: 'INR', maximumFractionDigits: 0,
+    }).format(Number(payment.amount));
+
+    await this.notificationsService.create({
+      userId: customerUser.id,
+      title: 'Payment Verified',
+      message: `Your payment of ${amt} has been verified and recorded for booking #${booking.bookingNumber}.`,
+      type: NotificationType.SUCCESS,
+      category: NotificationCategory.PAYMENT,
+      actionUrl: `/portal/bookings/${payment.bookingId}`,
+      actionLabel: 'View Booking',
+      relatedEntityId: payment.id,
+      relatedEntityType: 'payment',
+    });
   }
 
   async cancel(id: string): Promise<Payment> {

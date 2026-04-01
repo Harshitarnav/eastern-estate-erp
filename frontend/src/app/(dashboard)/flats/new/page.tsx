@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import FlatForm from '@/components/forms/FlatForm';
 import { flatsService } from '@/services/flats.service';
 import { propertiesService } from '@/services/properties.service';
@@ -9,17 +9,36 @@ import { towersService } from '@/services/towers.service';
 import { customersService } from '@/services/customers.service';
 import { mapFlatFormToPayload } from '@/utils/forms/flat';
 
-export default function NewFlatPage() {
+function NewFlatContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedTowerId = searchParams.get('towerId') || '';
+  const preselectedPropertyId = searchParams.get('propertyId') || '';
+
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
   const [towers, setTowers] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [initialData, setInitialData] = useState<any>(
+    preselectedPropertyId || preselectedTowerId
+      ? { propertyId: preselectedPropertyId, towerId: preselectedTowerId }
+      : undefined,
+  );
 
   useEffect(() => {
     fetchProperties();
-    // fetchTowers();
     fetchCustomers();
+    // If a tower is pre-selected, resolve its property and pre-load towers
+    if (preselectedTowerId && !preselectedPropertyId) {
+      towersService.getTower(preselectedTowerId).then((tower: any) => {
+        if (tower?.propertyId) {
+          setInitialData({ propertyId: tower.propertyId, towerId: preselectedTowerId });
+          fetchTowersByProperty(tower.propertyId);
+        }
+      }).catch(() => {});
+    } else if (preselectedPropertyId) {
+      fetchTowersByProperty(preselectedPropertyId);
+    }
   }, []);
 
   const fetchTowersByProperty = async (propertyId: string) => {
@@ -159,8 +178,17 @@ export default function NewFlatPage() {
         properties={properties}
         towers={towers}
         customers={customers}
+        initialData={initialData}
         onPropertyChange={fetchTowersByProperty}
       />
     </div>
+  );
+}
+
+export default function NewFlatPage() {
+  return (
+    <Suspense>
+      <NewFlatContent />
+    </Suspense>
   );
 }

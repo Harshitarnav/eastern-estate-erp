@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeft,
   Edit,
@@ -157,10 +158,20 @@ export default function CustomerViewPage() {
         <div className="flex items-center gap-2">
           {/* Portal invite/status button */}
           {portalAccount?.hasAccount ? (
-            <a href="/portal" target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition">
-              <ExternalLink className="w-4 h-4" /> Portal Active
-            </a>
+            <div className="flex items-center gap-1.5">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-semibold text-green-700">Portal Active</p>
+                <p className="text-[10px] text-gray-400">
+                  {portalAccount.user?.lastLoginAt
+                    ? `Last login: ${new Date(portalAccount.user.lastLoginAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                    : 'Never signed in'}
+                </p>
+              </div>
+              <Link href="/customers/portal-accounts"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition">
+                <Shield className="w-4 h-4" /> Manage
+              </Link>
+            </div>
           ) : (
             <button onClick={() => setShowInviteModal(true)}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition">

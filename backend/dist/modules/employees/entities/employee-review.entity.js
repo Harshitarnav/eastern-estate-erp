@@ -36,12 +36,12 @@ __decorate([
     __metadata("design:type", String)
 ], EmployeeReview.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)('uuid'),
+    (0, typeorm_1.Column)({ name: 'employee_id', type: 'uuid' }),
     __metadata("design:type", String)
 ], EmployeeReview.prototype, "employeeId", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => employee_entity_1.Employee),
-    (0, typeorm_1.JoinColumn)({ name: 'employeeId' }),
+    (0, typeorm_1.JoinColumn)({ name: 'employee_id' }),
     __metadata("design:type", employee_entity_1.Employee)
 ], EmployeeReview.prototype, "employee", void 0);
 __decorate([

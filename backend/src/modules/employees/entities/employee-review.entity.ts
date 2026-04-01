@@ -41,11 +41,11 @@ export class EmployeeReview {
   id: string;
 
   // Employee Reference
-  @Column('uuid')
+  @Column({ name: 'employee_id', type: 'uuid' })
   employeeId: string;
 
   @ManyToOne(() => Employee)
-  @JoinColumn({ name: 'employeeId' })
+  @JoinColumn({ name: 'employee_id' })
   employee: Employee;
 
   // Review Details

@@ -2,6 +2,7 @@ import {
   IsOptional,
   IsString,
   IsEnum,
+  IsIn,
   IsBoolean,
   IsUUID,
   IsNumber,
@@ -88,10 +89,10 @@ export class QueryFlatDto {
   limit?: number = 10;
 
   @IsOptional()
-  @IsString()
+  @IsIn(['createdAt', 'updatedAt', 'flatNumber', 'floor', 'finalPrice', 'basePrice', 'status', 'displayOrder'])
   sortBy?: string = 'createdAt';
 
   @IsOptional()
-  @IsEnum(['ASC', 'DESC'])
+  @IsIn(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
 }

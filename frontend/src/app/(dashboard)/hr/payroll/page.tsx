@@ -497,6 +497,14 @@ export default function PayrollPage() {
               })()}
             </div>
           </div>
+            <div className="col-span-2 border-t pt-3">
+              <Label className="text-xs">Notes / Remarks (optional)</Label>
+              <Input
+                placeholder="e.g. Includes special incentive for Q4"
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
@@ -537,6 +545,17 @@ export default function PayrollPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {payForm.paymentMode === 'BANK_TRANSFER' && (
+                <div>
+                  <Label>Bank Name</Label>
+                  <Input
+                    placeholder="e.g. HDFC Bank"
+                    value={payForm.bankName}
+                    onChange={e => setPayForm(f => ({ ...f, bankName: e.target.value }))}
+                  />
+                </div>
+              )}
 
               <div>
                 <Label>Transaction / UTR Reference</Label>

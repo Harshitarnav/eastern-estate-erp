@@ -335,58 +335,6 @@ __decorate([
     __metadata("design:type", String)
 ], Flat.prototype, "remarks", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'sale_agreement_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "saleAgreementUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'allotment_letter_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "allotmentLetterUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'possession_letter_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "possessionLetterUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'payment_plan_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "paymentPlanUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'registration_receipt_urls', type: 'jsonb', nullable: true }),
-    __metadata("design:type", Array)
-], Flat.prototype, "registrationReceiptUrls", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'payment_receipt_urls', type: 'jsonb', nullable: true }),
-    __metadata("design:type", Array)
-], Flat.prototype, "paymentReceiptUrls", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'demand_letter_urls', type: 'jsonb', nullable: true }),
-    __metadata("design:type", Array)
-], Flat.prototype, "demandLetterUrls", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'noc_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "nocUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'rera_certificate_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "reraCertificateUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'kyc_docs_urls', type: 'jsonb', nullable: true }),
-    __metadata("design:type", Array)
-], Flat.prototype, "kycDocsUrls", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'snag_list_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "snagListUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'handover_checklist_url', type: 'text', nullable: true }),
-    __metadata("design:type", String)
-], Flat.prototype, "handoverChecklistUrl", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ name: 'other_documents', type: 'jsonb', nullable: true }),
-    __metadata("design:type", Array)
-], Flat.prototype, "otherDocuments", void 0);
-__decorate([
     (0, typeorm_1.Column)({ name: 'agreement_date', type: 'date', nullable: true }),
     __metadata("design:type", Date)
 ], Flat.prototype, "agreementDate", void 0);

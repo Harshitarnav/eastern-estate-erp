@@ -6,10 +6,11 @@ import { DemandDraftsController } from './demand-drafts.controller';
 import { DemandDraftsSchemaSyncService } from './demand-drafts.schema-sync.service';
 import { ConstructionModule } from '../construction/construction.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { User } from '../users/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([DemandDraft]),
+    TypeOrmModule.forFeature([DemandDraft, User]),
     ConstructionModule,
     NotificationsModule,
   ],
