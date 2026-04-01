@@ -983,7 +983,7 @@ export default function EmployeeDetailPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold text-gray-900">{fb.feedbackTitle}</span>
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">{fb.feedbackType.replace(/_/g, ' ')}</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">{fb.feedbackType?.replace(/_/g, ' ')}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${fb.feedbackStatus === 'SUBMITTED' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{fb.feedbackStatus}</span>
                     </div>
                     <p className="text-xs text-gray-500 mb-3">
@@ -1153,11 +1153,11 @@ export default function EmployeeDetailPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold text-gray-900">{rv.reviewTitle}</span>
-                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">{rv.reviewType.replace(/_/g, ' ')}</span>
+                      <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700">{rv.reviewType?.replace(/_/g, ' ')}</span>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                         rv.reviewStatus === 'COMPLETED' ? 'bg-green-50 text-green-700' :
                         rv.reviewStatus === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'
-                      }`}>{rv.reviewStatus.replace(/_/g, ' ')}</span>
+                      }`}>{rv.reviewStatus?.replace(/_/g, ' ')}</span>
                     </div>
                     <p className="text-xs text-gray-500 mb-3">
                       {fmtDate(rv.reviewDate)}{rv.reviewerName && ` · by ${rv.reviewerName}`}

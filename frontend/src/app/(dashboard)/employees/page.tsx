@@ -79,8 +79,8 @@ export default function EmployeesPage() {
     }
   };
 
-  const formatStatus = (status: string) => {
-    return status.replace(/_/g, ' ');
+  const formatStatus = (status: string | null | undefined) => {
+    return status ? status.replace(/_/g, ' ') : '—';
   };
 
   const formatCurrency = (value: number | string | null | undefined) => {
@@ -341,7 +341,7 @@ export default function EmployeesPage() {
                       <div>
                         <p className="text-gray-500">Joining Date</p>
                         <p className="font-semibold text-gray-800">
-                          {new Date(employee.joiningDate).toLocaleDateString()}
+                          {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : '—'}
                         </p>
                       </div>
                     </div>
