@@ -27,6 +27,7 @@ import {
   Check,
   X as XIcon,
   StickyNote,
+  Trash2,
 } from 'lucide-react';
 import { employeesService, Employee } from '@/services/employees.service';
 import { rolesService } from '@/services/roles.service';
@@ -271,6 +272,16 @@ export default function EmployeeDetailPage() {
     finally { setSavingReview(false); }
   };
 
+  const handleDeleteEmployee = async () => {
+    if (!confirm(`Permanently delete ${employee?.fullName}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/employees/${employeeId}`);
+      router.push('/employees');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete employee');
+    }
+  };
+
   const handleDeleteFeedback = async (feedbackId: string) => {
     await api.delete(`/employees/${employeeId}/feedback/${feedbackId}`);
     setFeedbacks(feedbacks.filter(f => f.id !== feedbackId));
@@ -426,16 +437,25 @@ export default function EmployeeDetailPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => router.push(`/employees/${employeeId}/edit`)}
-            className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 flex-shrink-0"
-            style={{ backgroundColor: '#A8211B', color: 'white' }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7B1E12')}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#A8211B')}
-          >
-            <Edit className="h-5 w-5" />
-            <span>Edit Employee</span>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => router.push(`/employees/${employeeId}/edit`)}
+              className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              style={{ backgroundColor: '#A8211B', color: 'white' }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7B1E12')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#A8211B')}
+            >
+              <Edit className="h-5 w-5" />
+              <span>Edit Employee</span>
+            </button>
+            <button
+              onClick={handleDeleteEmployee}
+              className="px-4 py-2 rounded-lg font-medium border border-red-200 text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+              title="Delete employee"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
