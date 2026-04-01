@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -23,6 +23,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const router = useRouter();
   const { user } = useAuthStore();
   const [expandedMenus, setExpandedMenus] = useState<string[]>(['sales', 'property-inventory']);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // Clear pending indicator when navigation completes
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
 
   // Get user's roles
   const userRoles = user?.roles?.map((r: any) => typeof r === 'string' ? r : r.name) || [];
@@ -33,13 +40,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     );
   };
 
-  const handleLinkClick = () => {
+  const handleLinkClick = (path?: string) => {
+    if (path) setPendingPath(path);
     if (window.innerWidth < 1024) {
       onClose();
     }
   };
 
+  const navigateTo = (path: string) => {
+    setPendingPath(path);
+    startTransition(() => {
+      router.push(path);
+    });
+    if (window.innerWidth < 1024) onClose();
+  };
+
   const isActive = (path: string) => pathname === path;
+  const isPendingPath = (path: string) => pendingPath === path && isPending;
   const isChildActive = (paths: string[]) => paths.some(path => pathname === path || pathname?.startsWith(path + '/'));
 
   // Check if user can access a module
@@ -234,17 +251,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <div className="ml-4 mt-1 space-y-1">
                           {filteredChildren.map((child) => {
                             const ChildIcon = child.icon;
+                            const active = isActive(child.href);
+                            const pending = isPendingPath(child.href);
                             return (
                               <Link
                                 key={child.id}
                                 href={child.href}
-                                onClick={handleLinkClick}
-                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                                  isActive(child.href) ? 'bg-red-50 text-red-900' : 'hover:bg-gray-100 text-gray-700'
+                                onClick={() => handleLinkClick(child.href)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                                  active
+                                    ? 'bg-red-50 text-red-900'
+                                    : pending
+                                    ? 'bg-gray-100 text-gray-500 opacity-70'
+                                    : 'hover:bg-gray-100 text-gray-700'
                                 }`}
                               >
-                                <ChildIcon className="h-4 w-4" style={{ color: isActive(child.href) ? '#A8211B' : undefined }} />
+                                <ChildIcon
+                                  className={`h-4 w-4 ${pending ? 'animate-pulse' : ''}`}
+                                  style={{ color: active ? '#A8211B' : undefined }}
+                                />
                                 <span>{child.label}</span>
+                                {pending && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gray-400 animate-pulse" />}
                               </Link>
                             );
                           })}
@@ -254,13 +281,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   ) : (
                     <Link
                       href={item.href!}
-                      onClick={handleLinkClick}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                        isItemActive ? 'bg-red-50 text-red-900' : 'hover:bg-gray-100 text-gray-700'
+                      onClick={() => handleLinkClick(item.href)}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                        isItemActive
+                          ? 'bg-red-50 text-red-900'
+                          : isPendingPath(item.href!)
+                          ? 'bg-gray-100 text-gray-500 opacity-70'
+                          : 'hover:bg-gray-100 text-gray-700'
                       }`}
                     >
-                      <Icon className="h-5 w-5" style={{ color: isItemActive ? '#A8211B' : undefined }} />
+                      <Icon
+                        className={`h-5 w-5 ${isPendingPath(item.href!) ? 'animate-pulse' : ''}`}
+                        style={{ color: isItemActive ? '#A8211B' : undefined }}
+                      />
                       <span className="font-medium">{item.label}</span>
+                      {isPendingPath(item.href!) && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-gray-400 animate-pulse" />}
                     </Link>
                   )}
                 </div>

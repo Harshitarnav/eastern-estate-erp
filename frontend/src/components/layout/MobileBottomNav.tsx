@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -25,6 +26,12 @@ const NAV_ITEMS = [
 
 export function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Clear pending state when route changes
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
@@ -36,22 +43,24 @@ export function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
     >
       {NAV_ITEMS.map(({ id, label, icon: Icon, href }) => {
         const active = isActive(href);
+        const pending = pendingHref === href && !active;
         return (
           <Link
             key={id}
             href={href}
+            onClick={() => setPendingHref(href)}
             className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors"
-            style={{ color: active ? '#A8211B' : '#6B7280' }}
+            style={{ color: active ? '#A8211B' : pending ? '#9CA3AF' : '#6B7280' }}
           >
             <div
               className="w-10 h-6 flex items-center justify-center rounded-full transition-all"
-              style={{ backgroundColor: active ? '#FEE2E2' : 'transparent' }}
+              style={{ backgroundColor: active ? '#FEE2E2' : pending ? '#F3F4F6' : 'transparent' }}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className={`h-5 w-5 ${pending ? 'animate-pulse' : ''}`} />
             </div>
             <span
               className="text-[10px] font-medium leading-none"
-              style={{ color: active ? '#A8211B' : '#6B7280' }}
+              style={{ color: active ? '#A8211B' : pending ? '#9CA3AF' : '#6B7280' }}
             >
               {label}
             </span>

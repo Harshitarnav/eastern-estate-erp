@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster } from '@/components/ui/Toaster';
+import NextTopLoader from 'nextjs-toploader';
 
 // Use a local, cache-friendly fallback font to avoid external downloads during offline builds
 const inter = { className: "font-sans" };
@@ -38,6 +39,14 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={inter.className}>
+        <NextTopLoader
+          color="#A8211B"
+          height={3}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #A8211B,0 0 5px #A8211B"
+        />
         <ErrorBoundary>
           {children}
           <Toaster />
