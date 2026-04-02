@@ -9,6 +9,7 @@ import { DashboardSkeleton } from '@/components/Skeletons';
 
 export default function AccountingDashboard() {
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [balanceSheet, setBalanceSheet] = useState<any>(null);
   const [profitLoss, setProfitLoss] = useState<any>(null);
   const [expenseSummary, setExpenseSummary] = useState<any>(null);
@@ -26,6 +27,7 @@ export default function AccountingDashboard() {
         setExpenseSummary(es);
       } catch (error) {
         console.error('Error fetching accounting data:', error);
+        setFetchError(true);
       } finally {
         setLoading(false);
       }
@@ -50,6 +52,13 @@ export default function AccountingDashboard() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Accounting Dashboard</h1>
       </div>
+
+      {fetchError && (
+        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
+          <span className="font-medium">⚠ Failed to load financial data.</span>
+          <span className="text-amber-600">Values shown may be zero or stale. Check your connection and refresh.</span>
+        </div>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

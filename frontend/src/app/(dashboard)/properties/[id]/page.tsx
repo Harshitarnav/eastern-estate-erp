@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  ArrowLeft, Edit, Building2, MapPin, Calendar, Home,
+  ArrowLeft, Edit, Building2, Hammer, MapPin, Calendar, Home,
   Layers, Shield, TrendingUp, IndianRupee, CheckCircle,
   Clock, Loader2, Star, Users, BarChart3, ExternalLink,
 } from 'lucide-react';
@@ -412,6 +412,12 @@ export default function PropertyDetailPage() {
                 className="w-full text-left px-4 py-3 border rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
                 style={{ borderColor: '#7C3AED', color: '#7C3AED' }}>
                 <Home className="w-4 h-4" /> View Flats
+              </button>
+              <button
+                onClick={() => router.push(`/construction/projects?propertyId=${propertyId}`)}
+                className="w-full text-left px-4 py-3 border rounded-lg text-sm font-medium hover:bg-gray-50 flex items-center gap-2"
+                style={{ borderColor: '#059669', color: '#059669' }}>
+                <Hammer className="w-4 h-4" /> Construction Projects
               </button>
               <button
                 onClick={() => router.push(`/reports/outstanding?propertyId=${propertyId}`)}

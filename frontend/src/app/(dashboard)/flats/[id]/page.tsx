@@ -426,9 +426,16 @@ export default function FlatDetailPage() {
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-center md:justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">Location</h2>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                   <MapPin className="h-4 w-4 text-rose-500" />
-                  <span>{flat.property?.name ?? 'Property not linked'}</span>
+                  {flat.propertyId ? (
+                    <button onClick={() => router.push(`/properties/${flat.propertyId}`)}
+                      className="font-medium hover:underline" style={{ color: '#A8211B' }}>
+                      {flat.property?.name ?? 'Property not linked'}
+                    </button>
+                  ) : (
+                    <span>{flat.property?.name ?? 'Property not linked'}</span>
+                  )}
                   <Building2 className="h-4 w-4 text-sky-500" />
                   <span>{flat.tower?.name ?? 'Tower not linked'}</span>
                 </div>
@@ -646,12 +653,30 @@ export default function FlatDetailPage() {
                     <>
                       <DetailItem
                         label="Customer"
-                        value={`${customer.firstName} ${customer.lastName}`}
+                        value={
+                          <button
+                            onClick={() => router.push(`/customers/${flat.customerId}`)}
+                            className="font-medium hover:underline text-left"
+                            style={{ color: '#A8211B' }}
+                          >
+                            {customer.firstName} {customer.lastName}
+                          </button>
+                        }
                       />
                       <DetailItem label="Email" value={customer.email} />
                       <DetailItem label="Phone" value={customer.phone} />
                       <DetailItem label="Type" value={customer.type.replace('_', ' ')} />
-                      <DetailItem label="Notes" value={customer.notes ?? 'No notes captured yet.'} />
+                      {flat.bookingId && (
+                        <div className="pt-2">
+                          <button
+                            onClick={() => router.push(`/bookings/${flat.bookingId}`)}
+                            className="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg border hover:bg-blue-50 transition"
+                            style={{ borderColor: '#2563EB', color: '#2563EB' }}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> View Booking
+                          </button>
+                        </div>
+                      )}
                     </>
                   ) : (
                     <DetailItem label="Customer" value={customerError ?? 'Customer record not found.'} />

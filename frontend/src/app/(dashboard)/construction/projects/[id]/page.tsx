@@ -210,7 +210,16 @@ export default function ProjectDetailPage() {
               <p className="text-white/70 text-sm flex flex-wrap gap-4 mt-1">
                 <span className="flex items-center gap-1">
                   <ClipboardList className="w-4 h-4" />
-                  {project.property?.name || 'No property assigned'}
+                  {project.propertyId ? (
+                    <button
+                      onClick={() => router.push(`/properties/${project.propertyId}`)}
+                      className="hover:underline hover:text-white transition-colors"
+                    >
+                      {project.property?.name || 'View Property'}
+                    </button>
+                  ) : (
+                    project.property?.name || 'No property assigned'
+                  )}
                 </span>
                 <span className="flex items-center gap-1">
                   <User className="w-4 h-4" />
@@ -601,9 +610,12 @@ export default function ProjectDetailPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {materials.map((m: any) => (
-                        <tr key={m.id} className="hover:bg-gray-50">
+                        <tr key={m.id} className="hover:bg-gray-50 cursor-pointer"
+                          onClick={() => m.materialId && router.push(`/construction/materials/${m.materialId}`)}>
                           <td className="px-5 py-3 text-gray-500">{fmt(m.exitDate)}</td>
-                          <td className="px-5 py-3 font-medium">{m.material?.materialName || m.materialId}</td>
+                          <td className="px-5 py-3 font-medium hover:underline" style={{ color: m.materialId ? '#A8211B' : undefined }}>
+                            {m.material?.materialName || m.materialId}
+                          </td>
                           <td className="px-5 py-3">{m.quantity} {m.material?.unitOfMeasurement}</td>
                           <td className="px-5 py-3 text-gray-500">{m.purpose || '—'}</td>
                           <td className="px-5 py-3 text-gray-500">{m.issuedTo || '—'}</td>
@@ -649,7 +661,15 @@ export default function ProjectDetailPage() {
                               {po.status?.replace(/_/g, ' ')}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-500">Vendor: {po.vendor?.vendorName || '—'} · {fmt(po.poDate)}</p>
+                          <p className="text-sm text-gray-500">
+                            Vendor: {po.vendor?.id ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); router.push(`/construction/vendors/${po.vendor.id}`); }}
+                                className="hover:underline font-medium"
+                                style={{ color: '#A8211B' }}
+                              >{po.vendor.vendorName}</button>
+                            ) : (po.vendor?.vendorName || '—')} · {fmt(po.poDate)}
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-gray-900">{fmtCur(po.totalAmount)}</p>

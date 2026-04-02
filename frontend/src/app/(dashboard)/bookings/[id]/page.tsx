@@ -356,9 +356,15 @@ export default function BookingViewPage() {
                   <Home className="w-4 h-4" />
                   Flat/Unit
                 </p>
-                <p className="font-medium">{booking.flat?.flatNumber || booking.flat?.name || 'N/A'}</p>
-                {booking.flat?.towerId && (
-                  <p className="text-xs text-gray-500">Tower: {booking.flat?.towerId}</p>
+                <button
+                  onClick={() => booking.flatId && router.push(`/flats/${booking.flatId}`)}
+                  className="font-medium text-left hover:underline"
+                  style={{ color: booking.flatId ? '#A8211B' : undefined }}
+                >
+                  {booking.flat?.flatNumber || booking.flat?.name || 'N/A'}
+                </button>
+                {booking.flat?.tower?.name && (
+                  <p className="text-xs text-gray-500">{booking.flat.tower.name}</p>
                 )}
               </div>
               <div>
@@ -789,6 +795,14 @@ export default function BookingViewPage() {
                   View Ledger
                 </button>
               )}
+              <button
+                onClick={() => router.push(`/demand-drafts?bookingId=${bookingId}`)}
+                className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-blue-50 flex items-center gap-2"
+                style={{ borderColor: '#2563EB', color: '#2563EB' }}
+              >
+                <FileText className="w-4 h-4" />
+                Demand Drafts
+              </button>
               <button
                 onClick={() => router.push('/bookings')}
                 className="w-full px-4 py-3 border rounded-lg text-sm font-medium transition-colors hover:bg-gray-50 flex items-center gap-2"

@@ -648,7 +648,17 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
             </div>
             <div>
               <div className="text-sm text-muted-foreground">Booking Number</div>
-              <div className="font-medium">{plan.booking?.bookingNumber || 'N/A'}</div>
+              {plan.bookingId ? (
+                <button
+                  onClick={() => router.push(`/bookings/${plan.bookingId}`)}
+                  className="font-medium hover:underline text-left"
+                  style={{ color: '#A8211B' }}
+                >
+                  {plan.booking?.bookingNumber || 'View Booking'}
+                </button>
+              ) : (
+                <div className="font-medium">{plan.booking?.bookingNumber || 'N/A'}</div>
+              )}
             </div>
             <div className="flex gap-2 mt-2 flex-wrap">
               <Button

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Edit, Trash2 } from 'lucide-react';
 import { accountsService } from '@/services/accounting.service';
 
 export default function ViewAccountPage() {
@@ -92,6 +92,14 @@ export default function ViewAccountPage() {
             <p className="text-gray-600 mt-1 truncate">{account.accountCode}</p>
           </div>
           <div className="flex gap-3 shrink-0 flex-wrap">
+            <button
+              onClick={() => router.push(`/accounting/accounts/${id}/ledger`)}
+              className="px-4 py-2 border rounded-lg hover:bg-blue-50 flex items-center gap-2"
+              style={{ borderColor: '#2563EB', color: '#2563EB' }}
+            >
+              <BookOpen className="h-4 w-4" />
+              Ledger
+            </button>
             <button
               onClick={() => router.push(`/accounting/accounts/${id}/edit`)}
               className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"

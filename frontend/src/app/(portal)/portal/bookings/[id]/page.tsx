@@ -35,12 +35,16 @@ export default function BookingDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<'network' | 'notfound' | null>(null);
   const [tab, setTab] = useState<'overview' | 'milestones' | 'payments' | 'drafts'>('overview');
 
   useEffect(() => {
     apiService.get(`/customer-portal/bookings/${id}`)
       .then(setData)
-      .catch(console.error)
+      .catch((e) => {
+        console.error(e);
+        setFetchError(e?.response?.status === 404 ? 'notfound' : 'network');
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -57,8 +61,19 @@ export default function BookingDetailPage() {
   if (!data) {
     return (
       <div className="text-center py-16">
-        <p className="text-gray-500">Booking not found</p>
-        <Link href="/portal/bookings" className="text-[#A8211B] text-sm mt-2 inline-block">← Back</Link>
+        {fetchError === 'notfound' ? (
+          <>
+            <p className="font-semibold text-gray-600">Booking not found</p>
+            <p className="text-sm text-gray-400 mt-1">This booking may no longer exist.</p>
+          </>
+        ) : (
+          <>
+            <AlertCircle className="w-10 h-10 text-red-300 mx-auto mb-3" />
+            <p className="font-semibold text-gray-600">Couldn't load booking details</p>
+            <p className="text-sm text-gray-400 mt-1">Please check your connection and try again.</p>
+          </>
+        )}
+        <Link href="/portal/bookings" className="text-[#A8211B] text-sm mt-4 inline-block font-semibold">← Back to all units</Link>
       </div>
     );
   }

@@ -185,6 +185,7 @@ export const ROLE_MODULE_ACCESS: Record<UserRole, string[]> = {
     'ra-bills',
     'quality-control',
     'construction-milestones',
+    'construction-reports',
   ],
   [UserRole.MARKETING_TEAM]: [
     'dashboard',
@@ -203,6 +204,7 @@ export const ROLE_MODULE_ACCESS: Record<UserRole, string[]> = {
     'flats',
     'sales',
     'customers',
+    'portal-accounts',
     'bookings',
     'payments',
     'payments-list',

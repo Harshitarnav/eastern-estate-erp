@@ -41,10 +41,14 @@ export default function CustomerViewPage() {
   const [inviting, setInviting] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [invitePassword, setInvitePassword] = useState('');
+  const [recentBookings, setRecentBookings] = useState<any[]>([]);
 
   useEffect(() => {
     if (customerId) {
       fetchCustomer();
+      apiService.get(`/bookings?customerId=${customerId}&limit=5`)
+        .then((r: any) => setRecentBookings(r?.data || []))
+        .catch(() => {});
     }
   }, [customerId]);
 
@@ -439,6 +443,36 @@ export default function CustomerViewPage() {
               </div>
             </div>
           </div>
+
+          {/* Recent Bookings */}
+          {recentBookings.length > 0 && (
+            <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold" style={{ color: brandPalette.secondary }}>Bookings</h2>
+                <button onClick={() => router.push(`/bookings?customerId=${customerId}`)}
+                  className="text-xs font-semibold hover:underline" style={{ color: brandPalette.primary }}>
+                  View all →
+                </button>
+              </div>
+              <div className="space-y-2">
+                {recentBookings.map((b: any) => (
+                  <button key={b.id} onClick={() => router.push(`/bookings/${b.id}`)}
+                    className="w-full text-left flex items-center justify-between p-3 rounded-xl border hover:bg-gray-50 transition"
+                    style={{ borderColor: `${brandPalette.neutral}40` }}>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800">{b.bookingNumber}</p>
+                      <p className="text-xs text-gray-500">{b.flat?.flatNumber} · {b.property?.name}</p>
+                    </div>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                      b.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>{b.status?.replace(/_/g, ' ')}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions */}
           <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { rolesService, type CreateRoleDto, type UpdateRoleDto } from '@/services/roles.service';
 import { type Role, type Permission } from '@/services/users.service';
 import { TableRowsSkeleton } from '@/components/Skeletons';
@@ -69,7 +70,7 @@ export default function RolesPage() {
       resetForm();
       loadData();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error saving role');
+      toast.error(error.response?.data?.message || 'Error saving role');
     }
   };
 
@@ -93,13 +94,13 @@ export default function RolesPage() {
   };
 
   const handleDelete = async (role: Role) => {
-    if (confirm(`Delete role "${role.name}"? This cannot be undone and may affect users with this role.`)) {
-      try {
-        await rolesService.deleteRole(role.id);
-        loadData();
-      } catch (error: any) {
-        alert(error.response?.data?.message || 'Error deleting role');
-      }
+    if (!window.confirm(`Delete role "${role.name}"? This cannot be undone and may affect users with this role.`)) return;
+    try {
+      await rolesService.deleteRole(role.id);
+      toast.success(`Role "${role.name}" deleted`);
+      loadData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error deleting role');
     }
   };
 

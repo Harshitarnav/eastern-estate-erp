@@ -319,7 +319,7 @@ function VendorDetailContent() {
                 </thead>
                 <tbody>
                   {payments.map(p => (
-                    <tr key={p.id} className="border-b hover:bg-gray-50" style={{ borderColor: `${brandPalette.neutral}30` }}>
+                    <tr key={p.id} className="border-b hover:bg-gray-50 group" style={{ borderColor: `${brandPalette.neutral}30` }}>
                       <td className="py-3 pr-4 text-gray-700 whitespace-nowrap">{fmtDate(p.paymentDate)}</td>
                       <td className="py-3 pr-4 font-semibold" style={{ color: brandPalette.success }}>{fmtCur(p.amount)}</td>
                       <td className="py-3 pr-4">

@@ -13,6 +13,7 @@ import {
   User,
   FileText,
   Award,
+  DollarSign,
   TrendingUp,
   Shield,
   Heart,
@@ -439,6 +440,14 @@ export default function EmployeeDetailPage() {
 
           <div className="flex items-center gap-2 shrink-0">
             <button
+              onClick={() => router.push('/hr/payroll')}
+              className="px-4 py-2 rounded-lg font-medium border transition-colors flex items-center gap-2"
+              style={{ borderColor: '#16A34A', color: '#16A34A' }}
+            >
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Payroll</span>
+            </button>
+            <button
               onClick={() => router.push(`/employees/${employeeId}/edit`)}
               className="px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               style={{ backgroundColor: '#A8211B', color: 'white' }}
@@ -446,7 +455,7 @@ export default function EmployeeDetailPage() {
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#A8211B')}
             >
               <Edit className="h-5 w-5" />
-              <span>Edit Employee</span>
+              <span>Edit</span>
             </button>
             <button
               onClick={handleDeleteEmployee}

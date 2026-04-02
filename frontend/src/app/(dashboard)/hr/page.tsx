@@ -28,9 +28,12 @@ interface HRStats {
 export default function HRPage() {
   const router = useRouter();
   const [stats, setStats] = useState<HRStats | null>(null);
+  const [statsError, setStatsError] = useState(false);
 
   useEffect(() => {
-    api.get('/employees/statistics').then((s: any) => setStats(s)).catch(() => {});
+    api.get('/employees/statistics')
+      .then((s: any) => setStats(s))
+      .catch(() => { setStatsError(true); setStats({ total: 0, active: 0, onLeave: 0, departmentCounts: [] }); });
   }, []);
 
   const hrModules = [
@@ -150,6 +153,12 @@ export default function HRPage() {
       </div>
 
       {/* Quick Stats */}
+      {statsError && (
+        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
+          <span className="font-medium">⚠ Could not load live stats.</span>
+          <span className="text-amber-600">Showing cached or zero values.</span>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { label: 'Total Employees', value: stats?.total, icon: Users, color: '#10B981' },

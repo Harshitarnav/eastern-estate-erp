@@ -32,12 +32,6 @@ export default function EmployeesPage() {
       setEmployees(response.data || []);
       setMeta(response.meta || { total: 0, page: 1, limit: 12, totalPages: 0 });
       setError('');
-      
-      // // Debug: Check profile pictures
-      // console.log('📸 Employee Profile Pictures:', response.data?.map(emp => ({
-      //   name: emp.fullName,
-      //   profilePicture: emp.profilePicture
-      // })));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to fetch employees');
       setEmployees([]);

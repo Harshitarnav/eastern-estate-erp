@@ -37,6 +37,7 @@ export default function PortalDashboard() {
   const [data, setData] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -45,11 +46,30 @@ export default function PortalDashboard() {
     ]).then(([me, bk]) => {
       setData(me);
       setBookings(Array.isArray(bk) ? bk : []);
-    }).catch(console.error)
+    }).catch((e) => { console.error(e); setError(true); })
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <SkeletonDashboard />;
+
+  if (error && !data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
+        <AlertCircle className="w-12 h-12 text-red-300" />
+        <div>
+          <p className="font-bold text-gray-700">Couldn't load your dashboard</p>
+          <p className="text-sm text-gray-400 mt-1">Please check your connection and try again.</p>
+        </div>
+        <button
+          onClick={() => { setError(false); setLoading(true); }}
+          className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+          style={{ backgroundColor: '#A8211B' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const customer = data?.customer;
   const stats = data?.stats;

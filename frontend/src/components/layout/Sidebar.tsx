@@ -175,6 +175,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       id: 'settings', label: 'Settings', icon: Settings, adminOnly: true,
       children: [
         { id: 'settings-company', label: 'Company & Bank', icon: Building2, href: '/settings/company' },
+        { id: 'settings-profile', label: 'My Profile', icon: UserCog, href: '/settings' },
       ]
     },
   ];
@@ -327,91 +328,3 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     </aside>
   );
 }
-//                   {hasChildren ? (
-//                     <button
-//                       onClick={() => toggleMenu(item.id)}
-//                       className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-//                         hasActiveChild 
-//                           ? 'text-white' 
-//                           : 'text-gray-700 hover:bg-gray-50'
-//                       }`}
-//                       style={hasActiveChild ? { backgroundColor: '#A8211B' } : {}}
-//                     >
-//                       <div className="flex items-center gap-3">
-//                         <Icon className="h-5 w-5" />
-//                         <span>{item.label}</span>
-//                       </div>
-//                       <ChevronDown 
-//                         className={`h-4 w-4 transition-transform duration-200 ${
-//                           isExpanded ? 'rotate-180' : ''
-//                         }`} 
-//                       />
-//                     </button>
-//                   ) : (
-//                     <Link
-//                       href={item.href!}
-//                       onClick={handleLinkClick}
-//                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-//                         isItemActive 
-//                           ? 'text-white' 
-//                           : 'text-gray-700 hover:bg-gray-50'
-//                       }`}
-//                       style={isItemActive ? { backgroundColor: '#A8211B' } : {}}
-//                     >
-//                       <Icon className="h-5 w-5" />
-//                       <span>{item.label}</span>
-//                     </Link>
-//                   )}
-
-//                   {/* Submenu */}
-//                   {hasChildren && isExpanded && (
-//                     <div className="ml-6 mt-1 space-y-1 border-l-2 pl-3" style={{ borderColor: '#F3E3C1' }}>
-//                       {item.children!.map((child) => {
-//                         const ChildIcon = child.icon;
-//                         const isChildItemActive = isActive(child.href);
-                        
-//                         return (
-//                           <Link
-//                             key={child.id}
-//                             href={child.href}
-//                             onClick={handleLinkClick}
-//                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-//                               isChildItemActive 
-//                                 ? 'text-white font-medium' 
-//                                 : 'text-gray-600 hover:bg-gray-50'
-//                             }`}
-//                             style={isChildItemActive ? { backgroundColor: '#A8211B' } : {}}
-//                           >
-//                             <ChildIcon className="h-4 w-4" />
-//                             <span>{child.label}</span>
-//                           </Link>
-//                         );
-//                       })}
-//                     </div>
-//                   )}
-//                 </div>
-//               );
-//             })}
-//           </div>
-//         </nav>
-
-//         {/* User Info */}
-//         <div className="border-t p-4" style={{ borderColor: '#F3E3C1' }}>
-//           <div className="flex items-center gap-3">
-//             <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: '#A8211B' }}>
-//               <span className="text-white font-medium text-sm">
-//                 {user?.firstName?.[0]}{user?.lastName?.[0]}
-//               </span>
-//             </div>
-//             <div className="flex-1 min-w-0">
-//               <p className="text-sm font-medium truncate" style={{ color: '#7B1E12' }}>
-//                 {user?.firstName} {user?.lastName}
-//               </p>
-//               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </aside>
-//   );
-// }
