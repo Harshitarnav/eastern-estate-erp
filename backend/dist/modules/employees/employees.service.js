@@ -27,6 +27,22 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         this.usersService = usersService;
         this.notificationsService = notificationsService;
         this.logger = new common_1.Logger(EmployeesService_1.name);
+        this.dbFieldLabels = {
+            employeeCode: 'Employee Code',
+            fullName: 'Full Name',
+            phoneNumber: 'Phone Number',
+            currentAddress: 'Current Address',
+            department: 'Department',
+            designation: 'Designation',
+            employmentType: 'Employment Type',
+            employmentStatus: 'Employment Status',
+            joiningDate: 'Joining Date',
+            basicSalary: 'Basic Salary',
+            grossSalary: 'Gross Salary',
+            netSalary: 'Net Salary',
+            dateOfBirth: 'Date of Birth',
+            gender: 'Gender',
+        };
     }
     async create(createEmployeeDto, createdBy) {
         const grossSalary = (createEmployeeDto.basicSalary || 0) +
@@ -47,7 +63,13 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         if (createEmployeeDto.earnedLeaveBalance === undefined) {
             employee.earnedLeaveBalance = 15;
         }
-        const savedEmployee = await this.employeesRepository.save(employee);
+        let savedEmployee;
+        try {
+            savedEmployee = await this.employeesRepository.save(employee);
+        }
+        catch (error) {
+            this.handlePersistenceError(error);
+        }
         try {
             await this.createUserForEmployee(savedEmployee, createdBy);
         }
@@ -57,6 +79,10 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         return savedEmployee;
     }
     async createUserForEmployee(employee, createdBy) {
+        if (!employee.email?.trim()) {
+            this.logger.log(`Skipping user creation for employee ${employee.id} because no email was provided`);
+            return;
+        }
         const username = employee.email.split('@')[0];
         const password = `${username}@easternestate`;
         try {
@@ -161,7 +187,99 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
             }
         }
         Object.assign(employee, updateEmployeeDto);
-        return this.employeesRepository.save(employee);
+        try {
+            return await this.employeesRepository.save(employee);
+        }
+        catch (error) {
+            this.handlePersistenceError(error);
+        }
+    }
+    handlePersistenceError(error) {
+        if (this.isUniqueConstraintError(error)) {
+            const field = this.extractFieldName(error);
+            if (field === 'employeeCode') {
+                throw new common_1.ConflictException('Employee Code already exists. Please use a different code.');
+            }
+            if (field === 'email') {
+                throw new common_1.ConflictException('Email already exists. Please use a different email address.');
+            }
+            throw new common_1.ConflictException(`${this.getFieldLabel(field) || 'This value'} already exists. Please use a different value.`);
+        }
+        if (this.isNotNullConstraintError(error)) {
+            const field = this.extractFieldName(error);
+            throw new common_1.BadRequestException(`${this.getFieldLabel(field) || 'This field'} is required. Please fill it in and try again.`);
+        }
+        if (this.isInvalidValueError(error)) {
+            const field = this.extractFieldName(error);
+            throw new common_1.BadRequestException(`${this.getFieldLabel(field) || 'One of the fields'} has an invalid value. Please review the form and try again.`);
+        }
+        this.logger.error('Unexpected employee persistence error', error instanceof Error ? error.stack : String(error));
+        throw new common_1.InternalServerErrorException('Unable to save employee right now. Please try again.');
+    }
+    isUniqueConstraintError(error) {
+        const dbCode = this.getDbErrorCode(error);
+        const message = this.getDbErrorMessage(error).toLowerCase();
+        return (dbCode === '23505' ||
+            dbCode === 'ER_DUP_ENTRY' ||
+            dbCode === 'SQLITE_CONSTRAINT' ||
+            message.includes('duplicate key') ||
+            message.includes('unique constraint') ||
+            message.includes('already exists'));
+    }
+    isNotNullConstraintError(error) {
+        const dbCode = this.getDbErrorCode(error);
+        const message = this.getDbErrorMessage(error).toLowerCase();
+        return (dbCode === '23502' ||
+            message.includes('null value in column') ||
+            message.includes('not-null constraint'));
+    }
+    isInvalidValueError(error) {
+        const dbCode = this.getDbErrorCode(error);
+        const message = this.getDbErrorMessage(error).toLowerCase();
+        return (dbCode === '22P02' ||
+            message.includes('invalid input syntax') ||
+            message.includes('invalid enum value') ||
+            message.includes('date/time field value out of range'));
+    }
+    getDbErrorCode(error) {
+        if (error instanceof typeorm_2.QueryFailedError) {
+            return error?.driverError?.code;
+        }
+        return error?.code ?? error?.driverError?.code;
+    }
+    getDbErrorMessage(error) {
+        if (error instanceof typeorm_2.QueryFailedError) {
+            return (error?.driverError?.detail ||
+                error?.driverError?.message ||
+                error.message ||
+                '');
+        }
+        return (error?.driverError?.detail ||
+            error?.driverError?.message ||
+            error?.message ||
+            '');
+    }
+    extractFieldName(error) {
+        const directColumn = error?.column ||
+            error?.driverError?.column;
+        if (typeof directColumn === 'string' && directColumn.trim()) {
+            return directColumn.trim();
+        }
+        const message = this.getDbErrorMessage(error);
+        const quotedColumnMatch = message.match(/column ["']?([a-zA-Z0-9_]+)["']?/i);
+        if (quotedColumnMatch?.[1]) {
+            return quotedColumnMatch[1];
+        }
+        const keyMatch = message.match(/\(([a-zA-Z0-9_]+)\)=/i);
+        if (keyMatch?.[1]) {
+            return keyMatch[1];
+        }
+        return undefined;
+    }
+    getFieldLabel(field) {
+        if (!field)
+            return undefined;
+        return this.dbFieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
     }
     async remove(id) {
         const employee = await this.findOne(id);
