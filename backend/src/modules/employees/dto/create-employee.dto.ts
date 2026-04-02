@@ -1,4 +1,4 @@
-import { IsDateString, IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, IsNumber } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 // Helper: treat empty string the same as undefined so @IsOptional skips validators
@@ -25,10 +25,10 @@ export class CreateEmployeeDto {
   @IsEmail({}, { message: 'Please provide a valid email address' })
   email?: string;
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @IsOptional()
   @Transform(trimToUndefined)
@@ -40,15 +40,14 @@ export class CreateEmployeeDto {
   @IsString()
   profilePicture?: string;
 
+  @IsOptional()
   @Transform(trimToUndefined)
-  @IsNotEmpty()
-  @IsDateString()
-  dateOfBirth: string | Date;
+  dateOfBirth?: string | Date;
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  gender: string;
+  gender?: string;
 
   @IsOptional()
   @Transform(trimToUndefined)
@@ -62,10 +61,10 @@ export class CreateEmployeeDto {
 
   // ─── Address ─────────────────────────────────────────────────────────────────
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  currentAddress: string;
+  currentAddress?: string;
 
   @IsOptional()
   @Transform(trimToUndefined)
@@ -89,30 +88,29 @@ export class CreateEmployeeDto {
 
   // ─── Employment Details ───────────────────────────────────────────────────────
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  department: string;
+  department?: string;
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  designation: string;
+  designation?: string;
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  employmentType: string;
+  employmentType?: string;
 
+  @IsOptional()
   @Transform(trimToUndefined)
   @IsString()
-  @IsNotEmpty()
-  employmentStatus: string;
+  employmentStatus?: string;
 
+  @IsOptional()
   @Transform(trimToUndefined)
-  @IsNotEmpty()
-  @IsDateString()
-  joiningDate: string | Date;
+  joiningDate?: string | Date;
 
   @IsOptional()
   @Transform(trimToUndefined)

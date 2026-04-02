@@ -1,13 +1,6 @@
-import {
-  Injectable,
-  NotFoundException,
-  Logger,
-  BadRequestException,
-  ConflictException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, QueryFailedError } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Employee, EmploymentStatus } from './entities/employee.entity';
 import {
   CreateEmployeeDto,
@@ -22,22 +15,6 @@ import { NotificationCategory, NotificationType } from '../notifications/entitie
 @Injectable()
 export class EmployeesService {
   private readonly logger = new Logger(EmployeesService.name);
-  private readonly dbFieldLabels: Record<string, string> = {
-    employeeCode: 'Employee Code',
-    fullName: 'Full Name',
-    phoneNumber: 'Phone Number',
-    currentAddress: 'Current Address',
-    department: 'Department',
-    designation: 'Designation',
-    employmentType: 'Employment Type',
-    employmentStatus: 'Employment Status',
-    joiningDate: 'Joining Date',
-    basicSalary: 'Basic Salary',
-    grossSalary: 'Gross Salary',
-    netSalary: 'Net Salary',
-    dateOfBirth: 'Date of Birth',
-    gender: 'Gender',
-  };
 
   constructor(
     @InjectRepository(Employee)
@@ -72,12 +49,7 @@ export class EmployeesService {
       employee.earnedLeaveBalance = 15;
     }
 
-    let savedEmployee: Employee;
-    try {
-      savedEmployee = await this.employeesRepository.save(employee);
-    } catch (error) {
-      this.handlePersistenceError(error);
-    }
+    const savedEmployee = await this.employeesRepository.save(employee);
 
     // Auto-create user account for employee
     try {
@@ -98,11 +70,6 @@ export class EmployeesService {
    * Default role: staff (minimal access)
    */
   private async createUserForEmployee(employee: Employee, createdBy?: string): Promise<void> {
-    if (!employee.email?.trim()) {
-      this.logger.log(`Skipping user creation for employee ${employee.id} because no email was provided`);
-      return;
-    }
-
     // Extract username from email
     const username = employee.email.split('@')[0];
     const password = `${username}@easternestate`;
@@ -251,137 +218,7 @@ export class EmployeesService {
     }
 
     Object.assign(employee, updateEmployeeDto);
-
-    try {
-      return await this.employeesRepository.save(employee);
-    } catch (error) {
-      this.handlePersistenceError(error);
-    }
-  }
-
-  private handlePersistenceError(error: unknown): never {
-    if (this.isUniqueConstraintError(error)) {
-      const field = this.extractFieldName(error);
-      if (field === 'employeeCode') {
-        throw new ConflictException('Employee Code already exists. Please use a different code.');
-      }
-
-      if (field === 'email') {
-        throw new ConflictException('Email already exists. Please use a different email address.');
-      }
-
-      throw new ConflictException(
-        `${this.getFieldLabel(field) || 'This value'} already exists. Please use a different value.`,
-      );
-    }
-
-    if (this.isNotNullConstraintError(error)) {
-      const field = this.extractFieldName(error);
-      throw new BadRequestException(
-        `${this.getFieldLabel(field) || 'This field'} is required. Please fill it in and try again.`,
-      );
-    }
-
-    if (this.isInvalidValueError(error)) {
-      const field = this.extractFieldName(error);
-      throw new BadRequestException(
-        `${this.getFieldLabel(field) || 'One of the fields'} has an invalid value. Please review the form and try again.`,
-      );
-    }
-
-    this.logger.error('Unexpected employee persistence error', error instanceof Error ? error.stack : String(error));
-    throw new InternalServerErrorException('Unable to save employee right now. Please try again.');
-  }
-
-  private isUniqueConstraintError(error: unknown): boolean {
-    const dbCode = this.getDbErrorCode(error);
-    const message = this.getDbErrorMessage(error).toLowerCase();
-
-    return (
-      dbCode === '23505' ||
-      dbCode === 'ER_DUP_ENTRY' ||
-      dbCode === 'SQLITE_CONSTRAINT' ||
-      message.includes('duplicate key') ||
-      message.includes('unique constraint') ||
-      message.includes('already exists')
-    );
-  }
-
-  private isNotNullConstraintError(error: unknown): boolean {
-    const dbCode = this.getDbErrorCode(error);
-    const message = this.getDbErrorMessage(error).toLowerCase();
-
-    return (
-      dbCode === '23502' ||
-      message.includes('null value in column') ||
-      message.includes('not-null constraint')
-    );
-  }
-
-  private isInvalidValueError(error: unknown): boolean {
-    const dbCode = this.getDbErrorCode(error);
-    const message = this.getDbErrorMessage(error).toLowerCase();
-
-    return (
-      dbCode === '22P02' ||
-      message.includes('invalid input syntax') ||
-      message.includes('invalid enum value') ||
-      message.includes('date/time field value out of range')
-    );
-  }
-
-  private getDbErrorCode(error: unknown): string | undefined {
-    if (error instanceof QueryFailedError) {
-      return (error as any)?.driverError?.code;
-    }
-
-    return (error as any)?.code ?? (error as any)?.driverError?.code;
-  }
-
-  private getDbErrorMessage(error: unknown): string {
-    if (error instanceof QueryFailedError) {
-      return (
-        (error as any)?.driverError?.detail ||
-        (error as any)?.driverError?.message ||
-        error.message ||
-        ''
-      );
-    }
-
-    return (
-      (error as any)?.driverError?.detail ||
-      (error as any)?.driverError?.message ||
-      (error as any)?.message ||
-      ''
-    );
-  }
-
-  private extractFieldName(error: unknown): string | undefined {
-    const directColumn =
-      (error as any)?.column ||
-      (error as any)?.driverError?.column;
-
-    if (typeof directColumn === 'string' && directColumn.trim()) {
-      return directColumn.trim();
-    }
-
-    const message = this.getDbErrorMessage(error);
-    const quotedColumnMatch = message.match(/column ["']?([a-zA-Z0-9_]+)["']?/i);
-    if (quotedColumnMatch?.[1]) {
-      return quotedColumnMatch[1];
-    }
-
-    const keyMatch = message.match(/\(([a-zA-Z0-9_]+)\)=/i);
-    if (keyMatch?.[1]) {
-      return keyMatch[1];
-    }
-
-    return undefined;
-  }
-
-  private getFieldLabel(field?: string): string | undefined {
-    if (!field) return undefined;
-    return this.dbFieldLabels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+    return this.employeesRepository.save(employee);
   }
 
   async remove(id: string): Promise<void> {

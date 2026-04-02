@@ -8,21 +8,12 @@ export declare class EmployeesService {
     private usersService;
     private notificationsService;
     private readonly logger;
-    private readonly dbFieldLabels;
     constructor(employeesRepository: Repository<Employee>, usersService: UsersService, notificationsService: NotificationsService);
     create(createEmployeeDto: CreateEmployeeDto, createdBy?: string): Promise<Employee>;
     private createUserForEmployee;
     findAll(query: QueryEmployeeDto): Promise<PaginatedEmployeeResponseDto>;
     findOne(id: string): Promise<Employee>;
     update(id: string, updateEmployeeDto: UpdateEmployeeDto): Promise<Employee>;
-    private handlePersistenceError;
-    private isUniqueConstraintError;
-    private isNotNullConstraintError;
-    private isInvalidValueError;
-    private getDbErrorCode;
-    private getDbErrorMessage;
-    private extractFieldName;
-    private getFieldLabel;
     remove(id: string): Promise<void>;
     getStatistics(): Promise<{
         total: number;

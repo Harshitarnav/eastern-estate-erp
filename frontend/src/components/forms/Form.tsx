@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Save,
   X,
@@ -19,8 +19,6 @@ import {
 } from 'lucide-react';
 
 // Types
-const EMPTY_FORM_VALUES: Record<string, any> = {};
-
 export interface FormField {
   name: string;
   label: string;
@@ -70,18 +68,11 @@ interface FormProps {
 
 // Validation function
 const validateField = (field: FormField, value: any): string | null => {
-  const isEmptyArray = Array.isArray(value) && value.length === 0;
-  const isEmptyValue =
-    value === undefined ||
-    value === null ||
-    value === '' ||
-    isEmptyArray;
-
-  if (field.required && isEmptyValue) {
+  if (field.required && (!value || value === '')) {
     return `${field.label} is required`;
   }
 
-  if (isEmptyValue) return null;
+  if (!value) return null;
 
   const validation = field.validation;
   if (!validation) return null;
@@ -119,7 +110,7 @@ export default function Form({
   description,
   sections,
   fields,
-  initialValues,
+  initialValues = {},
   onSubmit,
   onCancel,
   submitLabel = 'Save',
@@ -128,8 +119,7 @@ export default function Form({
   columns = 2,
   onValuesChange,
 }: FormProps) {
-  const resolvedInitialValues = initialValues ?? EMPTY_FORM_VALUES;
-  const [formValues, setFormValues] = useState<Record<string, any>>(resolvedInitialValues);
+  const [formValues, setFormValues] = useState<Record<string, any>>(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
@@ -139,10 +129,6 @@ export default function Form({
   const allFields = sections 
     ? sections.flatMap(section => section.fields)
     : fields || [];
-
-  useEffect(() => {
-    setFormValues(resolvedInitialValues);
-  }, [resolvedInitialValues]);
 
   const handleChange = (name: string, value: any) => {
     // setFormValues(prev => ({ ...prev, [name]: value }));
@@ -186,12 +172,10 @@ export default function Form({
   };
 
   const handleRemoveFile = (fieldName: string, index: number) => {
-    const nextFiles = (uploadedFiles[fieldName] || []).filter((_, i) => i !== index);
     setUploadedFiles(prev => ({
       ...prev,
-      [fieldName]: nextFiles,
+      [fieldName]: prev[fieldName].filter((_, i) => i !== index),
     }));
-    handleChange(fieldName, nextFiles);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
