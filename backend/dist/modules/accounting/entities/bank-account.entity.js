@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BankAccount = void 0;
 const typeorm_1 = require("typeorm");
+const property_entity_1 = require("../../properties/entities/property.entity");
 let BankAccount = class BankAccount {
 };
 exports.BankAccount = BankAccount;
@@ -70,6 +71,15 @@ __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], BankAccount.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', nullable: true }),
+    __metadata("design:type", String)
+], BankAccount.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true, onDelete: 'CASCADE' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], BankAccount.prototype, "property", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

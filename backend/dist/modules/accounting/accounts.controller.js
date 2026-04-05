@@ -15,47 +15,68 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AccountsController = void 0;
 const common_1 = require("@nestjs/common");
 const accounts_service_1 = require("./accounts.service");
+const accounting_service_1 = require("./accounting.service");
 const create_account_dto_1 = require("./dto/create-account.dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const account_entity_1 = require("./entities/account.entity");
+const accounting_scope_util_1 = require("./utils/accounting-scope.util");
 let AccountsController = class AccountsController {
-    constructor(accountsService) {
+    constructor(accountsService, accountingService) {
         this.accountsService = accountsService;
+        this.accountingService = accountingService;
     }
     create(createAccountDto) {
         return this.accountsService.create(createAccountDto);
     }
-    findAll(accountType, isActive) {
+    seedCoaForProject(propertyId) {
+        return this.accountingService.seedCoaForProject(propertyId);
+    }
+    findAll(req, accountType, isActive, propertyId) {
+        const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
         return this.accountsService.findAll({
             accountType,
             isActive: isActive ? isActive === 'true' : undefined,
-        });
+            propertyId,
+        }, scopeIds);
     }
-    getHierarchy() {
-        return this.accountsService.getAccountHierarchy();
+    getHierarchy(req) {
+        const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
+        return this.accountsService.getAccountHierarchy(scopeIds);
     }
-    getBalanceSheet() {
-        return this.accountsService.getBalanceSheet();
+    getBalanceSheet(propertyId, req) {
+        const resolved = (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
+        return this.accountsService.getBalanceSheet(resolved);
     }
-    getProfitAndLoss() {
-        return this.accountsService.getProfitAndLoss();
+    getProfitAndLoss(req, propertyId, startDate, endDate) {
+        const resolved = (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
+        return this.accountsService.getProfitAndLoss(startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined, resolved);
     }
-    getTrialBalance() {
-        return this.accountsService.getTrialBalance();
+    getTrialBalance(propertyId, req) {
+        const resolved = (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
+        return this.accountsService.getTrialBalance(resolved);
     }
-    getPropertyWisePL(propertyId) {
+    getPropertyWisePL(propertyId, req) {
+        (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
         return this.accountsService.getPropertyWisePL(propertyId);
     }
-    findByCode(code) {
-        return this.accountsService.findByCode(code);
+    async findByCode(code, req) {
+        const acc = await this.accountsService.findByCode(code);
+        (0, accounting_scope_util_1.assertAccountReadable)(acc, req);
+        return acc;
     }
-    findOne(id) {
-        return this.accountsService.findOne(id);
+    async findOne(id, req) {
+        const acc = await this.accountsService.findOne(id);
+        (0, accounting_scope_util_1.assertAccountReadable)(acc, req);
+        return acc;
     }
-    update(id, updateAccountDto) {
+    async update(id, updateAccountDto, req) {
+        const acc = await this.accountsService.findOne(id);
+        (0, accounting_scope_util_1.assertAccountReadable)(acc, req);
         return this.accountsService.update(id, updateAccountDto);
     }
-    remove(id) {
+    async remove(id, req) {
+        const acc = await this.accountsService.findOne(id);
+        (0, accounting_scope_util_1.assertAccountReadable)(acc, req);
         return this.accountsService.remove(id);
     }
 };
@@ -68,76 +89,100 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "create", null);
 __decorate([
-    (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('accountType')),
-    __param(1, (0, common_1.Query)('isActive')),
+    (0, common_1.Post)('seed-for-project/:propertyId'),
+    __param(0, (0, common_1.Param)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], AccountsController.prototype, "seedCoaForProject", null);
+__decorate([
+    (0, common_1.Get)(),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('accountType')),
+    __param(2, (0, common_1.Query)('isActive')),
+    __param(3, (0, common_1.Query)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('hierarchy'),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "getHierarchy", null);
 __decorate([
     (0, common_1.Get)('balance-sheet'),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "getBalanceSheet", null);
 __decorate([
     (0, common_1.Get)('profit-loss'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('propertyId')),
+    __param(2, (0, common_1.Query)('startDate')),
+    __param(3, (0, common_1.Query)('endDate')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "getProfitAndLoss", null);
 __decorate([
     (0, common_1.Get)('trial-balance'),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "getTrialBalance", null);
 __decorate([
     (0, common_1.Get)('property-pl'),
     __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "getPropertyWisePL", null);
 __decorate([
     (0, common_1.Get)('code/:code'),
     __param(0, (0, common_1.Param)('code')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "findByCode", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, create_account_dto_1.UpdateAccountDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, create_account_dto_1.UpdateAccountDto, Object]),
+    __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "remove", null);
 exports.AccountsController = AccountsController = __decorate([
     (0, common_1.Controller)('accounting/accounts'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __metadata("design:paramtypes", [accounts_service_1.AccountsService])
+    __metadata("design:paramtypes", [accounts_service_1.AccountsService,
+        accounting_service_1.AccountingService])
 ], AccountsController);
 //# sourceMappingURL=accounts.controller.js.map

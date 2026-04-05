@@ -7,17 +7,28 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
   Download, Printer, FileText, TrendingUp, PieChart,
-  CheckCircle, XCircle, BarChart3, Calendar, Building2,
+  CheckCircle, XCircle, BarChart3, Calendar, Building2, GitBranch,
 } from 'lucide-react';
 import { accountsService, budgetsService, downloadWithAuth } from '@/services/accounting.service';
 import { api } from '@/services/api';
 import { format, startOfYear, endOfYear } from 'date-fns';
 import { SectionSkeleton } from '@/components/Skeletons';
+import { usePropertyStore } from '@/store/propertyStore';
+import { useSearchParams } from 'next/navigation';
 
-type Tab = 'balance-sheet' | 'pl' | 'trial-balance' | 'budget-variance' | 'itr' | 'property-pl' | 'ar-aging' | 'ap-aging' | 'cash-flow';
+type Tab = 'balance-sheet' | 'pl' | 'trial-balance' | 'budget-variance' | 'itr' | 'property-pl' | 'project-fund-flow' | 'ar-aging' | 'ap-aging' | 'cash-flow';
 
 const fmt = (n: number | string) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
+
+function safeFmtDate(d: string | undefined) {
+  if (!d) return '—';
+  try {
+    return format(new Date(d), 'dd MMM yyyy');
+  } catch {
+    return d;
+  }
+}
 
 // ─── Print helper ──────────────────────────────────────────────────────────
 function printReport(title: string) {
@@ -351,6 +362,291 @@ function ITRExport() {
               </CardContent>
             </Card>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Project fund flow (revenue vs tagged spend + optional line items) ─────
+function ProjectFundFlowReport() {
+  const { properties } = usePropertyStore();
+  const now = new Date();
+  const fyYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+  const [startDate, setStartDate] = useState(`${fyYear}-04-01`);
+  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [detailPropertyId, setDetailPropertyId] = useState('');
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/accounting/reports/project-fund-flow', {
+        params: {
+          startDate,
+          endDate,
+          ...(detailPropertyId ? { propertyId: detailPropertyId } : {}),
+        },
+      });
+      setData(res);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const ua = data?.unallocatedOutflows;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        {data?.explanation ||
+          'Revenue and spend use the Project field on each customer payment (via booking), expense, vendor payment, and salary. This is not automatic bank-to-project tracing.'}
+      </p>
+
+      <div className="flex flex-wrap gap-3 items-end">
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">From</label>
+          <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36 h-8 text-sm" />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 block mb-1">To</label>
+          <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36 h-8 text-sm" />
+        </div>
+        <div className="min-w-[200px]">
+          <label className="text-xs text-gray-500 block mb-1">Line items for project</label>
+          <select
+            value={detailPropertyId}
+            onChange={e => setDetailPropertyId(e.target.value)}
+            className="w-full border rounded-md px-2 py-1.5 text-sm h-8 bg-white"
+          >
+            <option value="">Matrix only (all projects)</option>
+            {(properties.length > 0
+              ? properties
+              : (data?.matrix || []).map((r: any) => ({ id: r.propertyId, name: r.propertyName }))
+            ).map((p: { id: string; name: string }) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+        <Button size="sm" onClick={load} disabled={loading} style={{ backgroundColor: '#A8211B' }}>
+          {loading ? 'Loading…' : 'Generate'}
+        </Button>
+      </div>
+
+      {loading && <div className="text-center py-10 text-gray-400">Loading…</div>}
+
+      {!loading && data && (
+        <div id="print-area" className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-gray-500">Projects with tagged spend</p>
+                <p className="text-xl font-bold text-gray-900">{data.projectsWithOutflows ?? '—'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-gray-500">Unallocated spend (no project)</p>
+                <p className="text-xl font-bold text-amber-800">{fmt(ua?.total ?? 0)}</p>
+              </CardContent>
+            </Card>
+            {data.focusProperty && (
+              <>
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-xs text-gray-500">Customer payments (in)</p>
+                    <p className="text-xl font-bold text-green-700">{fmt(data.inflowTotal ?? 0)}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <p className="text-xs text-gray-500">Tagged outflows</p>
+                    <p className="text-xl font-bold text-red-700">{fmt(data.outflowTotal ?? 0)}</p>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+
+          {ua && Number(ua.total) > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-3 text-sm">
+              <p className="font-medium text-amber-900 mb-2">Unallocated breakdown</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-amber-950">
+                <div className="flex justify-between"><span>Expenses</span><span className="font-mono">{fmt(ua.expenses)}</span></div>
+                <div className="flex justify-between"><span>Vendor payments</span><span className="font-mono">{fmt(ua.vendorPayments)}</span></div>
+                <div className="flex justify-between"><span>Salaries</span><span className="font-mono">{fmt(ua.salaries)}</span></div>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border rounded-lg overflow-hidden min-w-[720px]">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="text-left px-3 py-2 font-medium text-gray-600">Project</th>
+                  <th className="text-right px-3 py-2 font-medium text-gray-600">Revenue (payments)</th>
+                  <th className="text-right px-3 py-2 font-medium text-gray-600">Expenses</th>
+                  <th className="text-right px-3 py-2 font-medium text-gray-600">Vendor pay</th>
+                  <th className="text-right px-3 py-2 font-medium text-gray-600">Salaries</th>
+                  <th className="text-right px-3 py-2 font-medium text-gray-600">Total out</th>
+                  <th className="text-right px-3 py-2 font-medium text-gray-600">Net (tagged)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.matrix || []).map((row: any) => (
+                  <tr key={row.propertyId} className="border-t hover:bg-gray-50">
+                    <td className="px-3 py-2 font-medium">{row.propertyName}</td>
+                    <td className="px-3 py-2 text-right font-mono text-green-700">{fmt(row.revenue)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-red-600">{fmt(row.expensesTagged)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-red-600">{fmt(row.vendorPaymentsTagged)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-red-600">{fmt(row.salariesTagged)}</td>
+                    <td className="px-3 py-2 text-right font-mono">{fmt(row.totalOutflowsTagged)}</td>
+                    <td className={`px-3 py-2 text-right font-mono font-semibold ${Number(row.netTagged) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                      {fmt(row.netTagged)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {data.focusProperty && (
+            <div className="space-y-4 border-t pt-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Line items — {data.focusProperty.name}
+              </h3>
+
+              <div>
+                <h4 className="text-sm font-medium text-green-800 mb-2">Customer payments</h4>
+                {(data.inflows || []).length === 0 ? (
+                  <p className="text-sm text-gray-400">No completed payments in range.</p>
+                ) : (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm min-w-[480px]">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="text-left p-2">Date</th>
+                          <th className="text-left p-2">Ref</th>
+                          <th className="text-left p-2 hidden sm:table-cell">Mode</th>
+                          <th className="text-right p-2">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.inflows || []).map((x: any) => (
+                          <tr key={x.id} className="border-b">
+                            <td className="p-2 text-gray-600">{safeFmtDate(x.paymentDate)}</td>
+                            <td className="p-2 font-mono text-xs">{x.paymentNumber || x.id}</td>
+                            <td className="p-2 hidden sm:table-cell">{x.paymentMode || '—'}</td>
+                            <td className="p-2 text-right font-mono text-green-700">{fmt(x.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-red-800 mb-2">Paid expenses (tagged here)</h4>
+                {(data.outflows?.expenses || []).length === 0 ? (
+                  <p className="text-sm text-gray-400">None in range.</p>
+                ) : (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm min-w-[520px]">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="text-left p-2">Date</th>
+                          <th className="text-left p-2">Code</th>
+                          <th className="text-left p-2">Category</th>
+                          <th className="text-left p-2 hidden md:table-cell">Description</th>
+                          <th className="text-right p-2">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.outflows.expenses || []).map((x: any) => (
+                          <tr key={x.id} className="border-b">
+                            <td className="p-2 text-gray-600">{safeFmtDate(x.expenseDate)}</td>
+                            <td className="p-2 font-mono text-xs">{x.expenseCode}</td>
+                            <td className="p-2">{x.expenseCategory}</td>
+                            <td className="p-2 hidden md:table-cell text-gray-600 max-w-xs truncate">{x.description || '—'}</td>
+                            <td className="p-2 text-right font-mono">{fmt(x.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-red-800 mb-2">Vendor payments (tagged here)</h4>
+                {(data.outflows?.vendorPayments || []).length === 0 ? (
+                  <p className="text-sm text-gray-400">None in range.</p>
+                ) : (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm min-w-[480px]">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="text-left p-2">Date</th>
+                          <th className="text-left p-2">Vendor</th>
+                          <th className="text-left p-2 hidden sm:table-cell">Ref</th>
+                          <th className="text-right p-2">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.outflows.vendorPayments || []).map((x: any) => (
+                          <tr key={x.id} className="border-b">
+                            <td className="p-2 text-gray-600">{safeFmtDate(x.paymentDate)}</td>
+                            <td className="p-2">{x.vendorName || '—'}</td>
+                            <td className="p-2 hidden sm:table-cell font-mono text-xs">{x.transactionReference || '—'}</td>
+                            <td className="p-2 text-right font-mono">{fmt(x.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-red-800 mb-2">Salary payments (tagged here)</h4>
+                {(data.outflows?.salaries || []).length === 0 ? (
+                  <p className="text-sm text-gray-400">None in range.</p>
+                ) : (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm min-w-[440px]">
+                      <thead>
+                        <tr className="bg-gray-50 border-b">
+                          <th className="text-left p-2">Date</th>
+                          <th className="text-left p-2">Employee</th>
+                          <th className="text-left p-2 hidden sm:table-cell">Mode</th>
+                          <th className="text-right p-2">Net salary</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(data.outflows.salaries || []).map((x: any) => (
+                          <tr key={x.id} className="border-b">
+                            <td className="p-2 text-gray-600">{safeFmtDate(x.paymentDate)}</td>
+                            <td className="p-2">{x.employeeName || '—'}</td>
+                            <td className="p-2 hidden sm:table-cell">{x.paymentMode || '—'}</td>
+                            <td className="p-2 text-right font-mono">{fmt(x.netSalary)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -703,6 +999,10 @@ function CashFlowReport({ data }: { data: any }) {
 
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function ReportsPage() {
+  const searchParams = useSearchParams();
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+
   const [tab, setTab] = useState<Tab>('balance-sheet');
   const [balanceSheet, setBalanceSheet] = useState<any>(null);
   const [profitLoss, setProfitLoss] = useState<any>(null);
@@ -717,12 +1017,20 @@ export default function ReportsPage() {
   const [tbDate, setTbDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
   useEffect(() => {
+    if (searchParams.get('tab') === 'project-fund-flow') {
+      setTab('project-fund-flow');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    setLoading(true);
+    setBalanceSheet(null); setProfitLoss(null); setTrialBalance(null);
     (async () => {
     try {
         const [bs, pl, tb, vr] = await Promise.all([
-        accountsService.getBalanceSheet(),
-        accountsService.getProfitLoss(),
-          accountsService.getTrialBalance(),
+        accountsService.getBalanceSheet(selectedPropertyId),
+        accountsService.getProfitLoss(selectedPropertyId),
+          accountsService.getTrialBalance(selectedPropertyId),
         budgetsService.getVarianceReport(),
       ]);
       setBalanceSheet(bs);
@@ -732,7 +1040,7 @@ export default function ReportsPage() {
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
-  }, []);
+  }, [selectedPropertyId]);
 
   // Lazy-load AR/AP aging and Cash Flow when those tabs are first opened
   useEffect(() => {
@@ -781,6 +1089,7 @@ export default function ReportsPage() {
     { id: 'balance-sheet', label: 'Balance Sheet', icon: <FileText className="h-4 w-4" /> },
     { id: 'pl', label: 'Profit & Loss', icon: <TrendingUp className="h-4 w-4" /> },
     { id: 'property-pl', label: 'Property-wise P&L', icon: <Building2 className="h-4 w-4" /> },
+    { id: 'project-fund-flow', label: 'Project fund flow', icon: <GitBranch className="h-4 w-4" /> },
     { id: 'trial-balance', label: 'Trial Balance', icon: <BarChart3 className="h-4 w-4" /> },
     { id: 'budget-variance', label: 'Budget Variance', icon: <PieChart className="h-4 w-4" /> },
     { id: 'cash-flow', label: 'Cash Flow', icon: <TrendingUp className="h-4 w-4" /> },
@@ -797,6 +1106,7 @@ export default function ReportsPage() {
     'balance-sheet': 'Balance Sheet',
     'pl': 'Profit & Loss Statement',
     'property-pl': 'Property-wise Profit & Loss',
+    'project-fund-flow': 'Project fund flow',
     'trial-balance': 'Trial Balance',
     'budget-variance': 'Budget Variance Report',
     'itr': 'ITR Export',
@@ -843,6 +1153,7 @@ export default function ReportsPage() {
                 {tab === 'balance-sheet' && 'Assets = Liabilities + Equity'}
                 {tab === 'pl' && 'Income − Expenses = Net Profit / Loss'}
                 {tab === 'property-pl' && 'Revenue vs Expenses broken down per property'}
+                {tab === 'project-fund-flow' && 'Per-project customer payments vs spend tagged to each project; optional line-item drill-down'}
                 {tab === 'trial-balance' && 'Total Debits must equal Total Credits'}
                 {tab === 'budget-variance' && 'Planned vs actual spend across all budgets'}
                 {tab === 'itr' && 'Income & expense summary for ITR filing'}
@@ -862,7 +1173,7 @@ export default function ReportsPage() {
                   </Button>
                 </div>
               )}
-              {(tab === 'balance-sheet' || tab === 'pl' || tab === 'budget-variance') && (
+              {(tab === 'balance-sheet' || tab === 'pl' || tab === 'budget-variance' || tab === 'project-fund-flow') && (
                 <Button size="sm" variant="outline" onClick={() => printReport(reportTitle[tab])}>
                   <Printer className="h-4 w-4 mr-1" /> Print / PDF
                 </Button>
@@ -877,6 +1188,7 @@ export default function ReportsPage() {
           {tab === 'balance-sheet' && <BalanceSheetReport data={balanceSheet} />}
           {tab === 'pl' && <PLReport data={profitLoss} />}
           {tab === 'property-pl' && <PropertyWisePL />}
+          {tab === 'project-fund-flow' && <ProjectFundFlowReport />}
           {tab === 'trial-balance' && <TrialBalanceReport data={trialBalance} />}
           {tab === 'budget-variance' && <BudgetVarianceReport data={variance} />}
           {tab === 'itr' && <ITRExport />}

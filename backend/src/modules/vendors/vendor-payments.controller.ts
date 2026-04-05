@@ -42,7 +42,7 @@ export class VendorPaymentsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentsService.remove(id);
+  remove(@Param('id') id: string, @Request() req) {
+    return this.paymentsService.remove(id, req.user?.userId);
   }
 }

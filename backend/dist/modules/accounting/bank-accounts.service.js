@@ -25,8 +25,14 @@ let BankAccountsService = BankAccountsService_1 = class BankAccountsService {
         this.accountsRepo = accountsRepo;
         this.logger = new common_1.Logger(BankAccountsService_1.name);
     }
-    async findAll() {
-        const bankAccounts = await this.bankAccountsRepo.find({ order: { createdAt: 'ASC' } });
+    async findAll(propertyId) {
+        const where = {};
+        if (propertyId)
+            where.propertyId = propertyId;
+        const bankAccounts = await this.bankAccountsRepo.find({
+            where: Object.keys(where).length ? where : undefined,
+            order: { createdAt: 'ASC' },
+        });
         return Promise.all(bankAccounts.map(async (ba) => {
             const coaAccount = await this.accountsRepo.findOne({
                 where: { accountName: ba.accountName, accountType: account_entity_1.AccountType.ASSET },
@@ -56,11 +62,17 @@ let BankAccountsService = BankAccountsService_1 = class BankAccountsService {
         return String(nextNum);
     }
     async ensureCOAAccount(bankAccount) {
-        const existing = await this.accountsRepo
+        const qb = this.accountsRepo
             .createQueryBuilder('a')
             .where('LOWER(a.accountName) = LOWER(:name)', { name: bankAccount.accountName })
-            .andWhere('a.accountType = :type', { type: account_entity_1.AccountType.ASSET })
-            .getOne();
+            .andWhere('a.accountType = :type', { type: account_entity_1.AccountType.ASSET });
+        if (bankAccount.propertyId) {
+            qb.andWhere('a.propertyId = :pid', { pid: bankAccount.propertyId });
+        }
+        else {
+            qb.andWhere('a.propertyId IS NULL');
+        }
+        const existing = await qb.getOne();
         if (existing) {
             this.logger.log(`COA account already exists for "${bankAccount.accountName}" (code: ${existing.accountCode})`);
             return existing;
@@ -75,6 +87,7 @@ let BankAccountsService = BankAccountsService_1 = class BankAccountsService {
             currentBalance: Number(bankAccount.currentBalance) || 0,
             description: `Auto-created for bank account: ${bankAccount.bankName} (${bankAccount.accountNumber})`,
             isActive: true,
+            propertyId: bankAccount.propertyId ?? null,
         });
         const saved = await this.accountsRepo.save(coaAccount);
         this.logger.log(`COA account created for "${bankAccount.accountName}" with code ${code}`);
@@ -92,6 +105,7 @@ let BankAccountsService = BankAccountsService_1 = class BankAccountsService {
             openingBalance: ob,
             currentBalance: ob,
             description: dto.description,
+            propertyId: dto.propertyId || null,
         });
         const saved = await this.bankAccountsRepo.save(account);
         let coaAccount = null;

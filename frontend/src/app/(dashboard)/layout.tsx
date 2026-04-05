@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { Loading } from '@/components/Loading';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import { NotificationBell } from '@/components/layout/NotificationBell';
+import { HeaderProjectSelect } from '@/components/layout/HeaderProjectSelect';
 // import ChatButton from '@/components/layout/ChatButton'; // hidden until ready
-import { Menu, LogOut, Building2 } from 'lucide-react';
-import { Toaster } from 'sonner';
-import apiService from '@/services/api';
+import { Menu, LogOut } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
+import { canAccessDashboardPath } from '@/lib/dashboardRouteAccess';
 
 export default function DashboardLayout({
   children,
@@ -18,39 +19,33 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [assignedProjects, setAssignedProjects] = useState<{ id: string; name: string }[] | null>(null);
   const { user, logout, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
 
   const userRoles: string[] = ((user as any)?.roles || []).map((r: any) =>
     typeof r === 'string' ? r : r.name,
   );
-  // Only super_admin is always unrestricted — all other roles depend on project assignments
-  const isSuperAdmin = userRoles.includes('super_admin');
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
-  // Fetch explicitly assigned projects to show in header (skip for super_admin)
-  useEffect(() => {
-    if (!isAuthenticated || !user?.id || isSuperAdmin) return;
-    apiService.get(`/users/${user.id}/property-access`)
-      .then((res: any) => {
-        const items: any[] = Array.isArray(res) ? res : (res?.data ?? []);
-        const projects = items
-          .filter((a: any) => a.property)
-          .map((a: any) => ({ id: a.property.id, name: a.property.name }));
-        setAssignedProjects(projects);
-      })
-      .catch(() => setAssignedProjects([]));
-  }, [isAuthenticated, user?.id, isSuperAdmin]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Block direct navigation to modules the user's roles do not include (UI-only; API also enforces).
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || !pathname) return;
+    if (!user?.roles?.length) return;
+    if (!canAccessDashboardPath(pathname, userRoles)) {
+      toast.error('You do not have access to this page.');
+      router.replace('/');
+    }
+  }, [isLoading, isAuthenticated, pathname, router, user, userRoles]);
 
   const handleLogout = async () => {
     await logout();
@@ -66,7 +61,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Toast Notifications */}
       <Toaster position="top-right" richColors />
       
@@ -82,40 +77,31 @@ export default function DashboardLayout({
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content */}
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 min-w-0 w-full max-w-full">
         {/* Header */}
-        <header className="h-14 md:h-16 bg-white border-b px-3 md:px-4 flex items-center justify-between sticky top-0 z-30" style={{ borderColor: '#F3E3C1' }}>
-          {/* Left — hamburger (desktop: hidden since sidebar is always visible) */}
-          <button 
-            onClick={() => setSidebarOpen(true)} 
-            className="lg:hidden hover:bg-red-50 p-2 rounded-lg"
+        <header
+          className="h-14 md:h-16 bg-white border-b px-3 md:px-4 flex items-center gap-2 sticky top-0 z-30 min-w-0 max-w-full"
+          style={{ borderColor: '#F3E3C1' }}
+        >
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden hover:bg-red-50 p-2 rounded-lg shrink-0"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" style={{ color: '#A8211B' }} />
           </button>
 
-          {/* Center — brand name on mobile */}
-          <span
-            className="lg:hidden absolute left-1/2 -translate-x-1/2 font-bold text-base"
-            style={{ color: '#7B1E12' }}
-          >
-            Eastern Estate
-          </span>
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+            {/* <span
+              className="hidden lg:inline font-bold text-lg shrink-0"
+              style={{ color: '#7B1E12' }}
+            >
+              Eastern Estate
+            </span> */}
+            <HeaderProjectSelect />
+          </div>
 
-          {/* Project scope badge — shows for any user with explicit project assignments */}
-          {!isSuperAdmin && assignedProjects && assignedProjects.length > 0 && (
-            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border" style={{ borderColor: '#F3E3C1', backgroundColor: '#FEF9F0', color: '#7B1E12' }}>
-              <Building2 className="h-3.5 w-3.5 shrink-0" />
-              <span className="max-w-[200px] truncate">
-                {assignedProjects.length === 1
-                  ? assignedProjects[0].name
-                  : `${assignedProjects.length} Projects`}
-              </span>
-            </div>
-          )}
-
-          {/* Right */}
-          <div className="flex items-center gap-1 ml-auto">
+          <div className="flex items-center gap-1 shrink-0">
             <NotificationBell />
             {/* <ChatButton /> */}
             
@@ -134,7 +120,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content — add bottom padding on mobile so content isn't hidden by bottom nav */}
-        <main className="min-h-[calc(100vh-4rem)] pb-16 lg:pb-0">{children}</main>
+        <main className="min-h-[calc(100vh-4rem)] pb-16 lg:pb-0 min-w-0 w-full max-w-full">{children}</main>
       </div>
 
       {/* Mobile Bottom Navigation */}

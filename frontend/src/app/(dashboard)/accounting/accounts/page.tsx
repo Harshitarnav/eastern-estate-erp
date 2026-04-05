@@ -1,32 +1,106 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, BookOpen } from 'lucide-react';
+import { Plus, BookOpen, Loader2, Sparkles, FolderInput, RotateCcw, EyeOff } from 'lucide-react';
 import { accountsService, type Account } from '@/services/accounting.service';
 import { TableRowsSkeleton } from '@/components/Skeletons';
+import { usePropertyStore } from '@/store/propertyStore';
+import { propertiesService } from '@/services/properties.service';
+import { useAuthStore } from '@/store/authStore';
 
 export default function AccountsPage() {
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+  const { user } = useAuthStore();
+  const canReassign = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
+
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [allProperties, setAllProperties] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [seeding, setSeeding] = useState(false);
+  const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
 
+  // Load all properties for the "Assign project" dropdown
   useEffect(() => {
-    fetchAccounts();
-  }, [filter]);
+    propertiesService.getProperties({ limit: 100 })
+      .then((res: any) => {
+        const list = res?.data ?? res ?? [];
+        setAllProperties(Array.isArray(list) ? list : []);
+      })
+      .catch(() => {});
+  }, []);
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
+    setLoading(true);
     try {
-      const params = filter ? { accountType: filter } : {};
+      const params: any = {};
+      if (filter) params.accountType = filter;
+      if (selectedPropertyId) params.propertyId = selectedPropertyId;
+      if (showInactive) params.isActive = 'false';
       const data = await accountsService.getAll(params);
-      setAccounts(data);
+      setAccounts(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching accounts:', error);
     } finally {
       setLoading(false);
+    }
+  }, [filter, selectedPropertyId, showInactive]);
+
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
+
+  const handleSeedCoa = async () => {
+    if (!selectedPropertyId) {
+      toast.error('Select a project first to initialise its Chart of Accounts');
+      return;
+    }
+    if (!confirm('This will create 18 standard accounts for the selected project. Existing accounts will be skipped. Continue?')) return;
+    setSeeding(true);
+    try {
+      const res: any = await accountsService.seedCoaForProject(selectedPropertyId);
+      const { created, skipped } = res?.data ?? res ?? {};
+      toast.success(`CoA initialised — ${created} accounts created, ${skipped} already existed`);
+      fetchAccounts();
+    } catch {
+      toast.error('Failed to initialise Chart of Accounts');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleAssignProject = async (accountId: string, propertyId: string | '') => {
+    setAssigningId(accountId);
+    try {
+      await accountsService.update(accountId, { propertyId: propertyId || null } as any);
+      toast.success(propertyId ? 'Account assigned to project' : 'Account unlinked from project');
+      fetchAccounts();
+    } catch {
+      toast.error('Failed to update account');
+    } finally {
+      setAssigningId(null);
+    }
+  };
+
+  const handleRestore = async (accountId: string, accountName: string) => {
+    if (!confirm(`Restore account "${accountName}"? It will become active again.`)) return;
+    setRestoringId(accountId);
+    try {
+      await accountsService.update(accountId, { isActive: true } as any);
+      toast.success('Account restored successfully');
+      fetchAccounts();
+    } catch {
+      toast.error('Failed to restore account');
+    } finally {
+      setRestoringId(null);
     }
   };
 
@@ -60,12 +134,32 @@ export default function AccountsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Chart of Accounts</h1>
-        <Button onClick={() => (window.location.href = '/accounting/accounts/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Account
-        </Button>
+      <div className="flex flex-wrap justify-between items-center gap-3">
+        <h1 className="text-2xl sm:text-3xl font-bold">Chart of Accounts</h1>
+        <div className="flex gap-2 shrink-0 flex-wrap">
+          {canReassign && (
+            <Button
+              variant={showInactive ? 'default' : 'outline'}
+              onClick={() => setShowInactive(v => !v)}
+              title="Toggle deleted/inactive accounts"
+            >
+              {showInactive ? <EyeOff className="h-4 w-4 mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+              {showInactive ? 'Hide Deleted' : 'Show Deleted'}
+            </Button>
+          )}
+          {selectedPropertyId && !showInactive && (
+            <Button variant="outline" onClick={handleSeedCoa} disabled={seeding}>
+              {seeding ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              Init CoA
+            </Button>
+          )}
+          {!showInactive && (
+            <Button onClick={() => (window.location.href = '/accounting/accounts/new')}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Account
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -109,53 +203,101 @@ export default function AccountsPage() {
       {/* Accounts Table */}
       <Card>
         <CardHeader>
-          <CardTitle>All Accounts</CardTitle>
-          <CardDescription>{(accounts || []).length} accounts found</CardDescription>
+          <CardTitle>{showInactive ? 'Deleted Accounts' : 'All Accounts'}</CardTitle>
+          <CardDescription>
+            {(accounts || []).length} {showInactive ? 'deleted' : 'active'} accounts found
+            {!selectedPropertyId && ' — showing all projects (use the top bar to filter by project)'}
+            {showInactive && ' — click Restore to reactivate an account'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[700px]">
               <thead>
-                <tr className="border-b">
+                <tr className="border-b text-xs text-gray-500 uppercase">
                   <th className="text-left p-2">Code</th>
                   <th className="text-left p-2">Account Name</th>
                   <th className="text-left p-2">Type</th>
                   <th className="text-left p-2">Category</th>
                   <th className="text-right p-2">Balance</th>
-                  <th className="text-center p-2">Status</th>
-                  <th className="text-center p-2">Ledger</th>
+                  <th className="text-left p-2 flex items-center gap-1">
+                    <FolderInput className="h-3 w-3" /> Project
+                  </th>
+                  <th className="text-center p-2">{showInactive ? 'Restore' : 'Ledger'}</th>
                 </tr>
               </thead>
               <tbody>
                 {(accounts || []).map((account) => (
                   <tr
                     key={account.id}
-                    className="border-b hover:bg-gray-50 cursor-pointer"
-                    onClick={() => (window.location.href = `/accounting/accounts/${account.id}`)}
+                    className={`border-b hover:bg-gray-50 ${showInactive ? 'opacity-60' : ''}`}
                   >
-                    <td className="p-2 font-mono text-sm">{account.accountCode}</td>
-                    <td className="p-2 font-medium text-blue-600 hover:underline">{account.accountName}</td>
+                    <td className={`p-2 font-mono text-sm ${showInactive ? 'line-through text-gray-400' : 'cursor-pointer'}`} onClick={showInactive ? undefined : () => (window.location.href = `/accounting/accounts/${account.id}`)}>
+                      {account.accountCode}
+                    </td>
+                    <td className={`p-2 font-medium ${showInactive ? 'line-through text-gray-400' : 'text-blue-600 hover:underline cursor-pointer'}`} onClick={showInactive ? undefined : () => (window.location.href = `/accounting/accounts/${account.id}`)}>
+                      {account.accountName}
+                    </td>
                     <td className="p-2">{getTypeBadge(account.accountType)}</td>
-                    <td className="p-2 text-sm">{account.accountCategory}</td>
-                    <td className="p-2 text-right font-medium">
+                    <td className="p-2 text-sm text-gray-600">{account.accountCategory}</td>
+                    <td className="p-2 text-right font-medium text-sm">
                       {formatCurrency(Number(account.currentBalance) || 0)}
                     </td>
-                    <td className="p-2 text-center">
-                      {account.isActive ? (
-                        <Badge className="bg-green-100 text-green-800">Active</Badge>
+                    {/* Project column — editable only for admin/super_admin */}
+                    <td className="p-2" onClick={e => e.stopPropagation()}>
+                      {canReassign ? (
+                        <select
+                          value={account.propertyId ?? ''}
+                          disabled={assigningId === account.id}
+                          onChange={e => handleAssignProject(account.id, e.target.value)}
+                          className="text-xs border rounded px-2 py-1 bg-white disabled:opacity-50 max-w-[140px]"
+                          title="Assign or move this account to a project"
+                        >
+                          <option value="">Company-wide</option>
+                          {allProperties.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
                       ) : (
-                        <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
+                        <span className="text-xs text-gray-500">
+                          {account.property?.name ?? (account.propertyId ? '…' : 'Company-wide')}
+                        </span>
                       )}
                     </td>
                     <td className="p-2 text-center" onClick={(e) => e.stopPropagation()}>
-                      <Link href={`/accounting/accounts/${account.id}/ledger`}>
-                        <Button size="sm" variant="ghost" className="text-xs" title="View ledger">
-                          <BookOpen className="h-3 w-3 mr-1" /> Ledger
+                      {showInactive ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs text-green-700 border-green-300 hover:bg-green-50"
+                          disabled={restoringId === account.id}
+                          onClick={() => handleRestore(account.id, account.accountName)}
+                        >
+                          {restoringId === account.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <><RotateCcw className="h-3 w-3 mr-1" /> Restore</>}
                         </Button>
-                      </Link>
+                      ) : (
+                        <Link href={`/accounting/accounts/${account.id}/ledger`}>
+                          <Button size="sm" variant="ghost" className="text-xs" title="View ledger">
+                            <BookOpen className="h-3 w-3 mr-1" /> Ledger
+                          </Button>
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}
+                {accounts.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-gray-400 text-sm">
+                      {showInactive
+                        ? 'No deleted accounts found.'
+                        : selectedPropertyId
+                          ? 'No accounts for this project yet. Click "Init CoA" to create the standard set.'
+                          : 'No accounts found.'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

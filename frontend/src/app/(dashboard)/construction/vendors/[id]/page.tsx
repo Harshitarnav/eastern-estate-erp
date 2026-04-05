@@ -9,8 +9,9 @@ import { brandPalette } from '@/utils/brand';
 import {
   ArrowLeft, Edit, Phone, Mail, MapPin, Star, CreditCard,
   Package, Building2, Hash, FileText, DollarSign, Calendar,
-  RefreshCw, AlertTriangle, Banknote, BadgeCheck,
+  RefreshCw, AlertTriangle, Banknote, BadgeCheck, Trash2,
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -43,10 +44,16 @@ function VendorDetailContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
+  const { user } = useAuthStore();
+  const canAdminEdit = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
+
   const [vendor, setVendor] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -74,6 +81,19 @@ function VendorDetailContent() {
       setPayments([]);
     } finally {
       setPaymentsLoading(false);
+    }
+  };
+
+  const handleDeletePayment = async (paymentId: string, amount: number) => {
+    if (!confirm(`Delete payment of ${fmtCur(amount)}? This cannot be undone.`)) return;
+    setDeletingPaymentId(paymentId);
+    try {
+      await api.delete(`/vendor-payments/${paymentId}`);
+      loadPayments();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Failed to delete payment');
+    } finally {
+      setDeletingPaymentId(null);
     }
   };
 
@@ -312,8 +332,8 @@ function VendorDetailContent() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: `${brandPalette.neutral}50` }}>
-                    {['Date', 'Amount', 'Mode', 'Reference', 'Notes'].map(h => (
-                      <th key={h} className="text-left py-2 pr-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
+                    {['Date', 'Amount', 'Mode', 'Reference', 'Project', 'Notes', ...(canAdminEdit ? [''] : [])].map((h, i) => (
+                      <th key={i} className="text-left py-2 pr-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -326,7 +346,20 @@ function VendorDetailContent() {
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">{p.paymentMode}</span>
                       </td>
                       <td className="py-3 pr-4 text-gray-500 font-mono text-xs">{p.transactionReference || '—'}</td>
-                      <td className="py-3 text-gray-500 max-w-xs truncate">{p.notes || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-600 text-xs">{p.property?.name ?? (p.propertyId ? '…' : <span className="text-gray-300">—</span>)}</td>
+                      <td className="py-3 pr-4 text-gray-500 max-w-xs truncate">{p.notes || '—'}</td>
+                      {canAdminEdit && (
+                        <td className="py-3 text-right">
+                          <button
+                            onClick={() => handleDeletePayment(p.id, p.amount)}
+                            disabled={deletingPaymentId === p.id}
+                            className="p-1 text-red-400 hover:text-red-600 disabled:opacity-40"
+                            title="Delete payment"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -334,7 +367,7 @@ function VendorDetailContent() {
                   <tr className="border-t-2" style={{ borderColor: brandPalette.neutral }}>
                     <td className="py-3 font-semibold text-gray-700">Total</td>
                     <td className="py-3 font-bold text-lg" style={{ color: brandPalette.primary }}>{fmtCur(totalPaid)}</td>
-                    <td colSpan={3} />
+                    <td colSpan={canAdminEdit ? 4 : 3} />
                   </tr>
                 </tfoot>
               </table>

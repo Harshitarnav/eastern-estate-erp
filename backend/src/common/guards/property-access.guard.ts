@@ -61,6 +61,14 @@ export class PropertyAccessGuard implements CanActivate {
       return true;
     }
 
+    // Head Accountant — company-wide accounting (same property visibility as admin for API filtering)
+    if (userRoles.includes('head_accountant')) {
+      this.logger.debug(`User ${user.email} is head_accountant - full property bypass`);
+      request.isGlobalAdmin = true;
+      request.accessiblePropertyIds = null;
+      return true;
+    }
+
     // Customer portal users — scoped by customerId, not property assignments
     if (userRoles.includes('customer')) {
       this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);

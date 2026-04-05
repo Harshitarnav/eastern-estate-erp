@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Account = exports.AccountType = void 0;
 const typeorm_1 = require("typeorm");
+const property_entity_1 = require("../../properties/entities/property.entity");
 var AccountType;
 (function (AccountType) {
     AccountType["ASSET"] = "ASSET";
@@ -27,7 +28,7 @@ __decorate([
     __metadata("design:type", String)
 ], Account.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'account_code', unique: true, length: 50 }),
+    (0, typeorm_1.Column)({ name: 'account_code', length: 50 }),
     __metadata("design:type", String)
 ], Account.prototype, "accountCode", void 0);
 __decorate([
@@ -75,6 +76,15 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Account.prototype, "description", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', nullable: true }),
+    __metadata("design:type", String)
+], Account.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true, onDelete: 'CASCADE' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], Account.prototype, "property", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

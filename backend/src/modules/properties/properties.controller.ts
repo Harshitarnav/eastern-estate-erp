@@ -56,7 +56,10 @@ export class PropertiesController {
     @Query() queryDto: QueryPropertyDto,
     @Request() req: any,
   ): Promise<PaginatedPropertyResponseDto> {
-    return this.propertiesService.findAll(queryDto, req.user?.id);
+    return this.propertiesService.findAll(queryDto, {
+      isGlobalAdmin: !!req.isGlobalAdmin,
+      accessiblePropertyIds: req.accessiblePropertyIds ?? null,
+    });
   }
 
   @Get('stats')
@@ -69,7 +72,10 @@ export class PropertiesController {
     @Param('code') code: string,
     @Request() req: any,
   ): Promise<PropertyResponseDto> {
-    return this.propertiesService.findByCode(code, req.user?.id);
+    return this.propertiesService.findByCode(code, {
+      isGlobalAdmin: !!req.isGlobalAdmin,
+      accessiblePropertyIds: req.accessiblePropertyIds ?? null,
+    });
   }
 
   @Get(':id/hierarchy')

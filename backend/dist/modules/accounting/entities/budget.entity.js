@@ -13,6 +13,7 @@ exports.Budget = exports.BudgetStatus = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
 const account_entity_1 = require("./account.entity");
+const property_entity_1 = require("../../properties/entities/property.entity");
 var BudgetStatus;
 (function (BudgetStatus) {
     BudgetStatus["DRAFT"] = "DRAFT";
@@ -80,6 +81,15 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true }),
     __metadata("design:type", String)
 ], Budget.prototype, "notes", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', nullable: true }),
+    __metadata("design:type", String)
+], Budget.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true, onDelete: 'CASCADE' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], Budget.prototype, "property", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'created_by', nullable: true }),
     __metadata("design:type", String)

@@ -1,5 +1,6 @@
 import { User } from '../../users/entities/user.entity';
 import { Account } from './account.entity';
+import { Property } from '../../properties/entities/property.entity';
 export declare enum BudgetStatus {
     DRAFT = "DRAFT",
     ACTIVE = "ACTIVE",
@@ -20,6 +21,8 @@ export declare class Budget {
     actualAmount: number;
     status: BudgetStatus;
     notes: string;
+    propertyId: string | null;
+    property: Property;
     createdBy: string;
     creator: User;
     createdAt: Date;

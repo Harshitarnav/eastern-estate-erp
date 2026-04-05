@@ -1,6 +1,6 @@
 # Eastern Estate ERP — System Flow Guide
 > **Living document.** Update this file whenever the system flow changes.  
-> Last updated: 11 March 2026
+> Last updated: 6 April 2026
 
 ---
 
@@ -20,7 +20,10 @@
 13. [Dashboard](#13-dashboard)
 14. [Settings — Company, Users & Profile](#14-settings--company-users--profile)
 15. [Notifications](#15-notifications)
-16. [Common Questions & Gotchas](#16-common-questions--gotchas)
+16. [Project Scope & Accounting](#16-project-scope--accounting)
+17. [Role Management (Custom Roles & Permissions)](#17-role-management-custom-roles--permissions)
+18. [Production Deployments & Database Migrations](#18-production-deployments--database-migrations)
+19. [Common Questions & Gotchas](#19-common-questions--gotchas)
 
 ---
 
@@ -30,12 +33,17 @@
 |------|------------------------|
 | **Super Admin** | Everything — full access to all modules including Settings |
 | **Admin** | Everything including Company Settings and User Management |
+| **Head Accountant** | Company-wide accounting: all projects, books, expenses, journal entries, payroll-related views, reports (same breadth as Admin for accounting modules) |
+| **Accountant** | Accounting for **assigned projects only** — chart of accounts, bank accounts, expenses, journal entries, reports scoped to those projects |
 | **Sales Team** | Customers, Leads, Bookings, Payment Plans, Demand Drafts, Ledger |
-| **Accounts** | Payments, Demand Drafts, Payment Plans, Reports |
+| **Accounts** (legacy naming) | Often used for payment operations — may overlap with accountant roles depending on your setup |
 | **HR** | Employees, HR Dashboard |
 | **Staff** | Dashboard + read-only access to their assigned modules |
 
-> 💡 If someone says "I can't see X in the sidebar", check their role under **Settings → Users**.
+> 💡 If someone says "I can't see X in the sidebar", check their role under **Settings → Users**.  
+> 💡 **Project access:** Users who are not Super Admin / Admin / Head Accountant only see data for **properties they are assigned to** (see **Users → Property Access**). The **project dropdown** in the top bar chooses which project’s data you are working in (especially for Accounting and other scoped modules).
+
+> 💡 **Mobile:** Lists support tap-to-open details where a desktop row click works; wide tables scroll horizontally inside the page so the app does not overflow sideways.
 
 ---
 
@@ -488,6 +496,7 @@ Accessible by **Admin and Super Admin only**.
 - View all staff accounts with their roles and active/inactive status
 - **+ New User** — create a new staff account (name, email, username, password, role)
 - **Edit** — change name, phone, role assignments
+- **Property Access** — assign which **projects (properties)** a user may see (required for scoped roles such as **Accountant**)
 - **Reset Password** — set a new password for any user
 - **Activate / Deactivate** — toggle access without deleting the account
 - **Delete** — permanently removes the account
@@ -517,7 +526,62 @@ The bell icon (🔔) at the top right shows system notifications.
 
 ---
 
-## 16. Common Questions & Gotchas
+## 16. Project Scope & Accounting
+
+```
+Top bar: Project dropdown (next to menu on mobile, beside brand area on desktop)
+```
+
+- **One global project selector** in the dashboard header applies across modules that respect project scope (including **Accounting**).
+- **Super Admin, Admin, Head Accountant** can choose **All projects** or a single project. Consolidated views use **All projects**; single-project shows only that project’s books.
+- **Other roles** see only projects they are assigned to; if there is only one assignment, it may be selected automatically.
+- **Accounting data is stored per project** where applicable: chart of accounts, bank accounts, journal entries, budgets, and many expenses are tied to a **property (project)**. Vendor payments and salary payments can also carry a **project** for reporting and fund-flow.
+- When creating or editing **accounts**, **expenses**, **bank accounts**, or similar, pick the correct **project** so reports and ledgers stay accurate.
+
+---
+
+## 17. Role Management (Custom Roles & Permissions)
+
+```
+Sidebar: Settings → Roles (where enabled for your admin user)
+```
+
+- Admins can **create and edit roles** and assign **permissions** in grouped modules (search, expand a module, use **All / None** for quick setup).
+- Use **lowercase_with_underscores** for role names (e.g. `site_engineer`).  
+- System roles (e.g. Super Admin, Admin) should not be deleted casually; custom roles are for specialised access.
+
+---
+
+## 18. Production Deployments & Database Migrations
+
+After **`git pull`** on the production server, apply any new SQL migrations **before** or **together with** restarting containers.
+
+### Recommended sequence
+
+1. **Pull** the latest code: `git pull` (from your project directory, e.g. `/opt/eastern-estate-erp` or `~/eastern-estate-erp`).
+2. **Run migrations** (idempotent scripts — safe to re-run where noted):
+   ```bash
+   bash backend/src/database/migrations/run-prod-migrations.sh
+   ```
+   This script runs the full ordered set, including recent steps such as:
+   - **`v014_project_level_accounting.sql`** — adds `property_id` to accounting-related tables (accounts, bank accounts, journal entries, budgets, vendor payments, salary payments) and adjusts uniqueness of account codes **per project**.
+   - **`v015_accountant_roles.sql`** — ensures **`accountant`** and **`head_accountant`** roles exist in the database.
+3. **Rebuild / restart** application containers (per your hosting setup), for example:
+   ```bash
+   docker compose -f docker-compose.prod.yml build backend frontend
+   docker compose -f docker-compose.prod.yml up -d
+   ```
+   (Adjust compose file path and service names to match your server.)
+
+> ⚠️ Always take a **database backup** before running migrations on production.
+
+### Brand copy in emails / PDFs
+
+Customer-facing lines such as demand drafts and booking emails use the tagline **“Life Long Bonding…”** (updated from the older wording). Company name and SMTP behaviour are unchanged.
+
+---
+
+## 19. Common Questions & Gotchas
 
 **Q: I can't see a module in the sidebar.**  
 A: Your role may not have access. Ask a Super Admin to check under **Settings → Users → [your user] → Roles**.

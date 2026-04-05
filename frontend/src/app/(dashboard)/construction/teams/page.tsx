@@ -367,7 +367,7 @@ function TeamsContent() {
 
       {/* Footer */}
       <div className="pt-4 text-center text-sm text-gray-400">
-        Eastern Estate ERP • Building Homes, Nurturing Bonds
+        Eastern Estate ERP • Life Long Bonding...
       </div>
 
       {/* ── Create / Edit Slide-in Panel ── */}

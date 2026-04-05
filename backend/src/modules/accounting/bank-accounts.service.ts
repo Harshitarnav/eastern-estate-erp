@@ -15,8 +15,13 @@ export class BankAccountsService {
     private readonly accountsRepo: Repository<Account>,
   ) {}
 
-  async findAll(): Promise<(BankAccount & { coaAccount?: { id: string; accountCode: string } | null })[]> {
-    const bankAccounts = await this.bankAccountsRepo.find({ order: { createdAt: 'ASC' } });
+  async findAll(propertyId?: string): Promise<(BankAccount & { coaAccount?: { id: string; accountCode: string } | null })[]> {
+    const where: any = {};
+    if (propertyId) where.propertyId = propertyId;
+    const bankAccounts = await this.bankAccountsRepo.find({
+      where: Object.keys(where).length ? where : undefined,
+      order: { createdAt: 'ASC' },
+    });
 
     // Enrich each bank account with its linked COA entry (matched by name + ASSET type)
     return Promise.all(
@@ -56,12 +61,19 @@ export class BankAccountsService {
 
   // ── Ensure a matching COA (Chart of Accounts) entry exists for this bank ─────
   private async ensureCOAAccount(bankAccount: BankAccount): Promise<Account> {
-    // Check if a COA account already exists with this name
-    const existing = await this.accountsRepo
+    // Check if a COA account already exists with this name in the same property scope
+    const qb = this.accountsRepo
       .createQueryBuilder('a')
       .where('LOWER(a.accountName) = LOWER(:name)', { name: bankAccount.accountName })
-      .andWhere('a.accountType = :type', { type: AccountType.ASSET })
-      .getOne();
+      .andWhere('a.accountType = :type', { type: AccountType.ASSET });
+
+    if (bankAccount.propertyId) {
+      qb.andWhere('a.propertyId = :pid', { pid: bankAccount.propertyId });
+    } else {
+      qb.andWhere('a.propertyId IS NULL');
+    }
+
+    const existing = await qb.getOne();
 
     if (existing) {
       this.logger.log(`COA account already exists for "${bankAccount.accountName}" (code: ${existing.accountCode})`);
@@ -78,6 +90,7 @@ export class BankAccountsService {
       currentBalance: Number(bankAccount.currentBalance) || 0,
       description: `Auto-created for bank account: ${bankAccount.bankName} (${bankAccount.accountNumber})`,
       isActive: true,
+      propertyId: bankAccount.propertyId ?? null,
     });
 
     const saved = await this.accountsRepo.save(coaAccount);
@@ -94,6 +107,7 @@ export class BankAccountsService {
     accountType?: string;
     openingBalance?: number;
     description?: string;
+    propertyId?: string | null;
   }): Promise<BankAccount> {
     const ob = Number(dto.openingBalance) || 0;
     const account = this.bankAccountsRepo.create({
@@ -106,6 +120,7 @@ export class BankAccountsService {
       openingBalance: ob,
       currentBalance: ob,
       description: dto.description,
+      propertyId: dto.propertyId || null,
     });
     const saved = await this.bankAccountsRepo.save(account);
 

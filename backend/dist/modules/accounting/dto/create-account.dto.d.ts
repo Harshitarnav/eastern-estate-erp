@@ -8,10 +8,12 @@ export declare class CreateAccountDto {
     isActive?: boolean;
     openingBalance?: number;
     description?: string;
+    propertyId?: string;
 }
 export declare class UpdateAccountDto {
     accountName?: string;
     accountCategory?: string;
     isActive?: boolean;
     description?: string;
+    propertyId?: string | null;
 }

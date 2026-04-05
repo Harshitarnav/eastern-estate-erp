@@ -126,7 +126,7 @@ let UsersService = class UsersService {
             }
         }
         if (updateUserDto.password) {
-            updateUserDto['password'] = await bcrypt.hash(updateUserDto.password, 12);
+            user.password = await bcrypt.hash(updateUserDto.password, 12);
             delete updateUserDto.password;
         }
         if (updateUserDto.roleIds) {

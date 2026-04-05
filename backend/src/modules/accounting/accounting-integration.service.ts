@@ -24,6 +24,7 @@ interface AutoJEOptions {
   creditAccountId: string;
   amount: number;
   createdBy?: string;
+  propertyId?: string | null;
 }
 
 @Injectable()
@@ -40,70 +41,101 @@ export class AccountingIntegrationService {
   ) {}
 
   // ─── Smart account lookup ─────────────────────────────────────────────────
+  // Each finder tries project-scoped accounts first, then falls back to company-wide (NULL propertyId)
 
   /** Find the best Cash or Bank account to use as default debit/credit side */
-  async findCashOrBankAccount(): Promise<Account | null> {
-    // Prefer accounts with "bank" or "cash" in name
-    const byName = await this.accountsRepo.findOne({
-      where: [
-        { accountType: AccountType.ASSET, isActive: true, accountName: ILike('%bank%') },
-        { accountType: AccountType.ASSET, isActive: true, accountName: ILike('%cash%') },
-      ],
-      order: { accountCode: 'ASC' },
-    });
-    if (byName) return byName;
-
-    // Fall back to first active ASSET account
-    return this.accountsRepo.findOne({
-      where: { accountType: AccountType.ASSET, isActive: true },
-      order: { accountCode: 'ASC' },
-    });
+  async findCashOrBankAccount(propertyId?: string | null): Promise<Account | null> {
+    const scopeFilters = this.buildScopeFilters(propertyId);
+    for (const scope of scopeFilters) {
+      const found = await this.accountsRepo.findOne({
+        where: [
+          { ...scope, accountType: AccountType.ASSET, isActive: true, accountName: ILike('%bank%') },
+          { ...scope, accountType: AccountType.ASSET, isActive: true, accountName: ILike('%cash%') },
+        ],
+        order: { accountCode: 'ASC' },
+      });
+      if (found) return found;
+      // Try any ASSET in this scope
+      const fallback = await this.accountsRepo.findOne({
+        where: { ...scope, accountType: AccountType.ASSET, isActive: true },
+        order: { accountCode: 'ASC' },
+      });
+      if (fallback) return fallback;
+    }
+    return null;
   }
 
   /** Find a Sales Revenue / Income account */
-  async findSalesRevenueAccount(): Promise<Account | null> {
-    const byName = await this.accountsRepo.findOne({
-      where: [
-        { accountType: AccountType.INCOME, isActive: true, accountName: ILike('%sales%') },
-        { accountType: AccountType.INCOME, isActive: true, accountName: ILike('%revenue%') },
-        { accountType: AccountType.INCOME, isActive: true, accountName: ILike('%income%') },
-      ],
-      order: { accountCode: 'ASC' },
-    });
-    if (byName) return byName;
-    return this.accountsRepo.findOne({
-      where: { accountType: AccountType.INCOME, isActive: true },
-      order: { accountCode: 'ASC' },
-    });
+  async findSalesRevenueAccount(propertyId?: string | null): Promise<Account | null> {
+    const scopeFilters = this.buildScopeFilters(propertyId);
+    for (const scope of scopeFilters) {
+      const found = await this.accountsRepo.findOne({
+        where: [
+          { ...scope, accountType: AccountType.INCOME, isActive: true, accountName: ILike('%sales%') },
+          { ...scope, accountType: AccountType.INCOME, isActive: true, accountName: ILike('%revenue%') },
+          { ...scope, accountType: AccountType.INCOME, isActive: true, accountName: ILike('%income%') },
+        ],
+        order: { accountCode: 'ASC' },
+      });
+      if (found) return found;
+      const fallback = await this.accountsRepo.findOne({
+        where: { ...scope, accountType: AccountType.INCOME, isActive: true },
+        order: { accountCode: 'ASC' },
+      });
+      if (fallback) return fallback;
+    }
+    return null;
   }
 
   /** Find a Salary Expense account */
-  async findSalaryExpenseAccount(): Promise<Account | null> {
-    const byName = await this.accountsRepo.findOne({
-      where: [
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%salary%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%payroll%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%wages%') },
-      ],
-      order: { accountCode: 'ASC' },
-    });
-    if (byName) return byName;
-    return this.accountsRepo.findOne({
-      where: { accountType: AccountType.EXPENSE, isActive: true },
-      order: { accountCode: 'ASC' },
-    });
+  async findSalaryExpenseAccount(propertyId?: string | null): Promise<Account | null> {
+    const scopeFilters = this.buildScopeFilters(propertyId);
+    for (const scope of scopeFilters) {
+      const found = await this.accountsRepo.findOne({
+        where: [
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%salary%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%payroll%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%wages%') },
+        ],
+        order: { accountCode: 'ASC' },
+      });
+      if (found) return found;
+      const fallback = await this.accountsRepo.findOne({
+        where: { ...scope, accountType: AccountType.EXPENSE, isActive: true },
+        order: { accountCode: 'ASC' },
+      });
+      if (fallback) return fallback;
+    }
+    return null;
   }
 
   /** Find an Expense account by ID, falling back to any expense account */
-  async findExpenseAccount(accountId?: string): Promise<Account | null> {
+  async findExpenseAccount(accountId?: string, propertyId?: string | null): Promise<Account | null> {
     if (accountId) {
       const acc = await this.accountsRepo.findOne({ where: { id: accountId, isActive: true } });
       if (acc) return acc;
     }
-    return this.accountsRepo.findOne({
-      where: { accountType: AccountType.EXPENSE, isActive: true },
-      order: { accountCode: 'ASC' },
-    });
+    const scopeFilters = this.buildScopeFilters(propertyId);
+    for (const scope of scopeFilters) {
+      const found = await this.accountsRepo.findOne({
+        where: { ...scope, accountType: AccountType.EXPENSE, isActive: true },
+        order: { accountCode: 'ASC' },
+      });
+      if (found) return found;
+    }
+    return null;
+  }
+
+  /**
+   * Build scope filters for account lookup.
+   * Returns [project-scope, company-scope] if propertyId provided,
+   * or just [company-scope] if not.
+   */
+  private buildScopeFilters(propertyId?: string | null): Array<{ propertyId?: string | null }> {
+    if (propertyId) {
+      return [{ propertyId }, { propertyId: null as any }];
+    }
+    return [{}]; // no filter = any account
   }
 
   // ─── Generate journal entry number ───────────────────────────────────────
@@ -145,6 +177,7 @@ export class AccountingIntegrationService {
         createdBy: opts.createdBy,
         approvedBy: opts.createdBy,
         approvedAt: new Date(),
+        propertyId: opts.propertyId ?? null,
       });
 
       const savedJE = await this.jeRepo.save(je) as JournalEntry;
@@ -212,10 +245,11 @@ export class AccountingIntegrationService {
     paymentDate: Date;
     paymentMethod?: string;
     createdBy?: string;
+    propertyId?: string | null;
   }): Promise<JournalEntry | null> {
     const [bankAccount, revenueAccount] = await Promise.all([
-      this.findCashOrBankAccount(),
-      this.findSalesRevenueAccount(),
+      this.findCashOrBankAccount(payment.propertyId),
+      this.findSalesRevenueAccount(payment.propertyId),
     ]);
 
     if (!bankAccount || !revenueAccount) {
@@ -234,6 +268,7 @@ export class AccountingIntegrationService {
       creditAccountId: revenueAccount.id,
       amount: payment.amount,
       createdBy: payment.createdBy,
+      propertyId: payment.propertyId,
     });
   }
 
@@ -250,10 +285,11 @@ export class AccountingIntegrationService {
     description: string;
     accountId?: string;
     createdBy?: string;
+    propertyId?: string | null;
   }): Promise<JournalEntry | null> {
     const [expenseAccount, bankAccount] = await Promise.all([
-      this.findExpenseAccount(expense.accountId),
-      this.findCashOrBankAccount(),
+      this.findExpenseAccount(expense.accountId, expense.propertyId),
+      this.findCashOrBankAccount(expense.propertyId),
     ]);
 
     if (!expenseAccount || !bankAccount) {
@@ -272,41 +308,49 @@ export class AccountingIntegrationService {
       creditAccountId: bankAccount.id,
       amount: expense.amount,
       createdBy: expense.createdBy,
+      propertyId: expense.propertyId,
     });
   }
 
   /** Find a Construction / Work-in-Progress expense account */
-  async findConstructionExpenseAccount(): Promise<Account | null> {
-    const byName = await this.accountsRepo.findOne({
-      where: [
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%construction%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%work in progress%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%wip%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%contractor%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%civil%') },
-      ],
-      order: { accountCode: 'ASC' },
-    });
-    if (byName) return byName;
-    // Fall back to any active expense account
-    return this.accountsRepo.findOne({
-      where: { accountType: AccountType.EXPENSE, isActive: true },
-      order: { accountCode: 'ASC' },
-    });
+  async findConstructionExpenseAccount(propertyId?: string | null): Promise<Account | null> {
+    const scopeFilters = this.buildScopeFilters(propertyId);
+    for (const scope of scopeFilters) {
+      const found = await this.accountsRepo.findOne({
+        where: [
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%construction%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%work in progress%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%wip%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%contractor%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%civil%') },
+        ],
+        order: { accountCode: 'ASC' },
+      });
+      if (found) return found;
+      const fallback = await this.accountsRepo.findOne({
+        where: { ...scope, accountType: AccountType.EXPENSE, isActive: true },
+        order: { accountCode: 'ASC' },
+      });
+      if (fallback) return fallback;
+    }
+    return null;
   }
 
   /** Find a Material Purchase expense account */
-  async findMaterialPurchaseAccount(): Promise<Account | null> {
-    const byName = await this.accountsRepo.findOne({
-      where: [
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%material%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%purchase%') },
-        { accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%procurement%') },
-      ],
-      order: { accountCode: 'ASC' },
-    });
-    if (byName) return byName;
-    return this.findConstructionExpenseAccount();
+  async findMaterialPurchaseAccount(propertyId?: string | null): Promise<Account | null> {
+    const scopeFilters = this.buildScopeFilters(propertyId);
+    for (const scope of scopeFilters) {
+      const found = await this.accountsRepo.findOne({
+        where: [
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%material%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%purchase%') },
+          { ...scope, accountType: AccountType.EXPENSE, isActive: true, accountName: ILike('%procurement%') },
+        ],
+        order: { accountCode: 'ASC' },
+      });
+      if (found) return found;
+    }
+    return this.findConstructionExpenseAccount(propertyId);
   }
 
   /**
@@ -322,10 +366,11 @@ export class AccountingIntegrationService {
     vendorName?: string;
     projectName?: string;
     createdBy?: string;
+    propertyId?: string | null;
   }): Promise<JournalEntry | null> {
     const [constructionAccount, bankAccount] = await Promise.all([
-      this.findConstructionExpenseAccount(),
-      this.findCashOrBankAccount(),
+      this.findConstructionExpenseAccount(bill.propertyId),
+      this.findCashOrBankAccount(bill.propertyId),
     ]);
 
     if (!constructionAccount || !bankAccount) {
@@ -350,6 +395,7 @@ export class AccountingIntegrationService {
       creditAccountId: bankAccount.id,
       amount: bill.netPayable,
       createdBy: bill.createdBy,
+      propertyId: bill.propertyId,
     });
   }
 
@@ -365,10 +411,11 @@ export class AccountingIntegrationService {
     vendorName?: string;
     transactionReference?: string;
     createdBy?: string;
+    propertyId?: string | null;
   }): Promise<JournalEntry | null> {
     const [materialAccount, bankAccount] = await Promise.all([
-      this.findMaterialPurchaseAccount(),
-      this.findCashOrBankAccount(),
+      this.findMaterialPurchaseAccount(payment.propertyId),
+      this.findCashOrBankAccount(payment.propertyId),
     ]);
 
     if (!materialAccount || !bankAccount) {
@@ -393,6 +440,7 @@ export class AccountingIntegrationService {
       creditAccountId: bankAccount.id,
       amount: payment.amount,
       createdBy: payment.createdBy,
+      propertyId: payment.propertyId,
     });
   }
 
@@ -408,10 +456,11 @@ export class AccountingIntegrationService {
     paymentDate: Date;
     paymentMonth: Date;
     createdBy?: string;
+    propertyId?: string | null;
   }): Promise<JournalEntry | null> {
     const [salaryAccount, bankAccount] = await Promise.all([
-      this.findSalaryExpenseAccount(),
-      this.findCashOrBankAccount(),
+      this.findSalaryExpenseAccount(salary.propertyId),
+      this.findCashOrBankAccount(salary.propertyId),
     ]);
 
     if (!salaryAccount || !bankAccount) {
@@ -432,6 +481,7 @@ export class AccountingIntegrationService {
       creditAccountId: bankAccount.id,
       amount: salary.netSalary,
       createdBy: salary.createdBy,
+      propertyId: salary.propertyId,
     });
   }
 }

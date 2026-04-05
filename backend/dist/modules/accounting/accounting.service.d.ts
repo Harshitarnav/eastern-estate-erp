@@ -14,7 +14,11 @@ export declare class AccountingService {
     private readonly logger;
     constructor(accountRepository: Repository<Account>, journalEntryRepository: Repository<JournalEntry>, journalEntryLineRepository: Repository<JournalEntryLine>, bankAccountRepository: Repository<BankAccount>, bankStatementRepository: Repository<BankStatement>, dataSource: DataSource);
     createAccount(data: any): Promise<Account[]>;
-    getAllAccounts(): Promise<Account[]>;
+    seedCoaForProject(propertyId: string): Promise<{
+        created: number;
+        skipped: number;
+    }>;
+    getAllAccounts(propertyId?: string): Promise<Account[]>;
     getAccountById(id: string): Promise<Account>;
     updateAccount(id: string, data: any): Promise<Account>;
     private generateEntryNumber;
@@ -22,7 +26,7 @@ export declare class AccountingService {
     getJournalEntryById(id: string): Promise<JournalEntry>;
     getJournalEntryLines(entryId: string): Promise<JournalEntryLine[]>;
     private updateAccountBalances;
-    getAccountLedger(accountId: string, startDate: Date, endDate: Date): Promise<{
+    getAccountLedger(accountId: string, startDate: Date, endDate: Date, propertyId?: string): Promise<{
         account: Account;
         openingBalance: number;
         closingBalance: number;
@@ -45,7 +49,7 @@ export declare class AccountingService {
         totalCredit: number;
         entries: JournalEntry[];
     }>;
-    getCashBook(startDate: Date, endDate: Date): Promise<{
+    getCashBook(startDate: Date, endDate: Date, propertyId?: string): Promise<{
         account: Account;
         openingBalance: number;
         closingBalance: number;
@@ -83,7 +87,7 @@ export declare class AccountingService {
     }>;
     exportLedgerToExcel(accountId: string, startDate: Date, endDate: Date): Promise<any>;
     exportTrialBalanceToExcel(date: Date): Promise<any>;
-    getPropertyWisePL(startDate: Date, endDate: Date): Promise<{
+    getPropertyWisePL(startDate: Date, endDate: Date, allowedPropertyIds?: string[] | null): Promise<{
         period: {
             startDate: Date;
             endDate: Date;
@@ -102,6 +106,34 @@ export declare class AccountingService {
             expenses: number;
             netProfit: number;
         };
+    }>;
+    getProjectFundFlow(startDate: Date, endDate: Date, focusPropertyId?: string | null, allowedPropertyIds?: string[] | null): Promise<{
+        period: {
+            startDate: Date;
+            endDate: Date;
+        };
+        explanation: string;
+        focusProperty: {
+            id: string;
+            name: string;
+        };
+        focusSummary: any;
+        projectsWithOutflows: number;
+        matrix: any;
+        unallocatedOutflows: {
+            expenses: number;
+            vendorPayments: number;
+            salaries: number;
+            total: number;
+        };
+        inflows: any[];
+        outflows: {
+            expenses: any[];
+            vendorPayments: any[];
+            salaries: any[];
+        };
+        inflowTotal: number;
+        outflowTotal: number;
     }>;
     exportForITR(financialYear: string): Promise<{
         financial_year: string;

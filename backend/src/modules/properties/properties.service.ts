@@ -118,7 +118,10 @@ export class PropertiesService {
     }
   }
 
-  async findAll(queryDto: QueryPropertyDto, userId?: string): Promise<PaginatedPropertyResponseDto> {
+  async findAll(
+    queryDto: QueryPropertyDto,
+    access?: { isGlobalAdmin: boolean; accessiblePropertyIds: string[] | null },
+  ): Promise<PaginatedPropertyResponseDto> {
     const {
       page = 1,
       limit = 10,
@@ -138,6 +141,17 @@ export class PropertiesService {
     const queryBuilder = this.propertiesRepository
       .createQueryBuilder('property')
       .where('property.isActive = :isActive', { isActive: activeFilter });
+
+    if (access && !access.isGlobalAdmin) {
+      const pids = access.accessiblePropertyIds;
+      if (pids && pids.length > 0) {
+        queryBuilder.andWhere('property.id IN (:...accessiblePids)', {
+          accessiblePids: pids,
+        });
+      } else {
+        queryBuilder.andWhere('1 = 0');
+      }
+    }
 
     // Search across multiple fields
     if (search) {
@@ -434,13 +448,22 @@ export class PropertiesService {
     return this.mapToResponseDto(property);
   }
 
-  async findByCode(code: string, userId?: string): Promise<PropertyResponseDto> {
+  async findByCode(
+    code: string,
+    access?: { isGlobalAdmin: boolean; accessiblePropertyIds: string[] | null },
+  ): Promise<PropertyResponseDto> {
     const property = await this.propertiesRepository.findOne({
       where: { propertyCode: code, isActive: true },
     });
 
     if (!property) {
       throw new NotFoundException(`Property with code ${code} not found`);
+    }
+
+    if (access && !access.isGlobalAdmin && access.accessiblePropertyIds?.length) {
+      if (!access.accessiblePropertyIds.includes(property.id)) {
+        throw new NotFoundException(`Property with code ${code} not found`);
+      }
     }
 
     return this.mapToResponseDto(property);

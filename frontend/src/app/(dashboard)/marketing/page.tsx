@@ -295,7 +295,7 @@ export default function MarketingPage() {
       {/* Brand Footer */}
       <div className="mt-8 text-center">
         <p className="text-sm text-gray-500">
-          Eastern Estate ERP • Building Homes, Nurturing Bonds
+          Eastern Estate ERP • Life Long Bonding...
         </p>
       </div>
     </div>

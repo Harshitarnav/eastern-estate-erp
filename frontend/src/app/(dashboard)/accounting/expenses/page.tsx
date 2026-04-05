@@ -1,38 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check, X, DollarSign, Pencil } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Check, X, DollarSign, Pencil, Eye } from 'lucide-react';
 import { expensesService, type Expense } from '@/services/accounting.service';
 import { format } from 'date-fns';
 import { TableRowsSkeleton } from '@/components/Skeletons';
+import { usePropertyStore } from '@/store/propertyStore';
+import { useAuthStore } from '@/store/authStore';
 
 export default function ExpensesPage() {
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+  const { user } = useAuthStore();
+  const canAdminEdit = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
+
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '', category: '' });
 
-  useEffect(() => {
-    fetchExpenses();
-  }, [filter]);
-
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await expensesService.getAll(filter);
+      const params: any = { ...filter };
+      if (selectedPropertyId) params.propertyId = selectedPropertyId;
+      const data = await expensesService.getAll(params);
       setExpenses(data);
     } catch (error) {
       console.error('Error fetching expenses:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter, selectedPropertyId]);
+
+  useEffect(() => { fetchExpenses(); }, [fetchExpenses]);
 
   const handleApprove = async (id: string) => {
     try {
       await expensesService.approve(id);
-      fetchExpenses();
+      void fetchExpenses();
     } catch (error) {
       console.error('Error approving expense:', error);
     }
@@ -175,8 +186,9 @@ export default function ExpensesPage() {
                   <th className="text-left p-2">Type</th>
                   <th className="text-right p-2">Amount</th>
                   <th className="text-left p-2">Date</th>
+                  <th className="text-left p-2">Project</th>
                   <th className="text-left p-2">Status</th>
-                  <th className="text-right p-2">Actions</th>
+                  <th className="text-right p-2">Details / Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -187,10 +199,16 @@ export default function ExpensesPage() {
                     <td className="p-2">{expense.expenseType}</td>
                     <td className="p-2 text-right font-medium">{formatCurrency(expense.amount)}</td>
                     <td className="p-2">{format(new Date(expense.expenseDate), 'dd MMM yyyy')}</td>
+                    <td className="p-2 text-sm text-gray-500">{(expense as any).property?.name ?? ((expense as any).propertyId ? '…' : <span className="text-gray-300">—</span>)}</td>
                     <td className="p-2">{getStatusBadge(expense.status)}</td>
                     <td className="p-2">
-                      <div className="flex justify-end gap-2">
-                        {expense.status === 'PENDING' && (
+                      <div className="flex justify-end gap-2 flex-wrap">
+                        <Button size="sm" variant="outline" asChild title="View details">
+                          <Link href={`/accounting/expenses/${expense.id}`}>
+                            <Eye className="h-3 w-3" />
+                          </Link>
+                        </Button>
+                        {canAdminEdit && expense.status === 'PENDING' && (
                           <Button
                             size="sm"
                             variant="outline"

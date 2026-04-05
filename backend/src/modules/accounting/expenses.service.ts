@@ -39,6 +39,9 @@ export class ExpensesService {
     endDate?: Date;
     vendorId?: string;
     employeeId?: string;
+    propertyId?: string;
+    /** When set (non-global user), only expenses for these projects or untagged */
+    accessiblePropertyIds?: string[] | null;
   }): Promise<Expense[]> {
     const query = this.expensesRepository.createQueryBuilder('expense')
       .leftJoinAndSelect('expense.account', 'account')
@@ -79,6 +82,19 @@ export class ExpensesService {
       });
     }
 
+    if (filters?.propertyId) {
+      query.andWhere('expense.propertyId = :propertyId', {
+        propertyId: filters.propertyId,
+      });
+    }
+
+    if (filters?.accessiblePropertyIds?.length) {
+      query.andWhere(
+        '(expense.propertyId IS NULL OR expense.propertyId IN (:...expAccIds))',
+        { expAccIds: filters.accessiblePropertyIds },
+      );
+    }
+
     query.orderBy('expense.expenseDate', 'DESC');
 
     return await query.getMany();
@@ -102,6 +118,12 @@ export class ExpensesService {
 
     if (expense.status === ExpenseStatus.APPROVED || expense.status === ExpenseStatus.PAID) {
       throw new BadRequestException('Cannot update approved or paid expenses');
+    }
+
+    if (expense.journalEntryId) {
+      throw new BadRequestException(
+        'This expense is posted to the books (journal entry linked). It cannot be edited. Contact an admin if a correction is required.',
+      );
     }
 
     // Strip empty-string UUID fields — DB requires valid UUID or NULL
@@ -193,6 +215,7 @@ export class ExpensesService {
   async getExpensesSummary(filters?: {
     startDate?: Date;
     endDate?: Date;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<{
     totalExpenses: number;
     byCategory: { category: string; total: number }[];
@@ -210,6 +233,13 @@ export class ExpensesService {
       query.andWhere('expense.expenseDate <= :endDate', {
         endDate: filters.endDate,
       });
+    }
+
+    if (filters?.accessiblePropertyIds?.length) {
+      query.andWhere(
+        '(expense.propertyId IS NULL OR expense.propertyId IN (:...sumAccIds))',
+        { sumAccIds: filters.accessiblePropertyIds },
+      );
     }
 
     const expenses = await query.getMany();

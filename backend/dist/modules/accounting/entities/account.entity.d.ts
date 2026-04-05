@@ -1,3 +1,4 @@
+import { Property } from '../../properties/entities/property.entity';
 export declare enum AccountType {
     ASSET = "ASSET",
     LIABILITY = "LIABILITY",
@@ -18,6 +19,8 @@ export declare class Account {
     openingBalance: number;
     currentBalance: number;
     description: string;
+    propertyId: string | null;
+    property: Property;
     createdAt: Date;
     updatedAt: Date;
 }

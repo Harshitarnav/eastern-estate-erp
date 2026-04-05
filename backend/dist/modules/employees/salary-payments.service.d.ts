@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { SalaryPayment } from './entities/salary-payment.entity';
 import { Employee } from './entities/employee.entity';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { JournalEntriesService } from '../accounting/journal-entries.service';
 import { DataSource } from 'typeorm';
 export interface CreateSalaryPaymentDto {
     employeeId: string;
@@ -30,8 +31,9 @@ export declare class SalaryPaymentsService {
     private salaryPaymentRepo;
     private employeeRepo;
     private readonly accountingIntegrationService;
+    private readonly journalEntriesService;
     private readonly dataSource;
-    constructor(salaryPaymentRepo: Repository<SalaryPayment>, employeeRepo: Repository<Employee>, accountingIntegrationService: AccountingIntegrationService, dataSource: DataSource);
+    constructor(salaryPaymentRepo: Repository<SalaryPayment>, employeeRepo: Repository<Employee>, accountingIntegrationService: AccountingIntegrationService, journalEntriesService: JournalEntriesService, dataSource: DataSource);
     create(dto: CreateSalaryPaymentDto, createdBy: string): Promise<SalaryPayment>;
     findAll(filters?: {
         employeeId?: string;
@@ -46,6 +48,7 @@ export declare class SalaryPaymentsService {
         accountNumber?: string;
         ifscCode?: string;
         paymentRemarks?: string;
+        propertyId?: string;
     }): Promise<SalaryPayment>;
     retryJE(id: string, userId: string): Promise<{
         success: boolean;
@@ -53,6 +56,7 @@ export declare class SalaryPaymentsService {
         message: string;
     }>;
     cancel(id: string): Promise<SalaryPayment>;
+    reversePaidPayment(id: string, userId: string): Promise<SalaryPayment>;
     getMonthSummary(month: string): Promise<{
         totalGross: number;
         totalDeductions: number;

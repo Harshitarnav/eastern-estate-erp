@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SalaryPayment = exports.PaymentMode = exports.PaymentStatus = void 0;
 const typeorm_1 = require("typeorm");
 const employee_entity_1 = require("./employee.entity");
+const property_entity_1 = require("../../properties/entities/property.entity");
 var PaymentStatus;
 (function (PaymentStatus) {
     PaymentStatus["PENDING"] = "PENDING";
@@ -171,6 +172,15 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'boolean', default: true }),
     __metadata("design:type", Boolean)
 ], SalaryPayment.prototype, "isActive", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], SalaryPayment.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true, onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], SalaryPayment.prototype, "property", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

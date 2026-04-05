@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { SalaryPayment, PaymentStatus } from './entities/salary-payment.entity';
 import { Employee } from './entities/employee.entity';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { JournalEntriesService } from '../accounting/journal-entries.service';
 import { DataSource } from 'typeorm';
 
 export interface CreateSalaryPaymentDto {
@@ -38,6 +39,7 @@ export class SalaryPaymentsService {
     @InjectRepository(Employee)
     private employeeRepo: Repository<Employee>,
     private readonly accountingIntegrationService: AccountingIntegrationService,
+    private readonly journalEntriesService: JournalEntriesService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -124,6 +126,7 @@ export class SalaryPaymentsService {
     accountNumber?: string;
     ifscCode?: string;
     paymentRemarks?: string;
+    propertyId?: string;
   }): Promise<SalaryPayment> {
     const sp = await this.findOne(id);
 
@@ -144,6 +147,7 @@ export class SalaryPaymentsService {
     sp.accountNumber = opts.accountNumber;
     sp.ifscCode = opts.ifscCode;
     sp.paymentRemarks = opts.paymentRemarks;
+    if (opts.propertyId) sp.propertyId = opts.propertyId;
     sp.approvedBy = userId;
     sp.approvedAt = new Date();
     sp.updatedBy = userId;
@@ -160,6 +164,7 @@ export class SalaryPaymentsService {
       paymentDate: saved.paymentDate,
       paymentMonth: saved.paymentMonth,
       createdBy: userId,
+      propertyId: saved.propertyId ?? opts.propertyId ?? null,
     });
 
     return Object.assign(saved, { journalEntryNumber: je?.entryNumber ?? null }) as SalaryPayment & { journalEntryNumber: string | null };
@@ -205,9 +210,47 @@ export class SalaryPaymentsService {
   async cancel(id: string): Promise<SalaryPayment> {
     const sp = await this.findOne(id);
     if (sp.paymentStatus === PaymentStatus.PAID) {
-      throw new BadRequestException('Cannot cancel a paid salary. Create a reversal instead.');
+      throw new BadRequestException(
+        'Cannot cancel a paid salary. Use “Reverse payment” to void the journal entry and return this record to pending.',
+      );
     }
     sp.paymentStatus = PaymentStatus.CANCELLED;
+    return this.salaryPaymentRepo.save(sp);
+  }
+
+  /**
+   * Voids the auto-posted SALARY journal entry (if any) and sets the record back to PENDING
+   * so payroll can be corrected and re-processed.
+   */
+  async reversePaidPayment(id: string, userId: string): Promise<SalaryPayment> {
+    const sp = await this.findOne(id);
+    if (sp.paymentStatus !== PaymentStatus.PAID) {
+      throw new BadRequestException('Only PAID salary records can be reversed.');
+    }
+
+    const rows = await this.dataSource.query(
+      `SELECT id FROM journal_entries WHERE reference_type = $1 AND reference_id = $2 AND status = $3 ORDER BY created_at DESC LIMIT 1`,
+      ['SALARY', sp.id, 'POSTED'],
+    );
+
+    if (rows.length > 0) {
+      await this.journalEntriesService.void(rows[0].id, userId, {
+        voidReason: `Salary payment reversed to pending — record ${sp.id}`,
+      });
+    }
+
+    sp.paymentStatus = PaymentStatus.PENDING;
+    sp.paymentDate = null;
+    sp.paymentMode = null;
+    sp.transactionReference = null;
+    sp.paymentRemarks = null;
+    sp.bankName = null;
+    sp.accountNumber = null;
+    sp.ifscCode = null;
+    sp.approvedBy = null;
+    sp.approvedAt = null;
+    sp.updatedBy = userId;
+
     return this.salaryPaymentRepo.save(sp);
   }
 

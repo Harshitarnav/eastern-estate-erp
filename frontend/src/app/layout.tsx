@@ -8,7 +8,7 @@ import NextTopLoader from 'nextjs-toploader';
 const inter = { className: "font-sans" };
 
 export const metadata: Metadata = {
-  title: "Eastern Estate ERP - Building Homes, Nurturing Bonds",
+  title: "Eastern Estate ERP - Life Long Bonding...",
   description: "Complete Real Estate Management System - Luxury at Affordable Prices. Track properties, manage leads, bookings, construction, and more.",
   manifest: "/manifest.json",
   appleWebApp: {
@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
 };
+
+/** Avoid flaky static prerender (webpack runtime "reading 'call'") on client-heavy routes + PWA. */
+export const dynamic = 'force-dynamic';
 
 export default function RootLayout({
   children,

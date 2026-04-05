@@ -19,12 +19,14 @@ const typeorm_2 = require("typeorm");
 const salary_payment_entity_1 = require("./entities/salary-payment.entity");
 const employee_entity_1 = require("./entities/employee.entity");
 const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
+const journal_entries_service_1 = require("../accounting/journal-entries.service");
 const typeorm_3 = require("typeorm");
 let SalaryPaymentsService = class SalaryPaymentsService {
-    constructor(salaryPaymentRepo, employeeRepo, accountingIntegrationService, dataSource) {
+    constructor(salaryPaymentRepo, employeeRepo, accountingIntegrationService, journalEntriesService, dataSource) {
         this.salaryPaymentRepo = salaryPaymentRepo;
         this.employeeRepo = employeeRepo;
         this.accountingIntegrationService = accountingIntegrationService;
+        this.journalEntriesService = journalEntriesService;
         this.dataSource = dataSource;
     }
     async create(dto, createdBy) {
@@ -111,6 +113,8 @@ let SalaryPaymentsService = class SalaryPaymentsService {
         sp.accountNumber = opts.accountNumber;
         sp.ifscCode = opts.ifscCode;
         sp.paymentRemarks = opts.paymentRemarks;
+        if (opts.propertyId)
+            sp.propertyId = opts.propertyId;
         sp.approvedBy = userId;
         sp.approvedAt = new Date();
         sp.updatedBy = userId;
@@ -124,6 +128,7 @@ let SalaryPaymentsService = class SalaryPaymentsService {
             paymentDate: saved.paymentDate,
             paymentMonth: saved.paymentMonth,
             createdBy: userId,
+            propertyId: saved.propertyId ?? opts.propertyId ?? null,
         });
         return Object.assign(saved, { journalEntryNumber: je?.entryNumber ?? null });
     }
@@ -156,9 +161,33 @@ let SalaryPaymentsService = class SalaryPaymentsService {
     async cancel(id) {
         const sp = await this.findOne(id);
         if (sp.paymentStatus === salary_payment_entity_1.PaymentStatus.PAID) {
-            throw new common_1.BadRequestException('Cannot cancel a paid salary. Create a reversal instead.');
+            throw new common_1.BadRequestException('Cannot cancel a paid salary. Use “Reverse payment” to void the journal entry and return this record to pending.');
         }
         sp.paymentStatus = salary_payment_entity_1.PaymentStatus.CANCELLED;
+        return this.salaryPaymentRepo.save(sp);
+    }
+    async reversePaidPayment(id, userId) {
+        const sp = await this.findOne(id);
+        if (sp.paymentStatus !== salary_payment_entity_1.PaymentStatus.PAID) {
+            throw new common_1.BadRequestException('Only PAID salary records can be reversed.');
+        }
+        const rows = await this.dataSource.query(`SELECT id FROM journal_entries WHERE reference_type = $1 AND reference_id = $2 AND status = $3 ORDER BY created_at DESC LIMIT 1`, ['SALARY', sp.id, 'POSTED']);
+        if (rows.length > 0) {
+            await this.journalEntriesService.void(rows[0].id, userId, {
+                voidReason: `Salary payment reversed to pending — record ${sp.id}`,
+            });
+        }
+        sp.paymentStatus = salary_payment_entity_1.PaymentStatus.PENDING;
+        sp.paymentDate = null;
+        sp.paymentMode = null;
+        sp.transactionReference = null;
+        sp.paymentRemarks = null;
+        sp.bankName = null;
+        sp.accountNumber = null;
+        sp.ifscCode = null;
+        sp.approvedBy = null;
+        sp.approvedAt = null;
+        sp.updatedBy = userId;
         return this.salaryPaymentRepo.save(sp);
     }
     async getMonthSummary(month) {
@@ -186,6 +215,7 @@ exports.SalaryPaymentsService = SalaryPaymentsService = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         accounting_integration_service_1.AccountingIntegrationService,
+        journal_entries_service_1.JournalEntriesService,
         typeorm_3.DataSource])
 ], SalaryPaymentsService);
 //# sourceMappingURL=salary-payments.service.js.map

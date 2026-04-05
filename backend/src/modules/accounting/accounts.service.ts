@@ -17,13 +17,22 @@ export class AccountsService {
   ) {}
 
   async create(createAccountDto: CreateAccountDto): Promise<Account> {
-    // Check if account code already exists
+    // Duplicate check is scoped: same code is allowed in different projects but not within the same scope.
+    // propertyId = undefined/null means "company-wide" scope.
+    const scopedPropertyId = createAccountDto.propertyId || null;
     const existingAccount = await this.accountsRepository.findOne({
-      where: { accountCode: createAccountDto.accountCode },
+      where: {
+        accountCode: createAccountDto.accountCode,
+        isActive: true,
+        propertyId: scopedPropertyId,
+      } as any,
     });
 
     if (existingAccount) {
-      throw new BadRequestException(`Account with code ${createAccountDto.accountCode} already exists`);
+      const scope = scopedPropertyId ? 'this project' : 'the company-wide scope';
+      throw new BadRequestException(
+        `Account with code ${createAccountDto.accountCode} already exists in ${scope}`,
+      );
     }
 
     // If parent account specified, verify it exists
@@ -44,12 +53,17 @@ export class AccountsService {
     return await this.accountsRepository.save(account);
   }
 
-  async findAll(filters?: {
-    accountType?: AccountType;
-    isActive?: boolean;
-    parentAccountId?: string;
-  }): Promise<Account[]> {
-    const query = this.accountsRepository.createQueryBuilder('account');
+  async findAll(
+    filters?: {
+      accountType?: AccountType;
+      isActive?: boolean;
+      parentAccountId?: string;
+      propertyId?: string;
+    },
+    scopePropertyIds?: string[] | null,
+  ): Promise<Account[]> {
+    const query = this.accountsRepository.createQueryBuilder('account')
+      .leftJoinAndSelect('account.property', 'property');
 
     if (filters?.accountType) {
       query.andWhere('account.accountType = :accountType', {
@@ -57,16 +71,27 @@ export class AccountsService {
       });
     }
 
-    if (filters?.isActive !== undefined) {
-      query.andWhere('account.isActive = :isActive', {
-        isActive: filters.isActive,
-      });
-    }
+    // Default to showing only active accounts; caller can pass isActive=false to see deactivated ones
+    const isActiveFilter = filters?.isActive !== undefined ? filters.isActive : true;
+    query.andWhere('account.isActive = :isActive', { isActive: isActiveFilter });
 
     if (filters?.parentAccountId) {
       query.andWhere('account.parentAccountId = :parentAccountId', {
         parentAccountId: filters.parentAccountId,
       });
+    }
+
+    if (filters?.propertyId) {
+      query.andWhere('account.propertyId = :propertyId', {
+        propertyId: filters.propertyId,
+      });
+    }
+
+    if (scopePropertyIds?.length) {
+      query.andWhere(
+        '(account.propertyId IS NULL OR account.propertyId IN (:...scopePropertyIds))',
+        { scopePropertyIds },
+      );
     }
 
     query.orderBy('account.accountCode', 'ASC');
@@ -125,19 +150,25 @@ export class AccountsService {
     await this.accountsRepository.save(account);
   }
 
-  async getAccountHierarchy(): Promise<Account[]> {
-    // Get all accounts with their children
-    const accounts = await this.accountsRepository.find({
-      where: { isActive: true },
-      relations: ['childAccounts'],
-      order: { accountCode: 'ASC' },
-    });
+  async getAccountHierarchy(scopePropertyIds?: string[] | null): Promise<Account[]> {
+    const qb = this.accountsRepository
+      .createQueryBuilder('account')
+      .leftJoinAndSelect('account.childAccounts', 'childAccounts')
+      .where('account.isActive = :ia', { ia: true })
+      .andWhere('account.parentAccountId IS NULL');
 
-    // Filter to get only root accounts (no parent)
-    return accounts.filter(account => !account.parentAccountId);
+    if (scopePropertyIds?.length) {
+      qb.andWhere(
+        '(account.propertyId IS NULL OR account.propertyId IN (:...scopePropertyIds))',
+        { scopePropertyIds },
+      );
+    }
+
+    qb.orderBy('account.accountCode', 'ASC');
+    return qb.getMany();
   }
 
-  async getBalanceSheet(): Promise<{
+  async getBalanceSheet(propertyId?: string): Promise<{
     assets: Account[];
     liabilities: Account[];
     equity: Account[];
@@ -145,18 +176,22 @@ export class AccountsService {
     totalLiabilities: number;
     totalEquity: number;
   }> {
+    const scopeWhere = (type: AccountType) => propertyId
+      ? { accountType: type, isActive: true, propertyId }
+      : { accountType: type, isActive: true };
+
     const assets = await this.accountsRepository.find({
-      where: { accountType: AccountType.ASSET, isActive: true },
+      where: scopeWhere(AccountType.ASSET),
       order: { accountCode: 'ASC' },
     });
 
     const liabilities = await this.accountsRepository.find({
-      where: { accountType: AccountType.LIABILITY, isActive: true },
+      where: scopeWhere(AccountType.LIABILITY),
       order: { accountCode: 'ASC' },
     });
 
     const equity = await this.accountsRepository.find({
-      where: { accountType: AccountType.EQUITY, isActive: true },
+      where: scopeWhere(AccountType.EQUITY),
       order: { accountCode: 'ASC' },
     });
 
@@ -174,20 +209,24 @@ export class AccountsService {
     };
   }
 
-  async getProfitAndLoss(startDate?: Date, endDate?: Date): Promise<{
+  async getProfitAndLoss(startDate?: Date, endDate?: Date, propertyId?: string): Promise<{
     income: Account[];
     expenses: Account[];
     totalIncome: number;
     totalExpenses: number;
     netProfit: number;
   }> {
+    const scopeWhere = (type: AccountType) => propertyId
+      ? { accountType: type, isActive: true, propertyId }
+      : { accountType: type, isActive: true };
+
     const income = await this.accountsRepository.find({
-      where: { accountType: AccountType.INCOME, isActive: true },
+      where: scopeWhere(AccountType.INCOME),
       order: { accountCode: 'ASC' },
     });
 
     const expenses = await this.accountsRepository.find({
-      where: { accountType: AccountType.EXPENSE, isActive: true },
+      where: scopeWhere(AccountType.EXPENSE),
       order: { accountCode: 'ASC' },
     });
 
@@ -205,7 +244,7 @@ export class AccountsService {
   }
 
   // ============ TRIAL BALANCE ============
-  async getTrialBalance(): Promise<{
+  async getTrialBalance(propertyId?: string): Promise<{
     accounts: Array<{
       accountCode: string;
       accountName: string;
@@ -217,8 +256,10 @@ export class AccountsService {
     totalCredit: number;
     isBalanced: boolean;
   }> {
+    const where: any = { isActive: true };
+    if (propertyId) where.propertyId = propertyId;
     const allAccounts = await this.accountsRepository.find({
-      where: { isActive: true },
+      where,
       order: { accountCode: 'ASC' },
     });
 

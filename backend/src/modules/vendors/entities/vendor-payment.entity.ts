@@ -10,6 +10,7 @@ import {
 import { Vendor } from './vendor.entity';
 // import { PurchaseOrder } from '../../purchase-orders/entities/purchase-order.entity'; // Removed - not needed
 import { User } from '../../users/entities/user.entity';
+import { Property } from '../../properties/entities/property.entity';
 
 export enum PaymentMode {
   CASH = 'CASH',
@@ -63,6 +64,13 @@ export class VendorPayment {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'created_by' })
   creator: User;
+
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
 
   /** Auto-generated journal entry when this payment is recorded */
   @Column({ name: 'journal_entry_id', type: 'uuid', nullable: true })

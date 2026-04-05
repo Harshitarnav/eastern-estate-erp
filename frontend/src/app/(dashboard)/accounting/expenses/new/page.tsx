@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { expensesService, accountsService, Expense } from '@/services/accounting.service';
+import { propertiesService } from '@/services/properties.service';
+import { usePropertyStore } from '@/store/propertyStore';
 
 const EXPENSE_CATEGORIES = [
   'Rent',
@@ -38,9 +40,11 @@ const TYPE_SUGGESTIONS: Record<string, string[]> = {
 
 export default function NewExpensePage() {
   const router = useRouter();
+  const { selectedProperties } = usePropertyStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
 
   type ExpenseForm = {
     expenseDate: string;
@@ -52,6 +56,7 @@ export default function NewExpensePage() {
     paymentMethod: string;
     paymentReference: string;
     status: Expense['status'];
+    propertyId: string;
   };
 
   const [formData, setFormData] = useState<ExpenseForm>({
@@ -64,20 +69,24 @@ export default function NewExpensePage() {
     paymentMethod: 'CASH',
     paymentReference: '',
     status: 'PENDING',
+    propertyId: selectedProperties[0] ?? '',
   });
 
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    const pid = formData.propertyId || undefined;
+    accountsService.getAll({ accountType: 'EXPENSE', propertyId: pid })
+      .then(data => setAccounts(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error fetching accounts:', err));
+  }, [formData.propertyId]);
 
-  const fetchAccounts = async () => {
-    try {
-      const data = await accountsService.getAll({ accountType: 'EXPENSE' });
-      setAccounts(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching accounts:', err);
-    }
-  };
+  useEffect(() => {
+    propertiesService.getProperties({ limit: 100 })
+      .then((res: any) => {
+        const list = res?.data ?? res ?? [];
+        setProperties(Array.isArray(list) ? list : list.data ?? []);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +108,7 @@ export default function NewExpensePage() {
         paymentMethod: formData.paymentMethod,
         paymentReference: formData.paymentReference || undefined,
         status: formData.status,
+        propertyId: formData.propertyId || undefined,
       });
       window.location.href = '/accounting/expenses';
     } catch (err: any) {
@@ -287,6 +297,24 @@ export default function NewExpensePage() {
                 <option value="PAID">Paid</option>
                 <option value="REJECTED">Rejected</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Project *
+              </label>
+              <select
+                required
+                value={formData.propertyId}
+                onChange={(e) => setFormData({ ...formData, propertyId: e.target.value, accountId: '' })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+              >
+                <option value="">— Select project —</option>
+                {properties.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Each expense must be tied to exactly one project (RERA requirement)</p>
             </div>
 
             <div className="md:col-span-2">

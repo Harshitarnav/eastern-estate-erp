@@ -47,6 +47,12 @@ let PropertyAccessGuard = PropertyAccessGuard_1 = class PropertyAccessGuard {
             request.accessiblePropertyIds = null;
             return true;
         }
+        if (userRoles.includes('head_accountant')) {
+            this.logger.debug(`User ${user.email} is head_accountant - full property bypass`);
+            request.isGlobalAdmin = true;
+            request.accessiblePropertyIds = null;
+            return true;
+        }
         if (userRoles.includes('customer')) {
             this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);
             return true;

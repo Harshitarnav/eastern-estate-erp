@@ -43,7 +43,7 @@ export default function OfflinePage() {
       </button>
 
       <p className="mt-8 text-xs text-gray-400">
-        Eastern Estate ERP • Building Homes, Nurturing Bonds
+        Eastern Estate ERP • Life Long Bonding...
       </p>
     </div>
   );

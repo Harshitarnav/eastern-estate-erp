@@ -261,6 +261,15 @@ export function isAdminRole(userRoles: string[]): boolean {
   return userRoles.includes(UserRole.SUPER_ADMIN) || userRoles.includes(UserRole.ADMIN);
 }
 
+/** Same as backend: company-wide accounting / all projects in selectors (not limited to property-access list). */
+export function seesAllAccountingProjects(userRoles: string[]): boolean {
+  return (
+    userRoles.includes(UserRole.SUPER_ADMIN) ||
+    userRoles.includes(UserRole.ADMIN) ||
+    userRoles.includes(UserRole.HEAD_ACCOUNTANT)
+  );
+}
+
 /**
  * Check if user requires property-level filtering
  * Admins see all properties, other roles see only assigned properties

@@ -9,5 +9,5 @@ export declare class VendorPaymentsController {
     getTotalPaid(vendorId: string): Promise<number>;
     findOne(id: string): Promise<import("./entities/vendor-payment.entity").VendorPayment>;
     update(id: string, updateDto: UpdateVendorPaymentDto): Promise<import("./entities/vendor-payment.entity").VendorPayment>;
-    remove(id: string): Promise<void>;
+    remove(id: string, req: any): Promise<void>;
 }

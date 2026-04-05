@@ -27,6 +27,11 @@ export class CreateVendorPaymentDto {
   @IsOptional()
   notes?: string;
 
+  /** Project this payment is charged to (RERA / project-level accounting) */
+  @IsUUID()
+  @IsOptional()
+  propertyId?: string;
+
   @IsUUID()
   @IsOptional()
   createdBy?: string;

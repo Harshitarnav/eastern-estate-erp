@@ -27,63 +27,93 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         this.jelRepo = jelRepo;
         this.logger = new common_1.Logger(AccountingIntegrationService_1.name);
     }
-    async findCashOrBankAccount() {
-        const byName = await this.accountsRepo.findOne({
-            where: [
-                { accountType: account_entity_1.AccountType.ASSET, isActive: true, accountName: (0, typeorm_2.ILike)('%bank%') },
-                { accountType: account_entity_1.AccountType.ASSET, isActive: true, accountName: (0, typeorm_2.ILike)('%cash%') },
-            ],
-            order: { accountCode: 'ASC' },
-        });
-        if (byName)
-            return byName;
-        return this.accountsRepo.findOne({
-            where: { accountType: account_entity_1.AccountType.ASSET, isActive: true },
-            order: { accountCode: 'ASC' },
-        });
+    async findCashOrBankAccount(propertyId) {
+        const scopeFilters = this.buildScopeFilters(propertyId);
+        for (const scope of scopeFilters) {
+            const found = await this.accountsRepo.findOne({
+                where: [
+                    { ...scope, accountType: account_entity_1.AccountType.ASSET, isActive: true, accountName: (0, typeorm_2.ILike)('%bank%') },
+                    { ...scope, accountType: account_entity_1.AccountType.ASSET, isActive: true, accountName: (0, typeorm_2.ILike)('%cash%') },
+                ],
+                order: { accountCode: 'ASC' },
+            });
+            if (found)
+                return found;
+            const fallback = await this.accountsRepo.findOne({
+                where: { ...scope, accountType: account_entity_1.AccountType.ASSET, isActive: true },
+                order: { accountCode: 'ASC' },
+            });
+            if (fallback)
+                return fallback;
+        }
+        return null;
     }
-    async findSalesRevenueAccount() {
-        const byName = await this.accountsRepo.findOne({
-            where: [
-                { accountType: account_entity_1.AccountType.INCOME, isActive: true, accountName: (0, typeorm_2.ILike)('%sales%') },
-                { accountType: account_entity_1.AccountType.INCOME, isActive: true, accountName: (0, typeorm_2.ILike)('%revenue%') },
-                { accountType: account_entity_1.AccountType.INCOME, isActive: true, accountName: (0, typeorm_2.ILike)('%income%') },
-            ],
-            order: { accountCode: 'ASC' },
-        });
-        if (byName)
-            return byName;
-        return this.accountsRepo.findOne({
-            where: { accountType: account_entity_1.AccountType.INCOME, isActive: true },
-            order: { accountCode: 'ASC' },
-        });
+    async findSalesRevenueAccount(propertyId) {
+        const scopeFilters = this.buildScopeFilters(propertyId);
+        for (const scope of scopeFilters) {
+            const found = await this.accountsRepo.findOne({
+                where: [
+                    { ...scope, accountType: account_entity_1.AccountType.INCOME, isActive: true, accountName: (0, typeorm_2.ILike)('%sales%') },
+                    { ...scope, accountType: account_entity_1.AccountType.INCOME, isActive: true, accountName: (0, typeorm_2.ILike)('%revenue%') },
+                    { ...scope, accountType: account_entity_1.AccountType.INCOME, isActive: true, accountName: (0, typeorm_2.ILike)('%income%') },
+                ],
+                order: { accountCode: 'ASC' },
+            });
+            if (found)
+                return found;
+            const fallback = await this.accountsRepo.findOne({
+                where: { ...scope, accountType: account_entity_1.AccountType.INCOME, isActive: true },
+                order: { accountCode: 'ASC' },
+            });
+            if (fallback)
+                return fallback;
+        }
+        return null;
     }
-    async findSalaryExpenseAccount() {
-        const byName = await this.accountsRepo.findOne({
-            where: [
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%salary%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%payroll%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%wages%') },
-            ],
-            order: { accountCode: 'ASC' },
-        });
-        if (byName)
-            return byName;
-        return this.accountsRepo.findOne({
-            where: { accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
-            order: { accountCode: 'ASC' },
-        });
+    async findSalaryExpenseAccount(propertyId) {
+        const scopeFilters = this.buildScopeFilters(propertyId);
+        for (const scope of scopeFilters) {
+            const found = await this.accountsRepo.findOne({
+                where: [
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%salary%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%payroll%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%wages%') },
+                ],
+                order: { accountCode: 'ASC' },
+            });
+            if (found)
+                return found;
+            const fallback = await this.accountsRepo.findOne({
+                where: { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
+                order: { accountCode: 'ASC' },
+            });
+            if (fallback)
+                return fallback;
+        }
+        return null;
     }
-    async findExpenseAccount(accountId) {
+    async findExpenseAccount(accountId, propertyId) {
         if (accountId) {
             const acc = await this.accountsRepo.findOne({ where: { id: accountId, isActive: true } });
             if (acc)
                 return acc;
         }
-        return this.accountsRepo.findOne({
-            where: { accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
-            order: { accountCode: 'ASC' },
-        });
+        const scopeFilters = this.buildScopeFilters(propertyId);
+        for (const scope of scopeFilters) {
+            const found = await this.accountsRepo.findOne({
+                where: { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
+                order: { accountCode: 'ASC' },
+            });
+            if (found)
+                return found;
+        }
+        return null;
+    }
+    buildScopeFilters(propertyId) {
+        if (propertyId) {
+            return [{ propertyId }, { propertyId: null }];
+        }
+        return [{}];
     }
     async generateEntryNumber() {
         const year = new Date().getFullYear();
@@ -119,6 +149,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
                 createdBy: opts.createdBy,
                 approvedBy: opts.createdBy,
                 approvedAt: new Date(),
+                propertyId: opts.propertyId ?? null,
             });
             const savedJE = await this.jeRepo.save(je);
             const debitLine = this.jelRepo.create({
@@ -159,8 +190,8 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
     }
     async onPaymentCompleted(payment) {
         const [bankAccount, revenueAccount] = await Promise.all([
-            this.findCashOrBankAccount(),
-            this.findSalesRevenueAccount(),
+            this.findCashOrBankAccount(payment.propertyId),
+            this.findSalesRevenueAccount(payment.propertyId),
         ]);
         if (!bankAccount || !revenueAccount) {
             this.logger.warn(`Auto JE skipped for payment ${payment.paymentCode}: missing Bank or Revenue account in Chart of Accounts`);
@@ -175,12 +206,13 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
             creditAccountId: revenueAccount.id,
             amount: payment.amount,
             createdBy: payment.createdBy,
+            propertyId: payment.propertyId,
         });
     }
     async onExpensePaid(expense) {
         const [expenseAccount, bankAccount] = await Promise.all([
-            this.findExpenseAccount(expense.accountId),
-            this.findCashOrBankAccount(),
+            this.findExpenseAccount(expense.accountId, expense.propertyId),
+            this.findCashOrBankAccount(expense.propertyId),
         ]);
         if (!expenseAccount || !bankAccount) {
             this.logger.warn(`Auto JE skipped for expense ${expense.expenseCode}: missing Expense or Bank account`);
@@ -195,43 +227,53 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
             creditAccountId: bankAccount.id,
             amount: expense.amount,
             createdBy: expense.createdBy,
+            propertyId: expense.propertyId,
         });
     }
-    async findConstructionExpenseAccount() {
-        const byName = await this.accountsRepo.findOne({
-            where: [
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%construction%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%work in progress%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%wip%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%contractor%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%civil%') },
-            ],
-            order: { accountCode: 'ASC' },
-        });
-        if (byName)
-            return byName;
-        return this.accountsRepo.findOne({
-            where: { accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
-            order: { accountCode: 'ASC' },
-        });
+    async findConstructionExpenseAccount(propertyId) {
+        const scopeFilters = this.buildScopeFilters(propertyId);
+        for (const scope of scopeFilters) {
+            const found = await this.accountsRepo.findOne({
+                where: [
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%construction%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%work in progress%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%wip%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%contractor%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%civil%') },
+                ],
+                order: { accountCode: 'ASC' },
+            });
+            if (found)
+                return found;
+            const fallback = await this.accountsRepo.findOne({
+                where: { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
+                order: { accountCode: 'ASC' },
+            });
+            if (fallback)
+                return fallback;
+        }
+        return null;
     }
-    async findMaterialPurchaseAccount() {
-        const byName = await this.accountsRepo.findOne({
-            where: [
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%material%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%purchase%') },
-                { accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%procurement%') },
-            ],
-            order: { accountCode: 'ASC' },
-        });
-        if (byName)
-            return byName;
-        return this.findConstructionExpenseAccount();
+    async findMaterialPurchaseAccount(propertyId) {
+        const scopeFilters = this.buildScopeFilters(propertyId);
+        for (const scope of scopeFilters) {
+            const found = await this.accountsRepo.findOne({
+                where: [
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%material%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%purchase%') },
+                    { ...scope, accountType: account_entity_1.AccountType.EXPENSE, isActive: true, accountName: (0, typeorm_2.ILike)('%procurement%') },
+                ],
+                order: { accountCode: 'ASC' },
+            });
+            if (found)
+                return found;
+        }
+        return this.findConstructionExpenseAccount(propertyId);
     }
     async onRABillPaid(bill) {
         const [constructionAccount, bankAccount] = await Promise.all([
-            this.findConstructionExpenseAccount(),
-            this.findCashOrBankAccount(),
+            this.findConstructionExpenseAccount(bill.propertyId),
+            this.findCashOrBankAccount(bill.propertyId),
         ]);
         if (!constructionAccount || !bankAccount) {
             this.logger.warn(`Auto JE skipped for RA Bill ${bill.raBillNumber}: missing Construction Expense or Bank account in Chart of Accounts`);
@@ -251,12 +293,13 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
             creditAccountId: bankAccount.id,
             amount: bill.netPayable,
             createdBy: bill.createdBy,
+            propertyId: bill.propertyId,
         });
     }
     async onVendorPaymentRecorded(payment) {
         const [materialAccount, bankAccount] = await Promise.all([
-            this.findMaterialPurchaseAccount(),
-            this.findCashOrBankAccount(),
+            this.findMaterialPurchaseAccount(payment.propertyId),
+            this.findCashOrBankAccount(payment.propertyId),
         ]);
         if (!materialAccount || !bankAccount) {
             this.logger.warn(`Auto JE skipped for vendor payment ${payment.id}: missing Material Expense or Bank account in Chart of Accounts`);
@@ -276,12 +319,13 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
             creditAccountId: bankAccount.id,
             amount: payment.amount,
             createdBy: payment.createdBy,
+            propertyId: payment.propertyId,
         });
     }
     async onSalaryPaid(salary) {
         const [salaryAccount, bankAccount] = await Promise.all([
-            this.findSalaryExpenseAccount(),
-            this.findCashOrBankAccount(),
+            this.findSalaryExpenseAccount(salary.propertyId),
+            this.findCashOrBankAccount(salary.propertyId),
         ]);
         if (!salaryAccount || !bankAccount) {
             this.logger.warn(`Auto JE skipped for salary ${salary.id}: missing Salary Expense or Bank account`);
@@ -297,6 +341,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
             creditAccountId: bankAccount.id,
             amount: salary.netSalary,
             createdBy: salary.createdBy,
+            propertyId: salary.propertyId,
         });
     }
 };

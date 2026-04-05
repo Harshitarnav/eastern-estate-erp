@@ -13,6 +13,7 @@ exports.VendorPayment = exports.PaymentMode = void 0;
 const typeorm_1 = require("typeorm");
 const vendor_entity_1 = require("./vendor.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
+const property_entity_1 = require("../../properties/entities/property.entity");
 var PaymentMode;
 (function (PaymentMode) {
     PaymentMode["CASH"] = "CASH";
@@ -88,6 +89,15 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'created_by' }),
     __metadata("design:type", user_entity_1.User)
 ], VendorPayment.prototype, "creator", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], VendorPayment.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true, onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], VendorPayment.prototype, "property", void 0);
 __decorate([
     (0, typeorm_1.Column)({ name: 'journal_entry_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)

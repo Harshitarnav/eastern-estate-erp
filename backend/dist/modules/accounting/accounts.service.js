@@ -26,11 +26,17 @@ let AccountsService = class AccountsService {
         this.dataSource = dataSource;
     }
     async create(createAccountDto) {
+        const scopedPropertyId = createAccountDto.propertyId || null;
         const existingAccount = await this.accountsRepository.findOne({
-            where: { accountCode: createAccountDto.accountCode },
+            where: {
+                accountCode: createAccountDto.accountCode,
+                isActive: true,
+                propertyId: scopedPropertyId,
+            },
         });
         if (existingAccount) {
-            throw new common_1.BadRequestException(`Account with code ${createAccountDto.accountCode} already exists`);
+            const scope = scopedPropertyId ? 'this project' : 'the company-wide scope';
+            throw new common_1.BadRequestException(`Account with code ${createAccountDto.accountCode} already exists in ${scope}`);
         }
         if (createAccountDto.parentAccountId) {
             const parentAccount = await this.accountsRepository.findOne({
@@ -46,22 +52,28 @@ let AccountsService = class AccountsService {
         });
         return await this.accountsRepository.save(account);
     }
-    async findAll(filters) {
-        const query = this.accountsRepository.createQueryBuilder('account');
+    async findAll(filters, scopePropertyIds) {
+        const query = this.accountsRepository.createQueryBuilder('account')
+            .leftJoinAndSelect('account.property', 'property');
         if (filters?.accountType) {
             query.andWhere('account.accountType = :accountType', {
                 accountType: filters.accountType,
             });
         }
-        if (filters?.isActive !== undefined) {
-            query.andWhere('account.isActive = :isActive', {
-                isActive: filters.isActive,
-            });
-        }
+        const isActiveFilter = filters?.isActive !== undefined ? filters.isActive : true;
+        query.andWhere('account.isActive = :isActive', { isActive: isActiveFilter });
         if (filters?.parentAccountId) {
             query.andWhere('account.parentAccountId = :parentAccountId', {
                 parentAccountId: filters.parentAccountId,
             });
+        }
+        if (filters?.propertyId) {
+            query.andWhere('account.propertyId = :propertyId', {
+                propertyId: filters.propertyId,
+            });
+        }
+        if (scopePropertyIds?.length) {
+            query.andWhere('(account.propertyId IS NULL OR account.propertyId IN (:...scopePropertyIds))', { scopePropertyIds });
         }
         query.orderBy('account.accountCode', 'ASC');
         return await query.getMany();
@@ -101,25 +113,32 @@ let AccountsService = class AccountsService {
         account.isActive = false;
         await this.accountsRepository.save(account);
     }
-    async getAccountHierarchy() {
-        const accounts = await this.accountsRepository.find({
-            where: { isActive: true },
-            relations: ['childAccounts'],
-            order: { accountCode: 'ASC' },
-        });
-        return accounts.filter(account => !account.parentAccountId);
+    async getAccountHierarchy(scopePropertyIds) {
+        const qb = this.accountsRepository
+            .createQueryBuilder('account')
+            .leftJoinAndSelect('account.childAccounts', 'childAccounts')
+            .where('account.isActive = :ia', { ia: true })
+            .andWhere('account.parentAccountId IS NULL');
+        if (scopePropertyIds?.length) {
+            qb.andWhere('(account.propertyId IS NULL OR account.propertyId IN (:...scopePropertyIds))', { scopePropertyIds });
+        }
+        qb.orderBy('account.accountCode', 'ASC');
+        return qb.getMany();
     }
-    async getBalanceSheet() {
+    async getBalanceSheet(propertyId) {
+        const scopeWhere = (type) => propertyId
+            ? { accountType: type, isActive: true, propertyId }
+            : { accountType: type, isActive: true };
         const assets = await this.accountsRepository.find({
-            where: { accountType: account_entity_1.AccountType.ASSET, isActive: true },
+            where: scopeWhere(account_entity_1.AccountType.ASSET),
             order: { accountCode: 'ASC' },
         });
         const liabilities = await this.accountsRepository.find({
-            where: { accountType: account_entity_1.AccountType.LIABILITY, isActive: true },
+            where: scopeWhere(account_entity_1.AccountType.LIABILITY),
             order: { accountCode: 'ASC' },
         });
         const equity = await this.accountsRepository.find({
-            where: { accountType: account_entity_1.AccountType.EQUITY, isActive: true },
+            where: scopeWhere(account_entity_1.AccountType.EQUITY),
             order: { accountCode: 'ASC' },
         });
         const totalAssets = assets.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
@@ -134,13 +153,16 @@ let AccountsService = class AccountsService {
             totalEquity,
         };
     }
-    async getProfitAndLoss(startDate, endDate) {
+    async getProfitAndLoss(startDate, endDate, propertyId) {
+        const scopeWhere = (type) => propertyId
+            ? { accountType: type, isActive: true, propertyId }
+            : { accountType: type, isActive: true };
         const income = await this.accountsRepository.find({
-            where: { accountType: account_entity_1.AccountType.INCOME, isActive: true },
+            where: scopeWhere(account_entity_1.AccountType.INCOME),
             order: { accountCode: 'ASC' },
         });
         const expenses = await this.accountsRepository.find({
-            where: { accountType: account_entity_1.AccountType.EXPENSE, isActive: true },
+            where: scopeWhere(account_entity_1.AccountType.EXPENSE),
             order: { accountCode: 'ASC' },
         });
         const totalIncome = income.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
@@ -154,9 +176,12 @@ let AccountsService = class AccountsService {
             netProfit,
         };
     }
-    async getTrialBalance() {
+    async getTrialBalance(propertyId) {
+        const where = { isActive: true };
+        if (propertyId)
+            where.propertyId = propertyId;
         const allAccounts = await this.accountsRepository.find({
-            where: { isActive: true },
+            where,
             order: { accountCode: 'ASC' },
         });
         const trialBalanceRows = allAccounts.map((account) => {

@@ -29,6 +29,10 @@ export interface Permission {
   id: string;
   name: string;
   description?: string;
+  /** Present when API returns entity fields (module:action[:resource]) */
+  module?: string;
+  action?: string;
+  resource?: string;
 }
 
 export interface CreateUserDto {

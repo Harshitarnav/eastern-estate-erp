@@ -13,6 +13,7 @@ exports.JournalEntry = exports.JournalEntryStatus = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
 const journal_entry_line_entity_1 = require("./journal-entry-line.entity");
+const property_entity_1 = require("../../properties/entities/property.entity");
 var JournalEntryStatus;
 (function (JournalEntryStatus) {
     JournalEntryStatus["DRAFT"] = "DRAFT";
@@ -106,6 +107,15 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => journal_entry_line_entity_1.JournalEntryLine, (line) => line.journalEntry, { cascade: true }),
     __metadata("design:type", Array)
 ], JournalEntry.prototype, "lines", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'property_id', nullable: true }),
+    __metadata("design:type", String)
+], JournalEntry.prototype, "propertyId", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => property_entity_1.Property, { nullable: true, onDelete: 'SET NULL' }),
+    (0, typeorm_1.JoinColumn)({ name: 'property_id' }),
+    __metadata("design:type", property_entity_1.Property)
+], JournalEntry.prototype, "property", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

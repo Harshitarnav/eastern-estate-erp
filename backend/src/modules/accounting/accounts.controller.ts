@@ -8,75 +8,124 @@ import {
   Delete,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { AccountsService } from './accounts.service';
+import { AccountingService } from './accounting.service';
 import { CreateAccountDto, UpdateAccountDto } from './dto/create-account.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AccountType } from './entities/account.entity';
+import {
+  accessiblePropertyIdsOrThrow,
+  assertAccountReadable,
+  resolveAccountingPropertyScope,
+} from './utils/accounting-scope.util';
 
 @Controller('accounting/accounts')
 @UseGuards(JwtAuthGuard)
 export class AccountsController {
-  constructor(private readonly accountsService: AccountsService) {}
+  constructor(
+    private readonly accountsService: AccountsService,
+    private readonly accountingService: AccountingService,
+  ) {}
 
   @Post()
   create(@Body() createAccountDto: CreateAccountDto) {
     return this.accountsService.create(createAccountDto);
   }
 
+  @Post('seed-for-project/:propertyId')
+  seedCoaForProject(@Param('propertyId') propertyId: string) {
+    return this.accountingService.seedCoaForProject(propertyId);
+  }
+
   @Get()
   findAll(
+    @Req() req: Request,
     @Query('accountType') accountType?: AccountType,
     @Query('isActive') isActive?: string,
+    @Query('propertyId') propertyId?: string,
   ) {
-    return this.accountsService.findAll({
-      accountType,
-      isActive: isActive ? isActive === 'true' : undefined,
-    });
+    const scopeIds = accessiblePropertyIdsOrThrow(req as any);
+    return this.accountsService.findAll(
+      {
+        accountType,
+        isActive: isActive ? isActive === 'true' : undefined,
+        propertyId,
+      },
+      scopeIds,
+    );
   }
 
   @Get('hierarchy')
-  getHierarchy() {
-    return this.accountsService.getAccountHierarchy();
+  getHierarchy(@Req() req: Request) {
+    const scopeIds = accessiblePropertyIdsOrThrow(req as any);
+    return this.accountsService.getAccountHierarchy(scopeIds);
   }
 
   @Get('balance-sheet')
-  getBalanceSheet() {
-    return this.accountsService.getBalanceSheet();
+  getBalanceSheet(@Query('propertyId') propertyId: string | undefined, @Req() req: Request) {
+    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    return this.accountsService.getBalanceSheet(resolved);
   }
 
   @Get('profit-loss')
-  getProfitAndLoss() {
-    return this.accountsService.getProfitAndLoss();
+  getProfitAndLoss(
+    @Req() req: Request,
+    @Query('propertyId') propertyId: string | undefined,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    return this.accountsService.getProfitAndLoss(
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+      resolved,
+    );
   }
 
   @Get('trial-balance')
-  getTrialBalance() {
-    return this.accountsService.getTrialBalance();
+  getTrialBalance(@Query('propertyId') propertyId: string | undefined, @Req() req: Request) {
+    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    return this.accountsService.getTrialBalance(resolved);
   }
 
   @Get('property-pl')
-  getPropertyWisePL(@Query('propertyId') propertyId: string) {
+  getPropertyWisePL(@Query('propertyId') propertyId: string, @Req() req: Request) {
+    resolveAccountingPropertyScope(req as any, propertyId);
     return this.accountsService.getPropertyWisePL(propertyId);
   }
 
   @Get('code/:code')
-  findByCode(@Param('code') code: string) {
-    return this.accountsService.findByCode(code);
+  async findByCode(@Param('code') code: string, @Req() req: Request) {
+    const acc = await this.accountsService.findByCode(code);
+    assertAccountReadable(acc, req as any);
+    return acc;
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.accountsService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: Request) {
+    const acc = await this.accountsService.findOne(id);
+    assertAccountReadable(acc, req as any);
+    return acc;
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAccountDto: UpdateAccountDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateAccountDto: UpdateAccountDto,
+    @Req() req: Request,
+  ) {
+    const acc = await this.accountsService.findOne(id);
+    assertAccountReadable(acc, req as any);
     return this.accountsService.update(id, updateAccountDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string, @Req() req: Request) {
+    const acc = await this.accountsService.findOne(id);
+    assertAccountReadable(acc, req as any);
     return this.accountsService.remove(id);
   }
 }

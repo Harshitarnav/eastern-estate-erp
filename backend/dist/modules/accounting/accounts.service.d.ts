@@ -12,13 +12,14 @@ export declare class AccountsService {
         accountType?: AccountType;
         isActive?: boolean;
         parentAccountId?: string;
-    }): Promise<Account[]>;
+        propertyId?: string;
+    }, scopePropertyIds?: string[] | null): Promise<Account[]>;
     findOne(id: string): Promise<Account>;
     findByCode(accountCode: string): Promise<Account>;
     update(id: string, updateAccountDto: UpdateAccountDto): Promise<Account>;
     remove(id: string): Promise<void>;
-    getAccountHierarchy(): Promise<Account[]>;
-    getBalanceSheet(): Promise<{
+    getAccountHierarchy(scopePropertyIds?: string[] | null): Promise<Account[]>;
+    getBalanceSheet(propertyId?: string): Promise<{
         assets: Account[];
         liabilities: Account[];
         equity: Account[];
@@ -26,14 +27,14 @@ export declare class AccountsService {
         totalLiabilities: number;
         totalEquity: number;
     }>;
-    getProfitAndLoss(startDate?: Date, endDate?: Date): Promise<{
+    getProfitAndLoss(startDate?: Date, endDate?: Date, propertyId?: string): Promise<{
         income: Account[];
         expenses: Account[];
         totalIncome: number;
         totalExpenses: number;
         netProfit: number;
     }>;
-    getTrialBalance(): Promise<{
+    getTrialBalance(propertyId?: string): Promise<{
         accounts: Array<{
             accountCode: string;
             accountName: string;

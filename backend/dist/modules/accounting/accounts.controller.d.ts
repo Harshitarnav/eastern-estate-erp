@@ -1,13 +1,20 @@
+import type { Request } from 'express';
 import { AccountsService } from './accounts.service';
+import { AccountingService } from './accounting.service';
 import { CreateAccountDto, UpdateAccountDto } from './dto/create-account.dto';
 import { AccountType } from './entities/account.entity';
 export declare class AccountsController {
     private readonly accountsService;
-    constructor(accountsService: AccountsService);
+    private readonly accountingService;
+    constructor(accountsService: AccountsService, accountingService: AccountingService);
     create(createAccountDto: CreateAccountDto): Promise<import("./entities/account.entity").Account>;
-    findAll(accountType?: AccountType, isActive?: string): Promise<import("./entities/account.entity").Account[]>;
-    getHierarchy(): Promise<import("./entities/account.entity").Account[]>;
-    getBalanceSheet(): Promise<{
+    seedCoaForProject(propertyId: string): Promise<{
+        created: number;
+        skipped: number;
+    }>;
+    findAll(req: Request, accountType?: AccountType, isActive?: string, propertyId?: string): Promise<import("./entities/account.entity").Account[]>;
+    getHierarchy(req: Request): Promise<import("./entities/account.entity").Account[]>;
+    getBalanceSheet(propertyId: string | undefined, req: Request): Promise<{
         assets: import("./entities/account.entity").Account[];
         liabilities: import("./entities/account.entity").Account[];
         equity: import("./entities/account.entity").Account[];
@@ -15,14 +22,14 @@ export declare class AccountsController {
         totalLiabilities: number;
         totalEquity: number;
     }>;
-    getProfitAndLoss(): Promise<{
+    getProfitAndLoss(req: Request, propertyId: string | undefined, startDate?: string, endDate?: string): Promise<{
         income: import("./entities/account.entity").Account[];
         expenses: import("./entities/account.entity").Account[];
         totalIncome: number;
         totalExpenses: number;
         netProfit: number;
     }>;
-    getTrialBalance(): Promise<{
+    getTrialBalance(propertyId: string | undefined, req: Request): Promise<{
         accounts: Array<{
             accountCode: string;
             accountName: string;
@@ -34,7 +41,7 @@ export declare class AccountsController {
         totalCredit: number;
         isBalanced: boolean;
     }>;
-    getPropertyWisePL(propertyId: string): Promise<{
+    getPropertyWisePL(propertyId: string, req: Request): Promise<{
         propertyId: string;
         income: Array<{
             accountName: string;
@@ -50,8 +57,8 @@ export declare class AccountsController {
         totalExpenses: number;
         netProfit: number;
     }>;
-    findByCode(code: string): Promise<import("./entities/account.entity").Account>;
-    findOne(id: string): Promise<import("./entities/account.entity").Account>;
-    update(id: string, updateAccountDto: UpdateAccountDto): Promise<import("./entities/account.entity").Account>;
-    remove(id: string): Promise<void>;
+    findByCode(code: string, req: Request): Promise<import("./entities/account.entity").Account>;
+    findOne(id: string, req: Request): Promise<import("./entities/account.entity").Account>;
+    update(id: string, updateAccountDto: UpdateAccountDto, req: Request): Promise<import("./entities/account.entity").Account>;
+    remove(id: string, req: Request): Promise<void>;
 }

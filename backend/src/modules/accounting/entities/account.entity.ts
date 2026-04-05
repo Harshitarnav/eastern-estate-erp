@@ -8,6 +8,7 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
+import { Property } from '../../properties/entities/property.entity';
 
 export enum AccountType {
   ASSET = 'ASSET',
@@ -22,7 +23,8 @@ export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'account_code', unique: true, length: 50 })
+  // unique constraint is now composite (account_code + property_id scope) — managed by migration v014
+  @Column({ name: 'account_code', length: 50 })
   accountCode: string;
 
   @Column({ name: 'account_name', length: 200 })
@@ -59,6 +61,13 @@ export class Account {
 
   @Column({ type: 'text', nullable: true })
   description: string;
+
+  @Column({ name: 'property_id', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

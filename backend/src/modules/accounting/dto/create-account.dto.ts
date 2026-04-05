@@ -35,6 +35,10 @@ export class CreateAccountDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  propertyId?: string;
 }
 
 export class UpdateAccountDto {
@@ -55,4 +59,8 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  propertyId?: string | null;
 }

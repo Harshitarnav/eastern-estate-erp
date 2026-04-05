@@ -39,6 +39,9 @@ let SalaryPaymentsController = class SalaryPaymentsController {
     cancel(id) {
         return this.salaryPaymentsService.cancel(id);
     }
+    reversePay(id, req) {
+        return this.salaryPaymentsService.reversePaidPayment(id, req.user.userId);
+    }
     retryJE(id, req) {
         return this.salaryPaymentsService.retryJE(id, req.user.userId);
     }
@@ -91,6 +94,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], SalaryPaymentsController.prototype, "cancel", null);
+__decorate([
+    (0, common_1.Post)(':id/reverse-pay'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], SalaryPaymentsController.prototype, "reversePay", null);
 __decorate([
     (0, common_1.Post)(':id/retry-je'),
     __param(0, (0, common_1.Param)('id')),

@@ -57,6 +57,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAccountDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAccountDto.prototype, "propertyId", void 0);
 class UpdateAccountDto {
 }
 exports.UpdateAccountDto = UpdateAccountDto;
@@ -82,4 +87,9 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateAccountDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAccountDto.prototype, "propertyId", void 0);
 //# sourceMappingURL=create-account.dto.js.map

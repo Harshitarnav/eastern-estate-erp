@@ -10,6 +10,7 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PropertyAccessService, GrantAccessDto, BulkGrantAccessDto } from '../services/property-access.service';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
@@ -132,12 +133,21 @@ export class PropertyAccessController {
   }
 
   /**
-   * Get property access for a specific user
-   * Admin/Super Admin only
+   * Get property access for a specific user.
+   * Users may read their own assignments; admin / super_admin / hr may read anyone's.
    */
   @Get(':userId/property-access')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.HR)
-  async getUserPropertyAccess(@Param('userId') userId: string) {
+  async getUserPropertyAccess(@Param('userId') userId: string, @Request() req: any) {
+    const roleNames: string[] = (req.user.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    const privileged =
+      roleNames.includes(UserRole.SUPER_ADMIN) ||
+      roleNames.includes(UserRole.ADMIN) ||
+      roleNames.includes(UserRole.HR);
+    if (!privileged && userId !== req.user.id) {
+      throw new ForbiddenException('You can only view your own project access');
+    }
     return this.propertyAccessService.getUserProperties(userId);
   }
 

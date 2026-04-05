@@ -1,3 +1,4 @@
+import type { Request as ExpressRequest } from 'express';
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto, UpdateExpenseDto, ApproveExpenseDto, RejectExpenseDto } from './dto/create-expense.dto';
 import { ExpenseStatus } from './entities/expense.entity';
@@ -5,8 +6,8 @@ export declare class ExpensesController {
     private readonly expensesService;
     constructor(expensesService: ExpensesService);
     create(createExpenseDto: CreateExpenseDto, req: any): Promise<import("./entities/expense.entity").Expense>;
-    findAll(category?: string, status?: ExpenseStatus, startDate?: string, endDate?: string): Promise<import("./entities/expense.entity").Expense[]>;
-    getSummary(startDate?: string, endDate?: string): Promise<{
+    findAll(req: ExpressRequest, category?: string, status?: ExpenseStatus, startDate?: string, endDate?: string, propertyId?: string): Promise<import("./entities/expense.entity").Expense[]>;
+    getSummary(req: ExpressRequest, startDate?: string, endDate?: string): Promise<{
         totalExpenses: number;
         byCategory: {
             category: string;
@@ -17,10 +18,10 @@ export declare class ExpensesController {
             total: number;
         }[];
     }>;
-    findOne(id: string): Promise<import("./entities/expense.entity").Expense>;
-    update(id: string, updateExpenseDto: UpdateExpenseDto): Promise<import("./entities/expense.entity").Expense>;
+    findOne(id: string, req: ExpressRequest): Promise<import("./entities/expense.entity").Expense>;
+    update(id: string, updateExpenseDto: UpdateExpenseDto, req: ExpressRequest): Promise<import("./entities/expense.entity").Expense>;
     approve(id: string, approveDto: ApproveExpenseDto, req: any): Promise<import("./entities/expense.entity").Expense>;
     reject(id: string, rejectDto: RejectExpenseDto, req: any): Promise<import("./entities/expense.entity").Expense>;
     markAsPaid(id: string, req: any): Promise<import("./entities/expense.entity").Expense>;
-    remove(id: string): Promise<void>;
+    remove(id: string, req: ExpressRequest): Promise<void>;
 }

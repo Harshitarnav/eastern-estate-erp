@@ -16,6 +16,7 @@ export declare class JournalEntriesService {
         startDate?: Date;
         endDate?: Date;
         referenceType?: string;
+        accessiblePropertyIds?: string[] | null;
     }): Promise<JournalEntry[]>;
     findOne(id: string): Promise<JournalEntry>;
     update(id: string, updateJournalEntryDto: UpdateJournalEntryDto): Promise<JournalEntry>;

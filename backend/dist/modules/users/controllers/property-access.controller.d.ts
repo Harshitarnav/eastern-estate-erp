@@ -16,7 +16,7 @@ export declare class PropertyAccessController {
     getAllPropertyAccess(): Promise<{
         message: string;
     }>;
-    getUserPropertyAccess(userId: string): Promise<import("../entities/user-property-access.entity").UserPropertyAccess[]>;
+    getUserPropertyAccess(userId: string, req: any): Promise<import("../entities/user-property-access.entity").UserPropertyAccess[]>;
     grantAccessToUser(userId: string, body: {
         propertyId: string;
         role?: string;

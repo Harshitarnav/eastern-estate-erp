@@ -20,8 +20,10 @@ export declare class SalaryPaymentsController {
         accountNumber?: string;
         ifscCode?: string;
         paymentRemarks?: string;
+        propertyId?: string;
     }, req: any): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
     cancel(id: string): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
+    reversePay(id: string, req: any): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
     retryJE(id: string, req: any): Promise<{
         success: boolean;
         journalEntryNumber?: string;

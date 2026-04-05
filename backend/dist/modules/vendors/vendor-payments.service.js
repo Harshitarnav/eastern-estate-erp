@@ -19,12 +19,14 @@ const typeorm_2 = require("typeorm");
 const vendor_payment_entity_1 = require("./entities/vendor-payment.entity");
 const vendor_entity_1 = require("./entities/vendor.entity");
 const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
+const journal_entries_service_1 = require("../accounting/journal-entries.service");
 let VendorPaymentsService = class VendorPaymentsService {
-    constructor(paymentsRepository, vendorsRepository, dataSource, accountingIntegration) {
+    constructor(paymentsRepository, vendorsRepository, dataSource, accountingIntegration, journalEntriesService) {
         this.paymentsRepository = paymentsRepository;
         this.vendorsRepository = vendorsRepository;
         this.dataSource = dataSource;
         this.accountingIntegration = accountingIntegration;
+        this.journalEntriesService = journalEntriesService;
     }
     async create(createDto, userId) {
         if (userId)
@@ -63,6 +65,7 @@ let VendorPaymentsService = class VendorPaymentsService {
             vendorName,
             transactionReference: savedPayment.transactionReference ?? undefined,
             createdBy: savedPayment.createdBy,
+            propertyId: savedPayment.propertyId ?? null,
         });
         if (je) {
             await this.paymentsRepository.update(savedPayment.id, { journalEntryId: je.id });
@@ -71,7 +74,8 @@ let VendorPaymentsService = class VendorPaymentsService {
         return savedPayment;
     }
     async findAll(filters) {
-        const query = this.paymentsRepository.createQueryBuilder('payment');
+        const query = this.paymentsRepository.createQueryBuilder('payment')
+            .leftJoinAndSelect('payment.property', 'property');
         if (filters?.vendorId) {
             query.andWhere('payment.vendorId = :vendorId', { vendorId: filters.vendorId });
         }
@@ -89,11 +93,47 @@ let VendorPaymentsService = class VendorPaymentsService {
     }
     async update(id, updateDto) {
         const payment = await this.findOne(id);
+        if (payment.journalEntryId) {
+            throw new common_1.BadRequestException('This payment is posted to the books. It cannot be edited. Delete the payment to void the journal entry and re-record, or ask an admin.');
+        }
         Object.assign(payment, updateDto);
         return await this.paymentsRepository.save(payment);
     }
-    async remove(id) {
-        await this.paymentsRepository.delete(id);
+    async remove(id, userId) {
+        const payment = await this.paymentsRepository.findOne({ where: { id } });
+        if (!payment) {
+            throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
+        }
+        if (payment.journalEntryId) {
+            if (!userId) {
+                throw new common_1.BadRequestException('Cannot delete a posted vendor payment without a user context to record the journal void.');
+            }
+            await this.journalEntriesService.void(payment.journalEntryId, userId, {
+                voidReason: `Vendor payment deleted — payment ${id}`,
+            });
+        }
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            const vendor = await queryRunner.manager.findOne(vendor_entity_1.Vendor, {
+                where: { id: payment.vendorId },
+            });
+            if (vendor) {
+                vendor.outstandingAmount =
+                    Math.round((Number(vendor.outstandingAmount || 0) + Number(payment.amount)) * 100) / 100;
+                await queryRunner.manager.save(vendor);
+            }
+            await queryRunner.manager.delete(vendor_payment_entity_1.VendorPayment, id);
+            await queryRunner.commitTransaction();
+        }
+        catch (e) {
+            await queryRunner.rollbackTransaction();
+            throw e;
+        }
+        finally {
+            await queryRunner.release();
+        }
     }
     async getTotalPaidToVendor(vendorId) {
         const result = await this.paymentsRepository
@@ -112,6 +152,7 @@ exports.VendorPaymentsService = VendorPaymentsService = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.DataSource,
-        accounting_integration_service_1.AccountingIntegrationService])
+        accounting_integration_service_1.AccountingIntegrationService,
+        journal_entries_service_1.JournalEntriesService])
 ], VendorPaymentsService);
 //# sourceMappingURL=vendor-payments.service.js.map

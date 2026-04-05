@@ -123,7 +123,7 @@ function buildDemandDraftHtml(d) {
     <div>
       <div class="brand-name">Eastern Estate</div>
       <div class="brand-sub">Construction &amp; Development</div>
-      <div class="brand-tag">Building Homes, Nurturing Bonds</div>
+      <div class="brand-tag">Life Long Bonding...</div>
     </div>
     <div class="header-right">
       <div class="ref-no">Ref: ${d.refNumber}</div>

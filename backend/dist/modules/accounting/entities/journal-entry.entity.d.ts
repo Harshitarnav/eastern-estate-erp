@@ -1,5 +1,6 @@
 import { User } from '../../users/entities/user.entity';
 import { JournalEntryLine } from './journal-entry-line.entity';
+import { Property } from '../../properties/entities/property.entity';
 export declare enum JournalEntryStatus {
     DRAFT = "DRAFT",
     POSTED = "POSTED",
@@ -26,6 +27,8 @@ export declare class JournalEntry {
     voidedAt: Date;
     voidReason: string;
     lines: JournalEntryLine[];
+    propertyId: string | null;
+    property: Property;
     createdAt: Date;
     updatedAt: Date;
 }

@@ -1,6 +1,8 @@
 export declare enum UserRole {
     SUPER_ADMIN = "super_admin",
     ADMIN = "admin",
+    ACCOUNTANT = "accountant",
+    HEAD_ACCOUNTANT = "head_accountant",
     HR = "hr",
     CONSTRUCTION_TEAM = "construction_team",
     MARKETING_TEAM = "marketing_team",
@@ -11,7 +13,9 @@ export declare enum UserRole {
 export declare const ROLE_HIERARCHY: {
     super_admin: number;
     admin: number;
+    head_accountant: number;
     hr: number;
+    accountant: number;
     construction_team: number;
     marketing_team: number;
     sales_team: number;
@@ -21,6 +25,8 @@ export declare const ROLE_HIERARCHY: {
 export declare const ROLE_DISPLAY_NAMES: {
     super_admin: string;
     admin: string;
+    accountant: string;
+    head_accountant: string;
     hr: string;
     construction_team: string;
     marketing_team: string;
@@ -36,9 +42,12 @@ export declare const ROLE_MODULE_ACCESS: {
     marketing_team: string[];
     sales_team: string[];
     staff: string[];
+    accountant: string[];
+    head_accountant: string[];
     customer: string[];
 };
 export declare function hasModuleAccess(roles: string[], module: string): boolean;
 export declare function isAdminRole(roles: string[]): boolean;
+export declare function seesAllAccountingProjects(roles: string[]): boolean;
 export declare function getUserModules(roles: string[]): string[];
 export declare function requiresPropertyFiltering(roles: string[]): boolean;

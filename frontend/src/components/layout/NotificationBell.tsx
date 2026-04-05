@@ -336,8 +336,8 @@ export function NotificationBell() {
           style={{ maxHeight: '80vh' }}>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-gray-50 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
               <Bell className="w-4 h-4 text-[#A8211B]" />
               <span className="font-bold text-gray-900 text-sm">Notifications</span>
               {unreadCount > 0 && (

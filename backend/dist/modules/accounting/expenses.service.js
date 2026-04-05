@@ -71,6 +71,14 @@ let ExpensesService = class ExpensesService {
                 employeeId: filters.employeeId,
             });
         }
+        if (filters?.propertyId) {
+            query.andWhere('expense.propertyId = :propertyId', {
+                propertyId: filters.propertyId,
+            });
+        }
+        if (filters?.accessiblePropertyIds?.length) {
+            query.andWhere('(expense.propertyId IS NULL OR expense.propertyId IN (:...expAccIds))', { expAccIds: filters.accessiblePropertyIds });
+        }
         query.orderBy('expense.expenseDate', 'DESC');
         return await query.getMany();
     }
@@ -88,6 +96,9 @@ let ExpensesService = class ExpensesService {
         const expense = await this.findOne(id);
         if (expense.status === expense_entity_1.ExpenseStatus.APPROVED || expense.status === expense_entity_1.ExpenseStatus.PAID) {
             throw new common_1.BadRequestException('Cannot update approved or paid expenses');
+        }
+        if (expense.journalEntryId) {
+            throw new common_1.BadRequestException('This expense is posted to the books (journal entry linked). It cannot be edited. Contact an admin if a correction is required.');
         }
         const uuidFields = ['accountId', 'vendorId', 'employeeId', 'propertyId', 'constructionProjectId'];
         const sanitized = { ...updateExpenseDto };
@@ -160,6 +171,9 @@ let ExpensesService = class ExpensesService {
             query.andWhere('expense.expenseDate <= :endDate', {
                 endDate: filters.endDate,
             });
+        }
+        if (filters?.accessiblePropertyIds?.length) {
+            query.andWhere('(expense.propertyId IS NULL OR expense.propertyId IN (:...sumAccIds))', { sumAccIds: filters.accessiblePropertyIds });
         }
         const expenses = await query.getMany();
         const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);

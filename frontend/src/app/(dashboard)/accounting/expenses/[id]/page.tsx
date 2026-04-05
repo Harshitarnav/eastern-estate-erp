@@ -4,11 +4,17 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { expensesService } from '@/services/accounting.service';
+import { useAuthStore } from '@/store/authStore';
 
 export default function ViewExpensePage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
+
+  const { user } = useAuthStore();
+  const canAdminEdit = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
   
   const [expense, setExpense] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -91,25 +97,27 @@ export default function ViewExpensePage() {
             </h1>
             <p className="text-gray-600 mt-1 truncate">{expense.expenseCategory}</p>
           </div>
-          <div className="flex gap-3 shrink-0 flex-wrap">
-            {expense.status === 'PENDING' && (
+          {canAdminEdit && (
+            <div className="flex gap-3 shrink-0 flex-wrap">
+              {expense.status === 'PENDING' && (
+                <button
+                  onClick={() => router.push(`/accounting/expenses/${id}/edit`)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                  style={{ borderColor: '#A8211B', color: '#A8211B' }}
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </button>
+              )}
               <button
-                onClick={() => router.push(`/accounting/expenses/${id}/edit`)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
-                style={{ borderColor: '#A8211B', color: '#A8211B' }}
+                onClick={handleDelete}
+                className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-2"
               >
-                <Edit className="h-4 w-4" />
-                Edit
+                <Trash2 className="h-4 w-4" />
+                Delete
               </button>
-            )}
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

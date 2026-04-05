@@ -1,8 +1,13 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body, UseGuards,
+  Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { BankAccountsService } from './bank-accounts.service';
+import {
+  assertBankAccountReadable,
+  resolveAccountingPropertyScope,
+} from './utils/accounting-scope.util';
 
 @Controller('accounting/bank-accounts')
 @UseGuards(JwtAuthGuard)
@@ -10,13 +15,16 @@ export class BankAccountsController {
   constructor(private readonly service: BankAccountsService) {}
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query('propertyId') propertyId: string | undefined, @Req() req: Request) {
+    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    return this.service.findAll(resolved);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: Request) {
+    const ba = await this.service.findOne(id);
+    assertBankAccountReadable(ba, req as any);
+    return ba;
   }
 
   @Post()
@@ -29,27 +37,36 @@ export class BankAccountsController {
     accountType?: string;
     openingBalance?: number;
     description?: string;
+    propertyId?: string;
   }) {
     return this.service.create(body);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
+  async update(@Param('id') id: string, @Body() body: any, @Req() req: Request) {
+    const ba = await this.service.findOne(id);
+    assertBankAccountReadable(ba, req as any);
     return this.service.update(id, body);
   }
 
   @Patch(':id/deactivate')
-  deactivate(@Param('id') id: string) {
+  async deactivate(@Param('id') id: string, @Req() req: Request) {
+    const ba = await this.service.findOne(id);
+    assertBankAccountReadable(ba, req as any);
     return this.service.deactivate(id);
   }
 
   @Patch(':id/activate')
-  activate(@Param('id') id: string) {
+  async activate(@Param('id') id: string, @Req() req: Request) {
+    const ba = await this.service.findOne(id);
+    assertBankAccountReadable(ba, req as any);
     return this.service.activate(id);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
+  async delete(@Param('id') id: string, @Req() req: Request) {
+    const ba = await this.service.findOne(id);
+    assertBankAccountReadable(ba, req as any);
     return this.service.delete(id);
   }
 }

@@ -1,15 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { accountsService, Account } from '@/services/accounting.service';
+import { propertiesService } from '@/services/properties.service';
+import { usePropertyStore } from '@/store/propertyStore';
 
 export default function NewAccountPage() {
   const router = useRouter();
+  const { selectedProperties } = usePropertyStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+  const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    propertiesService.getProperties({ limit: 100 })
+      .then((res: any) => {
+        const list = res?.data ?? res ?? [];
+        setProperties(Array.isArray(list) ? list : list.data ?? []);
+      })
+      .catch(() => {});
+  }, []);
+
   type AccountForm = {
     accountCode: string;
     accountName: string;
@@ -18,6 +31,7 @@ export default function NewAccountPage() {
     description: string;
     openingBalance: number;
     isActive: boolean;
+    propertyId: string;
   };
 
   const [formData, setFormData] = useState<AccountForm>({
@@ -27,7 +41,8 @@ export default function NewAccountPage() {
     accountCategory: '',
     description: '',
     openingBalance: 0,
-    isActive: true
+    isActive: true,
+    propertyId: selectedProperties[0] ?? '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,7 +51,10 @@ export default function NewAccountPage() {
     setError('');
 
     try {
-      await accountsService.create(formData);
+      await accountsService.create({
+        ...formData,
+        propertyId: formData.propertyId || undefined,
+      } as any);
       // Use router.replace to trigger a full page refresh and data reload
       router.replace('/accounting/accounts');
       // Force a hard reload to ensure data is refreshed
@@ -165,7 +183,26 @@ export default function NewAccountPage() {
             </div>
 
             <div>
-              <label className="flex items-center gap-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Project (leave blank for company-wide)
+              </label>
+              <select
+                value={formData.propertyId}
+                onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+              >
+                <option value="">Company-wide (shared)</option>
+                {properties.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                RERA: project accounts are kept separate from company accounts.
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 mt-4">
                 <input
                   type="checkbox"
                   checked={formData.isActive}

@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const platform_express_1 = require("@nestjs/platform-express");
 const accounting_service_1 = require("./accounting.service");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const accounting_scope_util_1 = require("./utils/accounting-scope.util");
 let AccountingController = class AccountingController {
     constructor(accountingService) {
         this.accountingService = accountingService;
@@ -27,8 +28,8 @@ let AccountingController = class AccountingController {
     getWeeklyLedger(week, year) {
         return this.accountingService.getWeeklyLedger(week, year);
     }
-    getCashBook(startDate, endDate) {
-        return this.accountingService.getCashBook(new Date(startDate), new Date(endDate));
+    getCashBook(startDate, endDate, propertyId) {
+        return this.accountingService.getCashBook(new Date(startDate), new Date(endDate), propertyId);
     }
     getBankBook(bankAccountId, startDate, endDate) {
         return this.accountingService.getBankBook(bankAccountId, new Date(startDate), new Date(endDate));
@@ -52,10 +53,17 @@ let AccountingController = class AccountingController {
         });
         res.send(buffer);
     }
-    getPropertyWisePL(startDate, endDate) {
+    getPropertyWisePL(startDate, endDate, req) {
         const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
         const end = endDate ? new Date(endDate) : new Date();
-        return this.accountingService.getPropertyWisePL(start, end);
+        const allowed = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
+        return this.accountingService.getPropertyWisePL(start, end, allowed);
+    }
+    getProjectFundFlow(req, startDate, endDate, propertyId) {
+        const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+        const end = endDate ? new Date(endDate) : new Date();
+        const allowed = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
+        return this.accountingService.getProjectFundFlow(start, end, propertyId || null, allowed);
     }
     getARAgingReport(asOf) {
         const date = asOf ? new Date(asOf) : new Date();
@@ -96,8 +104,9 @@ __decorate([
     (0, common_1.Get)('ledgers/cash-book'),
     __param(0, (0, common_1.Query)('startDate')),
     __param(1, (0, common_1.Query)('endDate')),
+    __param(2, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", void 0)
 ], AccountingController.prototype, "getCashBook", null);
 __decorate([
@@ -139,10 +148,21 @@ __decorate([
     (0, common_1.Get)('reports/property-wise-pl'),
     __param(0, (0, common_1.Query)('startDate')),
     __param(1, (0, common_1.Query)('endDate')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", void 0)
 ], AccountingController.prototype, "getPropertyWisePL", null);
+__decorate([
+    (0, common_1.Get)('reports/project-fund-flow'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('startDate')),
+    __param(2, (0, common_1.Query)('endDate')),
+    __param(3, (0, common_1.Query)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:returntype", void 0)
+], AccountingController.prototype, "getProjectFundFlow", null);
 __decorate([
     (0, common_1.Get)('reports/ar-aging'),
     __param(0, (0, common_1.Query)('asOf')),

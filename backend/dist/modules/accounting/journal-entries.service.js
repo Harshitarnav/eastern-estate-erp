@@ -108,6 +108,15 @@ let JournalEntriesService = class JournalEntriesService {
                 referenceType: filters.referenceType,
             });
         }
+        if (filters?.accessiblePropertyIds?.length) {
+            query.andWhere(`NOT EXISTS (
+          SELECT 1 FROM journal_entry_lines jel2
+          INNER JOIN accounts acc2 ON acc2.id = jel2.account_id
+          WHERE jel2.journal_entry_id = je.id
+          AND acc2.property_id IS NOT NULL
+          AND acc2.property_id NOT IN (:...jeScopeIds)
+        )`, { jeScopeIds: filters.accessiblePropertyIds });
+        }
         query.orderBy('je.entryDate', 'DESC').addOrderBy('je.entryNumber', 'DESC');
         return await query.getMany();
     }

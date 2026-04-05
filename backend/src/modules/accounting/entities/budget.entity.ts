@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Account } from './account.entity';
+import { Property } from '../../properties/entities/property.entity';
 
 export enum BudgetStatus {
   DRAFT = 'DRAFT',
@@ -68,6 +69,13 @@ export class Budget {
 
   @Column({ type: 'text', nullable: true })
   notes: string;
+
+  @Column({ name: 'property_id', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
 
   @Column({ name: 'created_by', nullable: true })
   createdBy: string;

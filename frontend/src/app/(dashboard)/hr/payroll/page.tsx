@@ -21,7 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DollarSign, Users, Plus, CheckCircle, XCircle, Loader2, IndianRupee, RefreshCw, FileText } from 'lucide-react';
+import { DollarSign, Users, Plus, CheckCircle, XCircle, Loader2, IndianRupee, RefreshCw, FileText, Undo2 } from 'lucide-react';
+import { propertiesService } from '@/services/properties.service';
+import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
 
 interface Employee {
   id: string;
@@ -70,6 +73,11 @@ const statusColor: Record<string, string> = {
 };
 
 export default function PayrollPage() {
+  const { user } = useAuthStore();
+  const canAdminEdit = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
+
   const today = new Date();
   const [month, setMonth] = useState(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`);
   const [payments, setPayments] = useState<SalaryPayment[]>([]);
@@ -82,6 +90,7 @@ export default function PayrollPage() {
   const [error, setError] = useState('');
   const [jeRetrying, setJeRetrying] = useState<string | null>(null);
   const [jeMessage, setJeMessage] = useState<{ id: string; msg: string; success: boolean } | null>(null);
+  const [reversingId, setReversingId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     employeeId: '',
@@ -106,7 +115,18 @@ export default function PayrollPage() {
     transactionReference: '',
     bankName: '',
     paymentRemarks: '',
+    propertyId: '',
   });
+  const [allProperties, setAllProperties] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    propertiesService.getProperties({ limit: 100 })
+      .then((res: any) => {
+        const list = res?.data ?? res ?? [];
+        setAllProperties(Array.isArray(list) ? list : list.data ?? []);
+      })
+      .catch(() => {});
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -187,6 +207,23 @@ export default function PayrollPage() {
       setError(err.response?.data?.message || err.message || 'Failed to process payment');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleReversePay = async (payment: SalaryPayment) => {
+    if (!confirm(
+      'Reverse this salary payment? The posted journal entry will be voided (COA balances reversed) and this row will return to Pending so you can fix and pay again.',
+    )) return;
+    setReversingId(payment.id);
+    setJeMessage(null);
+    try {
+      await api.post(`/employees/salary-payments/${payment.id}/reverse-pay`, {});
+      toast.success('Payment reversed — record is Pending again; journal entry voided if one existed.');
+      await loadData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to reverse payment');
+    } finally {
+      setReversingId(null);
     }
   };
 
@@ -359,7 +396,26 @@ export default function PayrollPage() {
                           </Button>
                         )}
                         {p.paymentStatus === 'PAID' && (
-                          <span className="text-xs text-green-600">✓ Done</span>
+                          canAdminEdit ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleReversePay(p)}
+                              disabled={reversingId === p.id}
+                              className="text-amber-800 border-amber-300 hover:bg-amber-50 text-xs"
+                              title="Void JE and return to Pending"
+                            >
+                              {reversingId === p.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Undo2 className="h-3 w-3 mr-1" /> Reverse
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-green-600">✓ Done</span>
+                          )
                         )}
                       </td>
                     </tr>
@@ -400,12 +456,14 @@ export default function PayrollPage() {
 
       {/* Create Salary Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Add Salary for {monthLabel}</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="col-span-2">
+
+          <div className="space-y-4 py-2">
+            {/* Employee */}
+            <div>
               <Label>Employee *</Label>
               <Select value={form.employeeId} onValueChange={v => setForm(f => ({ ...f, employeeId: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
@@ -419,20 +477,24 @@ export default function PayrollPage() {
               </Select>
             </div>
 
-            <div>
-              <Label>Working Days</Label>
-              <Input type="number" value={form.workingDays}
-                onChange={e => setForm(f => ({ ...f, workingDays: Number(e.target.value) }))} />
-            </div>
-            <div>
-              <Label>Present Days</Label>
-              <Input type="number" value={form.presentDays}
-                onChange={e => setForm(f => ({ ...f, presentDays: Number(e.target.value) }))} />
+            {/* Days */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Working Days</Label>
+                <Input type="number" value={form.workingDays}
+                  onChange={e => setForm(f => ({ ...f, workingDays: Number(e.target.value) }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Present Days</Label>
+                <Input type="number" value={form.presentDays}
+                  onChange={e => setForm(f => ({ ...f, presentDays: Number(e.target.value) }))} />
+              </div>
             </div>
 
-            <div className="col-span-2 border-t pt-3">
+            {/* Earnings */}
+            <div className="border-t pt-3">
               <p className="font-medium text-sm text-gray-700 mb-3">Earnings</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { key: 'basicSalary', label: 'Basic Salary *' },
                   { key: 'houseRentAllowance', label: 'HRA' },
@@ -450,9 +512,10 @@ export default function PayrollPage() {
               </div>
             </div>
 
-            <div className="col-span-2 border-t pt-3">
+            {/* Deductions */}
+            <div className="border-t pt-3">
               <p className="font-medium text-sm text-gray-700 mb-3">Deductions</p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { key: 'pfDeduction', label: 'PF Deduction' },
                   { key: 'esiDeduction', label: 'ESI Deduction' },
@@ -472,32 +535,28 @@ export default function PayrollPage() {
             </div>
 
             {/* Live Net Salary Preview */}
-            <div className="col-span-2 bg-green-50 rounded-lg p-3">
-              {(() => {
-                const gross =
-                  Number(form.basicSalary || 0) +
-                  Number(form.houseRentAllowance || 0) +
-                  Number(form.transportAllowance || 0) +
-                  Number(form.medicalAllowance || 0) +
-                  Number(form.otherAllowances || 0);
-                const deductions =
-                  Number(form.pfDeduction || 0) +
-                  Number(form.esiDeduction || 0) +
-                  Number(form.taxDeduction || 0) +
-                  Number(form.advanceDeduction || 0) +
-                  Number(form.loanDeduction || 0) +
-                  Number(form.otherDeductions || 0);
-                return (
-                  <div className="flex justify-between text-sm">
+            {(() => {
+              const gross =
+                Number(form.basicSalary || 0) + Number(form.houseRentAllowance || 0) +
+                Number(form.transportAllowance || 0) + Number(form.medicalAllowance || 0) +
+                Number(form.otherAllowances || 0);
+              const deductions =
+                Number(form.pfDeduction || 0) + Number(form.esiDeduction || 0) +
+                Number(form.taxDeduction || 0) + Number(form.advanceDeduction || 0) +
+                Number(form.loanDeduction || 0) + Number(form.otherDeductions || 0);
+              return (
+                <div className="bg-green-50 rounded-lg p-3">
+                  <div className="flex flex-wrap gap-3 justify-between text-sm">
                     <span>Gross: <strong>{fmt(gross)}</strong></span>
                     <span>Deductions: <strong className="text-red-600">-{fmt(deductions)}</strong></span>
-                    <span>Net Pay: <strong className="text-green-700">{fmt(gross - deductions)}</strong></span>
+                    <span>Net Pay: <strong className="text-green-700 text-base">{fmt(gross - deductions)}</strong></span>
                   </div>
-                );
-              })()}
-            </div>
-          </div>
-            <div className="col-span-2 border-t pt-3">
+                </div>
+              );
+            })()}
+
+            {/* Notes */}
+            <div className="border-t pt-3">
               <Label className="text-xs">Notes / Remarks (optional)</Label>
               <Input
                 placeholder="e.g. Includes special incentive for Q4"
@@ -505,10 +564,13 @@ export default function PayrollPage() {
                 onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               />
             </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={saving} style={{ backgroundColor: '#A8211B' }}>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+          </div>
+
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowCreate(false)} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handleCreate} disabled={saving} style={{ backgroundColor: '#A8211B' }} className="w-full sm:w-auto">
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Create Salary Record
             </Button>
@@ -518,7 +580,7 @@ export default function PayrollPage() {
 
       {/* Pay Dialog */}
       <Dialog open={!!showPay} onOpenChange={() => setShowPay(null)}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>Process Salary Payment</DialogTitle>
           </DialogHeader>
@@ -575,6 +637,22 @@ export default function PayrollPage() {
                 />
               </div>
 
+              <div>
+                <Label>Project *</Label>
+                <select
+                  required
+                  value={payForm.propertyId}
+                  onChange={e => setPayForm(f => ({ ...f, propertyId: e.target.value }))}
+                  className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">— Select project —</option>
+                  {allProperties.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Salary JE will be tagged to this project's accounts</p>
+              </div>
+
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
                 ✅ A Journal Entry will be auto-created: <strong>Dr. Salary Expense → Cr. Bank/Cash</strong>
                 <br />⚠️ Requires an <strong>EXPENSE</strong> account named "Salary Expense" / "Payroll" / "Wages" and an <strong>ASSET</strong> account for Bank/Cash in Chart of Accounts.
@@ -582,9 +660,9 @@ export default function PayrollPage() {
             </div>
           )}
           {error && <p className="text-red-500 text-sm">{error}</p>}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowPay(null)}>Cancel</Button>
-            <Button onClick={handlePay} disabled={saving} style={{ backgroundColor: '#10B981' }}>
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowPay(null)} className="w-full sm:w-auto">Cancel</Button>
+            <Button onClick={handlePay} disabled={saving} style={{ backgroundColor: '#10B981' }} className="w-full sm:w-auto">
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Confirm Payment
             </Button>

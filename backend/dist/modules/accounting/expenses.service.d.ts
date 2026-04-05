@@ -15,6 +15,8 @@ export declare class ExpensesService {
         endDate?: Date;
         vendorId?: string;
         employeeId?: string;
+        propertyId?: string;
+        accessiblePropertyIds?: string[] | null;
     }): Promise<Expense[]>;
     findOne(id: string): Promise<Expense>;
     update(id: string, updateExpenseDto: UpdateExpenseDto): Promise<Expense>;
@@ -25,6 +27,7 @@ export declare class ExpensesService {
     getExpensesSummary(filters?: {
         startDate?: Date;
         endDate?: Date;
+        accessiblePropertyIds?: string[] | null;
     }): Promise<{
         totalExpenses: number;
         byCategory: {

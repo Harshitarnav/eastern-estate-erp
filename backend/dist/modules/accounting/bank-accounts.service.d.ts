@@ -6,7 +6,7 @@ export declare class BankAccountsService {
     private readonly accountsRepo;
     private readonly logger;
     constructor(bankAccountsRepo: Repository<BankAccount>, accountsRepo: Repository<Account>);
-    findAll(): Promise<(BankAccount & {
+    findAll(propertyId?: string): Promise<(BankAccount & {
         coaAccount?: {
             id: string;
             accountCode: string;
@@ -24,6 +24,7 @@ export declare class BankAccountsService {
         accountType?: string;
         openingBalance?: number;
         description?: string;
+        propertyId?: string | null;
     }): Promise<BankAccount>;
     update(id: string, dto: Partial<BankAccount>): Promise<BankAccount>;
     deactivate(id: string): Promise<BankAccount>;

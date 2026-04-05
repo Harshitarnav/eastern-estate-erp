@@ -45,6 +45,8 @@ export interface Account {
   parentAccountId?: string;
   isActive: boolean;
   currentBalance: number;
+  propertyId?: string | null;
+  property?: { id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -119,7 +121,7 @@ export interface JournalEntryLine {
 
 // Accounts Service
 export const accountsService = {
-  getAll: async (params?: { accountType?: string; isActive?: boolean }) => {
+  getAll: async (params?: { accountType?: string; isActive?: boolean; propertyId?: string }) => {
     return await api.get('/accounting/accounts', { params });
   },
 
@@ -139,16 +141,22 @@ export const accountsService = {
     return await api.get('/accounting/accounts/hierarchy');
   },
 
-  getBalanceSheet: async () => {
-    return await api.get('/accounting/accounts/balance-sheet');
+  getBalanceSheet: async (propertyId?: string) => {
+    return await api.get('/accounting/accounts/balance-sheet', { params: propertyId ? { propertyId } : undefined });
   },
 
-  getProfitLoss: async () => {
-    return await api.get('/accounting/accounts/profit-loss');
+  getProfitLoss: async (propertyId?: string, startDate?: string, endDate?: string) => {
+    return await api.get('/accounting/accounts/profit-loss', {
+      params: { ...(propertyId ? { propertyId } : {}), ...(startDate ? { startDate } : {}), ...(endDate ? { endDate } : {}) },
+    });
   },
 
-  getTrialBalance: async () => {
-    return await api.get('/accounting/accounts/trial-balance');
+  getTrialBalance: async (propertyId?: string) => {
+    return await api.get('/accounting/accounts/trial-balance', { params: propertyId ? { propertyId } : undefined });
+  },
+
+  seedCoaForProject: async (propertyId: string) => {
+    return await api.post(`/accounting/accounts/seed-for-project/${propertyId}`);
   },
 
   getPropertyWisePL: async (propertyId: string) => {
@@ -161,8 +169,8 @@ export const accountsService = {
     });
   },
 
-  getCashBook: async (startDate: string, endDate: string) => {
-    return await api.get('/accounting/ledgers/cash-book', { params: { startDate, endDate } });
+  getCashBook: async (startDate: string, endDate: string, propertyId?: string) => {
+    return await api.get('/accounting/ledgers/cash-book', { params: { startDate, endDate, ...(propertyId ? { propertyId } : {}) } });
   },
 
   getBankBook: async (bankAccountId: string, startDate: string, endDate: string) => {
@@ -198,7 +206,7 @@ export const accountsService = {
 
 // Expenses Service
 export const expensesService = {
-  getAll: async (params?: { category?: string; status?: string; startDate?: string; endDate?: string }) => {
+  getAll: async (params?: { category?: string; status?: string; startDate?: string; endDate?: string; propertyId?: string }) => {
     return await api.get('/accounting/expenses', { params });
   },
 
@@ -310,8 +318,8 @@ export const journalEntriesService = {
 };
 
 export const bankAccountsService = {
-  getAll: async () => {
-    return await api.get('/accounting/bank-accounts');
+  getAll: async (propertyId?: string) => {
+    return await api.get('/accounting/bank-accounts', { params: propertyId ? { propertyId } : undefined });
   },
   getOne: async (id: string) => {
     return await api.get(`/accounting/bank-accounts/${id}`);
@@ -325,6 +333,7 @@ export const bankAccountsService = {
     accountType?: string;
     openingBalance?: number;
     description?: string;
+    propertyId?: string;
   }) => {
     return await api.post('/accounting/bank-accounts', data);
   },

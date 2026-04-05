@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { api } from '@/services/api';
+import { propertiesService } from '@/services/properties.service';
 
 interface VendorPaymentModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ const PAYMENT_MODES = ['CASH', 'CHEQUE', 'NEFT', 'RTGS', 'UPI'];
 
 export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor }: VendorPaymentModalProps) {
   const [vendors, setVendors] = useState<any[]>([]);
+  const [properties, setProperties] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     vendorId: '',
@@ -23,11 +25,18 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor 
     paymentDate: new Date().toISOString().split('T')[0],
     transactionReference: '',
     notes: '',
+    propertyId: '',
   });
 
   useEffect(() => {
     if (isOpen) {
       loadVendors();
+      propertiesService.getProperties({ limit: 100 })
+        .then((res: any) => {
+          const list = res?.data ?? res ?? [];
+          setProperties(Array.isArray(list) ? list : list.data ?? []);
+        })
+        .catch(() => {});
       // Pre-select vendor if provided
       if (vendor?.id) {
         setFormData(prev => ({ ...prev, vendorId: vendor.id }));
@@ -64,6 +73,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor 
         paymentDate: formData.paymentDate,
         transactionReference: formData.transactionReference || undefined,
         notes: formData.notes || undefined,
+        propertyId: formData.propertyId || undefined,
       });
 
       alert('Vendor payment recorded successfully!');
@@ -85,6 +95,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor 
       paymentDate: new Date().toISOString().split('T')[0],
       transactionReference: '',
       notes: '',
+      propertyId: '',
     });
     onClose();
   };
@@ -207,6 +218,25 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor 
             </div>
           </div>
         )}
+
+        {/* Project */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Project <span className="text-red-600">*</span>
+          </label>
+          <select
+            required
+            value={formData.propertyId}
+            onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+          >
+            <option value="">— Select project —</option>
+            {properties.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-400 mt-1">Payment JE will be tagged to this project's accounts</p>
+        </div>
 
         {/* Notes */}
         <div>

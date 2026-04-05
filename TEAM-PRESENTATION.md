@@ -9,7 +9,7 @@
 
 **Built for Eastern Estate Construction & Development Pvt. Ltd.**
 
-> *"Life Long Bonding — Building Homes, Nurturing Bonds, Creating a Lifestyle That Lasts a Lifetime"*
+> *"Life Long Bonding… — Creating a Lifestyle That Lasts a Lifetime"*
 
 - One system for every department — Sales, Accounts, HR, Construction
 - All data is live and connected — no Excel, no WhatsApp data loss
@@ -24,12 +24,25 @@
 |------|-----------|
 | 🔴 **Super Admin** | Everything — full control |
 | 🔴 **Admin** | Everything + Company Settings + User Management |
+| 🟤 **Head Accountant** | All projects — full accounting, reports, payroll visibility |
+| 🟠 **Accountant** | Accounting for **assigned projects only** (set under User → Property Access) |
 | 🟠 **Sales Team** | Leads, Customers, Bookings, Payment Plans, Demand Drafts |
-| 🟡 **Accounts** | Payments, Receipts, Reports, Ledger |
+| 🟡 **Accounts** | Payments, Receipts, Reports, Ledger (as configured) |
 | 🟢 **HR** | Employees, HR Dashboard |
 | 🔵 **Staff** | Dashboard + read-only |
 
-> ℹ️ If you can't see a page, ask your Admin to check your role under **Settings → Users**
+> ℹ️ If you can't see a page, ask your Admin to check your role under **Settings → Users**  
+> ℹ️ **Accountants** also need **Property Access** so the system knows which projects they work on
+
+---
+
+## Pick your project (top bar)
+
+**Every screen shares one project dropdown** in the header (next to notifications).
+
+- Choose **All projects** or one project — accounting numbers and some lists follow this scope.
+- If you only have one assigned project, it may already be selected for you.
+- **Mobile:** same dropdown as desktop — use it before opening Accounting or customer lists that filter by project.
 
 ---
 
@@ -483,4 +496,4 @@ Lead → Customer → Booking → Payment Plan → Demand Draft → Payment → 
 
 Every step connects to the next. Nothing gets lost. Everything is tracked.
 
-> **Eastern Estate ERP — Building Homes, Nurturing Bonds, Creating a Lifestyle That Lasts a Lifetime**
+> **Eastern Estate ERP — Life Long Bonding…, Creating a Lifestyle That Lasts a Lifetime**

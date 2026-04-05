@@ -6,8 +6,12 @@ import { DollarSign, TrendingUp, TrendingDown, PieChart, FileText, BookOpen, Bar
 import Link from 'next/link';
 import { accountsService, expensesService } from '@/services/accounting.service';
 import { DashboardSkeleton } from '@/components/Skeletons';
+import { usePropertyStore } from '@/store/propertyStore';
 
 export default function AccountingDashboard() {
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [balanceSheet, setBalanceSheet] = useState<any>(null);
@@ -15,11 +19,13 @@ export default function AccountingDashboard() {
   const [expenseSummary, setExpenseSummary] = useState<any>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setFetchError(false);
     const fetchData = async () => {
       try {
         const [bs, pl, es] = await Promise.all([
-          accountsService.getBalanceSheet(),
-          accountsService.getProfitLoss(),
+          accountsService.getBalanceSheet(selectedPropertyId),
+          accountsService.getProfitLoss(selectedPropertyId),
           expensesService.getSummary(),
         ]);
         setBalanceSheet(bs);
@@ -33,7 +39,7 @@ export default function AccountingDashboard() {
       }
     };
     fetchData();
-  }, []);
+  }, [selectedPropertyId]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -48,15 +54,15 @@ export default function AccountingDashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Accounting Dashboard</h1>
+    <div className="p-4 sm:p-6 space-y-6 min-w-0 max-w-full">
+      <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-bold min-w-0">Accounting Dashboard</h1>
       </div>
 
       {fetchError && (
-        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
-          <span className="font-medium">⚠ Failed to load financial data.</span>
-          <span className="text-amber-600">Values shown may be zero or stale. Check your connection and refresh.</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 min-w-0">
+          <span className="font-medium shrink-0">⚠ Failed to load financial data.</span>
+          <span className="text-amber-600 min-w-0 break-words">Values shown may be zero or stale. Check your connection and refresh.</span>
         </div>
       )}
 

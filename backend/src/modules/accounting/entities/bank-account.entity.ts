@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Property } from '../../properties/entities/property.entity';
 
 @Entity('bank_accounts')
 export class BankAccount {
@@ -52,6 +55,13 @@ export class BankAccount {
 
   @Column({ nullable: true })
   description: string;
+
+  @Column({ name: 'property_id', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

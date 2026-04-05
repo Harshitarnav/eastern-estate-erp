@@ -1,3 +1,4 @@
+import type { Request } from 'express';
 import { Response } from 'express';
 import { AccountingService } from './accounting.service';
 export declare class AccountingController {
@@ -26,7 +27,7 @@ export declare class AccountingController {
         totalCredit: number;
         entries: import("./entities/journal-entry.entity").JournalEntry[];
     }>;
-    getCashBook(startDate: string, endDate: string): Promise<{
+    getCashBook(startDate: string, endDate: string, propertyId?: string): Promise<{
         account: import("./entities/account.entity").Account;
         openingBalance: number;
         closingBalance: number;
@@ -64,7 +65,7 @@ export declare class AccountingController {
     }>;
     exportLedgerToExcel(accountId: string, startDate: string, endDate: string, res: Response): Promise<void>;
     exportTrialBalanceToExcel(date: string, res: Response): Promise<void>;
-    getPropertyWisePL(startDate: string, endDate: string): Promise<{
+    getPropertyWisePL(startDate: string, endDate: string, req: Request): Promise<{
         period: {
             startDate: Date;
             endDate: Date;
@@ -83,6 +84,34 @@ export declare class AccountingController {
             expenses: number;
             netProfit: number;
         };
+    }>;
+    getProjectFundFlow(req: Request, startDate: string, endDate: string, propertyId?: string): Promise<{
+        period: {
+            startDate: Date;
+            endDate: Date;
+        };
+        explanation: string;
+        focusProperty: {
+            id: string;
+            name: string;
+        };
+        focusSummary: any;
+        projectsWithOutflows: number;
+        matrix: any;
+        unallocatedOutflows: {
+            expenses: number;
+            vendorPayments: number;
+            salaries: number;
+            total: number;
+        };
+        inflows: any[];
+        outflows: {
+            expenses: any[];
+            vendorPayments: any[];
+            salaries: any[];
+        };
+        inflowTotal: number;
+        outflowTotal: number;
     }>;
     getARAgingReport(asOf?: string): Promise<any>;
     getAPAgingReport(asOf?: string): Promise<any>;

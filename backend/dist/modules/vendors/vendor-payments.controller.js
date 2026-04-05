@@ -42,8 +42,8 @@ let VendorPaymentsController = class VendorPaymentsController {
     update(id, updateDto) {
         return this.paymentsService.update(id, updateDto);
     }
-    remove(id) {
-        return this.paymentsService.remove(id);
+    remove(id, req) {
+        return this.paymentsService.remove(id, req.user?.userId);
     }
 };
 exports.VendorPaymentsController = VendorPaymentsController;
@@ -88,8 +88,9 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], VendorPaymentsController.prototype, "remove", null);
 exports.VendorPaymentsController = VendorPaymentsController = __decorate([

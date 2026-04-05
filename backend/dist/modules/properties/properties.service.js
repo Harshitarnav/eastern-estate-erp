@@ -87,12 +87,23 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             await queryRunner.release();
         }
     }
-    async findAll(queryDto, userId) {
+    async findAll(queryDto, access) {
         const { page = 1, limit = 10, search, city, state, status, projectType, projectId, sortBy = 'createdAt', sortOrder = 'DESC', isActive, } = queryDto;
         const activeFilter = isActive ?? true;
         const queryBuilder = this.propertiesRepository
             .createQueryBuilder('property')
             .where('property.isActive = :isActive', { isActive: activeFilter });
+        if (access && !access.isGlobalAdmin) {
+            const pids = access.accessiblePropertyIds;
+            if (pids && pids.length > 0) {
+                queryBuilder.andWhere('property.id IN (:...accessiblePids)', {
+                    accessiblePids: pids,
+                });
+            }
+            else {
+                queryBuilder.andWhere('1 = 0');
+            }
+        }
         if (search) {
             queryBuilder.andWhere('(property.name ILIKE :search OR property.propertyCode ILIKE :search OR property.address ILIKE :search OR property.reraNumber ILIKE :search)', { search: `%${search}%` });
         }
@@ -304,12 +315,17 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         }
         return this.mapToResponseDto(property);
     }
-    async findByCode(code, userId) {
+    async findByCode(code, access) {
         const property = await this.propertiesRepository.findOne({
             where: { propertyCode: code, isActive: true },
         });
         if (!property) {
             throw new common_1.NotFoundException(`Property with code ${code} not found`);
+        }
+        if (access && !access.isGlobalAdmin && access.accessiblePropertyIds?.length) {
+            if (!access.accessiblePropertyIds.includes(property.id)) {
+                throw new common_1.NotFoundException(`Property with code ${code} not found`);
+            }
         }
         return this.mapToResponseDto(property);
     }

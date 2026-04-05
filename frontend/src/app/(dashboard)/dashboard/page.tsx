@@ -175,7 +175,7 @@ export default function DashboardPage() {
   const d = data!;
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 space-y-6 w-full min-w-0 max-w-7xl mx-auto">
 
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -470,7 +470,7 @@ export default function DashboardPage() {
       >
         <p className="text-white text-base font-semibold">Life Long Bonding</p>
         <p className="text-white/80 text-sm mt-1">
-          Luxury at Affordable Prices · Building Homes, Nurturing Bonds · Creating a Lifestyle That Lasts a Lifetime
+          Luxury at Affordable Prices · Life Long Bonding... · Creating a Lifestyle That Lasts a Lifetime
         </p>
       </div>
 

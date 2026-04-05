@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { expensesService, accountsService, type Expense } from '@/services/accounting.service';
 import { FormSkeleton } from '@/components/Skeletons';
+import { useAuthStore } from '@/store/authStore';
 
 const CATEGORIES = [
   'Rent', 'Utilities', 'Office Supplies', 'Salaries', 'Marketing',
@@ -42,6 +43,11 @@ export default function EditExpensePage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
+
+  const { user } = useAuthStore();
+  const canEdit = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,6 +134,22 @@ export default function EditExpensePage() {
   };
 
   if (loading) return <FormSkeleton fields={8} />;
+
+  if (!canEdit) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          You do not have permission to edit expenses. Please contact an admin.
+        </div>
+        <button
+          onClick={() => router.push(`/accounting/expenses/${id}`)}
+          className="mt-4 flex items-center gap-2 text-gray-600 hover:text-gray-800"
+        >
+          <ArrowLeft className="h-5 w-5" /> Back
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">

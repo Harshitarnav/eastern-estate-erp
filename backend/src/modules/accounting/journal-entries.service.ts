@@ -102,6 +102,7 @@ export class JournalEntriesService {
     startDate?: Date;
     endDate?: Date;
     referenceType?: string;
+    accessiblePropertyIds?: string[] | null;
   }): Promise<JournalEntry[]> {
     const query = this.journalEntriesRepository.createQueryBuilder('je')
       .leftJoinAndSelect('je.lines', 'lines')
@@ -127,6 +128,19 @@ export class JournalEntriesService {
       query.andWhere('je.referenceType = :referenceType', {
         referenceType: filters.referenceType,
       });
+    }
+
+    if (filters?.accessiblePropertyIds?.length) {
+      query.andWhere(
+        `NOT EXISTS (
+          SELECT 1 FROM journal_entry_lines jel2
+          INNER JOIN accounts acc2 ON acc2.id = jel2.account_id
+          WHERE jel2.journal_entry_id = je.id
+          AND acc2.property_id IS NOT NULL
+          AND acc2.property_id NOT IN (:...jeScopeIds)
+        )`,
+        { jeScopeIds: filters.accessiblePropertyIds },
+      );
     }
 
     query.orderBy('je.entryDate', 'DESC').addOrderBy('je.entryNumber', 'DESC');

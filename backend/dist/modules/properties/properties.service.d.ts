@@ -18,10 +18,16 @@ export declare class PropertiesService {
     constructor(propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, flatsRepository: Repository<Flat>, customersRepository: Repository<Customer>, bookingsRepository: Repository<Booking>, dataSource: DataSource, propertyAccessService: PropertyAccessService);
     private checkPropertyAccess;
     create(createPropertyDto: CreatePropertyDto, userId?: string): Promise<PropertyResponseDto>;
-    findAll(queryDto: QueryPropertyDto, userId?: string): Promise<PaginatedPropertyResponseDto>;
+    findAll(queryDto: QueryPropertyDto, access?: {
+        isGlobalAdmin: boolean;
+        accessiblePropertyIds: string[] | null;
+    }): Promise<PaginatedPropertyResponseDto>;
     getInventorySummary(propertyId: string, userId?: string): Promise<PropertyInventorySummaryDto>;
     findOne(id: string, userId?: string): Promise<PropertyResponseDto>;
-    findByCode(code: string, userId?: string): Promise<PropertyResponseDto>;
+    findByCode(code: string, access?: {
+        isGlobalAdmin: boolean;
+        accessiblePropertyIds: string[] | null;
+    }): Promise<PropertyResponseDto>;
     getHierarchy(id: string, userId?: string): Promise<PropertyHierarchyDto>;
     update(id: string, updatePropertyDto: UpdatePropertyDto, userId?: string): Promise<PropertyResponseDto>;
     remove(id: string, userId?: string): Promise<void>;

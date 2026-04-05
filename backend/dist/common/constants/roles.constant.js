@@ -3,12 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ROLE_MODULE_ACCESS = exports.ROLE_DISPLAY_NAMES = exports.ROLE_HIERARCHY = exports.UserRole = void 0;
 exports.hasModuleAccess = hasModuleAccess;
 exports.isAdminRole = isAdminRole;
+exports.seesAllAccountingProjects = seesAllAccountingProjects;
 exports.getUserModules = getUserModules;
 exports.requiresPropertyFiltering = requiresPropertyFiltering;
 var UserRole;
 (function (UserRole) {
     UserRole["SUPER_ADMIN"] = "super_admin";
     UserRole["ADMIN"] = "admin";
+    UserRole["ACCOUNTANT"] = "accountant";
+    UserRole["HEAD_ACCOUNTANT"] = "head_accountant";
     UserRole["HR"] = "hr";
     UserRole["CONSTRUCTION_TEAM"] = "construction_team";
     UserRole["MARKETING_TEAM"] = "marketing_team";
@@ -19,7 +22,9 @@ var UserRole;
 exports.ROLE_HIERARCHY = {
     [UserRole.SUPER_ADMIN]: 100,
     [UserRole.ADMIN]: 90,
+    [UserRole.HEAD_ACCOUNTANT]: 85,
     [UserRole.HR]: 80,
+    [UserRole.ACCOUNTANT]: 55,
     [UserRole.CONSTRUCTION_TEAM]: 50,
     [UserRole.MARKETING_TEAM]: 50,
     [UserRole.SALES_TEAM]: 50,
@@ -29,6 +34,8 @@ exports.ROLE_HIERARCHY = {
 exports.ROLE_DISPLAY_NAMES = {
     [UserRole.SUPER_ADMIN]: 'Super Admin',
     [UserRole.ADMIN]: 'Admin',
+    [UserRole.ACCOUNTANT]: 'Accountant',
+    [UserRole.HEAD_ACCOUNTANT]: 'Head Accountant',
     [UserRole.HR]: 'HR',
     [UserRole.CONSTRUCTION_TEAM]: 'Construction Team',
     [UserRole.MARKETING_TEAM]: 'Marketing Team',
@@ -113,6 +120,20 @@ exports.ROLE_MODULE_ACCESS = {
         'towers',
         'flats',
     ],
+    [UserRole.ACCOUNTANT]: [
+        'dashboard',
+        'properties',
+        'accounting',
+        'reports',
+    ],
+    [UserRole.HEAD_ACCOUNTANT]: [
+        'dashboard',
+        'properties',
+        'accounting',
+        'reports',
+        'hr',
+        'employees',
+    ],
     [UserRole.CUSTOMER]: [
         'customer-portal',
         'my-bookings',
@@ -133,6 +154,11 @@ function hasModuleAccess(roles, module) {
 }
 function isAdminRole(roles) {
     return roles.includes(UserRole.SUPER_ADMIN) || roles.includes(UserRole.ADMIN);
+}
+function seesAllAccountingProjects(roles) {
+    return (roles.includes(UserRole.SUPER_ADMIN) ||
+        roles.includes(UserRole.ADMIN) ||
+        roles.includes(UserRole.HEAD_ACCOUNTANT));
 }
 function getUserModules(roles) {
     const modules = new Set();

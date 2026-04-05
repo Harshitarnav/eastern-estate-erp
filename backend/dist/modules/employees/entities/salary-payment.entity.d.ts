@@ -1,4 +1,5 @@
 import { Employee } from './employee.entity';
+import { Property } from '../../properties/entities/property.entity';
 export declare enum PaymentStatus {
     PENDING = "PENDING",
     PROCESSING = "PROCESSING",
@@ -48,6 +49,8 @@ export declare class SalaryPayment {
     ifscCode: string;
     notes: string;
     isActive: boolean;
+    propertyId: string | null;
+    property: Property;
     createdAt: Date;
     updatedAt: Date;
     createdBy: string;

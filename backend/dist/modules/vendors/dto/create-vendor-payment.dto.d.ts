@@ -7,5 +7,6 @@ export declare class CreateVendorPaymentDto {
     paymentMode: PaymentMode;
     transactionReference?: string;
     notes?: string;
+    propertyId?: string;
     createdBy?: string;
 }

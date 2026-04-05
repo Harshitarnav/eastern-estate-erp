@@ -17,7 +17,6 @@ import {
   Trash2,
   Check,
   Building2,
-  MapPin,
   Home,
   Calendar,
   TrendingUp
@@ -330,8 +329,8 @@ function DataTable<T extends { id: string | number }>({
   // Mobile Card View
   if (isMobile && mobileView) {
     return (
-      <div className="w-full space-y-4">
-        <div className="bg-white rounded-lg shadow-sm p-4 space-y-3">
+      <div className="w-full min-w-0 max-w-full space-y-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 space-y-3 min-w-0">
           {searchable && (
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -379,41 +378,71 @@ function DataTable<T extends { id: string | number }>({
           </div>
         ) : (
           paginatedData.map((row: any) => (
-            <div key={row.id} className="bg-white rounded-lg shadow-sm p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-5 h-5 text-blue-600" />
-                    <h3 className="font-semibold text-lg">{row.name}</h3>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="w-4 h-4" />
-                    <span>{row.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Home className="w-4 h-4 text-gray-500" />
-                    <span className="text-gray-700">
-                      {row.soldUnits}/{row.totalUnits} Units Sold
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      row.status === 'Active' ? 'bg-green-100 text-green-800' :
-                      row.status === 'Under Construction' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
-                      {row.status}
-                    </span>
-                    <span className="text-xs text-gray-500">{row.bhkTypes}</span>
-                  </div>
+            <div
+              key={row.id}
+              role={onRowClick ? 'button' : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+              onClick={() => onRowClick?.(row)}
+              onKeyDown={(e) => {
+                if (!onRowClick) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onRowClick(row);
+                }
+              }}
+              className={`bg-white rounded-lg shadow-sm p-4 space-y-3 border border-transparent ${
+                onRowClick ? 'cursor-pointer active:bg-gray-50 hover:border-gray-200' : ''
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0 space-y-2">
+                  {visibleColumns.slice(0, 8).map((col) => {
+                    const raw = row[col.key as keyof T];
+                    const cell = col.mobileRender
+                      ? col.mobileRender(row)
+                      : col.render
+                        ? col.render(raw, row)
+                        : (raw !== null && raw !== undefined && raw !== '' ? String(raw) : '—');
+                    return (
+                      <div key={col.key} className="text-sm">
+                        <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">
+                          {col.label}
+                        </div>
+                        <div className="text-gray-900 break-words">{cell}</div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 shrink-0">
+                  {onRowClick && (
+                    <span className="text-xs font-medium text-blue-600 whitespace-nowrap">
+                      View →
+                    </span>
+                  )}
                   {onEdit && (
                     <button
-                      onClick={() => onEdit(row)}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(row);
+                      }}
                       className="p-2 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                      aria-label="Edit"
                     >
                       <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(row);
+                      }}
+                      className="p-2 bg-red-50 text-red-600 rounded hover:bg-red-100"
+                      aria-label="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   )}
                 </div>
@@ -423,7 +452,7 @@ function DataTable<T extends { id: string | number }>({
         )}
 
         {totalPages > 1 && (
-          <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+          <div className="bg-white rounded-lg shadow-sm p-4 flex flex-wrap items-center justify-between gap-2 min-w-0 max-w-full">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
@@ -449,11 +478,11 @@ function DataTable<T extends { id: string | number }>({
 
   // Desktop Table View
   return (
-    <div className="w-full space-y-4">
-      <div className="bg-white rounded-lg shadow-sm p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+    <div className="w-full min-w-0 max-w-full space-y-4">
+      <div className="bg-white rounded-lg shadow-sm p-4 min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 min-w-0">
           {searchable && (
-            <div className="flex-1 relative">
+            <div className="flex-1 min-w-0 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
@@ -465,11 +494,11 @@ function DataTable<T extends { id: string | number }>({
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:shrink-0 sm:justify-end">
             {filterable && (
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${
+                className={`px-3 sm:px-4 py-2 rounded-lg border flex items-center gap-2 shrink-0 ${
                   showFilters ? 'bg-blue-50 border-blue-300' : 'bg-white border-gray-300'
                 } hover:bg-gray-50`}
               >
@@ -480,7 +509,7 @@ function DataTable<T extends { id: string | number }>({
             
             <button
               onClick={() => setShowColumnToggle(!showColumnToggle)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2 shrink-0"
             >
               <Eye className="w-4 h-4" />
               Columns
@@ -489,7 +518,7 @@ function DataTable<T extends { id: string | number }>({
             {exportable && (
               <button
                 onClick={handleExport}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 shrink-0"
               >
                 <Download className="w-4 h-4" />
                 Export
@@ -503,7 +532,7 @@ function DataTable<T extends { id: string | number }>({
                   onBulkDelete(rowsToDelete);
                   setSelectedRows(new Set());
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 shrink-0"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete ({selectedRows.size})
@@ -570,7 +599,7 @@ function DataTable<T extends { id: string | number }>({
         )}
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden min-w-0 max-w-full">
         {loading ? (
           <TableRowsSkeleton rows={7} cols={5} />
         ) : paginatedData.length === 0 ? (
@@ -578,7 +607,7 @@ function DataTable<T extends { id: string | number }>({
             <p className="text-gray-500 text-lg">{emptyMessage}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-w-full">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -595,7 +624,7 @@ function DataTable<T extends { id: string | number }>({
                   {visibleColumns.map((col) => (
                     <th
                       key={col.key}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       style={{ width: col.width }}
                     >
                       {col.sortable !== false ? (
@@ -612,7 +641,7 @@ function DataTable<T extends { id: string | number }>({
                     </th>
                   ))}
                   {(onEdit || onDelete) && (
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
                       Actions
                     </th>
                   )}
@@ -639,7 +668,7 @@ function DataTable<T extends { id: string | number }>({
                       </td>
                     )}
                     {visibleColumns.map((col) => (
-                      <td key={col.key} className="px-6 py-4 text-sm text-gray-900">
+                      <td key={col.key} className="px-4 sm:px-6 py-4 text-sm text-gray-900 break-words align-top">
                         {col.render 
                           ? col.render(row[col.key as keyof T], row)
                           : String(row[col.key as keyof T])
@@ -647,7 +676,7 @@ function DataTable<T extends { id: string | number }>({
                       </td>
                     ))}
                     {(onEdit || onDelete) && (
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                      <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm align-top">
                         <div className="flex justify-end gap-2">
                           {onEdit && (
                             <button
@@ -685,8 +714,8 @@ function DataTable<T extends { id: string | number }>({
       </div>
 
       {totalPages > 1 && (
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-white rounded-lg shadow-sm p-4 min-w-0 max-w-full">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 min-w-0 flex-wrap">
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-600">Show:</label>
               <select

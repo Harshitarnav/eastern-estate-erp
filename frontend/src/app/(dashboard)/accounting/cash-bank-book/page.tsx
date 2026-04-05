@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/services/api';
 import { bankAccountsService, downloadWithAuth } from '@/services/accounting.service';
+import { usePropertyStore } from '@/store/propertyStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +73,9 @@ function fyStartDate() {
 
 // ─── Cash Book ───────────────────────────────────────────────────────────────
 function CashBook() {
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+
   const [startDate, setStartDate] = useState(fyStartDate());
   const [endDate, setEndDate] = useState(new Date().toISOString().slice(0, 10));
   const [data, setData] = useState<LedgerData | null>(null);
@@ -83,18 +87,18 @@ function CashBook() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.get('/accounting/ledgers/cash-book', {
-        params: { startDate, endDate },
-      });
+      const params: any = { startDate, endDate };
+      if (selectedPropertyId) params.propertyId = selectedPropertyId;
+      const res = await api.get('/accounting/ledgers/cash-book', { params });
       setData(res);
     } catch (e: any) {
       setError(e.response?.data?.message || e.message || 'Failed to load cash book');
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, selectedPropertyId]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const handleExport = async () => {
     if (!data?.account) return;
@@ -248,13 +252,16 @@ function BankBook() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+
   useEffect(() => {
-    bankAccountsService.getAll().then(res => {
+    bankAccountsService.getAll(selectedPropertyId).then(res => {
       const accs = Array.isArray(res) ? res : (res?.data || []);
       setBankAccounts(accs);
       if (accs.length > 0) setSelectedBank(accs[0].id);
     }).catch(console.error);
-  }, []);
+  }, [selectedPropertyId]);
 
   const load = async () => {
     if (!selectedBank) { setError('Please select a bank account'); return; }

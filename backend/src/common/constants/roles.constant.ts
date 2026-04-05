@@ -1,20 +1,14 @@
 /**
  * Simplified Role System for Eastern Estate ERP
  * 
- * 8 Core Roles with clear responsibilities:
- * - Super Admin: Full system access
- * - Admin: Property & operational management
- * - HR: Employee & user management
- * - Construction Team: Construction operations
- * - Marketing Team: Marketing & leads
- * - Sales Team: Sales, bookings, payments
- * - Staff: Basic operational access
- * - Customer: Customer portal (future)
+ * Core roles include accountants (project-scoped vs company-wide head accountant).
  */
 
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
+  ACCOUNTANT = 'accountant',
+  HEAD_ACCOUNTANT = 'head_accountant',
   HR = 'hr',
   CONSTRUCTION_TEAM = 'construction_team',
   MARKETING_TEAM = 'marketing_team',
@@ -26,7 +20,9 @@ export enum UserRole {
 export const ROLE_HIERARCHY = {
   [UserRole.SUPER_ADMIN]: 100,
   [UserRole.ADMIN]: 90,
+  [UserRole.HEAD_ACCOUNTANT]: 85,
   [UserRole.HR]: 80,
+  [UserRole.ACCOUNTANT]: 55,
   [UserRole.CONSTRUCTION_TEAM]: 50,
   [UserRole.MARKETING_TEAM]: 50,
   [UserRole.SALES_TEAM]: 50,
@@ -37,6 +33,8 @@ export const ROLE_HIERARCHY = {
 export const ROLE_DISPLAY_NAMES = {
   [UserRole.SUPER_ADMIN]: 'Super Admin',
   [UserRole.ADMIN]: 'Admin',
+  [UserRole.ACCOUNTANT]: 'Accountant',
+  [UserRole.HEAD_ACCOUNTANT]: 'Head Accountant',
   [UserRole.HR]: 'HR',
   [UserRole.CONSTRUCTION_TEAM]: 'Construction Team',
   [UserRole.MARKETING_TEAM]: 'Marketing Team',
@@ -126,6 +124,20 @@ export const ROLE_MODULE_ACCESS = {
     'towers', // view only
     'flats', // view only
   ],
+  [UserRole.ACCOUNTANT]: [
+    'dashboard',
+    'properties',
+    'accounting',
+    'reports',
+  ],
+  [UserRole.HEAD_ACCOUNTANT]: [
+    'dashboard',
+    'properties',
+    'accounting',
+    'reports',
+    'hr',
+    'employees',
+  ],
   [UserRole.CUSTOMER]: [
     'customer-portal',
     'my-bookings',
@@ -158,6 +170,15 @@ export function hasModuleAccess(roles: string[], module: string): boolean {
  */
 export function isAdminRole(roles: string[]): boolean {
   return roles.includes(UserRole.SUPER_ADMIN) || roles.includes(UserRole.ADMIN);
+}
+
+/** Sees all projects in accounting dropdowns / fund-flow (not limited to property access list) */
+export function seesAllAccountingProjects(roles: string[]): boolean {
+  return (
+    roles.includes(UserRole.SUPER_ADMIN) ||
+    roles.includes(UserRole.ADMIN) ||
+    roles.includes(UserRole.HEAD_ACCOUNTANT)
+  );
 }
 
 /**

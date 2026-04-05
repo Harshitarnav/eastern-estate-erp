@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Building2, RefreshCw, Edit, Trash2, ToggleLeft, ToggleRight, X, Check } from 'lucide-react';
 import api from '@/services/api';
 import { TableRowsSkeleton } from '@/components/Skeletons';
+import { usePropertyStore } from '@/store/propertyStore';
+import { propertiesService } from '@/services/properties.service';
 
 interface BankAccount {
   id: string;
@@ -24,36 +26,52 @@ interface BankAccount {
   isActive: boolean;
   createdAt: string;
   coaAccount?: { id: string; accountCode: string } | null;
+  propertyId?: string | null;
+  property?: { id: string; name: string } | null;
 }
 
 const emptyForm = {
   accountName: '', bankName: '', accountNumber: '',
-  ifscCode: '', branchName: '', openingBalance: '', description: '',
+  ifscCode: '', branchName: '', openingBalance: '', description: '', propertyId: '',
 };
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 export default function BankAccountsPage() {
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId = selectedProperties[0] ?? undefined;
+
   const [accounts, setAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ ...emptyForm });
+  const [form, setForm] = useState({ ...emptyForm, propertyId: selectedPropertyId ?? '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<BankAccount>>({});
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [allProperties, setAllProperties] = useState<{ id: string; name: string }[]>([]);
 
-  const fetchAccounts = async () => {
+  useEffect(() => {
+    propertiesService.getProperties({ limit: 100 })
+      .then((res: any) => {
+        const list = res?.data ?? res ?? [];
+        setAllProperties(Array.isArray(list) ? list : list.data ?? []);
+      })
+      .catch(() => {});
+  }, []);
+
+  const fetchAccounts = useCallback(async () => {
     try {
-      const data = await api.get('/accounting/bank-accounts');
+      const params = selectedPropertyId ? `?propertyId=${selectedPropertyId}` : '';
+      const data = await api.get(`/accounting/bank-accounts${params}`);
       setAccounts(data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [selectedPropertyId]);
 
-  useEffect(() => { fetchAccounts(); }, []);
+  useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
 
   // ── Create ──────────────────────────────────────────────
   const handleCreate = async () => {
@@ -68,6 +86,7 @@ export default function BankAccountsPage() {
       const created: BankAccount = await api.post('/accounting/bank-accounts', {
         ...form,
         openingBalance: Number(form.openingBalance) || 0,
+        propertyId: form.propertyId || undefined,
       });
       setShowForm(false);
       setForm({ ...emptyForm });
@@ -92,6 +111,7 @@ export default function BankAccountsPage() {
       ifscCode: a.ifscCode || '',
       branchName: a.branchName || '',
       description: a.description || '',
+      propertyId: a.propertyId ?? '',
     });
   };
 
@@ -213,6 +233,20 @@ export default function BankAccountsPage() {
                 <Input type="number" placeholder="0" value={form.openingBalance}
                   onChange={e => setForm(f => ({ ...f, openingBalance: e.target.value }))} />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
+                <select
+                  value={form.propertyId}
+                  onChange={e => setForm(f => ({ ...f, propertyId: e.target.value }))}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="">Company-wide (shared)</option>
+                  {allProperties.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Select project for RERA-separated 70% escrow accounts</p>
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
                 <Input placeholder="Notes about this account" value={form.description}
@@ -278,6 +312,19 @@ export default function BankAccountsPage() {
                         <div>
                           <label className="text-xs font-medium text-gray-500 mb-1 block">Description</label>
                           <Input value={editForm.description || ''} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 mb-1 block">Project</label>
+                          <select
+                            value={(editForm as any).propertyId ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, propertyId: e.target.value || null }))}
+                            className="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-red-500"
+                          >
+                            <option value="">Company-wide (shared)</option>
+                            {allProperties.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                       <div className="flex gap-2 pt-1">

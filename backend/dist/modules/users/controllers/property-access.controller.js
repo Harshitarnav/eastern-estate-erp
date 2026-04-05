@@ -66,7 +66,14 @@ let PropertyAccessController = class PropertyAccessController {
     async getAllPropertyAccess() {
         return { message: 'Endpoint for listing all property access' };
     }
-    async getUserPropertyAccess(userId) {
+    async getUserPropertyAccess(userId, req) {
+        const roleNames = (req.user.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        const privileged = roleNames.includes(roles_constant_1.UserRole.SUPER_ADMIN) ||
+            roleNames.includes(roles_constant_1.UserRole.ADMIN) ||
+            roleNames.includes(roles_constant_1.UserRole.HR);
+        if (!privileged && userId !== req.user.id) {
+            throw new common_1.ForbiddenException('You can only view your own project access');
+        }
         return this.propertyAccessService.getUserProperties(userId);
     }
     async grantAccessToUser(userId, body, req) {
@@ -134,10 +141,10 @@ __decorate([
 ], PropertyAccessController.prototype, "getAllPropertyAccess", null);
 __decorate([
     (0, common_1.Get)(':userId/property-access'),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.HR),
     __param(0, (0, common_1.Param)('userId')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], PropertyAccessController.prototype, "getUserPropertyAccess", null);
 __decorate([

@@ -245,7 +245,7 @@ VALUES (
 <body>
     <div class="header">
         <h1>Eastern Estate</h1>
-        <p>Building Homes, Nurturing Bonds</p>
+        <p>Life Long Bonding...</p>
     </div>
     
     <div class="content">
@@ -325,7 +325,7 @@ VALUES (
     </div>
     
     <div class="footer">
-        <p>Eastern Estate | Building Homes, Nurturing Bonds</p>
+        <p>Eastern Estate | Life Long Bonding...</p>
         <p>This is a system-generated document. Please do not reply to this email.</p>
     </div>
 </body>

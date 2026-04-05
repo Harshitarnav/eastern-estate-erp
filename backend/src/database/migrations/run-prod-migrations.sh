@@ -136,6 +136,18 @@ run_migration "$MIGRATIONS_DIR/v013_push_subscriptions.sql"
 
 echo ""
 echo "======================================================"
+echo " STEP 15: PROJECT-LEVEL ACCOUNTING"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v014_project_level_accounting.sql"
+
+echo ""
+echo "======================================================"
+echo " STEP 16: ACCOUNTANT ROLES"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v015_accountant_roles.sql"
+
+echo ""
+echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
 echo " Now restart the application:"
 echo "   docker compose -f docker-compose.prod.yml restart backend frontend"

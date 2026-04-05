@@ -11,6 +11,7 @@ interface AutoJEOptions {
     creditAccountId: string;
     amount: number;
     createdBy?: string;
+    propertyId?: string | null;
 }
 export declare class AccountingIntegrationService {
     private readonly accountsRepo;
@@ -18,10 +19,11 @@ export declare class AccountingIntegrationService {
     private readonly jelRepo;
     private readonly logger;
     constructor(accountsRepo: Repository<Account>, jeRepo: Repository<JournalEntry>, jelRepo: Repository<JournalEntryLine>);
-    findCashOrBankAccount(): Promise<Account | null>;
-    findSalesRevenueAccount(): Promise<Account | null>;
-    findSalaryExpenseAccount(): Promise<Account | null>;
-    findExpenseAccount(accountId?: string): Promise<Account | null>;
+    findCashOrBankAccount(propertyId?: string | null): Promise<Account | null>;
+    findSalesRevenueAccount(propertyId?: string | null): Promise<Account | null>;
+    findSalaryExpenseAccount(propertyId?: string | null): Promise<Account | null>;
+    findExpenseAccount(accountId?: string, propertyId?: string | null): Promise<Account | null>;
+    private buildScopeFilters;
     private generateEntryNumber;
     createAutoJE(opts: AutoJEOptions): Promise<JournalEntry | null>;
     private updateBalance;
@@ -32,6 +34,7 @@ export declare class AccountingIntegrationService {
         paymentDate: Date;
         paymentMethod?: string;
         createdBy?: string;
+        propertyId?: string | null;
     }): Promise<JournalEntry | null>;
     onExpensePaid(expense: {
         id: string;
@@ -41,9 +44,10 @@ export declare class AccountingIntegrationService {
         description: string;
         accountId?: string;
         createdBy?: string;
+        propertyId?: string | null;
     }): Promise<JournalEntry | null>;
-    findConstructionExpenseAccount(): Promise<Account | null>;
-    findMaterialPurchaseAccount(): Promise<Account | null>;
+    findConstructionExpenseAccount(propertyId?: string | null): Promise<Account | null>;
+    findMaterialPurchaseAccount(propertyId?: string | null): Promise<Account | null>;
     onRABillPaid(bill: {
         id: string;
         raBillNumber: string;
@@ -52,6 +56,7 @@ export declare class AccountingIntegrationService {
         vendorName?: string;
         projectName?: string;
         createdBy?: string;
+        propertyId?: string | null;
     }): Promise<JournalEntry | null>;
     onVendorPaymentRecorded(payment: {
         id: string;
@@ -60,6 +65,7 @@ export declare class AccountingIntegrationService {
         vendorName?: string;
         transactionReference?: string;
         createdBy?: string;
+        propertyId?: string | null;
     }): Promise<JournalEntry | null>;
     onSalaryPaid(salary: {
         id: string;
@@ -68,6 +74,7 @@ export declare class AccountingIntegrationService {
         paymentDate: Date;
         paymentMonth: Date;
         createdBy?: string;
+        propertyId?: string | null;
     }): Promise<JournalEntry | null>;
 }
 export {};

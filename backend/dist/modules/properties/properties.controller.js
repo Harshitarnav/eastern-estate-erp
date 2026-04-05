@@ -34,13 +34,19 @@ let PropertiesController = class PropertiesController {
         return this.propertiesService.create(createPropertyDto, req.user?.id);
     }
     async findAll(queryDto, req) {
-        return this.propertiesService.findAll(queryDto, req.user?.id);
+        return this.propertiesService.findAll(queryDto, {
+            isGlobalAdmin: !!req.isGlobalAdmin,
+            accessiblePropertyIds: req.accessiblePropertyIds ?? null,
+        });
     }
     async getStats(req) {
         return this.propertiesService.getStats(req.user?.id);
     }
     async findByCode(code, req) {
-        return this.propertiesService.findByCode(code, req.user?.id);
+        return this.propertiesService.findByCode(code, {
+            isGlobalAdmin: !!req.isGlobalAdmin,
+            accessiblePropertyIds: req.accessiblePropertyIds ?? null,
+        });
     }
     async getHierarchy(id, req) {
         this.assertPropertyAccess(req, id);

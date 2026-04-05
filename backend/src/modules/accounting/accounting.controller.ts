@@ -9,11 +9,14 @@ import {
   UploadedFile,
   Res,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Request } from 'express';
 import { Response } from 'express';
 import { AccountingService } from './accounting.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { accessiblePropertyIdsOrThrow } from './utils/accounting-scope.util';
 
 @Controller('accounting')
 @UseGuards(JwtAuthGuard)
@@ -46,10 +49,12 @@ export class AccountingController {
   getCashBook(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Query('propertyId') propertyId?: string,
   ) {
     return this.accountingService.getCashBook(
       new Date(startDate),
       new Date(endDate),
+      propertyId,
     );
   }
 
@@ -116,10 +121,26 @@ export class AccountingController {
   getPropertyWisePL(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Req() req: Request,
   ) {
     const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
     const end = endDate ? new Date(endDate) : new Date();
-    return this.accountingService.getPropertyWisePL(start, end);
+    const allowed = accessiblePropertyIdsOrThrow(req as any);
+    return this.accountingService.getPropertyWisePL(start, end, allowed);
+  }
+
+  /** Revenue vs tagged spend per project + optional drill-down for one project */
+  @Get('reports/project-fund-flow')
+  getProjectFundFlow(
+    @Req() req: Request,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('propertyId') propertyId?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
+    const end = endDate ? new Date(endDate) : new Date();
+    const allowed = accessiblePropertyIdsOrThrow(req as any);
+    return this.accountingService.getProjectFundFlow(start, end, propertyId || null, allowed);
   }
 
   // ============ AR AGING ============

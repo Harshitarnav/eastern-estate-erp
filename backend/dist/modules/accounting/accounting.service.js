@@ -34,12 +34,67 @@ let AccountingService = AccountingService_1 = class AccountingService {
         this.logger = new common_1.Logger(AccountingService_1.name);
     }
     async createAccount(data) {
+        if (data.propertyId === '')
+            data.propertyId = null;
         const account = this.accountRepository.create(data);
         return this.accountRepository.save(account);
     }
-    async getAllAccounts() {
+    async seedCoaForProject(propertyId) {
+        const STANDARD_ACCOUNTS = [
+            { accountCode: '1001', accountName: 'Cash on Hand', accountType: 'ASSET', accountCategory: 'Cash', description: 'Petty cash and physical currency' },
+            { accountCode: '1100', accountName: 'Bank Account', accountType: 'ASSET', accountCategory: 'Bank', description: 'Project bank account (70% escrow)' },
+            { accountCode: '1200', accountName: 'Accounts Receivable', accountType: 'ASSET', accountCategory: 'Receivable', description: 'Amounts owed by customers' },
+            { accountCode: '1300', accountName: 'Advance Payments', accountType: 'ASSET', accountCategory: 'Advance', description: 'Advances paid to contractors/vendors' },
+            { accountCode: '2001', accountName: 'Accounts Payable', accountType: 'LIABILITY', accountCategory: 'Payable', description: 'Amounts owed to vendors/contractors' },
+            { accountCode: '2100', accountName: 'Customer Advances', accountType: 'LIABILITY', accountCategory: 'Advance', description: 'Advance payments received from customers' },
+            { accountCode: '2200', accountName: 'Tax Payable', accountType: 'LIABILITY', accountCategory: 'Tax', description: 'GST/TDS and other tax liabilities' },
+            { accountCode: '3001', accountName: "Owner's Equity", accountType: 'EQUITY', accountCategory: 'Equity', description: "Owner's capital contribution" },
+            { accountCode: '4001', accountName: 'Sales Revenue', accountType: 'INCOME', accountCategory: 'Revenue', description: 'Revenue from flat/unit sales' },
+            { accountCode: '4100', accountName: 'Other Income', accountType: 'INCOME', accountCategory: 'Revenue', description: 'Miscellaneous project income' },
+            { accountCode: '5001', accountName: 'Construction Expense', accountType: 'EXPENSE', accountCategory: 'Construction', description: 'Civil & construction work costs' },
+            { accountCode: '5100', accountName: 'Material Purchase', accountType: 'EXPENSE', accountCategory: 'Materials', description: 'Raw materials and procurement' },
+            { accountCode: '5200', accountName: 'Labour Wages', accountType: 'EXPENSE', accountCategory: 'Labour', description: 'Daily wage and contract labour' },
+            { accountCode: '5300', accountName: 'Contractor Payments', accountType: 'EXPENSE', accountCategory: 'Contractor', description: 'Payments to sub-contractors and RA bills' },
+            { accountCode: '5400', accountName: 'Salary Expense', accountType: 'EXPENSE', accountCategory: 'HR', description: 'Staff salaries attributed to this project' },
+            { accountCode: '5500', accountName: 'Administrative Expense', accountType: 'EXPENSE', accountCategory: 'Admin', description: 'Office and administrative costs' },
+            { accountCode: '5600', accountName: 'Bank Charges', accountType: 'EXPENSE', accountCategory: 'Finance', description: 'Bank fees and transaction charges' },
+            { accountCode: '5700', accountName: 'Other Expenses', accountType: 'EXPENSE', accountCategory: 'Misc', description: 'Miscellaneous project expenses' },
+        ];
+        let created = 0;
+        let skipped = 0;
+        for (const template of STANDARD_ACCOUNTS) {
+            const existing = await this.accountRepository
+                .createQueryBuilder('a')
+                .where('a.accountCode = :code', { code: template.accountCode })
+                .andWhere('a.propertyId = :pid', { pid: propertyId })
+                .getOne();
+            if (existing) {
+                skipped++;
+                continue;
+            }
+            const account = this.accountRepository.create({
+                accountCode: template.accountCode,
+                accountName: template.accountName,
+                accountType: template.accountType,
+                accountCategory: template.accountCategory,
+                description: template.description,
+                propertyId,
+                isActive: true,
+                openingBalance: 0,
+                currentBalance: 0,
+            });
+            await this.accountRepository.save(account);
+            created++;
+        }
+        return { created, skipped };
+    }
+    async getAllAccounts(propertyId) {
+        const where = {};
+        if (propertyId)
+            where.propertyId = propertyId;
         return this.accountRepository.find({
-            relations: ['parentAccount', 'childAccounts'],
+            where: Object.keys(where).length ? where : undefined,
+            relations: ['parentAccount', 'childAccounts', 'property'],
             order: { accountCode: 'ASC' },
         });
     }
@@ -120,14 +175,18 @@ let AccountingService = AccountingService_1 = class AccountingService {
             }
         }
     }
-    async getAccountLedger(accountId, startDate, endDate) {
+    async getAccountLedger(accountId, startDate, endDate, propertyId) {
         const account = await this.getAccountById(accountId);
-        const entries = await this.journalEntryLineRepository
+        const query = this.journalEntryLineRepository
             .createQueryBuilder('line')
             .leftJoinAndSelect('line.journalEntry', 'entry')
             .where('line.accountId = :accountId', { accountId })
             .andWhere('entry.entryDate BETWEEN :startDate AND :endDate', { startDate, endDate })
-            .andWhere('entry.status = :status', { status: journal_entry_entity_1.JournalEntryStatus.POSTED })
+            .andWhere('entry.status = :status', { status: journal_entry_entity_1.JournalEntryStatus.POSTED });
+        if (propertyId) {
+            query.andWhere('entry.propertyId = :propertyId', { propertyId });
+        }
+        const entries = await query
             .orderBy('entry.entryDate', 'ASC')
             .addOrderBy('line.id', 'ASC')
             .getMany();
@@ -181,15 +240,35 @@ let AccountingService = AccountingService_1 = class AccountingService {
         };
         return summary;
     }
-    async getCashBook(startDate, endDate) {
+    async getCashBook(startDate, endDate, propertyId) {
         const commonCashCodes = ['1001', '1100', '1110', '1010', '101', 'CASH'];
         let cashAccount = null;
-        for (const code of commonCashCodes) {
-            cashAccount = await this.accountRepository.findOne({
-                where: { accountCode: code },
-            });
-            if (cashAccount)
-                break;
+        if (propertyId) {
+            for (const code of commonCashCodes) {
+                cashAccount = await this.accountRepository.findOne({
+                    where: { accountCode: code, propertyId },
+                });
+                if (cashAccount)
+                    break;
+            }
+            if (!cashAccount) {
+                cashAccount = await this.accountRepository
+                    .createQueryBuilder('account')
+                    .where('LOWER(account.accountName) LIKE :name', { name: '%cash%' })
+                    .andWhere('account.accountType = :type', { type: account_entity_1.AccountType.ASSET })
+                    .andWhere('account.propertyId = :propertyId', { propertyId })
+                    .orderBy('account.accountCode', 'ASC')
+                    .getOne();
+            }
+        }
+        if (!cashAccount) {
+            for (const code of commonCashCodes) {
+                cashAccount = await this.accountRepository.findOne({
+                    where: { accountCode: code, propertyId: null },
+                });
+                if (cashAccount)
+                    break;
+            }
         }
         if (!cashAccount) {
             cashAccount = await this.accountRepository
@@ -203,7 +282,8 @@ let AccountingService = AccountingService_1 = class AccountingService {
             throw new Error('Cash account not found. Please create an account named "Cash on Hand" ' +
                 '(or code 1001/1110) under ASSET type in Chart of Accounts.');
         }
-        return this.getAccountLedger(cashAccount.id, startDate, endDate);
+        const ledgerPropertyFilter = propertyId && cashAccount.propertyId === propertyId ? propertyId : undefined;
+        return this.getAccountLedger(cashAccount.id, startDate, endDate, ledgerPropertyFilter);
     }
     async getBankBook(bankAccountId, startDate, endDate) {
         const bankAccount = await this.bankAccountRepository.findOne({
@@ -334,7 +414,7 @@ let AccountingService = AccountingService_1 = class AccountingService {
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Trial Balance');
         return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     }
-    async getPropertyWisePL(startDate, endDate) {
+    async getPropertyWisePL(startDate, endDate, allowedPropertyIds) {
         const revenueRows = await this.dataSource.query(`
       SELECT
         p.id         AS property_id,
@@ -384,11 +464,15 @@ let AccountingService = AccountingService_1 = class AccountingService {
             }
             map[row.property_id].expenses = Number(row.expenses);
         }
-        const properties = Object.values(map).map(p => {
+        let properties = Object.values(map).map(p => {
             p.netProfit = Math.round((p.revenue - p.expenses) * 100) / 100;
             p.margin = p.revenue > 0 ? Math.round((p.netProfit / p.revenue) * 10000) / 100 : 0;
             return p;
         });
+        if (allowedPropertyIds?.length) {
+            const allow = new Set(allowedPropertyIds);
+            properties = properties.filter((p) => allow.has(p.propertyId));
+        }
         const totals = properties.reduce((acc, p) => ({
             revenue: acc.revenue + p.revenue,
             expenses: acc.expenses + p.expenses,
@@ -403,6 +487,162 @@ let AccountingService = AccountingService_1 = class AccountingService {
                     ? Math.round((totals.netProfit / totals.revenue) * 10000) / 100
                     : 0,
             },
+        };
+    }
+    async getProjectFundFlow(startDate, endDate, focusPropertyId, allowedPropertyIds) {
+        const matrix = await this.dataSource.query(`
+      WITH rev AS (
+        SELECT b.property_id AS pid, COALESCE(SUM(pay.amount), 0)::numeric AS revenue
+        FROM payments pay
+        INNER JOIN bookings b ON b.id = pay.booking_id
+        WHERE pay.payment_status = 'COMPLETED'
+          AND pay.payment_date BETWEEN $1 AND $2
+        GROUP BY b.property_id
+      ),
+      exp AS (
+        SELECT e.property_id AS pid, COALESCE(SUM(e.amount), 0)::numeric AS amt
+        FROM expenses e
+        WHERE e.status = 'PAID'
+          AND e.expense_date BETWEEN $1 AND $2
+          AND e.property_id IS NOT NULL
+        GROUP BY e.property_id
+      ),
+      vp AS (
+        SELECT v.property_id AS pid, COALESCE(SUM(v.amount), 0)::numeric AS amt
+        FROM vendor_payments v
+        WHERE v.payment_date BETWEEN $1 AND $2
+          AND v.property_id IS NOT NULL
+        GROUP BY v.property_id
+      ),
+      sal AS (
+        SELECT s.property_id AS pid, COALESCE(SUM(s.net_salary), 0)::numeric AS amt
+        FROM salary_payments s
+        WHERE s.payment_status = 'PAID'
+          AND s.payment_date BETWEEN $1 AND $2
+          AND s.property_id IS NOT NULL
+        GROUP BY s.property_id
+      )
+      SELECT
+        p.id AS "propertyId",
+        p.name AS "propertyName",
+        COALESCE(rev.revenue, 0)::float AS revenue,
+        COALESCE(exp.amt, 0)::float AS "expensesTagged",
+        COALESCE(vp.amt, 0)::float AS "vendorPaymentsTagged",
+        COALESCE(sal.amt, 0)::float AS "salariesTagged",
+        (COALESCE(exp.amt, 0) + COALESCE(vp.amt, 0) + COALESCE(sal.amt, 0))::float AS "totalOutflowsTagged",
+        (COALESCE(rev.revenue, 0) - (COALESCE(exp.amt, 0) + COALESCE(vp.amt, 0) + COALESCE(sal.amt, 0)))::float AS "netTagged"
+      FROM properties p
+      LEFT JOIN rev ON rev.pid = p.id
+      LEFT JOIN exp ON exp.pid = p.id
+      LEFT JOIN vp ON vp.pid = p.id
+      LEFT JOIN sal ON sal.pid = p.id
+      ORDER BY p.name
+      `, [startDate, endDate]);
+        if (allowedPropertyIds?.length) {
+            const allow = new Set(allowedPropertyIds);
+            for (let i = matrix.length - 1; i >= 0; i--) {
+                if (!allow.has(matrix[i].propertyId)) {
+                    matrix.splice(i, 1);
+                }
+            }
+        }
+        if (focusPropertyId && allowedPropertyIds?.length && !allowedPropertyIds.includes(focusPropertyId)) {
+            throw new common_1.ForbiddenException('You do not have access to this project');
+        }
+        const unallocated = await this.dataSource.query(`
+      SELECT
+        (SELECT COALESCE(SUM(amount), 0)::float FROM expenses
+         WHERE status = 'PAID' AND expense_date BETWEEN $1 AND $2 AND property_id IS NULL) AS "expenses",
+        (SELECT COALESCE(SUM(amount), 0)::float FROM vendor_payments
+         WHERE payment_date BETWEEN $1 AND $2 AND property_id IS NULL) AS "vendorPayments",
+        (SELECT COALESCE(SUM(net_salary), 0)::float FROM salary_payments
+         WHERE payment_status = 'PAID' AND payment_date BETWEEN $1 AND $2 AND property_id IS NULL) AS "salaries"
+      `, [startDate, endDate]);
+        const u = unallocated[0] || {};
+        const scopedFundFlow = !!(allowedPropertyIds && allowedPropertyIds.length > 0);
+        const unallocatedExpenses = scopedFundFlow ? 0 : Number(u.expenses || 0);
+        const unallocatedVendor = scopedFundFlow ? 0 : Number(u.vendorPayments || 0);
+        const unallocatedSalaries = scopedFundFlow ? 0 : Number(u.salaries || 0);
+        const unallocatedTotal = Math.round((unallocatedExpenses + unallocatedVendor + unallocatedSalaries) * 100) / 100;
+        const projectsWithOutflows = matrix.filter((r) => Number(r.totalOutflowsTagged) > 0).length;
+        let focusProperty = null;
+        let inflows = [];
+        let outflows = {
+            expenses: [],
+            vendorPayments: [],
+            salaries: [],
+        };
+        if (focusPropertyId) {
+            const propRow = await this.dataSource.query(`SELECT id, name FROM properties WHERE id = $1 LIMIT 1`, [focusPropertyId]);
+            if (propRow.length) {
+                focusProperty = { id: propRow[0].id, name: propRow[0].name };
+            }
+            inflows = await this.dataSource.query(`
+        SELECT
+          pay.id,
+          pay.payment_number AS "paymentNumber",
+          pay.amount::float AS amount,
+          pay.payment_date AS "paymentDate",
+          pay.payment_mode AS "paymentMode",
+          b.id AS "bookingId"
+        FROM payments pay
+        INNER JOIN bookings b ON b.id = pay.booking_id
+        WHERE b.property_id = $3
+          AND pay.payment_status = 'COMPLETED'
+          AND pay.payment_date BETWEEN $1 AND $2
+        ORDER BY pay.payment_date DESC
+        `, [startDate, endDate, focusPropertyId]);
+            outflows.expenses = await this.dataSource.query(`
+        SELECT e.id, e.expense_code AS "expenseCode", e.expense_category AS "expenseCategory",
+               e.amount::float AS amount, e.expense_date AS "expenseDate", e.description
+        FROM expenses e
+        WHERE e.property_id = $3 AND e.status = 'PAID'
+          AND e.expense_date BETWEEN $1 AND $2
+        ORDER BY e.expense_date DESC
+        `, [startDate, endDate, focusPropertyId]);
+            outflows.vendorPayments = await this.dataSource.query(`
+        SELECT vp.id, vp.amount::float AS amount, vp.payment_date AS "paymentDate",
+               vp.payment_mode AS "paymentMode", vp.transaction_reference AS "transactionReference",
+               v.vendor_name AS "vendorName"
+        FROM vendor_payments vp
+        LEFT JOIN vendors v ON v.id = vp.vendor_id
+        WHERE vp.property_id = $3 AND vp.payment_date BETWEEN $1 AND $2
+        ORDER BY vp.payment_date DESC
+        `, [startDate, endDate, focusPropertyId]);
+            outflows.salaries = await this.dataSource.query(`
+        SELECT sp.id, sp.net_salary::float AS "netSalary", sp.payment_date AS "paymentDate",
+               sp.payment_mode AS "paymentMode", e.full_name AS "employeeName"
+        FROM salary_payments sp
+        LEFT JOIN employees e ON e.id = sp.employee_id
+        WHERE sp.property_id = $3 AND sp.payment_status = 'PAID'
+          AND sp.payment_date BETWEEN $1 AND $2
+        ORDER BY sp.payment_date DESC
+        `, [startDate, endDate, focusPropertyId]);
+        }
+        const focusRow = focusPropertyId
+            ? matrix.find((r) => r.propertyId === focusPropertyId)
+            : null;
+        return {
+            period: { startDate, endDate },
+            explanation: 'Revenue = completed customer payments on bookings for that project. ' +
+                'Outflows = expenses, vendor payments, and salaries **tagged** to that project. ' +
+                'Cross-project view shows how much was booked under each project vs how much spend was attributed to each — not automatic bank-to-project tracing.',
+            focusProperty,
+            focusSummary: focusRow || null,
+            projectsWithOutflows,
+            matrix,
+            unallocatedOutflows: {
+                expenses: unallocatedExpenses,
+                vendorPayments: unallocatedVendor,
+                salaries: unallocatedSalaries,
+                total: unallocatedTotal,
+            },
+            inflows,
+            outflows,
+            inflowTotal: Math.round(inflows.reduce((s, x) => s + Number(x.amount || 0), 0) * 100) / 100,
+            outflowTotal: focusPropertyId && focusRow
+                ? Math.round(Number(focusRow.totalOutflowsTagged || 0) * 100) / 100
+                : null,
         };
     }
     async exportForITR(financialYear) {

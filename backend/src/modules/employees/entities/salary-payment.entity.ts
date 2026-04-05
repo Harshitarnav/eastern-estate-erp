@@ -9,6 +9,7 @@ import {
   Index,
 } from 'typeorm';
 import { Employee } from './employee.entity';
+import { Property } from '../../properties/entities/property.entity';
 
 export enum PaymentStatus {
   PENDING = 'PENDING',
@@ -147,6 +148,13 @@ export class SalaryPayment {
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
 
   // System Fields
   @CreateDateColumn()

@@ -55,9 +55,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     if (window.innerWidth < 1024) onClose();
   };
 
-  const isActive = (path: string) => pathname === path;
+  const isActivePath = (path: string) => pathname === path.split('?')[0];
+  const isActive = (path: string) => isActivePath(path);
   const isPendingPath = (path: string) => pendingPath === path && isPending;
-  const isChildActive = (paths: string[]) => paths.some(path => pathname === path || pathname?.startsWith(path + '/'));
+  const isChildActive = (paths: string[]) =>
+    paths.some((path) => {
+      const base = path.split('?')[0];
+      return pathname === base || pathname?.startsWith(base + '/');
+    });
 
   // Check if user can access a module
   const canAccess = (moduleId: string) => {
@@ -223,7 +228,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               const Icon = item.icon;
               const hasChildren = !!item.children;
               const isExpanded = expandedMenus.includes(item.id);
-              const isItemActive = item.href ? isActive(item.href) : false;
+              const isItemActive = item.href ? isActivePath(item.href) : false;
               const hasActiveChild = hasChildren && isChildActive(item.children!.map(c => c.href));
 
               // Filter children based on access
@@ -253,8 +258,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <div className="ml-4 mt-1 space-y-1">
                           {filteredChildren.map((child) => {
                             const ChildIcon = child.icon;
-                            const active = isActive(child.href);
-                            const pending = isPendingPath(child.href);
+                            const active = isActivePath(child.href);
+                            const pending = isPendingPath(child.href.split('?')[0]);
                             return (
                               <Link
                                 key={child.id}

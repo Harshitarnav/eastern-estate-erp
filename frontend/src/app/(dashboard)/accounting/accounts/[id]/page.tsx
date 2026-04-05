@@ -4,11 +4,17 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, Edit, Trash2 } from 'lucide-react';
 import { accountsService } from '@/services/accounting.service';
+import { useAuthStore } from '@/store/authStore';
 
 export default function ViewAccountPage() {
   const router = useRouter();
   const params = useParams();
   const id = params?.id as string;
+
+  const { user } = useAuthStore();
+  const canAdminEdit = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
+  );
   
   const [account, setAccount] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +46,8 @@ export default function ViewAccountPage() {
 
     try {
       await accountsService.delete(id);
+      // refresh() busts Next.js client-side cache so the list re-fetches on arrival
+      router.refresh();
       router.push('/accounting/accounts');
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete account');
@@ -100,21 +108,25 @@ export default function ViewAccountPage() {
               <BookOpen className="h-4 w-4" />
               Ledger
             </button>
-            <button
-              onClick={() => router.push(`/accounting/accounts/${id}/edit`)}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
-              style={{ borderColor: '#A8211B', color: '#A8211B' }}
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </button>
-            <button
-              onClick={handleDelete}
-              className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
+            {canAdminEdit && (
+              <>
+                <button
+                  onClick={() => router.push(`/accounting/accounts/${id}/edit`)}
+                  className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2"
+                  style={{ borderColor: '#A8211B', color: '#A8211B' }}
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         </div>
 

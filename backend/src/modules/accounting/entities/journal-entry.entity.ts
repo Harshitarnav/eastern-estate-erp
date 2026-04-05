@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { JournalEntryLine } from './journal-entry-line.entity';
+import { Property } from '../../properties/entities/property.entity';
 
 export enum JournalEntryStatus {
   DRAFT = 'DRAFT',
@@ -83,6 +84,13 @@ export class JournalEntry {
 
   @OneToMany(() => JournalEntryLine, (line) => line.journalEntry, { cascade: true })
   lines: JournalEntryLine[];
+
+  @Column({ name: 'property_id', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'property_id' })
+  property: Property;
 
   @CreateDateColumn()
   createdAt: Date;

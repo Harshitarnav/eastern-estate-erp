@@ -18,6 +18,7 @@ const journal_entries_service_1 = require("./journal-entries.service");
 const create_journal_entry_dto_1 = require("./dto/create-journal-entry.dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const journal_entry_entity_1 = require("./entities/journal-entry.entity");
+const accounting_scope_util_1 = require("./utils/accounting-scope.util");
 let JournalEntriesController = class JournalEntriesController {
     constructor(journalEntriesService) {
         this.journalEntriesService = journalEntriesService;
@@ -25,31 +26,44 @@ let JournalEntriesController = class JournalEntriesController {
     create(createJournalEntryDto, req) {
         return this.journalEntriesService.create(createJournalEntryDto, req.user.userId);
     }
-    findAll(status, startDate, endDate, referenceType) {
+    findAll(req, status, startDate, endDate, referenceType) {
+        const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
         return this.journalEntriesService.findAll({
             status,
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
             referenceType,
+            accessiblePropertyIds: scopeIds || undefined,
         });
     }
-    findOne(id) {
-        return this.journalEntriesService.findOne(id);
-    }
-    async findLines(id) {
+    async findOne(id, req) {
         const entry = await this.journalEntriesService.findOne(id);
+        (0, accounting_scope_util_1.assertJournalEntryReadable)(entry, req);
+        return entry;
+    }
+    async findLines(id, req) {
+        const entry = await this.journalEntriesService.findOne(id);
+        (0, accounting_scope_util_1.assertJournalEntryReadable)(entry, req);
         return entry.lines ?? [];
     }
-    update(id, updateJournalEntryDto) {
+    async update(id, updateJournalEntryDto, req) {
+        const entry = await this.journalEntriesService.findOne(id);
+        (0, accounting_scope_util_1.assertJournalEntryReadable)(entry, req);
         return this.journalEntriesService.update(id, updateJournalEntryDto);
     }
-    post(id, req) {
+    async post(id, req) {
+        const entry = await this.journalEntriesService.findOne(id);
+        (0, accounting_scope_util_1.assertJournalEntryReadable)(entry, req);
         return this.journalEntriesService.post(id, req.user.userId);
     }
-    void(id, voidDto, req) {
+    async void(id, voidDto, req) {
+        const entry = await this.journalEntriesService.findOne(id);
+        (0, accounting_scope_util_1.assertJournalEntryReadable)(entry, req);
         return this.journalEntriesService.void(id, req.user.userId, voidDto);
     }
-    remove(id) {
+    async remove(id, req) {
+        const entry = await this.journalEntriesService.findOne(id);
+        (0, accounting_scope_util_1.assertJournalEntryReadable)(entry, req);
         return this.journalEntriesService.remove(id);
     }
 };
@@ -64,35 +78,39 @@ __decorate([
 ], JournalEntriesController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('status')),
-    __param(1, (0, common_1.Query)('startDate')),
-    __param(2, (0, common_1.Query)('endDate')),
-    __param(3, (0, common_1.Query)('referenceType')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('status')),
+    __param(2, (0, common_1.Query)('startDate')),
+    __param(3, (0, common_1.Query)('endDate')),
+    __param(4, (0, common_1.Query)('referenceType')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], JournalEntriesController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], JournalEntriesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Get)(':id/lines'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], JournalEntriesController.prototype, "findLines", null);
 __decorate([
     (0, common_1.Patch)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, create_journal_entry_dto_1.UpdateJournalEntryDto]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, create_journal_entry_dto_1.UpdateJournalEntryDto, Object]),
+    __metadata("design:returntype", Promise)
 ], JournalEntriesController.prototype, "update", null);
 __decorate([
     (0, common_1.Post)(':id/post'),
@@ -100,7 +118,7 @@ __decorate([
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], JournalEntriesController.prototype, "post", null);
 __decorate([
     (0, common_1.Post)(':id/void'),
@@ -109,14 +127,15 @@ __decorate([
     __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, create_journal_entry_dto_1.VoidJournalEntryDto, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], JournalEntriesController.prototype, "void", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
 ], JournalEntriesController.prototype, "remove", null);
 exports.JournalEntriesController = JournalEntriesController = __decorate([
     (0, common_1.Controller)('accounting/journal-entries'),
