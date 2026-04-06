@@ -148,6 +148,12 @@ run_migration "$MIGRATIONS_DIR/v015_accountant_roles.sql"
 
 echo ""
 echo "======================================================"
+echo " STEP 17: CONSTRUCTION_FLAT_PROGRESS construction_project_id"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v016_construction_flat_progress_project_id.sql"
+
+echo ""
+echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
 echo " Now restart the application:"
 echo "   docker compose -f docker-compose.prod.yml restart backend frontend"
