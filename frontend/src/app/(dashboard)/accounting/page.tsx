@@ -9,8 +9,9 @@ import { DashboardSkeleton } from '@/components/Skeletons';
 import { usePropertyStore } from '@/store/propertyStore';
 
 export default function AccountingDashboard() {
-  const { selectedProperties } = usePropertyStore();
-  const selectedPropertyId = selectedProperties[0] ?? undefined;
+  const { selectedProperties, properties } = usePropertyStore();
+  const reportPropertyId =
+    selectedProperties[0] ?? (properties.length > 0 ? properties[0].id : undefined);
 
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -23,14 +24,19 @@ export default function AccountingDashboard() {
     setFetchError(false);
     const fetchData = async () => {
       try {
-        const [bs, pl, es] = await Promise.all([
-          accountsService.getBalanceSheet(selectedPropertyId),
-          accountsService.getProfitLoss(selectedPropertyId),
-          expensesService.getSummary(),
-        ]);
-        setBalanceSheet(bs);
-        setProfitLoss(pl);
+        const es = await expensesService.getSummary();
         setExpenseSummary(es);
+        if (reportPropertyId) {
+          const [bs, pl] = await Promise.all([
+            accountsService.getBalanceSheet(reportPropertyId),
+            accountsService.getProfitLoss(reportPropertyId),
+          ]);
+          setBalanceSheet(bs);
+          setProfitLoss(pl);
+        } else {
+          setBalanceSheet(null);
+          setProfitLoss(null);
+        }
       } catch (error) {
         console.error('Error fetching accounting data:', error);
         setFetchError(true);
@@ -39,7 +45,7 @@ export default function AccountingDashboard() {
       }
     };
     fetchData();
-  }, [selectedPropertyId]);
+  }, [reportPropertyId]);
 
   if (loading) {
     return <DashboardSkeleton />;
