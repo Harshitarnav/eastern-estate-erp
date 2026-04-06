@@ -20,14 +20,13 @@
 DO $$
 DECLARE
   col_type TEXT;
-  udt_name TEXT;
 BEGIN
-  SELECT data_type, udt_name
-    INTO col_type, udt_name
-    FROM information_schema.columns
-   WHERE table_schema = 'public'
-     AND table_name   = 'flats'
-     AND column_name  = 'amenities';
+  SELECT c.data_type
+    INTO col_type
+    FROM information_schema.columns AS c
+   WHERE c.table_schema = 'public'
+     AND c.table_name   = 'flats'
+     AND c.column_name  = 'amenities';
 
   IF col_type IS NULL THEN
     -- Column missing entirely (pre-sync schema) — add it

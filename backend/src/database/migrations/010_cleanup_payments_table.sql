@@ -42,14 +42,24 @@ ALTER TABLE payments DROP COLUMN IF EXISTS "customerId";
 ALTER TABLE payments DROP COLUMN IF EXISTS "employeeId";
 ALTER TABLE payments DROP COLUMN IF EXISTS "vendorId";
 
--- Step 5: Add proper FK constraints on the new snake_case audit columns
-ALTER TABLE payments 
-  ADD CONSTRAINT fk_payments_verified_by 
-  FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL;
-
-ALTER TABLE payments 
-  ADD CONSTRAINT fk_payments_created_by 
-  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+-- Step 5: Add proper FK constraints on the new snake_case audit columns (idempotent)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_payments_verified_by' AND conrelid = 'public.payments'::regclass
+  ) THEN
+    ALTER TABLE payments
+      ADD CONSTRAINT fk_payments_verified_by
+      FOREIGN KEY (verified_by) REFERENCES users(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'fk_payments_created_by' AND conrelid = 'public.payments'::regclass
+  ) THEN
+    ALTER TABLE payments
+      ADD CONSTRAINT fk_payments_created_by
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
 
 -- Step 6: Ensure payment_status has proper values (fix 'RECEIVED' → 'COMPLETED')
 UPDATE payments SET payment_status = 'COMPLETED' WHERE payment_status = 'RECEIVED';

@@ -1,11 +1,21 @@
 -- Migration 013: Make entered_by and issued_to nullable in construction tables
--- Run this in psql: \i /path/to/013_fix_material_columns.sql
+-- Idempotent: only alters columns that exist (some prod DBs lack issued_to).
 
--- Make entered_by nullable in material_entries
-ALTER TABLE material_entries ALTER COLUMN entered_by DROP NOT NULL;
-
--- Make issued_to nullable in material_exits
-ALTER TABLE material_exits ALTER COLUMN issued_to DROP NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'material_entries' AND column_name = 'entered_by'
+  ) THEN
+    ALTER TABLE material_entries ALTER COLUMN entered_by DROP NOT NULL;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'material_exits' AND column_name = 'issued_to'
+  ) THEN
+    ALTER TABLE material_exits ALTER COLUMN issued_to DROP NOT NULL;
+  END IF;
+END $$;
 
 -- Also fix any typo in column names if they exist as camelCase
 -- (safe to run - will error silently if already correct)
