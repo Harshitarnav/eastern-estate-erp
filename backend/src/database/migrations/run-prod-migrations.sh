@@ -154,6 +154,12 @@ run_migration "$MIGRATIONS_DIR/v016_construction_flat_progress_project_id.sql"
 
 echo ""
 echo "======================================================"
+echo " STEP 18: CONSTRUCTION_FLAT_PROGRESS phase / progress columns"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/v017_construction_flat_progress_phase_columns.sql"
+
+echo ""
+echo "======================================================"
 echo " ✅ ALL MIGRATIONS COMPLETE"
 echo " Now restart the application:"
 echo "   docker compose -f docker-compose.prod.yml restart backend frontend"
