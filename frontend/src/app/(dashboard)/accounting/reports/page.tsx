@@ -1000,8 +1000,12 @@ function CashFlowReport({ data }: { data: any }) {
 // ─── Main Page ──────────────────────────────────────────────────────────────
 export default function ReportsPage() {
   const searchParams = useSearchParams();
-  const { selectedProperties } = usePropertyStore();
-  const selectedPropertyId = selectedProperties[0] ?? undefined;
+  const { selectedProperties, properties } = usePropertyStore();
+  /** Backend requires propertyId when the user can access more than one project. */
+  const reportPropertyId =
+    selectedProperties[0] ?? (properties.length > 0 ? properties[0].id : undefined);
+  const reportsUsedFallbackProject =
+    !selectedProperties[0] && properties.length > 1 && !!reportPropertyId;
 
   const [tab, setTab] = useState<Tab>('balance-sheet');
   const [balanceSheet, setBalanceSheet] = useState<any>(null);
@@ -1028,9 +1032,9 @@ export default function ReportsPage() {
     (async () => {
     try {
         const [bs, pl, tb, vr] = await Promise.all([
-        accountsService.getBalanceSheet(selectedPropertyId),
-        accountsService.getProfitLoss(selectedPropertyId),
-          accountsService.getTrialBalance(selectedPropertyId),
+        accountsService.getBalanceSheet(reportPropertyId),
+        accountsService.getProfitLoss(reportPropertyId),
+          accountsService.getTrialBalance(reportPropertyId),
         budgetsService.getVarianceReport(),
       ]);
       setBalanceSheet(bs);
@@ -1040,7 +1044,7 @@ export default function ReportsPage() {
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
-  }, [selectedPropertyId]);
+  }, [reportPropertyId]);
 
   // Lazy-load AR/AP aging and Cash Flow when those tabs are first opened
   useEffect(() => {
@@ -1122,6 +1126,13 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Financial Reports</h1>
           <p className="text-sm text-gray-500 mt-1">As of {format(new Date(), 'dd MMM yyyy')}</p>
+          {reportsUsedFallbackProject && (
+            <p className="text-xs text-amber-700 mt-2 max-w-xl">
+              No project was selected in the header. Showing reports for{' '}
+              <span className="font-medium">{properties.find((p) => p.id === reportPropertyId)?.name ?? 'the first project'}</span>
+              . Use the project dropdown above to switch.
+            </p>
+          )}
         </div>
       </div>
 
