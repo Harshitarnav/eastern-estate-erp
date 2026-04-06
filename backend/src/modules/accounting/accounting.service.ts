@@ -212,9 +212,11 @@ export class AccountingService {
       .andWhere('entry.entryDate BETWEEN :startDate AND :endDate', { startDate, endDate })
       .andWhere('entry.status = :status', { status: JournalEntryStatus.POSTED });
 
-    // When a project is selected, show only JEs tagged to that project
+    // When a project is selected, include JEs for that project and untagged (company-wide) entries
     if (propertyId) {
-      query.andWhere('entry.propertyId = :propertyId', { propertyId });
+      query.andWhere('(entry.propertyId IS NULL OR entry.propertyId = :propertyId)', {
+        propertyId,
+      });
     }
 
     const entries = await query

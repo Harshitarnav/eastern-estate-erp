@@ -168,6 +168,25 @@ export class AccountsService {
     return qb.getMany();
   }
 
+  /**
+   * For project-scoped reports: same rule as Chart of Accounts list — include company-wide
+   * accounts (property_id NULL) alongside accounts tagged to that project.
+   */
+  private async findAccountsByTypeAndPropertyScope(
+    accountType: AccountType,
+    propertyId?: string,
+  ): Promise<Account[]> {
+    const qb = this.accountsRepository
+      .createQueryBuilder('account')
+      .where('account.accountType = :type', { type: accountType })
+      .andWhere('account.isActive = :ia', { ia: true });
+    if (propertyId) {
+      qb.andWhere('(account.propertyId IS NULL OR account.propertyId = :pid)', { pid: propertyId });
+    }
+    qb.orderBy('account.accountCode', 'ASC');
+    return qb.getMany();
+  }
+
   async getBalanceSheet(propertyId?: string): Promise<{
     assets: Account[];
     liabilities: Account[];
@@ -176,24 +195,9 @@ export class AccountsService {
     totalLiabilities: number;
     totalEquity: number;
   }> {
-    const scopeWhere = (type: AccountType) => propertyId
-      ? { accountType: type, isActive: true, propertyId }
-      : { accountType: type, isActive: true };
-
-    const assets = await this.accountsRepository.find({
-      where: scopeWhere(AccountType.ASSET),
-      order: { accountCode: 'ASC' },
-    });
-
-    const liabilities = await this.accountsRepository.find({
-      where: scopeWhere(AccountType.LIABILITY),
-      order: { accountCode: 'ASC' },
-    });
-
-    const equity = await this.accountsRepository.find({
-      where: scopeWhere(AccountType.EQUITY),
-      order: { accountCode: 'ASC' },
-    });
+    const assets = await this.findAccountsByTypeAndPropertyScope(AccountType.ASSET, propertyId);
+    const liabilities = await this.findAccountsByTypeAndPropertyScope(AccountType.LIABILITY, propertyId);
+    const equity = await this.findAccountsByTypeAndPropertyScope(AccountType.EQUITY, propertyId);
 
     const totalAssets = assets.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
     const totalLiabilities = liabilities.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
@@ -216,19 +220,8 @@ export class AccountsService {
     totalExpenses: number;
     netProfit: number;
   }> {
-    const scopeWhere = (type: AccountType) => propertyId
-      ? { accountType: type, isActive: true, propertyId }
-      : { accountType: type, isActive: true };
-
-    const income = await this.accountsRepository.find({
-      where: scopeWhere(AccountType.INCOME),
-      order: { accountCode: 'ASC' },
-    });
-
-    const expenses = await this.accountsRepository.find({
-      where: scopeWhere(AccountType.EXPENSE),
-      order: { accountCode: 'ASC' },
-    });
+    const income = await this.findAccountsByTypeAndPropertyScope(AccountType.INCOME, propertyId);
+    const expenses = await this.findAccountsByTypeAndPropertyScope(AccountType.EXPENSE, propertyId);
 
     const totalIncome = income.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
     const totalExpenses = expenses.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
@@ -256,12 +249,14 @@ export class AccountsService {
     totalCredit: number;
     isBalanced: boolean;
   }> {
-    const where: any = { isActive: true };
-    if (propertyId) where.propertyId = propertyId;
-    const allAccounts = await this.accountsRepository.find({
-      where,
-      order: { accountCode: 'ASC' },
-    });
+    const qb = this.accountsRepository
+      .createQueryBuilder('account')
+      .where('account.isActive = :ia', { ia: true });
+    if (propertyId) {
+      qb.andWhere('(account.propertyId IS NULL OR account.propertyId = :pid)', { pid: propertyId });
+    }
+    qb.orderBy('account.accountCode', 'ASC');
+    const allAccounts = await qb.getMany();
 
     // Asset and Expense accounts carry debit balances normally
     // Liability, Equity, Income accounts carry credit balances normally
