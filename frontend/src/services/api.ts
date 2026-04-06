@@ -1,23 +1,38 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import { handleApiError } from '@/utils/error-handler';
 
-// Default to same-origin API so prod/stage uses the current host (Caddy proxies /api/v1)
-// Normalize to avoid mixed-content when the site is served over HTTPS.
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
-let API_URL = rawApiUrl;
+/**
+ * Browser: same-origin `/api/v1` (Caddy proxies) or absolute NEXT_PUBLIC_API_URL.
+ * Node (Next SSR / server): must use INTERNAL_API_URL (e.g. http://backend:3001/api/v1 in Docker)
+ * — relative `/api/v1` would hit the Next server, not Nest, and causes ECONNRESET / redirect errors.
+ */
+function resolveApiBaseUrl(): string {
+  const publicUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
-if (typeof window !== 'undefined') {
-  try {
-    const isHttps = window.location.protocol === 'https:';
-    const resolved = new URL(rawApiUrl, window.location.origin);
-    if (isHttps && resolved.protocol === 'http:' && resolved.hostname === window.location.hostname) {
-      resolved.protocol = 'https:';
+  if (typeof window !== 'undefined') {
+    try {
+      const isHttps = window.location.protocol === 'https:';
+      const resolved = new URL(publicUrl, window.location.origin);
+      if (isHttps && resolved.protocol === 'http:' && resolved.hostname === window.location.hostname) {
+        resolved.protocol = 'https:';
+      }
+      return resolved.toString().replace(/\/$/, '');
+    } catch {
+      return publicUrl;
     }
-    API_URL = resolved.toString().replace(/\/$/, '');
-  } catch {
-    API_URL = rawApiUrl;
   }
+
+  const internal = process.env.INTERNAL_API_URL?.replace(/\/$/, '');
+  if (internal) return internal;
+
+  if (publicUrl.startsWith('http://') || publicUrl.startsWith('https://')) {
+    return publicUrl.replace(/\/$/, '');
+  }
+
+  return 'http://127.0.0.1:3001/api/v1';
 }
+
+const API_URL = resolveApiBaseUrl();
 
 class ApiService {
   private api: AxiosInstance;

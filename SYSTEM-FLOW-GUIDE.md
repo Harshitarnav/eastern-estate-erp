@@ -573,7 +573,18 @@ After **`git pull`** on the production server, apply any new SQL migrations **be
    ```
    (Adjust compose file path and service names to match your server.)
 
+4. **Frontend ↔ API in Docker:** Production Compose sets **`INTERNAL_API_URL=http://backend:3001/api/v1`** so Next.js can call the Nest API during server rendering. Without it, logs may show `ECONNRESET` or `failed to get redirect response` for `/` because relative `/api/v1` would hit the frontend container, not the backend.
+
+5. **Health checks:** Backend may stay **starting** for several minutes while schema sync runs — that is normal. Verify from the host with:
+   ```bash
+   docker exec eastern-estate-backend node -e "require('http').get('http://127.0.0.1:3001/api/v1/health',(r)=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>{console.log(r.statusCode,d);process.exit(r.statusCode===200?0:1)})})"
+   docker exec eastern-estate-frontend node -e "require('http').get('http://127.0.0.1:3000',(r)=>process.exit(r.statusCode===200?0:1))"
+   ```
+   Do **not** rely on `curl http://127.0.0.1:3001` from the host unless that port is published in Compose (default prod file keeps API on the internal network only).
+
 > ⚠️ Always take a **database backup** before running migrations on production.
+
+> 🛡️ **Security:** If you ever see random lines in logs mentioning `chattr`, `powershell.exe`, foreign paths under `/usr/bin`, or `sysctl` / `hugepages` failures mixed with app output, treat the **server as potentially compromised** — rotate credentials, scan for malware, patch SSH, and review `crontab` / Docker images. That output is **not** from the ERP application code.
 
 ### Brand copy in emails / PDFs
 
