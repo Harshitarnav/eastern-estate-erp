@@ -32,6 +32,17 @@ export class DatabaseController {
   }
 
   /**
+   * Tables grid + stats in one response (faster initial load than two calls).
+   * GET /database/explorer-summary
+   */
+  @Get('explorer-summary')
+  @Roles('super_admin', 'admin')
+  async getExplorerSummary() {
+    const payload = await this.databaseService.getExplorerSummary();
+    return { data: payload };
+  }
+
+  /**
    * Get database statistics
    * GET /database/stats
    */

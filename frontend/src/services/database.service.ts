@@ -64,6 +64,17 @@ export const databaseService = {
   },
 
   /**
+   * Database explorer home: tables + stats in one request.
+   */
+  async getExplorerSummary(): Promise<{
+    tables: TableOverview[];
+    stats: DatabaseStats;
+  }> {
+    const response = await api.get('/database/explorer-summary');
+    return response.data;
+  },
+
+  /**
    * Get database statistics
    */
   async getDatabaseStats(): Promise<DatabaseStats> {

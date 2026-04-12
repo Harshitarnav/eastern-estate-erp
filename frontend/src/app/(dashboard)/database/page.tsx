@@ -46,10 +46,10 @@ export default function DatabasePage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
-      const tablesResponse = await databaseService.getTablesOverview();
-      const statsResponse = await databaseService.getDatabaseStats();
-      
+
+      const { tables: tablesResponse, stats: statsResponse } =
+        await databaseService.getExplorerSummary();
+
       setTables(tablesResponse);
       setFilteredTables(tablesResponse);
       setStats(statsResponse);

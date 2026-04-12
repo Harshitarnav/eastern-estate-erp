@@ -237,43 +237,35 @@ export class DatabaseService {
   }
 
   /**
-   * Get all tables with basic info (for overview/dashboard)
+   * Fast table overview: column counts in one aggregation, row counts from pg_stat
+   * (approximate n_live_tup — same source as EXPLAIN row estimates; avoids COUNT(*) per table).
    */
   async getAllTablesInfo(): Promise<Array<{ name: string; rowCount: number; columnCount: number }>> {
     const query = `
-      SELECT 
-        t.table_name as name,
-        (SELECT COUNT(*) FROM information_schema.columns c WHERE c.table_name = t.table_name) as column_count
-      FROM information_schema.tables t
-      WHERE t.table_schema = 'public' 
-        AND t.table_type = 'BASE TABLE'
-      ORDER BY t.table_name;
+      WITH col_counts AS (
+        SELECT table_name, COUNT(*)::int AS column_count
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        GROUP BY table_name
+      )
+      SELECT
+        t.tablename AS name,
+        COALESCE(s.n_live_tup, 0)::bigint AS row_count,
+        COALESCE(cc.column_count, 0)::int AS column_count
+      FROM pg_tables t
+      LEFT JOIN pg_stat_user_tables s
+        ON s.schemaname = t.schemaname AND s.relname = t.tablename
+      LEFT JOIN col_counts cc ON cc.table_name = t.tablename
+      WHERE t.schemaname = 'public'
+      ORDER BY t.tablename;
     `;
-    
-    const tables = await this.dataSource.query(query);
-    
-    // Get row counts for each table
-    const tablesWithCounts = await Promise.all(
-      tables.map(async (table: any) => {
-        try {
-          const countQuery = `SELECT COUNT(*) as count FROM "${table.name}"`;
-          const countResult = await this.dataSource.query(countQuery);
-          return {
-            name: table.name,
-            rowCount: parseInt(countResult[0].count),
-            columnCount: parseInt(table.column_count),
-          };
-        } catch (error) {
-          return {
-            name: table.name,
-            rowCount: 0,
-            columnCount: parseInt(table.column_count),
-          };
-        }
-      })
-    );
 
-    return tablesWithCounts;
+    const rows = await this.dataSource.query(query);
+    return rows.map((row: any) => ({
+      name: row.name,
+      rowCount: Number(row.row_count ?? row.rowcount ?? 0),
+      columnCount: Number(row.column_count ?? row.columncount ?? 0),
+    }));
   }
 
   /**
@@ -284,31 +276,56 @@ export class DatabaseService {
     totalRows: number;
     databaseSize: string;
   }> {
-    // Get total tables
     const tablesQuery = `
-      SELECT COUNT(*) as count
-      FROM information_schema.tables
-      WHERE table_schema = 'public' 
-        AND table_type = 'BASE TABLE';
+      SELECT COUNT(*)::int AS count
+      FROM pg_tables
+      WHERE schemaname = 'public';
     `;
-    const tablesResult = await this.dataSource.query(tablesQuery);
-    const totalTables = parseInt(tablesResult[0].count);
-
-    // Get database size
+    const rowsQuery = `
+      SELECT COALESCE(SUM(n_live_tup), 0)::bigint AS total
+      FROM pg_stat_user_tables
+      WHERE schemaname = 'public';
+    `;
     const sizeQuery = `
-      SELECT pg_size_pretty(pg_database_size(current_database())) as size;
+      SELECT pg_size_pretty(pg_database_size(current_database())) AS size;
     `;
-    const sizeResult = await this.dataSource.query(sizeQuery);
-    const databaseSize = sizeResult[0].size;
 
-    // Get all tables info
-    const allTables = await this.getAllTablesInfo();
-    const totalRows = allTables.reduce((sum, table) => sum + table.rowCount, 0);
+    const [tablesResult, rowsResult, sizeResult] = await Promise.all([
+      this.dataSource.query(tablesQuery),
+      this.dataSource.query(rowsQuery),
+      this.dataSource.query(sizeQuery),
+    ]);
 
-      return {
-      totalTables,
-      totalRows,
-      databaseSize,
+    return {
+      totalTables: parseInt(tablesResult[0].count, 10),
+      totalRows: Number(rowsResult[0].total ?? 0),
+      databaseSize: sizeResult[0].size,
+    };
+  }
+
+  /**
+   * One round-trip payload for the database explorer home (tables grid + stats cards).
+   */
+  async getExplorerSummary(): Promise<{
+    tables: Array<{ name: string; rowCount: number; columnCount: number }>;
+    stats: { totalTables: number; totalRows: number; databaseSize: string };
+  }> {
+    const [tables, sizeResult] = await Promise.all([
+      this.getAllTablesInfo(),
+      this.dataSource.query(
+        `SELECT pg_size_pretty(pg_database_size(current_database())) AS size`,
+      ),
+    ]);
+
+    const totalRows = tables.reduce((sum, t) => sum + t.rowCount, 0);
+
+    return {
+      tables,
+      stats: {
+        totalTables: tables.length,
+        totalRows,
+        databaseSize: sizeResult[0].size,
+      },
     };
   }
 
