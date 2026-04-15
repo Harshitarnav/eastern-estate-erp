@@ -37,7 +37,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/portal/login');
+    if (typeof window !== 'undefined') {
+      window.location.assign('/portal/login');
+    }
   };
 
   // Login page (and any other public portal pages) — render bare, no shell

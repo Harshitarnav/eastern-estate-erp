@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { usePropertyStore } from '@/store/propertyStore';
 import { propertiesService } from '@/services/properties.service';
@@ -21,15 +21,22 @@ export function HeaderProjectSelect() {
     setProperties,
   } = usePropertyStore();
 
+  const [listResolved, setListResolved] = useState(false);
+
   const userRoles = user?.roles?.map((r: any) => (typeof r === 'string' ? r : r.name)) || [];
   const wideAccess = seesAllAccountingProjects(userRoles);
 
   useEffect(() => {
     if (!user?.id || !wideAccess) return;
-    if (properties.length > 0) return;
+    if (properties.length > 0) {
+      setListResolved(true);
+      return;
+    }
+    let cancelled = false;
     propertiesService
       .getProperties({ limit: 200 })
       .then((res: any) => {
+        if (cancelled) return;
         const list = res?.data ?? res ?? [];
         const arr = Array.isArray(list) ? list : list.data ?? [];
         setProperties(
@@ -41,7 +48,13 @@ export function HeaderProjectSelect() {
           })),
         );
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setListResolved(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id, wideAccess, properties.length, setProperties]);
 
   useEffect(() => {
@@ -64,6 +77,9 @@ export function HeaderProjectSelect() {
       })
       .catch(() => {
         if (!cancelled) setProperties([]);
+      })
+      .finally(() => {
+        if (!cancelled) setListResolved(true);
       });
     return () => {
       cancelled = true;
@@ -88,9 +104,28 @@ export function HeaderProjectSelect() {
   }, [properties, selectedProperties, wideAccess, setSelectedProperties]);
 
   if (!user?.id) return null;
-  if (!wideAccess && properties.length === 0) return null;
 
   const selectedId = selectedProperties[0] ?? '';
+
+  if (!listResolved) {
+    return (
+      <div className="flex items-center gap-1.5 min-w-0 flex-1 basis-0 sm:basis-auto sm:flex-initial sm:max-w-[min(100%,20rem)]">
+        <Building2 className="h-3.5 w-3.5 shrink-0 hidden sm:block text-gray-400" />
+        <span className="text-xs text-gray-500 truncate">Loading projects…</span>
+      </div>
+    );
+  }
+
+  if (!wideAccess && properties.length === 0) {
+    return (
+      <div className="flex items-center gap-1.5 min-w-0 flex-1 basis-0 sm:max-w-[min(100%,20rem)]">
+        <Building2 className="h-3.5 w-3.5 shrink-0 hidden sm:block text-amber-600" />
+        <span className="text-xs text-amber-800 truncate" title="Ask an admin to assign property access">
+          No project assigned — contact admin
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1.5 min-w-0 flex-1 basis-0 sm:basis-auto sm:flex-initial sm:max-w-[min(100%,20rem)]">

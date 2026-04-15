@@ -8,6 +8,8 @@ import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
 import { customersService } from '@/services/customers.service';
 import { mapFlatFormToPayload } from '@/utils/forms/flat';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 function NewFlatContent() {
   const router = useRouter();
@@ -79,6 +81,8 @@ function NewFlatContent() {
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
+    let createdCustomerIdForRollback: string | null = null;
+
     try {
       const {
         customerId: existingCustomerId,
@@ -101,7 +105,7 @@ function NewFlatContent() {
 
       if (!resolvedCustomerId && hasNewCustomerData) {
         if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || !trimmedPhone) {
-          alert('Please provide first name, last name, email, and phone to create a customer.');
+          toast.error('Please provide first name, last name, email, and phone to create a customer.');
           setLoading(false);
           return;
         }
@@ -115,11 +119,12 @@ function NewFlatContent() {
             type: customerType || 'INDIVIDUAL',
             notes: customerNotes?.trim(),
             isActive: true,
+            propertyId: data.propertyId || undefined,
           });
           resolvedCustomerId = createdCustomer.id;
+          createdCustomerIdForRollback = createdCustomer.id;
           await fetchCustomers();
         } catch (customerError: any) {
-          // If customer already exists (email/phone conflict), try to resolve to existing record instead of failing.
           const status = customerError?.response?.status;
           const message = customerError?.response?.data?.message;
           if (status === 409 || /exist/i.test(message || '')) {
@@ -129,20 +134,21 @@ function NewFlatContent() {
               const match = existing?.data?.[0];
               if (match?.id) {
                 resolvedCustomerId = match.id;
+                createdCustomerIdForRollback = null;
               } else {
-                alert(message || 'Customer already exists. Please select the existing customer.');
+                toast.error(message || 'Customer already exists. Please select the existing customer.');
                 setLoading(false);
                 return;
               }
             } catch (resolveErr) {
               console.error('Error resolving existing customer:', resolveErr);
-              alert(message || 'Customer already exists. Please select the existing customer.');
+              toast.error(message || 'Customer already exists. Please select the existing customer.');
               setLoading(false);
               return;
             }
           } else {
             console.error('Error creating customer:', customerError);
-            alert(message || 'Failed to create customer');
+            showApiError(customerError, 'Failed to create customer');
             setLoading(false);
             return;
           }
@@ -155,11 +161,19 @@ function NewFlatContent() {
       };
 
       await flatsService.createFlat(flatData);
-      alert('Flat created successfully!');
+      toast.success('Flat created successfully');
       window.location.href = '/flats';
     } catch (error: any) {
       console.error('Error creating flat:', error);
-      alert(error.response?.data?.message || 'Failed to create flat');
+      if (createdCustomerIdForRollback) {
+        try {
+          await customersService.deleteCustomer(createdCustomerIdForRollback);
+        } catch (delErr) {
+          console.error('Rollback customer failed:', delErr);
+        }
+        toast.message('Flat was not saved. The new customer record was removed.');
+      }
+      showApiError(error, 'Failed to create flat');
     } finally {
       setLoading(false);
     }

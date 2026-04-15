@@ -45,6 +45,7 @@ import { towersService } from '@/services/towers.service';
 import { bookingsService } from '@/services/bookings.service';
 import { customersService } from '@/services/customers.service';
 import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 // Use PaymentMilestoneDto from service instead of local interface
 type Milestone = PaymentMilestoneDto;
@@ -275,7 +276,7 @@ function PaymentPlansContent() {
       setTemplateDialogOpen(false);
       loadData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to save template');
+      showApiError(error, 'Failed to save payment plan template');
       console.error(error);
     }
   };
@@ -290,7 +291,7 @@ function PaymentPlansContent() {
       toast.success('Template deleted successfully');
       loadData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to delete template');
+      showApiError(error, 'Failed to delete template');
       console.error(error);
     }
   };
@@ -314,7 +315,7 @@ function PaymentPlansContent() {
       resetCreatePlanForm();
       loadData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create flat payment plan');
+      showApiError(error, 'Failed to create flat payment plan');
       console.error(error);
     }
   };

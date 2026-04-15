@@ -105,6 +105,13 @@ const FIELD_LABELS: Record<string, string> = {
   position: 'Position',
   basicSalary: 'Basic Salary',
 
+  // Payment plan template
+  paymentPercentage: 'Payment %',
+  sequence: 'Installment order',
+  milestones: 'Payment milestones',
+  templateType: 'Template type',
+  isDefault: 'Default template',
+
   // Common
   name: 'Name',
   description: 'Description',

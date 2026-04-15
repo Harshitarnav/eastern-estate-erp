@@ -103,7 +103,7 @@ export class EmployeesService {
    * Auto-create user account for employee
    * Username: extracted from email (e.g., arnav@eecd.in -> arnav)
    * Password: {username}@easternestate (e.g., arnav@easternestate)
-   * Default role: staff (minimal access)
+   * Default role: sales_team (CRM + dashboard access). Use Settings → Users to tighten if needed.
    */
   private async createUserForEmployee(employee: Employee, createdBy?: string): Promise<void> {
     // Extract username from email
@@ -122,10 +122,10 @@ export class EmployeesService {
     }
 
     try {
-      // Get the 'staff' role ID
-      const staffRole = await this.usersService.getRoleByName('staff');
-      
-      // Create user with staff role
+      const primaryRole =
+        (await this.usersService.getRoleByName('sales_team')) ||
+        (await this.usersService.getRoleByName('staff'));
+
       const user = await this.usersService.create({
         email: employee.email,
         username: username,
@@ -133,7 +133,7 @@ export class EmployeesService {
         firstName: employee.fullName.split(' ')[0] || username,
         lastName: employee.fullName.split(' ').slice(1).join(' ') || '',
         phone: employee.phoneNumber,
-        roleIds: staffRole ? [staffRole.id] : [],
+        roleIds: primaryRole ? [primaryRole.id] : [],
       }, createdBy);
 
       this.logger.log(`Auto-created user account for employee: ${employee.email}`);

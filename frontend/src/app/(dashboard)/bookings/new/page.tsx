@@ -9,6 +9,8 @@ import { customersService } from '@/services/customers.service';
 import { flatsService } from '@/services/flats.service';
 import { propertiesService } from '@/services/properties.service';
 import { toast } from 'sonner';
+import { usePropertyStore } from '@/store/propertyStore';
+import { showApiError } from '@/utils/error-handler';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 const fmtDate = (d: string) => (d ? new Date(d).toLocaleDateString('en-IN') : '—');
@@ -34,6 +36,7 @@ interface ReviewMeta {
 // ── component ─────────────────────────────────────────────────────────────────
 export default function NewBookingPage() {
   const router = useRouter();
+  const setSelectedProperties = usePropertyStore((s) => s.setSelectedProperties);
 
   const [pendingData, setPendingData]   = useState<any>(null);
   const [reviewMeta, setReviewMeta]     = useState<ReviewMeta>({ customerName: '', propertyName: '', flatLabel: '', towerName: '' });
@@ -126,9 +129,12 @@ export default function NewBookingPage() {
 
       await bookingsService.createBooking(bookingData);
       toast.success('Booking created successfully!');
+      if (pendingData.propertyId) {
+        setSelectedProperties([pendingData.propertyId]);
+      }
       router.push('/bookings');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to create booking');
+      showApiError(err, 'Failed to create booking');
     } finally {
       setSubmitting(false);
     }

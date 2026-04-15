@@ -172,7 +172,26 @@ export default function DashboardPage() {
     return <DashboardSkeleton />;
   }
 
-  const d = data!;
+  if (!data) {
+    return (
+      <div className="p-6 max-w-lg mx-auto text-center space-y-4">
+        <p className="text-gray-700">Could not load dashboard data.</p>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-medium"
+          onClick={() => {
+            setLoading(true);
+            load();
+          }}
+        >
+          <RefreshCw className="h-4 w-4" />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const d = data;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 w-full min-w-0 max-w-7xl mx-auto">

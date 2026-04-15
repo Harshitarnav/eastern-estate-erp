@@ -1,4 +1,5 @@
-FROM node:20 AS base
+# Mirror of docker.io/library/node — avoids Docker Hub timeouts/rate limits on many VPS networks
+FROM public.ecr.aws/docker/library/node:20 AS base
 WORKDIR /app
 
 # Install dependencies

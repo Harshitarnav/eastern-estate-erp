@@ -49,7 +49,11 @@ export default function DashboardLayout({
 
   const handleLogout = async () => {
     await logout();
-    router.push('/login');
+    // Full navigation: avoids a blank frame (this layout returns null while !isAuthenticated)
+    // and reliably lands on the sign-in page.
+    if (typeof window !== 'undefined') {
+      window.location.assign('/login');
+    }
   };
 
   if (isLoading) {

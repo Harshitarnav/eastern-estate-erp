@@ -7,9 +7,11 @@ import { customersService } from '@/services/customers.service';
 import { propertiesService } from '@/services/properties.service';
 import { toast } from 'sonner';
 import { showApiError } from '@/utils/error-handler';
+import { usePropertyStore } from '@/store/propertyStore';
 
 export default function NewCustomerPage() {
   const router = useRouter();
+  const setSelectedProperties = usePropertyStore((s) => s.setSelectedProperties);
   const [loading, setLoading] = useState(false);
   const [propertyOptions, setPropertyOptions] = useState<{ value: string; label: string }[]>([]);
 
@@ -45,6 +47,10 @@ export default function NewCustomerPage() {
 
       await customersService.createCustomer(customerData);
       toast.success('Customer created successfully!');
+      const pid = customerData.propertyId;
+      if (pid) {
+        setSelectedProperties([pid]);
+      }
       router.push('/customers');
     } catch (error: any) {
       console.error('Error creating customer:', error);

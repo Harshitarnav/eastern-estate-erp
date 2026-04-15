@@ -9,6 +9,8 @@ import { towersService } from '@/services/towers.service';
 import { customersService } from '@/services/customers.service';
 import { mapFlatFormToPayload } from '@/utils/forms/flat';
 import { FormSkeleton } from '@/components/Skeletons';
+import { toast } from 'sonner';
+import { showApiError } from '@/utils/error-handler';
 
 export default function EditFlatPage() {
   const router = useRouter();
@@ -106,7 +108,7 @@ export default function EditFlatPage() {
       });
     } catch (error) {
       console.error('Error fetching flat:', error);
-      alert('Failed to load flat data');
+      toast.error('Failed to load flat data');
     } finally {
       setInitialLoading(false);
     }
@@ -141,6 +143,9 @@ export default function EditFlatPage() {
 
   const handleSubmit = async (data: any) => {
     setLoading(true);
+    /** Customer created in this submit only — rollback (soft-delete) if flat save fails */
+    let createdCustomerIdForRollback: string | null = null;
+
     try {
       const {
         customerId: existingCustomerId,
@@ -163,7 +168,7 @@ export default function EditFlatPage() {
 
       if (!resolvedCustomerId && hasNewCustomerData) {
         if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || !trimmedPhone) {
-          alert('Please provide first name, last name, email, and phone to create a customer.');
+          toast.error('Please provide first name, last name, email, and phone to create a customer.');
           setLoading(false);
           return;
         }
@@ -177,12 +182,14 @@ export default function EditFlatPage() {
             type: customerType || 'INDIVIDUAL',
             notes: customerNotes?.trim(),
             isActive: true,
+            propertyId: data.propertyId || undefined,
           });
           resolvedCustomerId = createdCustomer.id;
+          createdCustomerIdForRollback = createdCustomer.id;
           await fetchCustomers();
         } catch (customerError: any) {
           console.error('Error creating customer:', customerError);
-          alert(customerError.response?.data?.message || 'Failed to create customer');
+          showApiError(customerError, 'Failed to create customer');
           setLoading(false);
           return;
         }
@@ -200,11 +207,19 @@ export default function EditFlatPage() {
       }
 
       await flatsService.updateFlat(flatId, flatData);
-      alert('Flat updated successfully!');
+      toast.success('Flat updated successfully');
       window.location.href = '/flats';
     } catch (error: any) {
       console.error('Error updating flat:', error);
-      alert(error.response?.data?.message || 'Failed to update flat');
+      if (createdCustomerIdForRollback) {
+        try {
+          await customersService.deleteCustomer(createdCustomerIdForRollback);
+        } catch (delErr) {
+          console.error('Rollback customer failed:', delErr);
+        }
+        toast.message('Flat was not saved. The new customer record was removed.');
+      }
+      showApiError(error, 'Failed to update flat');
     } finally {
       setLoading(false);
     }
