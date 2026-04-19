@@ -459,6 +459,34 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
           END $$;
         `);
             });
+            await runIsolated('reconcile construction_development_updates.project_id', async (qr) => {
+                await qr.query(`
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'project_id'
+            ) THEN
+              UPDATE construction_development_updates
+              SET construction_project_id = project_id
+              WHERE construction_project_id IS NULL AND project_id IS NOT NULL;
+
+              UPDATE construction_development_updates
+              SET project_id = construction_project_id
+              WHERE project_id IS NULL AND construction_project_id IS NOT NULL;
+
+              IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'construction_development_updates'
+                  AND column_name = 'project_id'
+                  AND is_nullable = 'NO'
+              ) THEN
+                ALTER TABLE construction_development_updates ALTER COLUMN project_id DROP NOT NULL;
+              END IF;
+            END IF;
+          END $$;
+        `);
+            });
             await runIsolated('reconcile construction_flat_progress.project_id', async (qr) => {
                 await qr.query(`
           DO $$

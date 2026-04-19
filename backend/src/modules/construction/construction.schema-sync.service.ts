@@ -476,6 +476,39 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
         `);
       });
 
+      // ── Reconcile legacy construction_development_updates.project_id ────────
+      //   Older installs have a NOT NULL `project_id` column while the entity
+      //   writes `construction_project_id`. Backfill both directions and drop
+      //   the NOT NULL so inserts succeed.
+      await runIsolated('reconcile construction_development_updates.project_id', async (qr) => {
+        await qr.query(`
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'project_id'
+            ) THEN
+              UPDATE construction_development_updates
+              SET construction_project_id = project_id
+              WHERE construction_project_id IS NULL AND project_id IS NOT NULL;
+
+              UPDATE construction_development_updates
+              SET project_id = construction_project_id
+              WHERE project_id IS NULL AND construction_project_id IS NOT NULL;
+
+              IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'construction_development_updates'
+                  AND column_name = 'project_id'
+                  AND is_nullable = 'NO'
+              ) THEN
+                ALTER TABLE construction_development_updates ALTER COLUMN project_id DROP NOT NULL;
+              END IF;
+            END IF;
+          END $$;
+        `);
+      });
+
       // ── Reconcile legacy construction_flat_progress.project_id ──────────────
       //   Older installs have a NOT NULL `project_id` column while the entity
       //   uses `construction_project_id`. Backfill the legacy column from the
