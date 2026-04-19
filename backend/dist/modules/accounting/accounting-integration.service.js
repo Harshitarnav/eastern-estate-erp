@@ -116,6 +116,47 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         }
         return [{}];
     }
+    async ensureDefaultAccount(type, accountName, accountCategory, preferredCode) {
+        try {
+            const freshCode = await this.pickFreeAccountCode(preferredCode);
+            const account = this.accountsRepo.create({
+                accountCode: freshCode,
+                accountName,
+                accountType: type,
+                accountCategory,
+                isActive: true,
+                openingBalance: 0,
+                currentBalance: 0,
+                propertyId: null,
+                description: 'Auto-created by the accounting integration because no active ' +
+                    'account of this type was found when posting a journal entry. ' +
+                    'Safe to rename; do not delete unless another account of the ' +
+                    'same type is active.',
+            });
+            const saved = await this.accountsRepo.save(account);
+            this.logger.log(`Auto-created default ${type} account "${accountName}" (${freshCode}) to unblock auto-JE posting`);
+            return saved;
+        }
+        catch (err) {
+            this.logger.error(`Failed to auto-create default ${type} account: ${err?.message ?? err}`);
+            return null;
+        }
+    }
+    async pickFreeAccountCode(preferred) {
+        const base = preferred.replace(/\d+$/, '');
+        const startNumMatch = preferred.match(/\d+$/);
+        const start = startNumMatch ? parseInt(startNumMatch[0], 10) : 1;
+        const width = startNumMatch?.[0].length ?? 4;
+        for (let i = 0; i < 50; i += 1) {
+            const candidate = `${base}${String(start + i).padStart(width, '0')}`;
+            const taken = await this.accountsRepo.findOne({
+                where: { accountCode: candidate },
+            });
+            if (!taken)
+                return candidate;
+        }
+        return `${preferred}-${Date.now().toString().slice(-5)}`;
+    }
     async generateEntryNumber() {
         const year = new Date().getFullYear();
         const prefix = `JE${year}`;
@@ -196,12 +237,18 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         await accountsRepo.save(account);
     }
     async onPaymentCompleted(payment) {
-        const [bankAccount, revenueAccount] = await Promise.all([
+        let [bankAccount, revenueAccount] = await Promise.all([
             this.findCashOrBankAccount(payment.propertyId),
             this.findSalesRevenueAccount(payment.propertyId),
         ]);
+        if (!bankAccount) {
+            bankAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.ASSET, 'Bank Account', 'Current Assets', '1001');
+        }
+        if (!revenueAccount) {
+            revenueAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.INCOME, 'Sales Revenue', 'Revenue', '4001');
+        }
         if (!bankAccount || !revenueAccount) {
-            this.logger.warn(`Auto JE skipped for payment ${payment.paymentCode}: missing Bank or Revenue account in Chart of Accounts`);
+            this.logger.warn(`Auto JE skipped for payment ${payment.paymentCode}: could not locate or create a default Bank or Revenue account`);
             return null;
         }
         return this.createAutoJE({
@@ -217,12 +264,18 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         });
     }
     async onExpensePaid(expense) {
-        const [expenseAccount, bankAccount] = await Promise.all([
+        let [expenseAccount, bankAccount] = await Promise.all([
             this.findExpenseAccount(expense.accountId, expense.propertyId),
             this.findCashOrBankAccount(expense.propertyId),
         ]);
+        if (!expenseAccount) {
+            expenseAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.EXPENSE, 'General Expenses', 'Operating Expenses', '5001');
+        }
+        if (!bankAccount) {
+            bankAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.ASSET, 'Bank Account', 'Current Assets', '1001');
+        }
         if (!expenseAccount || !bankAccount) {
-            this.logger.warn(`Auto JE skipped for expense ${expense.expenseCode}: missing Expense or Bank account`);
+            this.logger.warn(`Auto JE skipped for expense ${expense.expenseCode}: could not locate or create Expense or Bank account`);
             return null;
         }
         return this.createAutoJE({
@@ -278,12 +331,18 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         return this.findConstructionExpenseAccount(propertyId);
     }
     async onRABillPaid(bill) {
-        const [constructionAccount, bankAccount] = await Promise.all([
+        let [constructionAccount, bankAccount] = await Promise.all([
             this.findConstructionExpenseAccount(bill.propertyId),
             this.findCashOrBankAccount(bill.propertyId),
         ]);
+        if (!constructionAccount) {
+            constructionAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.EXPENSE, 'Construction - Work in Progress', 'Construction', '5101');
+        }
+        if (!bankAccount) {
+            bankAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.ASSET, 'Bank Account', 'Current Assets', '1001');
+        }
         if (!constructionAccount || !bankAccount) {
-            this.logger.warn(`Auto JE skipped for RA Bill ${bill.raBillNumber}: missing Construction Expense or Bank account in Chart of Accounts`);
+            this.logger.warn(`Auto JE skipped for RA Bill ${bill.raBillNumber}: could not locate or create Construction Expense or Bank account`);
             return null;
         }
         const description = [
@@ -304,12 +363,18 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         });
     }
     async onVendorPaymentRecorded(payment) {
-        const [materialAccount, bankAccount] = await Promise.all([
+        let [materialAccount, bankAccount] = await Promise.all([
             this.findMaterialPurchaseAccount(payment.propertyId),
             this.findCashOrBankAccount(payment.propertyId),
         ]);
+        if (!materialAccount) {
+            materialAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.EXPENSE, 'Material Purchases', 'Cost of Goods Sold', '5201');
+        }
+        if (!bankAccount) {
+            bankAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.ASSET, 'Bank Account', 'Current Assets', '1001');
+        }
         if (!materialAccount || !bankAccount) {
-            this.logger.warn(`Auto JE skipped for vendor payment ${payment.id}: missing Material Expense or Bank account in Chart of Accounts`);
+            this.logger.warn(`Auto JE skipped for vendor payment ${payment.id}: could not locate or create Material Expense or Bank account`);
             return null;
         }
         const description = [
@@ -330,12 +395,18 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         });
     }
     async onSalaryPaid(salary) {
-        const [salaryAccount, bankAccount] = await Promise.all([
+        let [salaryAccount, bankAccount] = await Promise.all([
             this.findSalaryExpenseAccount(salary.propertyId),
             this.findCashOrBankAccount(salary.propertyId),
         ]);
+        if (!salaryAccount) {
+            salaryAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.EXPENSE, 'Salary & Wages', 'Personnel Costs', '5301');
+        }
+        if (!bankAccount) {
+            bankAccount = await this.ensureDefaultAccount(account_entity_1.AccountType.ASSET, 'Bank Account', 'Current Assets', '1001');
+        }
         if (!salaryAccount || !bankAccount) {
-            this.logger.warn(`Auto JE skipped for salary ${salary.id}: missing Salary Expense or Bank account`);
+            this.logger.warn(`Auto JE skipped for salary ${salary.id}: could not locate or create Salary Expense or Bank account`);
             return null;
         }
         const monthStr = new Date(salary.paymentMonth).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });

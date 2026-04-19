@@ -25,6 +25,8 @@ export declare class AccountingIntegrationService {
     findSalaryExpenseAccount(propertyId?: string | null): Promise<Account | null>;
     findExpenseAccount(accountId?: string, propertyId?: string | null): Promise<Account | null>;
     private buildScopeFilters;
+    private ensureDefaultAccount;
+    private pickFreeAccountCode;
     private generateEntryNumber;
     createAutoJE(opts: AutoJEOptions): Promise<JournalEntry | null>;
     private updateBalanceTx;

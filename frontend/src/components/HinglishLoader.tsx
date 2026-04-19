@@ -134,10 +134,12 @@ export function HinglishLoader({
     return () => clearInterval(t);
   }, [phrases.length, compact]);
 
-  const emoji = useMemo(
-    () => GENERIC_EMOJI[Math.floor(Math.random() * GENERIC_EMOJI.length)],
-    [],
-  );
+  // Deterministic emoji pick based on the rotating phrase index.
+  // Using Math.random() here caused a hydration mismatch because the
+  // server rendered a different emoji from the client. Driving it off
+  // `idx` (which starts at 0 on both sides) keeps SSR markup stable
+  // and lets the emoji rotate in sync with the phrase on the client.
+  const emoji = GENERIC_EMOJI[idx % GENERIC_EMOJI.length];
 
   const scoped = (
     <>

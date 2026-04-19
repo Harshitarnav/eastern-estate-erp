@@ -139,6 +139,67 @@ export class AccountingIntegrationService {
     return [{}]; // no filter = any account
   }
 
+  /**
+   * Lazily create a company-wide default account of a given type when
+   * the finders come up empty. Used by the auto-JE pipeline so
+   * {@link onPaymentCompleted} and {@link onExpensePaid} are self-
+   * healing even if {@link AccountsBootstrapService} never ran or the
+   * seeded account was deactivated.
+   *
+   * Respects a pre-existing account at the preferred code by picking
+   * the next free slot (e.g. 1001 → 1002).
+   */
+  private async ensureDefaultAccount(
+    type: AccountType,
+    accountName: string,
+    accountCategory: string,
+    preferredCode: string,
+  ): Promise<Account | null> {
+    try {
+      const freshCode = await this.pickFreeAccountCode(preferredCode);
+      const account = this.accountsRepo.create({
+        accountCode: freshCode,
+        accountName,
+        accountType: type,
+        accountCategory,
+        isActive: true,
+        openingBalance: 0,
+        currentBalance: 0,
+        propertyId: null,
+        description:
+          'Auto-created by the accounting integration because no active ' +
+          'account of this type was found when posting a journal entry. ' +
+          'Safe to rename; do not delete unless another account of the ' +
+          'same type is active.',
+      });
+      const saved = await this.accountsRepo.save(account);
+      this.logger.log(
+        `Auto-created default ${type} account "${accountName}" (${freshCode}) to unblock auto-JE posting`,
+      );
+      return saved;
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to auto-create default ${type} account: ${err?.message ?? err}`,
+      );
+      return null;
+    }
+  }
+
+  private async pickFreeAccountCode(preferred: string): Promise<string> {
+    const base = preferred.replace(/\d+$/, '');
+    const startNumMatch = preferred.match(/\d+$/);
+    const start = startNumMatch ? parseInt(startNumMatch[0], 10) : 1;
+    const width = startNumMatch?.[0].length ?? 4;
+    for (let i = 0; i < 50; i += 1) {
+      const candidate = `${base}${String(start + i).padStart(width, '0')}`;
+      const taken = await this.accountsRepo.findOne({
+        where: { accountCode: candidate },
+      });
+      if (!taken) return candidate;
+    }
+    return `${preferred}-${Date.now().toString().slice(-5)}`;
+  }
+
   // ─── Generate journal entry number ───────────────────────────────────────
 
   private async generateEntryNumber(): Promise<string> {
@@ -264,14 +325,36 @@ export class AccountingIntegrationService {
     createdBy?: string;
     propertyId?: string | null;
   }): Promise<JournalEntry | null> {
-    const [bankAccount, revenueAccount] = await Promise.all([
+    let [bankAccount, revenueAccount] = await Promise.all([
       this.findCashOrBankAccount(payment.propertyId),
       this.findSalesRevenueAccount(payment.propertyId),
     ]);
 
+    // Self-heal: if the Chart of Accounts is still missing a Bank/Cash
+    // or Sales/Revenue account at call time (e.g. user deactivated the
+    // bootstrap-seeded accounts), lazily create company-wide defaults
+    // so the JE always posts. Safer than silently skipping and leaving
+    // finance blind to payments that already reached the books.
+    if (!bankAccount) {
+      bankAccount = await this.ensureDefaultAccount(
+        AccountType.ASSET,
+        'Bank Account',
+        'Current Assets',
+        '1001',
+      );
+    }
+    if (!revenueAccount) {
+      revenueAccount = await this.ensureDefaultAccount(
+        AccountType.INCOME,
+        'Sales Revenue',
+        'Revenue',
+        '4001',
+      );
+    }
+
     if (!bankAccount || !revenueAccount) {
       this.logger.warn(
-        `Auto JE skipped for payment ${payment.paymentCode}: missing Bank or Revenue account in Chart of Accounts`,
+        `Auto JE skipped for payment ${payment.paymentCode}: could not locate or create a default Bank or Revenue account`,
       );
       return null;
     }
@@ -304,14 +387,31 @@ export class AccountingIntegrationService {
     createdBy?: string;
     propertyId?: string | null;
   }): Promise<JournalEntry | null> {
-    const [expenseAccount, bankAccount] = await Promise.all([
+    let [expenseAccount, bankAccount] = await Promise.all([
       this.findExpenseAccount(expense.accountId, expense.propertyId),
       this.findCashOrBankAccount(expense.propertyId),
     ]);
 
+    if (!expenseAccount) {
+      expenseAccount = await this.ensureDefaultAccount(
+        AccountType.EXPENSE,
+        'General Expenses',
+        'Operating Expenses',
+        '5001',
+      );
+    }
+    if (!bankAccount) {
+      bankAccount = await this.ensureDefaultAccount(
+        AccountType.ASSET,
+        'Bank Account',
+        'Current Assets',
+        '1001',
+      );
+    }
+
     if (!expenseAccount || !bankAccount) {
       this.logger.warn(
-        `Auto JE skipped for expense ${expense.expenseCode}: missing Expense or Bank account`,
+        `Auto JE skipped for expense ${expense.expenseCode}: could not locate or create Expense or Bank account`,
       );
       return null;
     }
@@ -385,14 +485,31 @@ export class AccountingIntegrationService {
     createdBy?: string;
     propertyId?: string | null;
   }): Promise<JournalEntry | null> {
-    const [constructionAccount, bankAccount] = await Promise.all([
+    let [constructionAccount, bankAccount] = await Promise.all([
       this.findConstructionExpenseAccount(bill.propertyId),
       this.findCashOrBankAccount(bill.propertyId),
     ]);
 
+    if (!constructionAccount) {
+      constructionAccount = await this.ensureDefaultAccount(
+        AccountType.EXPENSE,
+        'Construction - Work in Progress',
+        'Construction',
+        '5101',
+      );
+    }
+    if (!bankAccount) {
+      bankAccount = await this.ensureDefaultAccount(
+        AccountType.ASSET,
+        'Bank Account',
+        'Current Assets',
+        '1001',
+      );
+    }
+
     if (!constructionAccount || !bankAccount) {
       this.logger.warn(
-        `Auto JE skipped for RA Bill ${bill.raBillNumber}: missing Construction Expense or Bank account in Chart of Accounts`,
+        `Auto JE skipped for RA Bill ${bill.raBillNumber}: could not locate or create Construction Expense or Bank account`,
       );
       return null;
     }
@@ -430,14 +547,31 @@ export class AccountingIntegrationService {
     createdBy?: string;
     propertyId?: string | null;
   }): Promise<JournalEntry | null> {
-    const [materialAccount, bankAccount] = await Promise.all([
+    let [materialAccount, bankAccount] = await Promise.all([
       this.findMaterialPurchaseAccount(payment.propertyId),
       this.findCashOrBankAccount(payment.propertyId),
     ]);
 
+    if (!materialAccount) {
+      materialAccount = await this.ensureDefaultAccount(
+        AccountType.EXPENSE,
+        'Material Purchases',
+        'Cost of Goods Sold',
+        '5201',
+      );
+    }
+    if (!bankAccount) {
+      bankAccount = await this.ensureDefaultAccount(
+        AccountType.ASSET,
+        'Bank Account',
+        'Current Assets',
+        '1001',
+      );
+    }
+
     if (!materialAccount || !bankAccount) {
       this.logger.warn(
-        `Auto JE skipped for vendor payment ${payment.id}: missing Material Expense or Bank account in Chart of Accounts`,
+        `Auto JE skipped for vendor payment ${payment.id}: could not locate or create Material Expense or Bank account`,
       );
       return null;
     }
@@ -475,14 +609,31 @@ export class AccountingIntegrationService {
     createdBy?: string;
     propertyId?: string | null;
   }): Promise<JournalEntry | null> {
-    const [salaryAccount, bankAccount] = await Promise.all([
+    let [salaryAccount, bankAccount] = await Promise.all([
       this.findSalaryExpenseAccount(salary.propertyId),
       this.findCashOrBankAccount(salary.propertyId),
     ]);
 
+    if (!salaryAccount) {
+      salaryAccount = await this.ensureDefaultAccount(
+        AccountType.EXPENSE,
+        'Salary & Wages',
+        'Personnel Costs',
+        '5301',
+      );
+    }
+    if (!bankAccount) {
+      bankAccount = await this.ensureDefaultAccount(
+        AccountType.ASSET,
+        'Bank Account',
+        'Current Assets',
+        '1001',
+      );
+    }
+
     if (!salaryAccount || !bankAccount) {
       this.logger.warn(
-        `Auto JE skipped for salary ${salary.id}: missing Salary Expense or Bank account`,
+        `Auto JE skipped for salary ${salary.id}: could not locate or create Salary Expense or Bank account`,
       );
       return null;
     }
