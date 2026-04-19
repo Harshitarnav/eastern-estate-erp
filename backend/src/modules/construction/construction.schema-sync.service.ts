@@ -293,12 +293,23 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
         `);
 
         // Backfill property_id from the construction project so historical rows are filterable.
+        // Guarded: only runs when the legacy construction_project_id column actually exists
+        // on this database (older/greenfield installs may never have had it).
         await qr.query(`
-          UPDATE construction_development_updates du
-          SET property_id = cp.property_id
-          FROM construction_projects cp
-          WHERE du.construction_project_id = cp.id
-            AND du.property_id IS NULL;
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates'
+                AND column_name = 'construction_project_id'
+            ) THEN
+              UPDATE construction_development_updates du
+              SET property_id = cp.property_id
+              FROM construction_projects cp
+              WHERE du.construction_project_id = cp.id
+                AND du.property_id IS NULL;
+            END IF;
+          END $$;
         `);
       });
 

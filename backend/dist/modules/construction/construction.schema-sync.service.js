@@ -285,11 +285,20 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
             ON construction_development_updates (tower_id);
         `);
                 await qr.query(`
-          UPDATE construction_development_updates du
-          SET property_id = cp.property_id
-          FROM construction_projects cp
-          WHERE du.construction_project_id = cp.id
-            AND du.property_id IS NULL;
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates'
+                AND column_name = 'construction_project_id'
+            ) THEN
+              UPDATE construction_development_updates du
+              SET property_id = cp.property_id
+              FROM construction_projects cp
+              WHERE du.construction_project_id = cp.id
+                AND du.property_id IS NULL;
+            END IF;
+          END $$;
         `);
             });
             await runIsolated('add photos column to construction_flat_progress', async (qr) => {
