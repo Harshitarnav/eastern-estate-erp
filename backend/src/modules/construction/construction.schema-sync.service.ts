@@ -476,18 +476,28 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
         `);
       });
 
-      // ── Reconcile legacy construction_development_updates.project_id ────────
-      //   Older installs have a NOT NULL `project_id` column while the entity
-      //   writes `construction_project_id`. Backfill both directions and drop
-      //   the NOT NULL so inserts succeed.
-      await runIsolated('reconcile construction_development_updates.project_id', async (qr) => {
+      // ── Reconcile legacy columns on construction_development_updates ────────
+      //   Older installs carry legacy NOT NULL columns (project_id, title,
+      //   description, update_type, etc.) alongside the new entity columns
+      //   (construction_project_id, update_title, update_description, category).
+      //   New inserts only populate the new columns, so Postgres rejects them.
+      //   Strategy: opportunistically backfill legacy ↔ new both ways, then
+      //   drop NOT NULL on every known legacy column. Idempotent.
+      await runIsolated('reconcile construction_development_updates legacy columns', async (qr) => {
         await qr.query(`
           DO $$
+          DECLARE
+            legacy_col TEXT;
+            legacy_cols TEXT[] := ARRAY[
+              'project_id', 'title', 'description', 'update_type',
+              'date_logged', 'logged_date', 'logged_by', 'user_id',
+              'created_by_id', 'author_id', 'posted_by'
+            ];
           BEGIN
-            IF EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates' AND column_name = 'project_id'
-            ) THEN
+            -- project_id ↔ construction_project_id
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'project_id')
+            THEN
               UPDATE construction_development_updates
               SET construction_project_id = project_id
               WHERE construction_project_id IS NULL AND project_id IS NOT NULL;
@@ -495,16 +505,49 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
               UPDATE construction_development_updates
               SET project_id = construction_project_id
               WHERE project_id IS NULL AND construction_project_id IS NOT NULL;
+            END IF;
 
+            -- title ↔ update_title
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'title')
+            THEN
+              UPDATE construction_development_updates
+              SET update_title = title
+              WHERE (update_title IS NULL OR update_title = '') AND title IS NOT NULL;
+
+              UPDATE construction_development_updates
+              SET title = update_title
+              WHERE title IS NULL AND update_title IS NOT NULL;
+            END IF;
+
+            -- description ↔ update_description
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'description')
+            THEN
+              UPDATE construction_development_updates
+              SET update_description = description
+              WHERE (update_description IS NULL OR update_description = '') AND description IS NOT NULL;
+
+              UPDATE construction_development_updates
+              SET description = update_description
+              WHERE description IS NULL AND update_description IS NOT NULL;
+            END IF;
+
+            -- Drop NOT NULL from every known legacy column so new inserts
+            -- (which only populate the entity's new columns) succeed.
+            FOREACH legacy_col IN ARRAY legacy_cols LOOP
               IF EXISTS (
                 SELECT 1 FROM information_schema.columns
                 WHERE table_name = 'construction_development_updates'
-                  AND column_name = 'project_id'
+                  AND column_name = legacy_col
                   AND is_nullable = 'NO'
               ) THEN
-                ALTER TABLE construction_development_updates ALTER COLUMN project_id DROP NOT NULL;
+                EXECUTE format(
+                  'ALTER TABLE construction_development_updates ALTER COLUMN %I DROP NOT NULL',
+                  legacy_col
+                );
               END IF;
-            END IF;
+            END LOOP;
           END $$;
         `);
       });
