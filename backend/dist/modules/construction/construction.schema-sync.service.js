@@ -527,9 +527,16 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
           END $$;
         `);
             });
-            await runIsolated('reconcile construction_flat_progress.project_id', async (qr) => {
+            await runIsolated('reconcile construction_flat_progress legacy columns', async (qr) => {
                 await qr.query(`
           DO $$
+          DECLARE
+            legacy_col TEXT;
+            legacy_cols TEXT[] := ARRAY[
+              'project_id', 'progress_date', 'update_date', 'logged_date',
+              'date_logged', 'logged_by', 'updated_by', 'user_id', 'created_by_id',
+              'progress_percentage', 'completion_percentage', 'status_old'
+            ];
           BEGIN
             -- Ensure construction_project_id exists (it should from initial create).
             IF NOT EXISTS (
@@ -539,12 +546,10 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
               ALTER TABLE construction_flat_progress ADD COLUMN construction_project_id UUID;
             END IF;
 
-            -- If the legacy project_id column still exists…
-            IF EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_flat_progress' AND column_name = 'project_id'
-            ) THEN
-              -- Backfill either direction so no row is orphaned.
+            -- project_id ↔ construction_project_id
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_flat_progress' AND column_name = 'project_id')
+            THEN
               UPDATE construction_flat_progress
               SET construction_project_id = project_id
               WHERE construction_project_id IS NULL AND project_id IS NOT NULL;
@@ -552,17 +557,33 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
               UPDATE construction_flat_progress
               SET project_id = construction_project_id
               WHERE project_id IS NULL AND construction_project_id IS NOT NULL;
+            END IF;
 
-              -- Drop the NOT NULL so new rows that only set construction_project_id succeed.
+            -- progress_date: backfill from start_date, actual_end_date, or created_at
+            -- so existing rows keep a value, then we drop NOT NULL below.
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_flat_progress' AND column_name = 'progress_date')
+            THEN
+              UPDATE construction_flat_progress
+              SET progress_date = COALESCE(actual_end_date, start_date, created_at::date, CURRENT_DATE)
+              WHERE progress_date IS NULL;
+            END IF;
+
+            -- Drop NOT NULL from every known legacy column so new inserts
+            -- (which only populate the entity's current columns) succeed.
+            FOREACH legacy_col IN ARRAY legacy_cols LOOP
               IF EXISTS (
                 SELECT 1 FROM information_schema.columns
                 WHERE table_name = 'construction_flat_progress'
-                  AND column_name = 'project_id'
+                  AND column_name = legacy_col
                   AND is_nullable = 'NO'
               ) THEN
-                ALTER TABLE construction_flat_progress ALTER COLUMN project_id DROP NOT NULL;
+                EXECUTE format(
+                  'ALTER TABLE construction_flat_progress ALTER COLUMN %I DROP NOT NULL',
+                  legacy_col
+                );
               END IF;
-            END IF;
+            END LOOP;
           END $$;
         `);
             });
