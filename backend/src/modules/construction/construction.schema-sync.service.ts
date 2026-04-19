@@ -104,7 +104,72 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
         `);
       });
 
-      // ── 4. Nullable columns on construction_progress_logs ──────────────────
+      // ── 4. Ensure base columns on construction_progress_logs ────────────────
+      //      (older prod installs are missing property_id / tower_id / construction_project_id)
+      await runIsolated('ensure base columns on construction_progress_logs', async (qr) => {
+        await qr.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'property_id'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN property_id UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'tower_id'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN tower_id UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'construction_project_id'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN construction_project_id UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'logged_by'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN logged_by UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'progress_percentage'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN progress_percentage NUMERIC(5,2);
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'weather_condition'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN weather_condition VARCHAR(100);
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'temperature'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN temperature NUMERIC(5,2);
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'photos'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN photos JSONB DEFAULT '[]'::jsonb;
+            END IF;
+          END $$;
+        `);
+      });
+
+      // ── 4b. Nullable columns on construction_progress_logs ──────────────────
       await runIsolated('nullable columns on construction_progress_logs', async (qr) => {
         await qr.query(`
           DO $$
@@ -233,6 +298,17 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
         await qr.query(`
           DO $$
           BEGIN
+            -- Older prod installs were created without construction_project_id.
+            -- Add it if missing (nullable from the start).
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates'
+                AND column_name = 'construction_project_id'
+            ) THEN
+              ALTER TABLE construction_development_updates
+                ADD COLUMN construction_project_id UUID;
+            END IF;
+
             -- Make project_id optional so property-wide updates don't need a fake project.
             IF EXISTS (
               SELECT 1 FROM information_schema.columns
@@ -242,6 +318,43 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
             ) THEN
               ALTER TABLE construction_development_updates
                 ALTER COLUMN construction_project_id DROP NOT NULL;
+            END IF;
+
+            -- Required audit columns the entity expects.
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'created_by'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN created_by UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'visibility'
+            ) THEN
+              ALTER TABLE construction_development_updates
+                ADD COLUMN visibility VARCHAR(20) NOT NULL DEFAULT 'ALL';
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'feedback_notes'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN feedback_notes TEXT;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'images'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN images JSONB NOT NULL DEFAULT '[]'::jsonb;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'attachments'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN attachments JSONB NOT NULL DEFAULT '[]'::jsonb;
             END IF;
 
             IF NOT EXISTS (
@@ -323,6 +436,50 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
               WHERE table_name = 'construction_flat_progress' AND column_name = 'photos'
             ) THEN
               ALTER TABLE construction_flat_progress ADD COLUMN photos TEXT[];
+            END IF;
+          END $$;
+        `);
+      });
+
+      // ── Reconcile legacy construction_flat_progress.project_id ──────────────
+      //   Older installs have a NOT NULL `project_id` column while the entity
+      //   uses `construction_project_id`. Backfill the legacy column from the
+      //   new one (or vice versa) and drop the NOT NULL so fresh inserts work.
+      await runIsolated('reconcile construction_flat_progress.project_id', async (qr) => {
+        await qr.query(`
+          DO $$
+          BEGIN
+            -- Ensure construction_project_id exists (it should from initial create).
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_flat_progress' AND column_name = 'construction_project_id'
+            ) THEN
+              ALTER TABLE construction_flat_progress ADD COLUMN construction_project_id UUID;
+            END IF;
+
+            -- If the legacy project_id column still exists…
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_flat_progress' AND column_name = 'project_id'
+            ) THEN
+              -- Backfill either direction so no row is orphaned.
+              UPDATE construction_flat_progress
+              SET construction_project_id = project_id
+              WHERE construction_project_id IS NULL AND project_id IS NOT NULL;
+
+              UPDATE construction_flat_progress
+              SET project_id = construction_project_id
+              WHERE project_id IS NULL AND construction_project_id IS NOT NULL;
+
+              -- Drop the NOT NULL so new rows that only set construction_project_id succeed.
+              IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = 'construction_flat_progress'
+                  AND column_name = 'project_id'
+                  AND is_nullable = 'NO'
+              ) THEN
+                ALTER TABLE construction_flat_progress ALTER COLUMN project_id DROP NOT NULL;
+              END IF;
             END IF;
           END $$;
         `);
