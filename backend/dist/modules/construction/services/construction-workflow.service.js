@@ -18,162 +18,167 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const construction_flat_progress_entity_1 = require("../entities/construction-flat-progress.entity");
+const construction_tower_progress_entity_1 = require("../entities/construction-tower-progress.entity");
+const construction_project_entity_1 = require("../entities/construction-project.entity");
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const flat_payment_plan_entity_1 = require("../../payment-plans/entities/flat-payment-plan.entity");
 const demand_draft_entity_1 = require("../../demand-drafts/entities/demand-draft.entity");
-const customer_entity_1 = require("../../customers/entities/customer.entity");
-const booking_entity_1 = require("../../bookings/entities/booking.entity");
-const demand_draft_html_builder_1 = require("../../../common/utils/demand-draft-html.builder");
-const settings_service_1 = require("../../settings/settings.service");
+const auto_demand_draft_service_1 = require("./auto-demand-draft.service");
 let ConstructionWorkflowService = ConstructionWorkflowService_1 = class ConstructionWorkflowService {
-    constructor(flatRepository, flatPaymentPlanRepository, demandDraftRepository, progressRepository, customerRepository, bookingRepository, settingsService) {
+    constructor(flatRepository, flatPaymentPlanRepository, demandDraftRepository, progressRepository, projectRepository, autoDemandDraftService) {
         this.flatRepository = flatRepository;
         this.flatPaymentPlanRepository = flatPaymentPlanRepository;
         this.demandDraftRepository = demandDraftRepository;
         this.progressRepository = progressRepository;
-        this.customerRepository = customerRepository;
-        this.bookingRepository = bookingRepository;
-        this.settingsService = settingsService;
+        this.projectRepository = projectRepository;
+        this.autoDemandDraftService = autoDemandDraftService;
         this.logger = new common_1.Logger(ConstructionWorkflowService_1.name);
     }
     async processConstructionUpdate(flatId, phase, phaseProgress, overallProgress) {
         this.logger.log(`Processing construction update for flat ${flatId}`);
+        const emptyResult = {
+            milestonesTriggered: 0,
+            generatedDemandDrafts: [],
+        };
         try {
-            await this.updateFlatConstructionStatus(flatId, phase, overallProgress);
+            await this.updateFlatConstructionStatus(flatId, phase, phaseProgress, overallProgress);
             const paymentPlan = await this.flatPaymentPlanRepository.findOne({
                 where: { flatId, status: flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE },
                 relations: ['customer', 'booking', 'flat', 'flat.property', 'flat.tower'],
             });
             if (!paymentPlan) {
                 this.logger.log(`No active payment plan found for flat ${flatId} - skipping milestone check`);
-                return;
+                return emptyResult;
             }
-            this.logger.log(`Active payment plan found for flat ${flatId} - checking milestones`);
-            await this.checkAndUpdateMilestones(paymentPlan, phase, phaseProgress);
+            return await this.checkAndUpdateMilestones(paymentPlan, phase, phaseProgress);
         }
         catch (error) {
             this.logger.error(`Error processing construction update for flat ${flatId}:`, error);
             throw error;
         }
     }
-    async updateFlatConstructionStatus(flatId, stage, progress) {
-        this.logger.log(`Updating flat ${flatId}: stage=${stage}, progress=${progress}%`);
+    async updateFlatConstructionStatus(flatId, stage, phaseProgress, overallProgress) {
+        this.logger.log(`Updating flat ${flatId}: stage=${stage}, phaseProgress=${phaseProgress}%, overallProgress=${overallProgress}%`);
         await this.flatRepository.update(flatId, {
             constructionStage: stage,
-            constructionProgress: progress,
+            constructionProgress: overallProgress,
             lastConstructionUpdate: new Date(),
         });
-        this.logger.log(`Flat ${flatId} updated successfully`);
+        try {
+            if (!this.isKnownPhase(stage))
+                return;
+            const phase = stage;
+            let row = await this.progressRepository.findOne({
+                where: { flatId, phase },
+            });
+            if (!row) {
+                const flat = await this.flatRepository.findOne({
+                    where: { id: flatId },
+                });
+                if (!flat?.propertyId)
+                    return;
+                const project = await this.projectRepository.findOne({
+                    where: { propertyId: flat.propertyId },
+                    select: ['id'],
+                });
+                if (!project)
+                    return;
+                row = this.progressRepository.create({
+                    constructionProjectId: project.id,
+                    flatId,
+                    phase,
+                    phaseProgress,
+                    overallProgress,
+                    status: phaseProgress >= 100
+                        ? construction_tower_progress_entity_1.PhaseStatus.COMPLETED
+                        : phaseProgress > 0
+                            ? construction_tower_progress_entity_1.PhaseStatus.IN_PROGRESS
+                            : construction_tower_progress_entity_1.PhaseStatus.NOT_STARTED,
+                });
+            }
+            else {
+                row.phaseProgress = phaseProgress;
+                row.overallProgress = overallProgress;
+                if (phaseProgress >= 100) {
+                    row.status = construction_tower_progress_entity_1.PhaseStatus.COMPLETED;
+                    row.actualEndDate = row.actualEndDate ?? new Date();
+                }
+                else if (phaseProgress > 0 && row.status === construction_tower_progress_entity_1.PhaseStatus.NOT_STARTED) {
+                    row.status = construction_tower_progress_entity_1.PhaseStatus.IN_PROGRESS;
+                }
+            }
+            await this.progressRepository.save(row);
+        }
+        catch (err) {
+            this.logger.warn(`Could not sync construction_flat_progress for flat ${flatId}/${stage}: ${err?.message}`);
+        }
+    }
+    isKnownPhase(v) {
+        return Object.values(construction_tower_progress_entity_1.ConstructionPhase).includes(v);
     }
     async checkAndUpdateMilestones(paymentPlan, currentPhase, phaseProgress) {
         this.logger.log(`Checking milestones for payment plan ${paymentPlan.id}`);
-        let planUpdated = false;
-        for (const milestone of (paymentPlan.milestones ?? [])) {
-            if (milestone.status !== 'PENDING') {
+        const generatedDemandDrafts = [];
+        let milestonesTriggered = 0;
+        for (const milestone of paymentPlan.milestones ?? []) {
+            if (milestone.status !== 'PENDING')
+                continue;
+            if (!milestone.constructionPhase)
+                continue;
+            if (milestone.constructionPhase !== currentPhase ||
+                phaseProgress < (milestone.phasePercentage || 100)) {
                 continue;
             }
-            if (!milestone.constructionPhase) {
-                continue;
-            }
-            if (milestone.constructionPhase === currentPhase &&
-                phaseProgress >= (milestone.phasePercentage || 100)) {
-                this.logger.log(`Milestone ${milestone.sequence} reached for flat ${paymentPlan.flatId}: ` +
-                    `${currentPhase} at ${phaseProgress}% (required: ${milestone.phasePercentage}%)`);
-                milestone.status = 'TRIGGERED';
-                planUpdated = true;
-                await this.generateDemandDraft(paymentPlan, milestone);
+            this.logger.log(`Milestone ${milestone.sequence} reached for flat ${paymentPlan.flatId}: ` +
+                `${currentPhase} at ${phaseProgress}% (required: ${milestone.phasePercentage}%)`);
+            const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
+            if (summary) {
+                generatedDemandDrafts.push(summary);
+                milestonesTriggered += 1;
             }
         }
-        if (planUpdated) {
-            await this.flatPaymentPlanRepository.save(paymentPlan);
-            this.logger.log(`Payment plan ${paymentPlan.id} updated with triggered milestones`);
-        }
-        else {
-            this.logger.log(`No milestones reached for payment plan ${paymentPlan.id}`);
-        }
+        return { milestonesTriggered, generatedDemandDrafts };
     }
-    async generateDemandDraft(paymentPlan, milestone) {
-        this.logger.log(`Generating demand draft for milestone ${milestone.sequence} of payment plan ${paymentPlan.id}`);
-        const existingDraft = await this.demandDraftRepository.findOne({
+    async delegateDemandDraft(paymentPlan, milestone, currentPhase) {
+        const existing = await this.demandDraftRepository.findOne({
             where: {
                 flatId: paymentPlan.flatId,
-                milestoneId: `${milestone.sequence}`,
+                milestoneId: String(milestone.sequence),
             },
         });
-        if (existingDraft) {
-            this.logger.log(`Demand draft already exists for milestone ${milestone.sequence}`);
-            return;
+        if (existing) {
+            this.logger.log(`Demand draft already exists for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}`);
+            return null;
         }
-        const customer = paymentPlan.customer;
-        const booking = paymentPlan.booking;
-        const flat = paymentPlan.flat;
-        if (!customer || !flat) {
-            this.logger.warn(`Missing customer or flat data for payment plan ${paymentPlan.id}`);
-            return;
-        }
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30);
-        const dueDateStr = dueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-        const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-        const bookingRef = booking?.bookingNumber ?? paymentPlan.bookingId.substring(0, 8).toUpperCase();
-        const refNumber = `DD-${bookingRef}-${String(milestone.sequence).padStart(2, '0')}`;
-        let companySettings = null;
-        try {
-            companySettings = await this.settingsService.get();
-        }
-        catch { }
-        const content = (0, demand_draft_html_builder_1.buildDemandDraftHtml)({
-            refNumber,
-            dateIssued: todayStr,
-            customerName: customer.fullName,
-            customerEmail: customer.email || undefined,
-            customerPhone: customer.phoneNumber || undefined,
-            propertyName: flat.property?.name || '',
-            towerName: flat.tower?.name || undefined,
-            flatNumber: flat.flatNumber || 'N/A',
-            bookingNumber: booking?.bookingNumber || undefined,
-            milestoneSeq: milestone.sequence,
+        const constructionProgress = await this.progressRepository.findOne({
+            where: {
+                flatId: paymentPlan.flatId,
+                phase: currentPhase,
+            },
+        });
+        const saved = await this.autoDemandDraftService.generateDemandDraft({
+            flatPaymentPlan: paymentPlan,
+            milestoneSequence: milestone.sequence,
+            constructionProgress: constructionProgress ?? null,
             milestoneName: milestone.name,
-            milestoneDescription: milestone.description || undefined,
-            constructionPhase: milestone.constructionPhase || undefined,
-            amount: Number(milestone.amount).toLocaleString('en-IN'),
-            dueDate: dueDateStr,
-            totalAmount: String(paymentPlan.totalAmount),
-            paidAmount: String(paymentPlan.paidAmount),
-            balanceAfterPayment: String(Math.max(0, paymentPlan.balanceAmount - milestone.amount)),
-            bankName: flat.property?.bankName || companySettings?.bankName || undefined,
-            accountName: flat.property?.accountName || companySettings?.accountName || undefined,
-            accountNumber: flat.property?.accountNumber || companySettings?.accountNumber || undefined,
-            ifscCode: flat.property?.ifscCode || companySettings?.ifscCode || undefined,
-            branch: flat.property?.branch || companySettings?.branch || undefined,
+            amount: Number(milestone.amount) || 0,
         });
-        const towerLabel = flat.tower?.name ? `${flat.tower.name} / ` : '';
-        const draftTitle = `${flat.flatNumber || 'N/A'} / ${towerLabel}${milestone.name}`;
-        const demandDraft = this.demandDraftRepository.create({
-            flatId: paymentPlan.flatId,
-            customerId: paymentPlan.customerId,
-            bookingId: paymentPlan.bookingId,
-            milestoneId: `${milestone.sequence}`,
-            title: draftTitle,
-            content,
-            amount: milestone.amount,
-            dueDate,
-            status: demand_draft_entity_1.DemandDraftStatus.DRAFT,
-            requiresReview: true,
-            generatedAt: new Date(),
-            autoGenerated: true,
-            flatPaymentPlanId: paymentPlan.id,
-            metadata: {
-                subject: `Payment Demand – ${flat.flatNumber} – ${milestone.name}`,
-                dueDate: dueDate.toISOString(),
-                milestoneSequence: milestone.sequence,
-                milestoneName: milestone.name,
-                constructionPhase: milestone.constructionPhase,
-                autoGenerated: true,
-            },
-        });
-        await this.demandDraftRepository.save(demandDraft);
-        this.logger.log(`Demand draft ${demandDraft.id} generated for milestone ${milestone.sequence}`);
+        const flat = paymentPlan.flat;
+        const bookingRef = paymentPlan.booking?.bookingNumber ??
+            paymentPlan.bookingId.substring(0, 8).toUpperCase();
+        const refNumber = `DD-${bookingRef}-${String(milestone.sequence).padStart(2, '0')}`;
+        return {
+            id: saved.id,
+            title: saved.title,
+            amount: Number(saved.amount) || 0,
+            refNumber,
+            milestoneName: milestone.name,
+            flatNumber: flat?.flatNumber || undefined,
+            towerName: flat?.tower?.name || undefined,
+            propertyName: flat?.property?.name || undefined,
+            customerName: paymentPlan.customer?.fullName || undefined,
+            dueDate: saved.dueDate,
+        };
     }
     async getPendingDemandDrafts() {
         return await this.demandDraftRepository.find({
@@ -181,7 +186,7 @@ let ConstructionWorkflowService = ConstructionWorkflowService_1 = class Construc
                 status: demand_draft_entity_1.DemandDraftStatus.DRAFT,
                 requiresReview: true,
             },
-            relations: ['customer', 'flat', 'flat.property', 'flat.tower', 'booking'],
+            relations: ['customer', 'flat', 'flat.property', 'flat.tower'],
             order: { generatedAt: 'DESC' },
         });
     }
@@ -193,14 +198,12 @@ exports.ConstructionWorkflowService = ConstructionWorkflowService = Construction
     __param(1, (0, typeorm_1.InjectRepository)(flat_payment_plan_entity_1.FlatPaymentPlan)),
     __param(2, (0, typeorm_1.InjectRepository)(demand_draft_entity_1.DemandDraft)),
     __param(3, (0, typeorm_1.InjectRepository)(construction_flat_progress_entity_1.ConstructionFlatProgress)),
-    __param(4, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
-    __param(5, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __param(4, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository,
-        settings_service_1.SettingsService])
+        auto_demand_draft_service_1.AutoDemandDraftService])
 ], ConstructionWorkflowService);
 //# sourceMappingURL=construction-workflow.service.js.map

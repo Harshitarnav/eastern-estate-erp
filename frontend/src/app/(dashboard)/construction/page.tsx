@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
+import { usePropertyStore } from '@/store/propertyStore';
 import { DashboardSkeleton } from '@/components/Skeletons';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatToCrore } from '@/utils/brand';
 import {
   HardHat, Package, ShoppingCart, Users, AlertTriangle,
-  TrendingUp, ChevronRight, Plus, BarChart3,
+  TrendingUp, ChevronRight, Plus, BarChart3, Zap, FileText, Hammer,
+  Camera, Palette, Home as HomeIcon, Clock,
 } from 'lucide-react';
 
 const MODULE_CARDS = [
@@ -38,27 +40,55 @@ const COLOR_MAP: Record<string, { bg: string; hover: string; text: string; badge
 
 export default function ConstructionDashboard() {
   const router = useRouter();
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId =
+    selectedProperties.length > 0 ? selectedProperties[0] : undefined;
   const [projects, setProjects]   = useState<any[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [vendors, setVendors]     = useState<any[]>([]);
   const [purchaseOrders, setPOs]  = useState<any[]>([]);
+  const [recentFlatProgress, setRecentFlatProgress] = useState<any[]>([]);
+  const [recentDevUpdates, setRecentDevUpdates] = useState<any[]>([]);
   const [loading, setLoading]     = useState(true);
 
-  useEffect(() => { loadAllData(); }, []);
+  useEffect(() => { loadAllData(); }, [selectedPropertyId]);
 
   const loadAllData = async () => {
     setLoading(true);
     try {
-      const [projData, matsData, vendsData, posData] = await Promise.all([
-        api.get('/construction-projects').catch(() => []),
+      // Scope per-project where the backend supports it. Materials and
+      // vendors are shared inventory across projects in this ERP, so
+      // they aren't property-filtered - POs are scoped via their
+      // linked project on the backend when available.
+      const projectParams = selectedPropertyId
+        ? { params: { propertyId: selectedPropertyId } }
+        : undefined;
+      const recentParams = {
+        params: {
+          limit: 8,
+          ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {}),
+        },
+      };
+      const devUpdateParams = {
+        params: {
+          limit: 8,
+          ...(selectedPropertyId ? { propertyId: selectedPropertyId } : {}),
+        },
+      };
+      const [projData, matsData, vendsData, posData, recentProg, recentDev] = await Promise.all([
+        api.get('/construction-projects', projectParams).catch(() => []),
         api.get('/materials').catch(() => []),
         api.get('/vendors').catch(() => []),
-        api.get('/purchase-orders').catch(() => []),
+        api.get('/purchase-orders', projectParams).catch(() => []),
+        api.get('/construction/flat-progress/recent', recentParams).catch(() => []),
+        api.get('/development-updates', devUpdateParams).catch(() => []),
       ]);
       setProjects(Array.isArray(projData) ? projData : (projData?.data || []));
       setMaterials(Array.isArray(matsData) ? matsData : (matsData?.data || []));
       setVendors(Array.isArray(vendsData) ? vendsData : (vendsData?.data || []));
       setPOs(Array.isArray(posData) ? posData : (posData?.data || []));
+      setRecentFlatProgress(Array.isArray(recentProg) ? recentProg : (recentProg?.data || []));
+      setRecentDevUpdates(Array.isArray(recentDev) ? recentDev : (recentDev?.data || []));
     } catch (err) {
       console.error('Failed to load dashboard data:', err);
     } finally {
@@ -90,7 +120,7 @@ export default function ConstructionDashboard() {
       <BrandHero
         eyebrow="Construction Management Hub"
         title={<>Build smarter with <span style={{ color: brandPalette.accent }}>real-time visibility</span></>}
-        description="Track projects, manage materials & vendors, control budgets, and keep quality standards — all in one place."
+        description="Track projects, manage materials & vendors, control budgets, and keep quality standards - all in one place."
         actions={
           <>
             <BrandPrimaryButton onClick={() => router.push('/construction/projects/new')}>
@@ -159,6 +189,268 @@ export default function ConstructionDashboard() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ── DEMAND-DRAFT WORKFLOW CTA ── */}
+      <section
+        className="rounded-3xl border shadow-sm overflow-hidden"
+        style={{ borderColor: `${brandPalette.primary}40` }}
+      >
+        <div
+          className="px-6 py-5 md:px-8 md:py-6 flex flex-col md:flex-row gap-5 md:items-center md:justify-between"
+          style={{
+            background: `linear-gradient(135deg, ${brandPalette.primary}12 0%, ${brandPalette.primary}05 60%, #ffffff 100%)`,
+          }}
+        >
+          <div className="flex items-start gap-4 flex-1">
+            <div
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              style={{ background: `${brandPalette.primary}20`, color: brandPalette.primary }}
+            >
+              <Zap className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-2 mb-1">
+                <span
+                  className="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full"
+                  style={{ background: `${brandPalette.primary}20`, color: brandPalette.primary }}
+                >
+                  Auto demand drafts
+                </span>
+              </div>
+              <h3 className="font-bold text-lg mb-1" style={{ color: brandPalette.secondary }}>
+                Raise construction progress linked to payment milestones
+              </h3>
+              <p className="text-sm text-gray-600 max-w-2xl">
+                Log progress per flat and phase. When a payment-plan milestone is
+                reached, a demand draft is generated automatically and the
+                customer&apos;s due schedule updates in real time.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2 md:shrink-0">
+            <button
+              onClick={() => router.push('/construction/log')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-full text-sm font-semibold shadow-sm hover:shadow transition"
+              style={{ backgroundColor: brandPalette.primary }}
+            >
+              <Zap className="w-4 h-4" /> Log Flat Progress
+            </button>
+            <button
+              onClick={() => router.push('/construction/development-updates?new=1')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold border hover:bg-white transition"
+              style={{
+                borderColor: `${brandPalette.primary}40`,
+                color: brandPalette.primary,
+                background: 'rgba(255,255,255,0.6)',
+              }}
+            >
+              <Hammer className="w-4 h-4" /> Log Development Update
+            </button>
+            <button
+              onClick={() => router.push('/demand-drafts')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold border hover:bg-white transition"
+              style={{
+                borderColor: `${brandPalette.primary}40`,
+                color: brandPalette.primary,
+                background: 'rgba(255,255,255,0.6)',
+              }}
+            >
+              <FileText className="w-4 h-4" /> View Demand Drafts
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── RECENT ACTIVITY (flat progress + development updates) ── */}
+      {(recentFlatProgress.length > 0 || recentDevUpdates.length > 0) && (
+        <section
+          className="bg-white rounded-3xl border shadow-sm overflow-hidden"
+          style={{ borderColor: `${brandPalette.neutral}80` }}
+        >
+          <div
+            className="flex items-center justify-between px-6 py-5 border-b"
+            style={{ borderColor: `${brandPalette.neutral}80` }}
+          >
+            <div>
+              <h2 className="font-bold text-lg" style={{ color: brandPalette.secondary }}>
+                Recent Site Activity
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Latest flat progress logs and development updates
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push('/construction/log')}
+                className="inline-flex items-center gap-1 text-sm font-medium hover:underline"
+                style={{ color: brandPalette.primary }}
+              >
+                Log flat <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => router.push('/construction/development-updates')}
+                className="inline-flex items-center gap-1 text-sm font-medium hover:underline text-purple-600"
+              >
+                Log update <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-100">
+            {/* Flat progress column */}
+            <div className="p-4 space-y-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-2">
+                Flat progress
+              </h3>
+              {recentFlatProgress.length === 0 ? (
+                <p className="text-xs text-gray-400 px-2 py-6 text-center">
+                  No flat-wise logs yet.
+                </p>
+              ) : (
+                recentFlatProgress.slice(0, 6).map((row: any) => {
+                  const photos: string[] = Array.isArray(row.photos)
+                    ? row.photos.filter(Boolean)
+                    : [];
+                  return (
+                    <button
+                      key={row.id}
+                      onClick={() =>
+                        router.push(`/construction/flats/${row.flatId}/log`)
+                      }
+                      className="w-full text-left flex items-start gap-3 rounded-xl px-2 py-2.5 hover:bg-gray-50 transition"
+                    >
+                      {photos[0] ? (
+                        <img
+                          src={photos[0]}
+                          alt="Latest site photo"
+                          className="w-14 h-14 rounded-lg object-cover border border-gray-100 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                          <HomeIcon className="w-5 h-5 text-[#A8211B]" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-800 truncate">
+                            Flat {row.flat?.flatNumber || '–'}
+                          </span>
+                          {row.flat?.tower?.name && (
+                            <span className="text-[10px] text-gray-400">
+                              · {row.flat.tower.name}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-semibold bg-red-50 text-[#A8211B] px-1.5 py-0.5 rounded-full">
+                            {row.phase?.replace(/_/g, ' ')} ·{' '}
+                            {Number(row.phaseProgress || 0).toFixed(0)}%
+                          </span>
+                        </div>
+                        {row.notes && (
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                            {row.notes}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-gray-400 mt-0.5 inline-flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {new Date(row.updatedAt || row.createdAt).toLocaleString(
+                            'en-IN',
+                            {
+                              day: '2-digit',
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            },
+                          )}
+                          {photos.length > 0 && (
+                            <>
+                              {' · '}
+                              <Camera className="w-2.5 h-2.5" /> {photos.length}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Development updates column */}
+            <div className="p-4 space-y-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 px-2">
+                Development updates
+              </h3>
+              {recentDevUpdates.length === 0 ? (
+                <p className="text-xs text-gray-400 px-2 py-6 text-center">
+                  No development updates yet.
+                </p>
+              ) : (
+                recentDevUpdates.slice(0, 6).map((u: any) => {
+                  const imgs: string[] = Array.isArray(u.images)
+                    ? u.images.filter(Boolean)
+                    : [];
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() =>
+                        router.push(`/construction/development-updates`)
+                      }
+                      className="w-full text-left flex items-start gap-3 rounded-xl px-2 py-2.5 hover:bg-gray-50 transition"
+                    >
+                      {imgs[0] ? (
+                        <img
+                          src={imgs[0]}
+                          alt="Update"
+                          className="w-14 h-14 rounded-lg object-cover border border-gray-100 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+                          <Palette className="w-5 h-5 text-purple-600" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-800 truncate">
+                            {u.updateTitle}
+                          </span>
+                          {u.category && (
+                            <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded-full">
+                              {u.category.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                          {u.scopeType && (
+                            <span className="text-[10px] font-medium bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">
+                              {u.scopeType.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                        </div>
+                        {u.updateDescription && (
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
+                            {u.updateDescription}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-gray-400 mt-0.5 inline-flex items-center gap-1">
+                          <Clock className="w-2.5 h-2.5" />
+                          {new Date(u.updateDate || u.createdAt).toLocaleDateString(
+                            'en-IN',
+                            { day: '2-digit', month: 'short', year: 'numeric' },
+                          )}
+                          {imgs.length > 0 && (
+                            <>
+                              {' · '}
+                              <Camera className="w-2.5 h-2.5" /> {imgs.length}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* ── ACTIVE PROJECTS ── */}

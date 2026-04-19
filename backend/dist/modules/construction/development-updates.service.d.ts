@@ -1,12 +1,23 @@
 import { Repository } from 'typeorm';
-import { ConstructionDevelopmentUpdate } from './entities/construction-development-update.entity';
+import { ConstructionDevelopmentUpdate, DevelopmentUpdateCategory, DevelopmentUpdateScope } from './entities/construction-development-update.entity';
 import { CreateDevelopmentUpdateDto } from './dto/create-development-update.dto';
 import { UpdateDevelopmentUpdateDto } from './dto/update-development-update.dto';
+import { ConstructionProject } from './entities/construction-project.entity';
+export interface ScopedUpdateFilters {
+    propertyId?: string;
+    towerId?: string;
+    scopeType?: DevelopmentUpdateScope;
+    category?: DevelopmentUpdateCategory;
+    limit?: number;
+    offset?: number;
+}
 export declare class DevelopmentUpdatesService {
     private readonly updatesRepo;
-    constructor(updatesRepo: Repository<ConstructionDevelopmentUpdate>);
+    private readonly projectRepo;
+    constructor(updatesRepo: Repository<ConstructionDevelopmentUpdate>, projectRepo: Repository<ConstructionProject>);
     create(createDto: CreateDevelopmentUpdateDto, createdBy: string): Promise<ConstructionDevelopmentUpdate>;
     findAll(): Promise<ConstructionDevelopmentUpdate[]>;
+    findScoped(filters: ScopedUpdateFilters, accessiblePropertyIds?: string[] | null): Promise<ConstructionDevelopmentUpdate[]>;
     findByProject(projectId: string): Promise<ConstructionDevelopmentUpdate[]>;
     findOne(id: string): Promise<ConstructionDevelopmentUpdate>;
     update(id: string, updateDto: UpdateDevelopmentUpdateDto): Promise<ConstructionDevelopmentUpdate>;

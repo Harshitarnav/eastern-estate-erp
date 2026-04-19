@@ -18,7 +18,10 @@ export class DemandDraftsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async findAll(query: any): Promise<DemandDraft[]> {
+  async findAll(
+    query: any,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<DemandDraft[]> {
     const queryBuilder = this.demandDraftRepository.createQueryBuilder('draft');
 
     if (query.flatId) {
@@ -37,6 +40,35 @@ export class DemandDraftsService {
       queryBuilder.andWhere('draft.requiresReview = :requiresReview', {
         requiresReview: query.requiresReview === 'true',
       });
+    }
+
+    // Property scope: we derive the property from the draft's flat.
+    // A join is only needed when filtering by property, so we gate it.
+    const wantsPropertyScope =
+      !!query.propertyId ||
+      (accessiblePropertyIds && accessiblePropertyIds.length > 0);
+
+    if (wantsPropertyScope) {
+      queryBuilder.leftJoin('flats', 'flat', 'flat.id = draft.flatId');
+
+      if (query.propertyId) {
+        if (
+          accessiblePropertyIds &&
+          accessiblePropertyIds.length > 0 &&
+          !accessiblePropertyIds.includes(query.propertyId)
+        ) {
+          queryBuilder.andWhere('1 = 0');
+        } else {
+          queryBuilder.andWhere('flat.property_id = :propertyId', {
+            propertyId: query.propertyId,
+          });
+        }
+      } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+        queryBuilder.andWhere(
+          'flat.property_id IN (:...accessiblePropertyIds)',
+          { accessiblePropertyIds },
+        );
+      }
     }
 
     queryBuilder.orderBy('draft.createdAt', 'DESC');

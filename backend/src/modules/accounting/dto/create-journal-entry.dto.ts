@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsOptional, IsNumber, IsEnum, IsArray, ValidateNested, Min } from 'class-validator';
+import { IsString, IsDateString, IsOptional, IsNumber, IsEnum, IsArray, ValidateNested, Min, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JournalEntryStatus } from '../entities/journal-entry.entity';
 
@@ -37,6 +37,11 @@ export class CreateJournalEntryDto {
 
   @IsString()
   description: string;
+
+  /** When set, this voucher is attributed to the project for reporting (fund flow, project P&L, etc.). */
+  @IsOptional()
+  @IsUUID()
+  propertyId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

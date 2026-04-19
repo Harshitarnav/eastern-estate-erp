@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
-import { Plus, Check, X, DollarSign, Pencil, Eye } from 'lucide-react';
+import { Plus, Check, X, DollarSign, Pencil, Eye, FileSpreadsheet } from 'lucide-react';
 import { expensesService, type Expense } from '@/services/accounting.service';
 import { format } from 'date-fns';
 import { TableRowsSkeleton } from '@/components/Skeletons';
 import { usePropertyStore } from '@/store/propertyStore';
 import { useAuthStore } from '@/store/authStore';
+import { toast } from 'sonner';
+import { ExcelImportModal, type ImportField, type RowValidationError } from '@/components/accounting/ExcelImportModal';
 
 export default function ExpensesPage() {
   const { selectedProperties } = usePropertyStore();
@@ -23,6 +25,10 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ status: '', category: '' });
+  const [importOpen, setImportOpen] = useState(false);
+  const { properties } = usePropertyStore();
+  const selectedPropertyName =
+    selectedPropertyId ? properties.find((p) => p.id === selectedPropertyId)?.name : undefined;
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
@@ -97,12 +103,18 @@ export default function ExpensesPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-3">
         <h1 className="text-3xl font-bold">Expenses</h1>
-        <Button onClick={() => (window.location.href = '/accounting/expenses/new')}>
-          <Plus className="h-4 w-4 mr-2" />
-          New Expense
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)} title="Import expenses from Excel">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Import Excel
+          </Button>
+          <Button onClick={() => (window.location.href = '/accounting/expenses/new')}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Expense
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -199,7 +211,7 @@ export default function ExpensesPage() {
                     <td className="p-2">{expense.expenseType}</td>
                     <td className="p-2 text-right font-medium">{formatCurrency(expense.amount)}</td>
                     <td className="p-2">{format(new Date(expense.expenseDate), 'dd MMM yyyy')}</td>
-                    <td className="p-2 text-sm text-gray-500">{(expense as any).property?.name ?? ((expense as any).propertyId ? '…' : <span className="text-gray-300">—</span>)}</td>
+                    <td className="p-2 text-sm text-gray-500">{(expense as any).property?.name ?? ((expense as any).propertyId ? '…' : <span className="text-gray-300">-</span>)}</td>
                     <td className="p-2">{getStatusBadge(expense.status)}</td>
                     <td className="p-2">
                       <div className="flex justify-end gap-2 flex-wrap">
@@ -255,6 +267,76 @@ export default function ExpensesPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ExcelImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import Expenses"
+        description={
+          <span>
+            Upload an Excel of expenses (one per row). All imported rows land in <strong>PENDING</strong>{' '}
+            status so the normal approve / mark-paid flow still applies.
+          </span>
+        }
+        scopeLabel={
+          selectedPropertyId
+            ? `Importing to project: ${selectedPropertyName || selectedPropertyId}`
+            : 'No project selected - rows will be tagged to the project in each row, if any'
+        }
+        fields={expenseImportFields}
+        sampleRows={expenseSampleRows}
+        validate={(rows) => validateExpenseRows(rows)}
+        onImport={async (rows) => {
+          const res = await expensesService.bulkImport({
+            propertyId: selectedPropertyId || null,
+            rows,
+          });
+          if (res.created > 0) {
+            toast.success(`Imported ${res.created} expense${res.created !== 1 ? 's' : ''}`);
+            fetchExpenses();
+          }
+          return {
+            created: res.created,
+            skipped: res.skipped,
+            errors: res.errors,
+          };
+        }}
+      />
     </div>
   );
+}
+
+// ─── Expenses import spec ──────────────────────────────────────────────────────
+const expenseImportFields: ImportField[] = [
+  { key: 'expenseDate', label: 'Date', required: true, hint: 'YYYY-MM-DD or Excel date' },
+  { key: 'expenseCategory', label: 'Category', required: true, hint: 'e.g. SALARY, RENT, MATERIALS' },
+  { key: 'amount', label: 'Amount', required: true, hint: 'In rupees, no commas' },
+  { key: 'description', label: 'Description' },
+  { key: 'expenseType', label: 'Type' },
+  { key: 'paymentMethod', label: 'Payment Method', hint: 'CASH, BANK, UPI, CHEQUE…' },
+  { key: 'paymentReference', label: 'Payment Ref' },
+  { key: 'invoiceNumber', label: 'Invoice No' },
+];
+
+const expenseSampleRows: Record<string, string | number>[] = [
+  { expenseDate: '2026-04-01', expenseCategory: 'RENT', amount: 50000, description: 'Office rent April 2026', paymentMethod: 'BANK' },
+  { expenseDate: '2026-04-03', expenseCategory: 'MATERIALS', amount: 128500, description: 'Cement + sand - Block A', paymentMethod: 'CHEQUE', invoiceNumber: 'INV-2341' },
+  { expenseDate: '2026-04-05', expenseCategory: 'UTILITIES', amount: 8240, description: 'Electricity bill site office', paymentMethod: 'UPI' },
+];
+
+function validateExpenseRows(rows: Record<string, unknown>[]): RowValidationError[] {
+  const errors: RowValidationError[] = [];
+  rows.forEach((r, i) => {
+    const row = i + 2;
+    const date = (r.expenseDate ?? '').toString().trim();
+    const category = (r.expenseCategory ?? '').toString().trim();
+    const amtStr = (r.amount ?? '').toString().trim();
+    const amt = Number(amtStr);
+    if (!date) errors.push({ row, message: 'Date is required' });
+    else if (Number.isNaN(new Date(date).getTime())) errors.push({ row, message: 'Invalid date', value: date });
+    if (!category) errors.push({ row, message: 'Category is required' });
+    if (!amtStr) errors.push({ row, message: 'Amount is required' });
+    else if (Number.isNaN(amt) || amt <= 0) errors.push({ row, message: 'Amount must be a positive number', value: amtStr });
+  });
+  return errors;
 }

@@ -1,12 +1,16 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Payment } from '../entities/payment.entity';
 import { PaymentSchedule, ScheduleStatus } from '../entities/payment-schedule.entity';
 import { FlatPaymentPlan, FlatPaymentPlanStatus } from '../../payment-plans/entities/flat-payment-plan.entity';
 import { FlatPaymentPlanService } from '../../payment-plans/services/flat-payment-plan.service';
 import { Flat } from '../../flats/entities/flat.entity';
 import { Booking, BookingStatus } from '../../bookings/entities/booking.entity';
+import {
+  DemandDraft,
+  DemandDraftStatus,
+} from '../../demand-drafts/entities/demand-draft.entity';
 
 /**
  * Payment Completion Workflow Service
@@ -32,6 +36,8 @@ export class PaymentCompletionService {
     private readonly flatRepository: Repository<Flat>,
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
+    @InjectRepository(DemandDraft)
+    private readonly demandDraftRepository: Repository<DemandDraft>,
     private readonly flatPaymentPlanService: FlatPaymentPlanService,
   ) {}
 
@@ -40,7 +46,7 @@ export class PaymentCompletionService {
    */
   async processPaymentCompletion(paymentId: string): Promise<{
     payment: Payment;
-    paymentSchedule: PaymentSchedule;
+    paymentSchedule: PaymentSchedule | null;
     flatPaymentPlan: FlatPaymentPlan | null;
     flat: Flat | null;
     booking: Booking | null;
@@ -127,6 +133,23 @@ export class PaymentCompletionService {
       );
     }
 
+    // Close any open demand drafts that demanded this milestone's money.
+    // A payment typically settles one milestone, which in turn has a root
+    // DD plus optional reminder / warning children that all share the
+    // same payment_schedule_id. Closing them together keeps the
+    // Collections inbox and overdue scanner consistent with the ledger.
+    try {
+      await this.closeDemandDraftsForPayment({
+        payment,
+        paymentSchedule,
+        flatPaymentPlan,
+      });
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to close DDs for payment ${payment.id}: ${err.message}`,
+      );
+    }
+
     // Update flat details
     if (flat) {
       await this.updateFlatPaymentStatus(flat, payment);
@@ -141,7 +164,7 @@ export class PaymentCompletionService {
 
     return {
       payment,
-      paymentSchedule: paymentSchedule!,
+      paymentSchedule,
       flatPaymentPlan,
       flat,
       booking,
@@ -215,6 +238,124 @@ export class PaymentCompletionService {
   }
 
   /**
+   * Close any open DemandDraft rows that were demanding the money this
+   * payment just settled.
+   *
+   * The match is intentionally best-effort and layered, from most to
+   * least specific:
+   *
+   *  1. Same payment_schedule_id (all the root + reminder + warning DDs
+   *     generated off one milestone share this).
+   *  2. Same flat_payment_plan_id + milestone_id (covers DDs created
+   *     before the schedule linkage was added).
+   *  3. Same booking_id with matching amount (last-ditch heuristic for
+   *     legacy imports that have no schedule/milestone linkage).
+   *
+   * Every matched DD - plus every reminder / warning child chained to
+   * those roots via parent_demand_draft_id - is flipped to PAID so it
+   * drops out of the Collections inbox and the overdue scanner stops
+   * escalating it. Only open statuses (DRAFT / READY / SENT / FAILED)
+   * are touched; anything already PAID is left alone for idempotency.
+   */
+  private async closeDemandDraftsForPayment(params: {
+    payment: Payment;
+    paymentSchedule: PaymentSchedule | null;
+    flatPaymentPlan: FlatPaymentPlan | null;
+  }): Promise<void> {
+    const { payment, paymentSchedule, flatPaymentPlan } = params;
+
+    const openStatuses = [
+      DemandDraftStatus.DRAFT,
+      DemandDraftStatus.READY,
+      DemandDraftStatus.SENT,
+      DemandDraftStatus.FAILED,
+    ];
+
+    // Layer 1: DDs linked directly to the schedule we just settled.
+    let matches: DemandDraft[] = [];
+    if (paymentSchedule) {
+      matches = await this.demandDraftRepository.find({
+        where: {
+          paymentScheduleId: paymentSchedule.id,
+          status: In(openStatuses),
+        },
+      });
+    }
+
+    // Layer 2: fall back to milestone id on the same plan.
+    if (!matches.length && flatPaymentPlan && paymentSchedule?.milestone) {
+      matches = await this.demandDraftRepository.find({
+        where: {
+          flatPaymentPlanId: flatPaymentPlan.id,
+          milestoneId: paymentSchedule.milestone,
+          status: In(openStatuses),
+        },
+      });
+    }
+
+    // Layer 3: if the payment is booking-scoped and amount-matched, use
+    // that as a last resort so legacy-imported DDs (no schedule / plan
+    // linkage) still close on the first matching payment.
+    if (!matches.length && payment.bookingId) {
+      const amt = Number(payment.amount) || 0;
+      if (amt > 0) {
+        matches = await this.demandDraftRepository
+          .createQueryBuilder('dd')
+          .where('dd.booking_id = :bookingId', { bookingId: payment.bookingId })
+          .andWhere('dd.status IN (:...openStatuses)', { openStatuses })
+          // Round on both sides to avoid decimal-scale mismatches.
+          .andWhere('ROUND(dd.amount::numeric, 0) = ROUND(:amt::numeric, 0)', {
+            amt,
+          })
+          .orderBy('dd.created_at', 'ASC')
+          .limit(1)
+          .getMany();
+      }
+    }
+
+    if (!matches.length) return;
+
+    // Expand each matched DD to include every descendant reminder /
+    // warning chained to it so the whole thread closes together.
+    const rootIds = new Set<string>();
+    for (const dd of matches) {
+      rootIds.add(dd.parentDemandDraftId ?? dd.id);
+    }
+    const thread = await this.demandDraftRepository
+      .createQueryBuilder('dd')
+      .where('dd.status IN (:...openStatuses)', { openStatuses })
+      .andWhere(
+        '(dd.id IN (:...rootIds) OR dd.parent_demand_draft_id IN (:...rootIds))',
+        { rootIds: Array.from(rootIds) },
+      )
+      .getMany();
+
+    const now = new Date();
+    for (const dd of thread) {
+      dd.status = DemandDraftStatus.PAID;
+      dd.paidAt = now;
+      dd.paidPaymentId = payment.id;
+      // Stop the scanner from escalating or sending further reminders.
+      dd.nextReminderDueAt = null;
+      dd.metadata = {
+        ...(dd.metadata || {}),
+        closedBy: {
+          paymentId: payment.id,
+          paymentCode: payment.paymentCode,
+          amount: Number(payment.amount) || 0,
+          at: now.toISOString(),
+        },
+      };
+    }
+    await this.demandDraftRepository.save(thread);
+
+    this.logger.log(
+      `Closed ${thread.length} DD(s) for payment ${payment.paymentCode} ` +
+        `(roots: ${Array.from(rootIds).join(', ')})`,
+    );
+  }
+
+  /**
    * Update flat payment status
    */
   private async updateFlatPaymentStatus(flat: Flat, payment: Payment): Promise<void> {
@@ -239,20 +380,24 @@ export class PaymentCompletionService {
     booking: Booking,
     payment: Payment
   ): Promise<void> {
-    // Update booking amounts
-    booking.paidAmount = (booking.paidAmount || 0) + payment.amount;
-    
-    const balance = booking.totalAmount - booking.paidAmount;
-    
-    if (balance <= 0) {
+    // Coerce all amounts to Number - TypeORM returns decimals as strings by default,
+    // which would otherwise concatenate instead of adding.
+    const prevPaid = Number(booking.paidAmount) || 0;
+    const total = Number(booking.totalAmount) || 0;
+    const amt = Number(payment.amount) || 0;
+
+    booking.paidAmount = prevPaid + amt;
+    booking.balanceAmount = Math.max(0, total - booking.paidAmount);
+
+    if (booking.balanceAmount <= 0) {
       booking.status = BookingStatus.COMPLETED;
     }
     // Note: BookingStatus doesn't have a 'Partially Paid' status, so we keep existing status
 
     await this.bookingRepository.save(booking);
-    
+
     this.logger.log(
-      `Updated booking ${booking.id}: paid=${booking.paidAmount}, status=${booking.status}`
+      `Updated booking ${booking.id}: paid=${booking.paidAmount}, balance=${booking.balanceAmount}, status=${booking.status}`,
     );
   }
 

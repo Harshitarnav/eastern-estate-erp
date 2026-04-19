@@ -23,6 +23,7 @@ export declare class CustomerPortalController {
         paymentPlan: import("../payment-plans/entities/flat-payment-plan.entity").FlatPaymentPlan;
         payments: import("../payments/entities/payment.entity").Payment[];
         demandDrafts: import("../demand-drafts/entities/demand-draft.entity").DemandDraft[];
+        flatProgress: import("../construction/entities/construction-flat-progress.entity").ConstructionFlatProgress[];
     }>;
     getPayments(req: any): Promise<{
         payments: import("../payments/entities/payment.entity").Payment[];
@@ -47,8 +48,10 @@ export declare class CustomerPortalController {
     }>;
     getConstructionUpdates(req: any): Promise<{
         bookings: import("../bookings/entities/booking.entity").Booking[];
-        updates: import("../construction/entities/construction-progress-log.entity").ConstructionProgressLog[];
         projects: import("../construction/entities/construction-project.entity").ConstructionProject[];
+        updates: import("../construction/entities/construction-progress-log.entity").ConstructionProgressLog[];
+        flatProgress: import("../construction/entities/construction-flat-progress.entity").ConstructionFlatProgress[];
+        developmentUpdates: import("../construction/entities/construction-development-update.entity").ConstructionDevelopmentUpdate[];
     }>;
     getDemandDrafts(req: any): Promise<import("../demand-drafts/entities/demand-draft.entity").DemandDraft[]>;
     inviteCustomer(customerId: string, body: {
@@ -58,7 +61,7 @@ export declare class CustomerPortalController {
         userId: string;
         email: string;
     }>;
-    checkPortalAccount(customerId: string): Promise<{
+    checkPortalAccount(customerId: string, req: any): Promise<{
         hasAccount: boolean;
         user: User;
     }>;

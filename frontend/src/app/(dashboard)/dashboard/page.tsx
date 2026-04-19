@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { reportsService, DashboardSummary } from '@/services/reports.service';
 import { useAuthStore } from '@/store/authStore';
+import { usePropertyStore } from '@/store/propertyStore';
 import { toast } from 'sonner';
 import { DashboardSkeleton } from '@/components/Skeletons';
 
@@ -29,7 +30,7 @@ const fmtCr = (n: number) => {
 };
 
 const fmtDate = (s: string) => {
-  if (!s || s === '—') return '—';
+  if (!s || s === '-') return '-';
   try {
     return new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch { return s; }
@@ -138,6 +139,9 @@ function StatusDonut({ breakdown, total }: { breakdown: Record<string, number>; 
 export default function DashboardPage() {
   const router  = useRouter();
   const { user } = useAuthStore();
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId =
+    selectedProperties.length > 0 ? selectedProperties[0] : undefined;
   const [data, setData]       = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -145,7 +149,9 @@ export default function DashboardPage() {
   const load = async (showSpinner = false) => {
     if (showSpinner) setRefreshing(true);
     try {
-      const d = await reportsService.getDashboard();
+      const d = await reportsService.getDashboard({
+        propertyId: selectedPropertyId,
+      });
       setData(d);
     } catch {
       toast.error('Could not load dashboard data');
@@ -155,7 +161,7 @@ export default function DashboardPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [selectedPropertyId]);
 
   const greeting = () => {
     const h = new Date().getHours();
@@ -405,7 +411,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
-              <SectionTitle>⚠️ Overdue Milestones — Needs Follow-up</SectionTitle>
+              <SectionTitle>⚠️ Overdue Milestones - Needs Follow-up</SectionTitle>
             </div>
             <button
               onClick={() => router.push('/reports/outstanding')}
@@ -441,7 +447,7 @@ export default function DashboardPage() {
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                           {u.overdueDays}d ago
                         </span>
-                      ) : '—'}
+                      ) : '-'}
                     </td>
                     <td className="py-2.5">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">

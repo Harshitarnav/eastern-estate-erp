@@ -106,9 +106,7 @@ let RefundsService = class RefundsService {
             .filter(r => r.status === payment_refund_entity_1.RefundStatus.PROCESSED)
             .reduce((sum, r) => sum + Number(r.refundAmount), 0);
         if (totalRefunded >= payment.amount) {
-            await this.paymentsService.update(payment.id, {
-                status: payment_entity_1.PaymentStatus.REFUNDED,
-            });
+            await this.paymentsService.markRefunded(payment.id, userId);
         }
         return this.refundRepository.save(refund);
     }

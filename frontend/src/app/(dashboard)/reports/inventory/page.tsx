@@ -21,7 +21,7 @@ import { TableRowsSkeleton } from '@/components/Skeletons';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtINR = (n: number | null) =>
-  n == null ? '—' : '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  n == null ? '-' : '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 const brandRed = '#A8211B';
 
@@ -45,7 +45,7 @@ function exportPdf(report: InventoryReport, filters: { propertyLabel?: string; t
   doc.setFillColor(brandRed);
   doc.rect(0, 0, PW, 22, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor('#fff');
-  doc.text('EASTERN ESTATE — STOCK INVENTORY REPORT', ML, 10);
+  doc.text('EASTERN ESTATE - STOCK INVENTORY REPORT', ML, 10);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
   const sub = [
     filters.propertyLabel && `Property: ${filters.propertyLabel}`,
@@ -80,13 +80,13 @@ function exportPdf(report: InventoryReport, filters: { propertyLabel?: string; t
       r.tower,
       r.flatNumber,
       r.flatType,
-      r.floor ?? '—',
-      r.carpetArea ? r.carpetArea.toLocaleString('en-IN') : '—',
+      r.floor ?? '-',
+      r.carpetArea ? r.carpetArea.toLocaleString('en-IN') : '-',
       fmtINR(r.finalPrice),
       r.status.replace(/_/g, ' '),
-      r.customerName ?? '—',
-      r.bookingNumber ?? '—',
-      r.bookingDate ?? '—',
+      r.customerName ?? '-',
+      r.bookingNumber ?? '-',
+      r.bookingDate ?? '-',
     ]),
     styles: { fontSize: 7, cellPadding: 2 },
     headStyles: { fillColor: [168, 33, 27], textColor: 255, fontStyle: 'bold' },
@@ -332,7 +332,7 @@ export default function InventoryReportPage() {
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Booked / Sold Value</p>
               <p className="text-2xl font-bold mt-1 text-purple-700">{fmtINR(s.bookedValue)}</p>
               <p className="text-xs text-gray-400 mt-1">
-                {s.total > 0 ? `${Math.round((s.bookedValue / s.totalValue) * 100)}% of total inventory` : '—'}
+                {s.total > 0 ? `${Math.round((s.bookedValue / s.totalValue) * 100)}% of total inventory` : '-'}
               </p>
             </CardContent>
           </Card>
@@ -381,9 +381,9 @@ export default function InventoryReportPage() {
                             {row.flatType}
                           </span>
                         </TableCell>
-                        <TableCell className="text-center text-sm text-gray-600">{row.floor ?? '—'}</TableCell>
+                        <TableCell className="text-center text-sm text-gray-600">{row.floor ?? '-'}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">
-                          {row.carpetArea ? row.carpetArea.toLocaleString('en-IN') : '—'}
+                          {row.carpetArea ? row.carpetArea.toLocaleString('en-IN') : '-'}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-sm tabular-nums" style={{ color: brandRed }}>
                           {fmtINR(row.finalPrice)}
@@ -404,8 +404,8 @@ export default function InventoryReportPage() {
                             <span className="text-gray-400 text-xs">Unoccupied</span>
                           )}
                         </TableCell>
-                        <TableCell className="font-mono text-sm text-gray-600">{row.bookingNumber ?? '—'}</TableCell>
-                        <TableCell className="text-sm text-gray-500">{row.bookingDate ?? '—'}</TableCell>
+                        <TableCell className="font-mono text-sm text-gray-600">{row.bookingNumber ?? '-'}</TableCell>
+                        <TableCell className="text-sm text-gray-500">{row.bookingDate ?? '-'}</TableCell>
                       </TableRow>
                     );
                   })}

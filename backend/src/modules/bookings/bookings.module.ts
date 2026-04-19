@@ -10,13 +10,16 @@ import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsModule } from '../payments/payments.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AccountingModule } from '../accounting/accounting.module';
+import { PaymentPlansModule } from '../payment-plans/payment-plans.module';
+import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, Flat, Property, Tower, Customer]),
+    TypeOrmModule.forFeature([Booking, Flat, Property, Tower, Customer, FlatPaymentPlan]),
     PaymentsModule,
     NotificationsModule,
     AccountingModule,
+    PaymentPlansModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService],

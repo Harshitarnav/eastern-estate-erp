@@ -1,9 +1,9 @@
 -- ============================================================
--- v005: Fix vendors.name column — legacy NOT NULL column
+-- v005: Fix vendors.name column - legacy NOT NULL column
 -- The entity uses vendor_name; the old schema left a separate
 -- "name" column with NOT NULL which blocks inserts.
 -- Fix: copy vendor_name → name for existing rows, then drop NOT NULL.
--- IDEMPOTENT — safe to run multiple times.
+-- IDEMPOTENT - safe to run multiple times.
 -- ============================================================
 
 DO $$

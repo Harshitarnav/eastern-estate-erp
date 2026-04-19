@@ -6,8 +6,11 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ConstructionProject } from './construction-project.entity';
+import { Property } from '../../properties/entities/property.entity';
+import { Tower } from '../../towers/entities/tower.entity';
 import { User } from '../../users/entities/user.entity';
 
 export enum UpdateVisibility {
@@ -16,17 +19,77 @@ export enum UpdateVisibility {
   MANAGEMENT_ONLY = 'MANAGEMENT_ONLY',
 }
 
+export enum DevelopmentUpdateScope {
+  PROPERTY = 'PROPERTY',
+  TOWER = 'TOWER',
+  COMMON_AREA = 'COMMON_AREA',
+}
+
+export enum DevelopmentUpdateCategory {
+  BEAUTIFICATION = 'BEAUTIFICATION',
+  LIFT = 'LIFT',
+  HALLWAY_LOBBY = 'HALLWAY_LOBBY',
+  LANDSCAPING = 'LANDSCAPING',
+  FACADE_PAINT = 'FACADE_PAINT',
+  AMENITY = 'AMENITY',
+  SECURITY_GATES = 'SECURITY_GATES',
+  UTILITIES_EXTERNAL = 'UTILITIES_EXTERNAL',
+  SIGNAGE = 'SIGNAGE',
+  CLEANING = 'CLEANING',
+  SAFETY = 'SAFETY',
+  OTHER = 'OTHER',
+}
+
 @Entity('construction_development_updates')
+@Index(['propertyId', 'updateDate'])
+@Index(['scopeType'])
+@Index(['category'])
 export class ConstructionDevelopmentUpdate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'construction_project_id', type: 'uuid' })
-  constructionProjectId: string;
+  // Legacy anchor - now optional so property/tower-wide updates don't need a project.
+  @Column({ name: 'construction_project_id', type: 'uuid', nullable: true })
+  constructionProjectId: string | null;
 
-  @ManyToOne(() => ConstructionProject)
+  @ManyToOne(() => ConstructionProject, { nullable: true })
   @JoinColumn({ name: 'construction_project_id' })
   constructionProject: ConstructionProject;
+
+  @Column({ name: 'property_id', type: 'uuid', nullable: true })
+  propertyId: string | null;
+
+  @ManyToOne(() => Property, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'property_id' })
+  property?: Property;
+
+  @Column({ name: 'tower_id', type: 'uuid', nullable: true })
+  towerId: string | null;
+
+  @ManyToOne(() => Tower, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'tower_id' })
+  tower?: Tower;
+
+  @Column({
+    name: 'scope_type',
+    type: 'varchar',
+    length: 30,
+    enum: DevelopmentUpdateScope,
+    nullable: true,
+  })
+  scopeType: DevelopmentUpdateScope | null;
+
+  @Column({ name: 'common_area_label', type: 'varchar', length: 200, nullable: true })
+  commonAreaLabel: string | null;
+
+  @Column({
+    name: 'category',
+    type: 'varchar',
+    length: 40,
+    enum: DevelopmentUpdateCategory,
+    nullable: true,
+  })
+  category: DevelopmentUpdateCategory | null;
 
   @Column({ name: 'update_date', type: 'date' })
   updateDate: Date;

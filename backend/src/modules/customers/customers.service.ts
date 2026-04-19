@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { Customer } from './entities/customer.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import {
   CreateCustomerDto,
   UpdateCustomerDto,
@@ -22,7 +23,80 @@ export class CustomersService {
   constructor(
     @InjectRepository(Customer)
     private customersRepository: Repository<Customer>,
+    @InjectRepository(Booking)
+    private bookingsRepository: Repository<Booking>,
   ) {}
+
+  /**
+   * Aggregate booking totals per customer from the `bookings` table.
+   * Returns a map from customerId → { totalBookings, totalAgreement, totalPaid, lastBookingDate }.
+   *
+   * This is the single source of truth for customer "lifetime value", since the
+   * `customers.total_purchases` column is not kept in sync by the app.
+   */
+  private async loadBookingAggregates(
+    customerIds: string[],
+  ): Promise<
+    Map<string, { totalBookings: number; totalAgreement: number; totalPaid: number; lastBookingDate: Date | null }>
+  > {
+    const map = new Map<
+      string,
+      { totalBookings: number; totalAgreement: number; totalPaid: number; lastBookingDate: Date | null }
+    >();
+    if (customerIds.length === 0) return map;
+
+    const rows = await this.bookingsRepository
+      .createQueryBuilder('b')
+      .select('b.customerId', 'customerId')
+      .addSelect('COUNT(*)', 'totalBookings')
+      .addSelect('COALESCE(SUM(b.totalAmount), 0)', 'totalAgreement')
+      .addSelect('COALESCE(SUM(b.paidAmount), 0)', 'totalPaid')
+      .addSelect('MAX(b.bookingDate)', 'lastBookingDate')
+      .where('b.customerId IN (:...ids)', { ids: customerIds })
+      .andWhere('b.isActive = true')
+      .andWhere("b.status <> 'CANCELLED'")
+      .groupBy('b.customerId')
+      .getRawMany<{
+        customerId: string;
+        totalBookings: string;
+        totalAgreement: string;
+        totalPaid: string;
+        lastBookingDate: string | null;
+      }>();
+
+    for (const r of rows) {
+      map.set(r.customerId, {
+        totalBookings: Number(r.totalBookings) || 0,
+        totalAgreement: Number(r.totalAgreement) || 0,
+        totalPaid: Number(r.totalPaid) || 0,
+        lastBookingDate: r.lastBookingDate ? new Date(r.lastBookingDate) : null,
+      });
+    }
+    return map;
+  }
+
+  /** Apply booking aggregates onto response DTOs in-place. */
+  private applyBookingAggregates(
+    dtos: CustomerResponseDto[],
+    agg: Map<string, { totalBookings: number; totalAgreement: number; totalPaid: number; lastBookingDate: Date | null }>,
+  ): void {
+    for (const dto of dtos) {
+      const row = agg.get(dto.id);
+      if (!row) {
+        dto.totalBookings = 0;
+        dto.totalPurchases = 0;
+        dto.totalSpent = 0;
+        continue;
+      }
+      dto.totalBookings = row.totalBookings;
+      // totalPurchases = agreement value of all bookings; totalSpent = actually paid
+      dto.totalPurchases = row.totalAgreement;
+      dto.totalSpent = row.totalPaid;
+      if (!dto.lastPurchaseDate && row.lastBookingDate) {
+        dto.lastPurchaseDate = row.lastBookingDate;
+      }
+    }
+  }
 
   /**
    * Generate unique customer code
@@ -193,19 +267,48 @@ export class CustomersService {
         qb.andWhere('customer.isActive = :isActive', { isActive });
       }
 
+      // Property filter: a customer "belongs" to a property if either
+      //   (a) they were linked to it at create time (customer.metadata.propertyId), or
+      //   (b) they have at least one booking against it.
+      // Previously we only checked (b), so freshly-linked customers who had not
+      // been booked yet were invisible when narrowing to that property.
       if (query.propertyId) {
-        qb.andWhere(
-          'EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))',
-          { pid: query.propertyId },
-        );
+        // Enforce access: if the user is scoped, the requested propertyId must be in their list.
+        // (accessiblePropertyIds == null means global admin — no restriction.)
+        if (
+          accessiblePropertyIds &&
+          accessiblePropertyIds.length > 0 &&
+          !accessiblePropertyIds.includes(query.propertyId)
+        ) {
+          // Force an empty result — user cannot see this property.
+          qb.andWhere('1 = 0');
+        } else {
+          qb.andWhere(
+            `(
+              (customer.metadata ->> 'propertyId') = :pidText
+              OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))
+            )`,
+            { pid: query.propertyId, pidText: query.propertyId },
+          );
+        }
       } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
         qb.andWhere(
-          'EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))',
-          { pids: accessiblePropertyIds },
+          `(
+            (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
+            OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
+          )`,
+          { pids: accessiblePropertyIds, pidsText: accessiblePropertyIds },
         );
       }
 
       qb.orderBy(`customer.${safeSortBy}`, sortOrder);
+    };
+
+    const materializeDtos = async (customers: Customer[]) => {
+      const dtos = CustomerResponseDto.fromEntities(customers);
+      const agg = await this.loadBookingAggregates(dtos.map((d) => d.id));
+      this.applyBookingAggregates(dtos, agg);
+      return dtos;
     };
 
     try {
@@ -219,7 +322,7 @@ export class CustomersService {
         .getMany();
 
       return {
-        data: CustomerResponseDto.fromEntities(customers),
+        data: await materializeDtos(customers),
         meta: {
           total,
           page,
@@ -241,7 +344,7 @@ export class CustomersService {
         .getMany();
 
       return {
-        data: CustomerResponseDto.fromEntities(customers),
+        data: await materializeDtos(customers),
         meta: {
           total,
           page,
@@ -253,22 +356,63 @@ export class CustomersService {
     }
   }
 
-  async findOne(id: string): Promise<CustomerResponseDto> {
-    const customer = await this.customersRepository.findOne({ where: { id } });
-
-    if (!customer) {
-      throw new NotFoundException(`Customer with ID ${id} not found`);
+  /**
+   * Ensure the caller (identified by `accessiblePropertyIds`) is allowed to
+   * see this customer. Null / undefined => global admin, no restriction.
+   * A customer is "accessible" if either their metadata.propertyId is in the
+   * caller's list or they have any booking on an accessible property.
+   */
+  private async assertCustomerAccessible(
+    customerId: string,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<void> {
+    if (!accessiblePropertyIds || accessiblePropertyIds.length === 0) return;
+    const accessible = await this.customersRepository
+      .createQueryBuilder('customer')
+      .where('customer.id = :id', { id: customerId })
+      .andWhere(
+        `(
+          (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
+          OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
+        )`,
+        { pids: accessiblePropertyIds, pidsText: accessiblePropertyIds },
+      )
+      .getCount();
+    if (accessible === 0) {
+      throw new NotFoundException(`Customer with ID ${customerId} not found`);
     }
-
-    return CustomerResponseDto.fromEntity(customer);
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<CustomerResponseDto> {
+  async findOne(
+    id: string,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<CustomerResponseDto> {
     const customer = await this.customersRepository.findOne({ where: { id } });
 
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
+
+    await this.assertCustomerAccessible(id, accessiblePropertyIds);
+
+    const dto = CustomerResponseDto.fromEntity(customer);
+    const agg = await this.loadBookingAggregates([id]);
+    this.applyBookingAggregates([dto], agg);
+    return dto;
+  }
+
+  async update(
+    id: string,
+    updateCustomerDto: UpdateCustomerDto,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<CustomerResponseDto> {
+    const customer = await this.customersRepository.findOne({ where: { id } });
+
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${id} not found`);
+    }
+
+    await this.assertCustomerAccessible(id, accessiblePropertyIds);
 
     if (updateCustomerDto.email || updateCustomerDto.phone) {
       const existing = await this.customersRepository.findOne({
@@ -324,7 +468,7 @@ export class CustomersService {
       customer.isActive = updateCustomerDto.isActive;
     }
 
-    // Handle type (maps to customerType column — now writable)
+    // Handle type (maps to customerType column - now writable)
     if (updateCustomerDto.type !== undefined && updateCustomerDto.type !== ('' as any)) {
       customer.customerType = updateCustomerDto.type as string;
     }
@@ -334,7 +478,7 @@ export class CustomersService {
       customer.kycStatus = updateCustomerDto.kycStatus as string;
     }
 
-    // Update metadata JSONB — merge patch so existing keys are preserved
+    // Update metadata JSONB - merge patch so existing keys are preserved
     const metaPatch: any = {};
     if (updateCustomerDto.isVIP !== undefined) metaPatch.isVIP = updateCustomerDto.isVIP;
     if (updateCustomerDto.designation !== undefined) metaPatch.designation = updateCustomerDto.designation;
@@ -351,24 +495,73 @@ export class CustomersService {
 
     assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
 
+    // Tri-state auto-send override: `null` is a meaningful value (means
+    // "clear the override, inherit from property/company"), so we check
+    // only for `undefined` - assignIfPresent would silently drop `null`.
+    if (updateCustomerDto.autoSendMilestoneDemandDrafts !== undefined) {
+      customer.autoSendMilestoneDemandDrafts =
+        updateCustomerDto.autoSendMilestoneDemandDrafts;
+    }
+
     const updatedCustomer = await this.customersRepository.save(customer);
 
     return CustomerResponseDto.fromEntity(updatedCustomer);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<void> {
     const customer = await this.customersRepository.findOne({ where: { id } });
 
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
+    await this.assertCustomerAccessible(id, accessiblePropertyIds);
+
     customer.isActive = false;
     await this.customersRepository.save(customer);
   }
 
-  async getStatistics() {
-    const customers = await this.customersRepository.find({ where: { isActive: true } });
+  async getStatistics(
+    propertyId?: string,
+    accessiblePropertyIds?: string[] | null,
+  ) {
+    // Mirror the same (metadata OR bookings) logic used by findAll() so
+    // the numbers on the cards match the customers visible in the list
+    // for the current top-bar property selection.
+    const qb = this.customersRepository
+      .createQueryBuilder('customer')
+      .where('customer.isActive = true');
+
+    if (propertyId) {
+      if (
+        accessiblePropertyIds &&
+        accessiblePropertyIds.length > 0 &&
+        !accessiblePropertyIds.includes(propertyId)
+      ) {
+        qb.andWhere('1 = 0');
+      } else {
+        qb.andWhere(
+          `(
+            (customer.metadata ->> 'propertyId') = :pidText
+            OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))
+          )`,
+          { pid: propertyId, pidText: propertyId },
+        );
+      }
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      qb.andWhere(
+        `(
+          (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
+          OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
+        )`,
+        { pids: accessiblePropertyIds, pidsText: accessiblePropertyIds },
+      );
+    }
+
+    const customers = await qb.getMany();
 
     const total = customers.length;
     const individual = customers.filter((c) => c.type === 'INDIVIDUAL').length;
@@ -377,7 +570,31 @@ export class CustomersService {
     const vip = customers.filter((c) => c.isVIP).length;
     const kycVerified = customers.filter((c) => c.kycStatus === 'VERIFIED').length;
 
-    const totalRevenue = customers.reduce((sum, c) => sum + Number(c.totalSpent), 0);
+    // Sum of paidAmount across every active, non-cancelled booking - same source as customer list.
+    const revQb = this.bookingsRepository
+      .createQueryBuilder('b')
+      .select('COALESCE(SUM(b.paidAmount), 0)', 'totalRevenue')
+      .where('b.isActive = true')
+      .andWhere("b.status <> 'CANCELLED'");
+
+    if (propertyId) {
+      if (
+        accessiblePropertyIds &&
+        accessiblePropertyIds.length > 0 &&
+        !accessiblePropertyIds.includes(propertyId)
+      ) {
+        revQb.andWhere('1 = 0');
+      } else {
+        revQb.andWhere('b.propertyId = :propertyId', { propertyId });
+      }
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      revQb.andWhere('b.propertyId IN (:...accessiblePropertyIds)', {
+        accessiblePropertyIds,
+      });
+    }
+
+    const { totalRevenue } =
+      (await revQb.getRawOne<{ totalRevenue: string }>()) ?? { totalRevenue: '0' };
 
     return {
       total,
@@ -386,7 +603,7 @@ export class CustomersService {
       nri,
       vip,
       kycVerified,
-      totalRevenue,
+      totalRevenue: Number(totalRevenue) || 0,
     };
   }
 }

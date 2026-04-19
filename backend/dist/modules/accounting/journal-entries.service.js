@@ -19,11 +19,13 @@ const typeorm_2 = require("typeorm");
 const journal_entry_entity_1 = require("./entities/journal-entry.entity");
 const journal_entry_line_entity_1 = require("./entities/journal-entry-line.entity");
 const account_entity_1 = require("./entities/account.entity");
+const property_entity_1 = require("../properties/entities/property.entity");
 let JournalEntriesService = class JournalEntriesService {
-    constructor(journalEntriesRepository, journalEntryLinesRepository, accountsRepository, dataSource) {
+    constructor(journalEntriesRepository, journalEntryLinesRepository, accountsRepository, propertyRepository, dataSource) {
         this.journalEntriesRepository = journalEntriesRepository;
         this.journalEntryLinesRepository = journalEntryLinesRepository;
         this.accountsRepository = accountsRepository;
+        this.propertyRepository = propertyRepository;
         this.dataSource = dataSource;
     }
     generateEntryNumber() {
@@ -32,7 +34,16 @@ let JournalEntriesService = class JournalEntriesService {
         const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         return `JE${dateStr}${random}`;
     }
-    async create(createJournalEntryDto, userId) {
+    async create(createJournalEntryDto, userId, opts) {
+        const propertyCount = await this.propertyRepository.count();
+        let effectivePropertyId = createJournalEntryDto.propertyId ?? null;
+        if (propertyCount === 1 && !effectivePropertyId) {
+            const only = await this.propertyRepository.find({ take: 1 });
+            effectivePropertyId = only[0]?.id ?? null;
+        }
+        if (propertyCount > 1 && !effectivePropertyId && !opts?.allowOrgWideWithoutProperty) {
+            throw new common_1.BadRequestException('propertyId is required when the organization has more than one project. Choose the project this entry relates to.');
+        }
         const totalDebit = createJournalEntryDto.lines.reduce((sum, line) => sum + line.debitAmount, 0);
         const totalCredit = createJournalEntryDto.lines.reduce((sum, line) => sum + line.creditAmount, 0);
         if (Math.abs(totalDebit - totalCredit) > 0.01) {
@@ -62,15 +73,17 @@ let JournalEntriesService = class JournalEntriesService {
         await queryRunner.startTransaction();
         try {
             const entryNumber = createJournalEntryDto.entryNumber || this.generateEntryNumber();
+            const { lines: lineDtos, ...entryRest } = createJournalEntryDto;
             const journalEntry = this.journalEntriesRepository.create({
-                ...createJournalEntryDto,
+                ...entryRest,
                 entryNumber,
                 createdBy: userId,
                 totalDebit,
                 totalCredit,
+                propertyId: effectivePropertyId,
             });
             const savedEntry = await queryRunner.manager.save(journalEntry);
-            const lines = createJournalEntryDto.lines.map(line => this.journalEntryLinesRepository.create({
+            const lines = lineDtos.map((line) => this.journalEntryLinesRepository.create({
                 ...line,
                 journalEntryId: savedEntry.id,
             }));
@@ -89,7 +102,8 @@ let JournalEntriesService = class JournalEntriesService {
     async findAll(filters) {
         const query = this.journalEntriesRepository.createQueryBuilder('je')
             .leftJoinAndSelect('je.lines', 'lines')
-            .leftJoinAndSelect('lines.account', 'account');
+            .leftJoinAndSelect('lines.account', 'account')
+            .leftJoinAndSelect('je.property', 'property');
         if (filters?.status) {
             query.andWhere('je.status = :status', { status: filters.status });
         }
@@ -108,6 +122,15 @@ let JournalEntriesService = class JournalEntriesService {
                 referenceType: filters.referenceType,
             });
         }
+        if (filters?.propertyId) {
+            query.andWhere(`(je.propertyId = :filterPropertyId
+          OR EXISTS (
+            SELECT 1 FROM journal_entry_lines jel3
+            INNER JOIN accounts acc3 ON acc3.id = jel3.account_id
+            WHERE jel3.journal_entry_id = je.id
+            AND acc3.property_id = :filterPropertyId
+          ))`, { filterPropertyId: filters.propertyId });
+        }
         if (filters?.accessiblePropertyIds?.length) {
             query.andWhere(`NOT EXISTS (
           SELECT 1 FROM journal_entry_lines jel2
@@ -123,7 +146,7 @@ let JournalEntriesService = class JournalEntriesService {
     async findOne(id) {
         const journalEntry = await this.journalEntriesRepository.findOne({
             where: { id },
-            relations: ['lines', 'lines.account', 'creator', 'voider'],
+            relations: ['lines', 'lines.account', 'creator', 'voider', 'property'],
         });
         if (!journalEntry) {
             throw new common_1.NotFoundException(`Journal entry with ID ${id} not found`);
@@ -234,7 +257,9 @@ exports.JournalEntriesService = JournalEntriesService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(journal_entry_entity_1.JournalEntry)),
     __param(1, (0, typeorm_1.InjectRepository)(journal_entry_line_entity_1.JournalEntryLine)),
     __param(2, (0, typeorm_1.InjectRepository)(account_entity_1.Account)),
+    __param(3, (0, typeorm_1.InjectRepository)(property_entity_1.Property)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.DataSource])

@@ -33,6 +33,7 @@ export declare class CreatePropertyDto {
     expectedRevenue?: number;
     isActive?: boolean;
     isFeatured?: boolean;
+    autoSendMilestoneDemandDrafts?: boolean | null;
     nearbyLandmarks?: string;
     projectId?: string;
     gstin?: string;

@@ -333,7 +333,7 @@ export class AccountingService {
     }
 
     // Only filter journal entries by project when the cash account itself is project-scoped.
-    // If we fell back to a company-wide cash account, most JEs may have NULL propertyId — strict
+    // If we fell back to a company-wide cash account, most JEs may have NULL propertyId - strict
     // filtering would show an empty cash book.
     const ledgerPropertyFilter =
       propertyId && cashAccount.propertyId === propertyId ? propertyId : undefined;
@@ -603,7 +603,7 @@ export class AccountingService {
   /**
    * Project fund flow: revenue per project (customer payments on bookings),
    * and outflows tagged per project (paid expenses, vendor payments, salaries).
-   * Attribution is by the **Project** field on each transaction — not literal cash tracing between projects.
+   * Attribution is by the **Project** field on each transaction - not literal cash tracing between projects.
    */
   async getProjectFundFlow(
     startDate: Date,
@@ -784,7 +784,7 @@ export class AccountingService {
       explanation:
         'Revenue = completed customer payments on bookings for that project. ' +
         'Outflows = expenses, vendor payments, and salaries **tagged** to that project. ' +
-        'Cross-project view shows how much was booked under each project vs how much spend was attributed to each — not automatic bank-to-project tracing.',
+        'Cross-project view shows how much was booked under each project vs how much spend was attributed to each - not automatic bank-to-project tracing.',
       focusProperty,
       focusSummary: focusRow || null,
       projectsWithOutflows,
@@ -912,10 +912,15 @@ export class AccountingService {
   }
 
   // ============ AR AGING REPORT ============
-  async getARAgingReport(asOf?: Date): Promise<any> {
+  async getARAgingReport(asOf?: Date, propertyId?: string): Promise<any> {
     const asOfDate = asOf || new Date();
 
-    // Outstanding installments from payment_schedules (PENDING or OVERDUE)
+    // Outstanding installments from payment_schedules (PENDING or OVERDUE).
+    // When a top-bar property is selected we restrict to its bookings;
+    // otherwise the report spans everything the caller can see.
+    const propertyClause = propertyId ? 'AND b.property_id = $2' : '';
+    const params: any[] = [asOfDate];
+    if (propertyId) params.push(propertyId);
     const rows = await this.dataSource.query(`
       SELECT
         c.id                             AS customer_id,
@@ -936,8 +941,9 @@ export class AccountingService {
       WHERE ps.status IN ('PENDING','OVERDUE','PARTIAL')
         AND ps.due_date <= $1
         AND (ps.amount - ps.paid_amount) > 0
+        ${propertyClause}
       ORDER BY c.full_name, ps.due_date
-    `, [asOfDate]);
+    `, params);
 
     // Group by customer
     const customerMap: Record<string, {
@@ -1054,9 +1060,19 @@ export class AccountingService {
   }
 
   // ============ CASH FLOW STATEMENT ============
-  async getCashFlowStatement(startDate: Date, endDate: Date): Promise<any> {
-    // Categorize JE lines into Operating / Investing / Financing based on account type + name patterns
-    // NOTE: raw SQL must use snake_case column names (SnakeNamingStrategy)
+  async getCashFlowStatement(
+    startDate: Date,
+    endDate: Date,
+    propertyId?: string,
+  ): Promise<any> {
+    // Categorize JE lines into Operating / Investing / Financing based on account type + name patterns.
+    // When a property is selected (top-bar), scope to JE lines whose
+    // account belongs to that property OR whose JE's propertyId matches.
+    const propertyClause = propertyId
+      ? 'AND (je.property_id = $3 OR a.property_id = $3)'
+      : '';
+    const cfParams: any[] = [startDate, endDate];
+    if (propertyId) cfParams.push(propertyId);
     const lines = await this.dataSource.query(`
       SELECT
         jel.id,
@@ -1074,8 +1090,9 @@ export class AccountingService {
       JOIN journal_entries je ON je.id = jel.journal_entry_id
       WHERE je.status = 'POSTED'
         AND je.entry_date BETWEEN $1 AND $2
+        ${propertyClause}
       ORDER BY je.entry_date
-    `, [startDate, endDate]);
+    `, cfParams);
 
     const operating: any[] = [];
     const investing: any[] = [];
@@ -1108,7 +1125,7 @@ export class AccountingService {
       else if (type === 'INCOME' || type === 'EXPENSE' || (type === 'ASSET' && !name.includes('bank') && !name.includes('cash'))) {
         operating.push(entry);
       }
-      // Cash & Bank movements are the "net change" in cash — don't double-count
+      // Cash & Bank movements are the "net change" in cash - don't double-count
     }
 
     const sum = (arr: any[], key: 'debit' | 'credit' | 'net') => arr.reduce((s, e) => s + e[key], 0);

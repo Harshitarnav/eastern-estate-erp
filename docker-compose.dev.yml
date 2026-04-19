@@ -1,4 +1,4 @@
-## Local development stack — MinIO only
+## Local development stack - MinIO only
 ## Backend + Frontend still run via npm (outside Docker)
 ##
 ## Usage:

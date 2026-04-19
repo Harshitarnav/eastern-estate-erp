@@ -184,7 +184,9 @@ let AccountingService = AccountingService_1 = class AccountingService {
             .andWhere('entry.entryDate BETWEEN :startDate AND :endDate', { startDate, endDate })
             .andWhere('entry.status = :status', { status: journal_entry_entity_1.JournalEntryStatus.POSTED });
         if (propertyId) {
-            query.andWhere('entry.propertyId = :propertyId', { propertyId });
+            query.andWhere('(entry.propertyId IS NULL OR entry.propertyId = :propertyId)', {
+                propertyId,
+            });
         }
         const entries = await query
             .orderBy('entry.entryDate', 'ASC')
@@ -626,7 +628,7 @@ let AccountingService = AccountingService_1 = class AccountingService {
             period: { startDate, endDate },
             explanation: 'Revenue = completed customer payments on bookings for that project. ' +
                 'Outflows = expenses, vendor payments, and salaries **tagged** to that project. ' +
-                'Cross-project view shows how much was booked under each project vs how much spend was attributed to each — not automatic bank-to-project tracing.',
+                'Cross-project view shows how much was booked under each project vs how much spend was attributed to each - not automatic bank-to-project tracing.',
             focusProperty,
             focusSummary: focusRow || null,
             projectsWithOutflows,
@@ -727,8 +729,12 @@ let AccountingService = AccountingService_1 = class AccountingService {
             ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
         return ISOweekStart;
     }
-    async getARAgingReport(asOf) {
+    async getARAgingReport(asOf, propertyId) {
         const asOfDate = asOf || new Date();
+        const propertyClause = propertyId ? 'AND b.property_id = $2' : '';
+        const params = [asOfDate];
+        if (propertyId)
+            params.push(propertyId);
         const rows = await this.dataSource.query(`
       SELECT
         c.id                             AS customer_id,
@@ -749,8 +755,9 @@ let AccountingService = AccountingService_1 = class AccountingService {
       WHERE ps.status IN ('PENDING','OVERDUE','PARTIAL')
         AND ps.due_date <= $1
         AND (ps.amount - ps.paid_amount) > 0
+        ${propertyClause}
       ORDER BY c.full_name, ps.due_date
-    `, [asOfDate]);
+    `, params);
         const customerMap = {};
         for (const row of rows) {
             const id = row.customer_id;
@@ -841,7 +848,13 @@ let AccountingService = AccountingService_1 = class AccountingService {
         }), { current: 0, bucket0_30: 0, bucket31_60: 0, bucket61_90: 0, bucket90plus: 0, total: 0 });
         return { asOf: asOfDate, vendors, totals };
     }
-    async getCashFlowStatement(startDate, endDate) {
+    async getCashFlowStatement(startDate, endDate, propertyId) {
+        const propertyClause = propertyId
+            ? 'AND (je.property_id = $3 OR a.property_id = $3)'
+            : '';
+        const cfParams = [startDate, endDate];
+        if (propertyId)
+            cfParams.push(propertyId);
         const lines = await this.dataSource.query(`
       SELECT
         jel.id,
@@ -859,8 +872,9 @@ let AccountingService = AccountingService_1 = class AccountingService {
       JOIN journal_entries je ON je.id = jel.journal_entry_id
       WHERE je.status = 'POSTED'
         AND je.entry_date BETWEEN $1 AND $2
+        ${propertyClause}
       ORDER BY je.entry_date
-    `, [startDate, endDate]);
+    `, cfParams);
         const operating = [];
         const investing = [];
         const financing = [];

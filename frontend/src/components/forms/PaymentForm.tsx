@@ -241,7 +241,7 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
   ];
 
   // Tab 4: Installment Details
-  // All fields here are optional — no need to lock them behind payment type selection.
+  // All fields here are optional - no need to lock them behind payment type selection.
   // Users who are recording an installment payment will simply fill these in; others leave them blank.
   const installmentFields: FormField[] = [
     {

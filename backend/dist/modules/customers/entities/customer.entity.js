@@ -244,6 +244,18 @@ __decorate([
     __metadata("design:type", Object)
 ], Customer.prototype, "metadata", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'pause_reminders_until', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], Customer.prototype, "pauseRemindersUntil", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'auto_send_milestone_demand_drafts',
+        type: 'boolean',
+        nullable: true,
+    }),
+    __metadata("design:type", Boolean)
+], Customer.prototype, "autoSendMilestoneDemandDrafts", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], Customer.prototype, "createdAt", void 0);

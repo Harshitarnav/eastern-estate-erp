@@ -4,11 +4,12 @@ import { useState, useTransition, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  X, Building2, LayoutDashboard, Home, TrendingUp, Users, 
-  Calendar, DollarSign, Calculator, Hammer, Package, 
-  ShoppingCart, Briefcase, MessageSquare, BarChart3, 
+  X, Building2, LayoutDashboard, Home, TrendingUp, Users,
+  Calendar, CalendarDays, DollarSign, Calculator, Hammer, Package,
+  ShoppingCart, Briefcase, MessageSquare, BarChart3,
   Settings, ChevronDown, Target, Database, Table as TableIcon,
-  FileText, AlertTriangle, BookOpen, Shield, KeyRound, UserCog
+  FileText, AlertTriangle, BookOpen, Shield, KeyRound, UserCog,
+  LifeBuoy, Palette
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { hasModuleAccess, isAdminRole } from '@/lib/roles';
@@ -64,9 +65,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       return pathname === base || pathname?.startsWith(base + '/');
     });
 
-  // Check if user can access a module
+  // Map a few sidebar child ids that aren't listed in ROLE_MODULE_ACCESS
+  // to the equivalent module the user is granted. Prevents links from
+  // disappearing for roles that should clearly see them.
+  const MODULE_ALIASES: Record<string, string[]> = {
+    'day-book': ['accounting', 'cash-bank-book'],
+    'hr-dashboard': ['hr'],
+    'construction-reports': ['construction', 'reports'],
+    'database-explorer': ['database'],
+    'database-viewer': ['database'],
+    'database-relationships': ['database'],
+    'users-list': ['settings'],
+    'settings-company': ['settings'],
+    'settings-profile': ['settings'],
+  };
+
+  // Check if user can access a module (tries aliases if the id isn't registered).
   const canAccess = (moduleId: string) => {
-    return hasModuleAccess(userRoles, moduleId);
+    if (hasModuleAccess(userRoles, moduleId)) return true;
+    const aliases = MODULE_ALIASES[moduleId];
+    if (aliases && aliases.some((m) => hasModuleAccess(userRoles, m))) return true;
+    return false;
   };
 
   const menuItems = [
@@ -86,8 +105,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       label: 'Sales & CRM', 
       icon: TrendingUp,
       children: [
-        // { id: 'sales-dashboard', label: 'Sales Dashboard', icon: BarChart3, href: '/sales' },
-        // { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
+        { id: 'leads', label: 'Leads', icon: Target, href: '/leads' },
         { id: 'customers', label: 'Customers', icon: Users, href: '/customers' },
         { id: 'portal-accounts', label: 'Portal Accounts', icon: Shield, href: '/customers/portal-accounts' },
         { id: 'bookings', label: 'Bookings', icon: Calendar, href: '/bookings' },
@@ -101,7 +119,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'payments-list', label: 'Payments', icon: DollarSign, href: '/payments' },
         { id: 'payment-plans', label: 'Payment Plans', icon: Calendar, href: '/payment-plans' },
         { id: 'demand-drafts', label: 'Demand Drafts', icon: FileText, href: '/demand-drafts' },
-        { id: 'construction-milestones', label: 'Construction Milestones', icon: Target, href: '/construction-milestones' },
+      ]
+    },
+    {
+      id: 'collections',
+      label: 'Collections',
+      icon: LifeBuoy,
+      children: [
+        { id: 'collections-workstation', label: 'Workstation', icon: LifeBuoy, href: '/collections' },
+        { id: 'collections-legacy-import', label: 'Legacy Import', icon: Database, href: '/collections/legacy-import' },
       ]
     },
     { 
@@ -112,6 +138,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'accounting-dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/accounting' },
         { id: 'accounts', label: 'Chart of Accounts', icon: BarChart3, href: '/accounting/accounts' },
         { id: 'journal-entries', label: 'Journal Entries', icon: FileText, href: '/accounting/journal-entries' },
+        { id: 'day-book', label: 'Day Book', icon: CalendarDays, href: '/accounting/day-book' },
         { id: 'expenses', label: 'Expenses', icon: DollarSign, href: '/accounting/expenses' },
         { id: 'budgets', label: 'Budgets', icon: TrendingUp, href: '/accounting/budgets' },
         { id: 'bank-accounts', label: 'Bank Accounts', icon: Database, href: '/accounting/bank-accounts' },
@@ -119,15 +146,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         { id: 'accounting-reports', label: 'Reports', icon: BarChart3, href: '/accounting/reports' },
       ]
     },
-    { 
-      id: 'construction', 
-      label: 'Construction', 
+    {
+      id: 'construction',
+      label: 'Construction',
       icon: Hammer,
       children: [
         { id: 'construction-overview', label: 'Overview', icon: LayoutDashboard, href: '/construction' },
         { id: 'projects', label: 'Projects', icon: Building2, href: '/construction/projects' },
         { id: 'teams', label: 'Teams', icon: Users, href: '/construction/teams' },
         { id: 'construction-progress', label: 'Daily Logs', icon: TrendingUp, href: '/construction/progress' },
+        { id: 'construction-log', label: 'Log Flat Progress', icon: Target, href: '/construction/log' },
+        { id: 'development-updates', label: 'Development Updates', icon: Palette, href: '/construction/development-updates' },
         { id: 'materials', label: 'Materials', icon: Package, href: '/construction/materials' },
         { id: 'vendors', label: 'Vendors', icon: Users, href: '/construction/vendors' },
         { id: 'purchase-orders', label: 'Purchase Orders', icon: ShoppingCart, href: '/construction/purchase-orders' },

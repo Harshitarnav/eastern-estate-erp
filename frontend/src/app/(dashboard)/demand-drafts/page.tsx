@@ -34,6 +34,7 @@ import { FileText, Loader2, Eye, Search, RefreshCw, Trash2 } from 'lucide-react'
 import { demandDraftsService, DemandDraft, DemandDraftStatus } from '@/services/demand-drafts.service';
 import { toast } from 'sonner';
 import { TableRowsSkeleton } from '@/components/Skeletons';
+import { usePropertyStore } from '@/store/propertyStore';
 
 const STATUS_COLORS: Record<DemandDraftStatus, string> = {
   DRAFT: 'bg-gray-400',
@@ -46,6 +47,9 @@ const STATUS_COLORS: Record<DemandDraftStatus, string> = {
 
 export default function DemandDraftsPage() {
   const router = useRouter();
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId =
+    selectedProperties.length > 0 ? selectedProperties[0] : undefined;
   const [drafts, setDrafts] = useState<DemandDraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -54,12 +58,14 @@ export default function DemandDraftsPage() {
 
   useEffect(() => {
     loadDrafts();
-  }, []);
+  }, [selectedPropertyId]);
 
   const loadDrafts = async () => {
     try {
       setLoading(true);
-      const data = await demandDraftsService.getDemandDrafts();
+      const data = await demandDraftsService.getDemandDrafts({
+        propertyId: selectedPropertyId,
+      });
       setDrafts(data);
     } catch (err: any) {
       toast.error('Failed to load demand drafts');
@@ -198,7 +204,7 @@ export default function DemandDraftsPage() {
                     <TableCell>
                       {draft.dueDate
                         ? new Date(draft.dueDate).toLocaleDateString('en-IN')
-                        : '—'}
+                        : '-'}
                     </TableCell>
                     <TableCell>
                       <Badge className={STATUS_COLORS[draft.status]}>

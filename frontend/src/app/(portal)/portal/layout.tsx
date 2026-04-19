@@ -42,12 +42,12 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     }
   };
 
-  // Login page (and any other public portal pages) — render bare, no shell
+  // Login page (and any other public portal pages) - render bare, no shell
   if (PUBLIC_PATHS.includes(pathname)) {
     return <>{children}</>;
   }
 
-  // Still loading auth — show spinner, never flash the shell
+  // Still loading auth - show spinner, never flash the shell
   if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-[#FDF6EC] flex items-center justify-center">
@@ -56,7 +56,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
     );
   }
 
-  // ERP staff who navigate to /portal — show a clear "wrong account" screen
+  // ERP staff who navigate to /portal - show a clear "wrong account" screen
   const roles: string[] = ((user as any)?.roles || []).map((r: any) =>
     typeof r === 'string' ? r : r.name,
   );
@@ -108,7 +108,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             </div>
           </div>
 
-          {/* Desktop nav — hidden on mobile (uses bottom tabs) */}
+          {/* Desktop nav - hidden on mobile (uses bottom tabs) */}
           <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {NAV.map(({ href, label, icon: Icon, exact }) => (
               <Link key={href} href={href}
@@ -125,7 +125,7 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
 
           {/* User + sign out */}
           <div className="flex items-center gap-1 shrink-0">
-            {/* Notification bell — only shown when authenticated */}
+            {/* Notification bell - only shown when authenticated */}
             <PortalNotificationBell />
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-[#A8211B] flex items-center justify-center text-white text-xs font-black">

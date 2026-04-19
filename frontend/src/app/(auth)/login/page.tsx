@@ -279,7 +279,7 @@
 //                 Our Legacy
 //               </h2>
 //               <p className="text-gray-400 text-lg leading-relaxed">
-//                 Eastern Estate isn't just about construction — it's about
+//                 Eastern Estate isn't just about construction - it's about
 //                 crafting timeless masterpieces built on trust and excellence.
 //               </p>
 //             </div>

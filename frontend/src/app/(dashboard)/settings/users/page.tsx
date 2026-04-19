@@ -41,7 +41,7 @@ const roleBadge = (r: Role) => (
 );
 
 const fmtDate = (s?: string) =>
-  s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
 // ── UserModal (create / edit) ────────────────────────────────────────────────
 
@@ -155,7 +155,7 @@ function UserModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <h2 className="text-lg font-semibold">
-            {isCreate ? 'Create New User' : isReset ? 'Reset Password' : `Edit — ${user?.firstName} ${user?.lastName}`}
+            {isCreate ? 'Create New User' : isReset ? 'Reset Password' : `Edit - ${user?.firstName} ${user?.lastName}`}
           </h2>
           <button onClick={onClose} className="p-1 rounded hover:bg-gray-100">
             <X className="h-5 w-5 text-gray-500" />
@@ -326,7 +326,7 @@ export default function UserManagementPage() {
   const router = useRouter();
   const { user: currentUser } = useAuthStore();
 
-  // ── Access guard — Admin or Super Admin ────────────────────────────────────
+  // ── Access guard - Admin or Super Admin ────────────────────────────────────
   const isSuperAdmin = currentUser?.roles?.some(
     (r: any) => (typeof r === 'string' ? r : r.name) === 'super_admin',
   );
@@ -403,7 +403,7 @@ export default function UserManagementPage() {
 
   const totalPages = Math.ceil(total / LIMIT);
 
-  // ── Access guard — render after all hooks (Rules of Hooks requirement) ─────
+  // ── Access guard - render after all hooks (Rules of Hooks requirement) ─────
   if (currentUser && !isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
@@ -588,7 +588,7 @@ export default function UserManagementPage() {
                           >
                             <ShieldCheck className="h-4 w-4" />
                           </button>
-                          {/* Toggle active — hide for own account */}
+                          {/* Toggle active - hide for own account */}
                           {u.id !== currentUser?.id && (
                             <button
                               onClick={() => handleToggleActive(u)}
@@ -602,7 +602,7 @@ export default function UserManagementPage() {
                               <Power className="h-4 w-4" />
                             </button>
                           )}
-                          {/* Delete — super admin only, hide for own account */}
+                          {/* Delete - super admin only, hide for own account */}
                           {isSuperAdmin && u.id !== currentUser?.id && (
                             <button
                               onClick={() => handleDelete(u)}
@@ -649,12 +649,12 @@ export default function UserManagementPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           {[
-            { name: 'super_admin', label: 'Super Admin — full access' },
-            { name: 'admin',       label: 'Admin — all except user management' },
-            { name: 'hr',          label: 'HR — employees + payroll' },
-            { name: 'accounts',    label: 'Accounts — payments + reports' },
-            { name: 'sales_team',  label: 'Sales — customers + bookings + CRM' },
-            { name: 'staff',       label: 'Staff — dashboard read-only' },
+            { name: 'super_admin', label: 'Super Admin - full access' },
+            { name: 'admin',       label: 'Admin - all except user management' },
+            { name: 'hr',          label: 'HR - employees + payroll' },
+            { name: 'accounts',    label: 'Accounts - payments + reports' },
+            { name: 'sales_team',  label: 'Sales - customers + bookings + CRM' },
+            { name: 'staff',       label: 'Staff - dashboard read-only' },
           ].map(({ name, label }) => (
             <span
               key={name}

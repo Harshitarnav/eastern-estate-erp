@@ -23,6 +23,7 @@ import { JournalEntriesController } from './journal-entries.controller';
 import { BankAccountsController } from './bank-accounts.controller';
 import { BankStatementsController } from './bank-statements.controller';
 import { AccountingIntegrationService } from './accounting-integration.service';
+import { Property } from '../properties/entities/property.entity';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AccountingIntegrationService } from './accounting-integration.service';
       FiscalYear,
       BankAccount,
       BankStatement,
+      Property,
     ]),
   ],
   controllers: [

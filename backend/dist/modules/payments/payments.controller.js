@@ -26,7 +26,7 @@ let PaymentsController = class PaymentsController {
     create(createPaymentDto, req) {
         return this.paymentsService.create(createPaymentDto, req.user.id);
     }
-    async findAll(bookingId, customerId, paymentType, paymentMethod, status, startDate, endDate, minAmount, maxAmount, isVerified, page, limit, req) {
+    async findAll(bookingId, customerId, paymentType, paymentMethod, status, startDate, endDate, minAmount, maxAmount, isVerified, propertyId, page, limit, req) {
         const filters = {};
         if (bookingId)
             filters.bookingId = bookingId;
@@ -48,26 +48,25 @@ let PaymentsController = class PaymentsController {
             filters.minAmount = parseFloat(minAmount);
         if (maxAmount)
             filters.maxAmount = parseFloat(maxAmount);
+        if (propertyId)
+            filters.propertyId = propertyId;
         filters.accessiblePropertyIds = req?.accessiblePropertyIds;
-        const payments = await this.paymentsService.findAll(filters);
-        const pageNum = page ? parseInt(page) : 1;
-        const limitNum = limit ? parseInt(limit) : 10;
-        const startIndex = (pageNum - 1) * limitNum;
-        const endIndex = startIndex + limitNum;
-        const paginatedPayments = payments.slice(startIndex, endIndex);
-        const total = payments.length;
-        const totalPages = Math.ceil(total / limitNum);
+        const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+        const limitNum = limit
+            ? Math.min(200, Math.max(1, parseInt(limit, 10) || 10))
+            : 10;
+        const { data, total } = await this.paymentsService.findAllPaginated(filters, pageNum, limitNum);
         return {
-            data: paginatedPayments,
+            data,
             meta: {
                 total,
                 page: pageNum,
                 limit: limitNum,
-                totalPages,
+                totalPages: Math.ceil(total / limitNum),
             },
         };
     }
-    getStatistics(startDate, endDate, paymentType, req) {
+    getStatistics(startDate, endDate, paymentType, propertyId, req) {
         const filters = {};
         if (startDate)
             filters.startDate = new Date(startDate);
@@ -75,14 +74,22 @@ let PaymentsController = class PaymentsController {
             filters.endDate = new Date(endDate);
         if (paymentType)
             filters.paymentType = paymentType;
+        if (propertyId)
+            filters.propertyId = propertyId;
         filters.accessiblePropertyIds = req?.accessiblePropertyIds;
         return this.paymentsService.getStatistics(filters);
     }
-    findByBooking(bookingId) {
-        return this.paymentsService.findAll({ bookingId });
+    findByBooking(bookingId, req) {
+        return this.paymentsService.findAll({
+            bookingId,
+            accessiblePropertyIds: req?.accessiblePropertyIds,
+        });
     }
-    findByCustomer(customerId) {
-        return this.paymentsService.findAll({ customerId });
+    findByCustomer(customerId, req) {
+        return this.paymentsService.findAll({
+            customerId,
+            accessiblePropertyIds: req?.accessiblePropertyIds,
+        });
     }
     findByCode(paymentCode) {
         return this.paymentsService.findByPaymentCode(paymentCode);
@@ -124,11 +131,12 @@ __decorate([
     __param(7, (0, common_1.Query)('minAmount')),
     __param(8, (0, common_1.Query)('maxAmount')),
     __param(9, (0, common_1.Query)('isVerified')),
-    __param(10, (0, common_1.Query)('page')),
-    __param(11, (0, common_1.Query)('limit')),
-    __param(12, (0, common_1.Request)()),
+    __param(10, (0, common_1.Query)('propertyId')),
+    __param(11, (0, common_1.Query)('page')),
+    __param(12, (0, common_1.Query)('limit')),
+    __param(13, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, String, String, String, String, String, String, String, String, Object]),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, String, String, String, String, String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], PaymentsController.prototype, "findAll", null);
 __decorate([
@@ -136,23 +144,26 @@ __decorate([
     __param(0, (0, common_1.Query)('startDate')),
     __param(1, (0, common_1.Query)('endDate')),
     __param(2, (0, common_1.Query)('paymentType')),
-    __param(3, (0, common_1.Request)()),
+    __param(3, (0, common_1.Query)('propertyId')),
+    __param(4, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "getStatistics", null);
 __decorate([
     (0, common_1.Get)('booking/:bookingId'),
     __param(0, (0, common_1.Param)('bookingId')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "findByBooking", null);
 __decorate([
     (0, common_1.Get)('customer/:customerId'),
     __param(0, (0, common_1.Param)('customerId')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "findByCustomer", null);
 __decorate([

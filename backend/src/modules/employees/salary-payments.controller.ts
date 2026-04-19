@@ -46,7 +46,7 @@ export class SalaryPaymentsController {
     return this.salaryPaymentsService.findOne(id);
   }
 
-  /** Mark salary as PAID — triggers auto Journal Entry */
+  /** Mark salary as PAID - triggers auto Journal Entry */
   @Post(':id/pay')
   processPay(
     @Param('id') id: string,

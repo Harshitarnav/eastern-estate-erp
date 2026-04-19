@@ -9,11 +9,19 @@ import {
   Query,
   UseGuards,
   Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
 import { PushService } from './push.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+
+const BROADCAST_ROLES = new Set([
+  'admin',
+  'super_admin',
+  'hr',
+  'head_accountant',
+]);
 
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
@@ -26,6 +34,29 @@ export class NotificationsController {
   @Post()
   async create(@Body() createNotificationDto: CreateNotificationDto, @Req() req: any) {
     const userId = req.user?.userId || req.user?.id;
+
+    // Previously any logged-in user could POST a notification to any
+    // other user by supplying { userId } or { targetRoles } in the body.
+    // Restrict that to: (a) self-notifications, or (b) broadcast-role
+    // callers (admin / super_admin / HR / head accountant).
+    const userRoles: string[] = (req.user?.roles || []).map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+    const isBroadcaster = userRoles.some((r) => BROADCAST_ROLES.has(r));
+
+    const targetsOther =
+      (createNotificationDto as any).userId &&
+      (createNotificationDto as any).userId !== userId;
+    const targetsMany =
+      (createNotificationDto as any).targetRoles ||
+      (createNotificationDto as any).userIds;
+
+    if (!isBroadcaster && (targetsOther || targetsMany)) {
+      throw new ForbiddenException(
+        'You are not allowed to send notifications to other users.',
+      );
+    }
+
     return this.notificationsService.create(createNotificationDto, userId);
   }
 

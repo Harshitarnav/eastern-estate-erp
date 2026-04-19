@@ -117,6 +117,10 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionFlatProgress.prototype, "notes", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'photos', type: 'text', array: true, nullable: true }),
+    __metadata("design:type", Array)
+], ConstructionFlatProgress.prototype, "photos", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'is_payment_milestone', default: false }),
     __metadata("design:type", Boolean)
 ], ConstructionFlatProgress.prototype, "isPaymentMilestone", void 0);

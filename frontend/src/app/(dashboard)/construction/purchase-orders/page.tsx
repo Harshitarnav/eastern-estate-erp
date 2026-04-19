@@ -92,7 +92,7 @@ function PurchaseOrdersPageContent() {
   const fmtCur = (n: number | string) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
   const fmt = (d?: string) =>
-    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
   const filtered = orders.filter(po => {
     const matchStatus = !filterStatus || po.status === filterStatus;
@@ -272,11 +272,11 @@ function PurchaseOrdersPageContent() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div>
                           <p className="text-gray-400 text-xs">Vendor</p>
-                          <p className="font-medium">{po.vendor?.vendorName || '—'}</p>
+                          <p className="font-medium">{po.vendor?.vendorName || '-'}</p>
                         </div>
                         <div>
                           <p className="text-gray-400 text-xs">Project</p>
-                          <p className="font-medium truncate">{po.constructionProject?.projectName || '—'}</p>
+                          <p className="font-medium truncate">{po.constructionProject?.projectName || '-'}</p>
                         </div>
                         <div>
                           <p className="text-gray-400 text-xs">PO Date</p>

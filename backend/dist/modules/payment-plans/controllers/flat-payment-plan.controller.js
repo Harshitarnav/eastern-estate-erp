@@ -24,8 +24,8 @@ let FlatPaymentPlanController = class FlatPaymentPlanController {
     async create(createDto, req) {
         return await this.flatPaymentPlanService.create(createDto, req.user.id);
     }
-    async findAll() {
-        return await this.flatPaymentPlanService.findAll();
+    async findAll(propertyId, req) {
+        return await this.flatPaymentPlanService.findAll(propertyId, req?.accessiblePropertyIds);
     }
     async findByFlatId(flatId) {
         return await this.flatPaymentPlanService.findByFlatId(flatId);
@@ -63,8 +63,10 @@ __decorate([
 ], FlatPaymentPlanController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], FlatPaymentPlanController.prototype, "findAll", null);
 __decorate([

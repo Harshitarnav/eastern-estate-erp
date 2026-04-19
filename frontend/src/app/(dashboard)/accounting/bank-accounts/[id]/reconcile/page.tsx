@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
-  ArrowLeft, Upload, CheckCircle, XCircle, RefreshCw,
-  AlertCircle, Link2, Building2,
+  ArrowLeft, Upload, CheckCircle, RefreshCw,
+  AlertCircle, Link2, Building2, Sparkles,
 } from 'lucide-react';
 import api from '@/services/api';
 import { journalEntriesService } from '@/services/accounting.service';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { TableRowsSkeleton } from '@/components/Skeletons';
 
 interface BankStatement {
@@ -106,6 +104,80 @@ export default function BankReconcilePage() {
   const reconciledCount = statements.filter(s => s.isReconciled).length;
   const displayed = tab === 'unreconciled' ? statements.filter(s => !s.isReconciled) : statements;
 
+  /**
+   * For each unreconciled bank line, find posted JE candidates where
+   *   · amount equals the bank line amount (rounded to ₹1)  AND
+   *   · JE date is within ±5 days of the bank line date.
+   * Sorted by closeness in days. The first entry of each list is the "best".
+   * A line has one "obvious" match when exactly one candidate exists.
+   */
+  const suggestionsByStmt = useMemo(() => {
+    const map = new Map<string, JournalEntryOption[]>();
+    const DAY_WINDOW = 5;
+    for (const s of statements) {
+      if (s.isReconciled) continue;
+      const amt = Math.round(Number(s.debitAmount) || Number(s.creditAmount) || 0);
+      if (amt <= 0) continue;
+      const stmtDate = new Date(s.transactionDate);
+      const candidates = journalEntries
+        .map((je) => {
+          const jeAmt = Math.round(Number(je.totalDebit) || 0);
+          if (jeAmt !== amt) return null;
+          const diff = Math.abs(differenceInDays(stmtDate, new Date(je.entryDate)));
+          if (diff > DAY_WINDOW) return null;
+          return { je, diff };
+        })
+        .filter((x): x is { je: JournalEntryOption; diff: number } => !!x)
+        .sort((a, b) => a.diff - b.diff)
+        .map((x) => x.je);
+      if (candidates.length) map.set(s.id, candidates);
+    }
+    return map;
+  }, [statements, journalEntries]);
+
+  const obviousCount = useMemo(() => {
+    let n = 0;
+    for (const [, list] of suggestionsByStmt) {
+      if (list.length === 1) n++;
+    }
+    return n;
+  }, [suggestionsByStmt]);
+
+  /** Pre-populate the match select with the best candidate so user can just hit Match. */
+  useEffect(() => {
+    if (!suggestionsByStmt.size) return;
+    setMatchingId((prev) => {
+      const next = { ...prev };
+      for (const [stmtId, list] of suggestionsByStmt) {
+        if (!next[stmtId] && list[0]) next[stmtId] = list[0].id;
+      }
+      return next;
+    });
+  }, [suggestionsByStmt]);
+
+  /** One click - reconcile every statement where there is exactly one match candidate. */
+  const handleMatchAllObvious = async () => {
+    const targets: Array<{ stmtId: string; jeId: string }> = [];
+    for (const [stmtId, list] of suggestionsByStmt) {
+      if (list.length === 1) targets.push({ stmtId, jeId: list[0].id });
+    }
+    if (!targets.length) return;
+    if (!confirm(`Auto-match ${targets.length} bank transactions to their only possible journal entry?`)) return;
+    setReconciling('__bulk');
+    try {
+      for (const t of targets) {
+        await api.post(`/accounting/bank-statements/${t.stmtId}/reconcile`, {
+          journalEntryId: t.jeId,
+        });
+      }
+      await fetchData();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || 'Some matches failed. Try again.');
+    } finally {
+      setReconciling(null);
+    }
+  };
+
   if (loading) return <div className="p-6"><TableRowsSkeleton rows={6} cols={5} /></div>;
 
   return (
@@ -121,7 +193,7 @@ export default function BankReconcilePage() {
             <div>
               <h1 className="text-2xl font-bold">
                 {bankAccount?.accountName || 'Bank Account'}
-                <span className="ml-2 text-gray-400 font-normal text-lg">— Reconciliation</span>
+                <span className="ml-2 text-gray-400 font-normal text-lg">- Reconciliation</span>
               </h1>
               <p className="text-sm text-gray-500">{bankAccount?.bankName} · {bankAccount?.accountNumber}</p>
             </div>
@@ -197,7 +269,19 @@ export default function BankReconcilePage() {
               <CardTitle>Bank Transactions</CardTitle>
               <CardDescription>Match each transaction to a posted journal entry</CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {obviousCount > 0 && tab === 'unreconciled' && (
+                <Button
+                  size="sm"
+                  onClick={handleMatchAllObvious}
+                  disabled={reconciling === '__bulk'}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  title="Auto-reconcile statements that have exactly one matching posted journal entry"
+                >
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  {reconciling === '__bulk' ? 'Matching…' : `Match all obvious (${obviousCount})`}
+                </Button>
+              )}
               {(['unreconciled', 'all'] as const).map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   className={`px-3 py-1 text-sm rounded-full border transition-colors ${tab === t
@@ -235,17 +319,17 @@ export default function BankReconcilePage() {
                   {displayed.map(stmt => (
                     <tr key={stmt.id} className={`border-b ${stmt.isReconciled ? 'bg-green-50/50 opacity-75' : 'hover:bg-gray-50'}`}>
                       <td className="p-3 whitespace-nowrap text-gray-600">
-                        {stmt.transactionDate ? format(new Date(stmt.transactionDate), 'dd MMM yyyy') : '—'}
+                        {stmt.transactionDate ? format(new Date(stmt.transactionDate), 'dd MMM yyyy') : '-'}
                       </td>
                       <td className="p-3 max-w-xs">
                         <p className="truncate" title={stmt.description}>{stmt.description}</p>
                         {stmt.referenceNumber && <p className="text-xs text-gray-400">{stmt.referenceNumber}</p>}
                       </td>
                       <td className="p-3 text-right font-medium text-red-600">
-                        {Number(stmt.debitAmount) > 0 ? fmt(stmt.debitAmount) : '—'}
+                        {Number(stmt.debitAmount) > 0 ? fmt(stmt.debitAmount) : '-'}
                       </td>
                       <td className="p-3 text-right font-medium text-green-600">
-                        {Number(stmt.creditAmount) > 0 ? fmt(stmt.creditAmount) : '—'}
+                        {Number(stmt.creditAmount) > 0 ? fmt(stmt.creditAmount) : '-'}
                       </td>
                       <td className="p-3 text-right">{fmt(stmt.balance)}</td>
                       <td className="p-3">
@@ -254,18 +338,44 @@ export default function BankReconcilePage() {
                             <Link2 className="h-3 w-3" /> Matched
                           </div>
                         ) : (
-                          <select
-                            className="border rounded p-1 text-xs w-full"
-                            value={matchingId[stmt.id] || ''}
-                            onChange={e => setMatchingId(m => ({ ...m, [stmt.id]: e.target.value }))}
-                          >
-                            <option value="">— Select journal entry —</option>
-                            {journalEntries.map(je => (
-                              <option key={je.id} value={je.id}>
-                                {je.entryNumber} · {format(new Date(je.entryDate), 'dd/MM')} · {je.description.slice(0, 30)}
-                              </option>
-                            ))}
-                          </select>
+                          (() => {
+                            const sugg = suggestionsByStmt.get(stmt.id) || [];
+                            const suggIds = new Set(sugg.map(x => x.id));
+                            const rest = journalEntries.filter(je => !suggIds.has(je.id));
+                            return (
+                              <div className="space-y-1">
+                                {sugg.length > 0 && (
+                                  <div className="text-[10px] text-emerald-700 flex items-center gap-1">
+                                    <Sparkles className="h-3 w-3" />
+                                    {sugg.length === 1 ? '1 match found - click Match to confirm' : `${sugg.length} possible matches`}
+                                  </div>
+                                )}
+                                <select
+                                  className={`border rounded p-1 text-xs w-full ${sugg.length ? 'border-emerald-400 bg-emerald-50/40' : ''}`}
+                                  value={matchingId[stmt.id] || ''}
+                                  onChange={e => setMatchingId(m => ({ ...m, [stmt.id]: e.target.value }))}
+                                >
+                                  <option value="">- Select journal entry -</option>
+                                  {sugg.length > 0 && (
+                                    <optgroup label="Suggested matches">
+                                      {sugg.map(je => (
+                                        <option key={je.id} value={je.id}>
+                                          ✓ {je.entryNumber} · {format(new Date(je.entryDate), 'dd/MM')} · {je.description.slice(0, 30)}
+                                        </option>
+                                      ))}
+                                    </optgroup>
+                                  )}
+                                  <optgroup label="All posted entries">
+                                    {rest.map(je => (
+                                      <option key={je.id} value={je.id}>
+                                        {je.entryNumber} · {format(new Date(je.entryDate), 'dd/MM')} · {je.description.slice(0, 30)}
+                                      </option>
+                                    ))}
+                                  </optgroup>
+                                </select>
+                              </div>
+                            );
+                          })()
                         )}
                       </td>
                       <td className="p-3 text-center">

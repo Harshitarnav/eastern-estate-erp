@@ -160,8 +160,8 @@ class ReportsService {
     return apiService.get('/reports/inventory', { params: filters ?? {} });
   }
 
-  async getDashboard(): Promise<DashboardSummary> {
-    return apiService.get('/reports/dashboard');
+  async getDashboard(params?: { propertyId?: string }): Promise<DashboardSummary> {
+    return apiService.get('/reports/dashboard', { params: params ?? {} });
   }
 }
 

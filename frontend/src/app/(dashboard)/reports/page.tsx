@@ -25,7 +25,7 @@ const REPORTS = [
   {
     id: 'inventory',
     title: 'Stock Inventory Report',
-    description: 'Property/tower-wise flat availability — Available, Booked, Sold, On Hold. Filter by BHK type.',
+    description: 'Property/tower-wise flat availability - Available, Booked, Sold, On Hold. Filter by BHK type.',
     icon: <Package className="h-6 w-6 text-blue-600" />,
     href: '/reports/inventory',
     color: 'border-blue-100 hover:border-blue-300 hover:bg-blue-50/30',

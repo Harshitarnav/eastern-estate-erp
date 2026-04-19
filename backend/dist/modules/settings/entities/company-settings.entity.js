@@ -107,6 +107,34 @@ __decorate([
     __metadata("design:type", String)
 ], CompanySettings.prototype, "smtpFrom", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'overdue_reminder_interval_days', type: 'int', default: 7 }),
+    __metadata("design:type", Number)
+], CompanySettings.prototype, "overdueReminderIntervalDays", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'cancellation_warning_threshold_days', type: 'int', default: 30 }),
+    __metadata("design:type", Number)
+], CompanySettings.prototype, "cancellationWarningThresholdDays", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'legacy_auto_remind_max_age_days', type: 'int', default: 180 }),
+    __metadata("design:type", Number)
+], CompanySettings.prototype, "legacyAutoRemindMaxAgeDays", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'overdue_reminder_daily_cap', type: 'int', default: 50 }),
+    __metadata("design:type", Number)
+], CompanySettings.prototype, "overdueReminderDailyCap", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'enable_sms_reminders', type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], CompanySettings.prototype, "enableSmsReminders", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'auto_send_milestone_demand_drafts',
+        type: 'boolean',
+        default: false,
+    }),
+    __metadata("design:type", Boolean)
+], CompanySettings.prototype, "autoSendMilestoneDemandDrafts", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], CompanySettings.prototype, "createdAt", void 0);

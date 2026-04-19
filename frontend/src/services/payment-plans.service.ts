@@ -139,8 +139,11 @@ class PaymentPlansService {
   }
 
   // Flat Payment Plans
-  async getFlatPaymentPlans(): Promise<FlatPaymentPlan[]> {
-    return await apiService.get('/flat-payment-plans');
+  async getFlatPaymentPlans(params?: { propertyId?: string }): Promise<FlatPaymentPlan[]> {
+    const qs = new URLSearchParams();
+    if (params?.propertyId) qs.append('propertyId', params.propertyId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return await apiService.get(`/flat-payment-plans${suffix}`);
   }
 
   async getFlatPaymentPlan(id: string): Promise<FlatPaymentPlan> {
@@ -177,7 +180,7 @@ class PaymentPlansService {
     return await apiService.put(`/flat-payment-plans/${id}/cancel`, {});
   }
 
-  /** Unit-wise ledger — demands + payments + running balance */
+  /** Unit-wise ledger - demands + payments + running balance */
   async getLedger(bookingId: string): Promise<LedgerResponse> {
     return await apiService.get(`/flat-payment-plans/ledger/booking/${bookingId}`);
   }

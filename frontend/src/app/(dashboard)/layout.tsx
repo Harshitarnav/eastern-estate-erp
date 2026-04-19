@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { Loading } from '@/components/Loading';
@@ -23,9 +23,14 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const userRoles: string[] = ((user as any)?.roles || []).map((r: any) =>
-    typeof r === 'string' ? r : r.name,
+  const userRoles = useMemo<string[]>(
+    () =>
+      ((user as any)?.roles || []).map((r: any) =>
+        typeof r === 'string' ? r : r.name,
+      ),
+    [user],
   );
+  const rolesKey = useMemo(() => userRoles.join('|'), [userRoles]);
 
   useEffect(() => {
     checkAuth();
@@ -40,12 +45,15 @@ export default function DashboardLayout({
   // Block direct navigation to modules the user's roles do not include (UI-only; API also enforces).
   useEffect(() => {
     if (isLoading || !isAuthenticated || !pathname) return;
-    if (!user?.roles?.length) return;
+    if (!userRoles.length) return;
     if (!canAccessDashboardPath(pathname, userRoles)) {
       toast.error('You do not have access to this page.');
       router.replace('/');
     }
-  }, [isLoading, isAuthenticated, pathname, router, user, userRoles]);
+    // rolesKey is the stable signature of userRoles; depending on userRoles directly
+    // would re-run on every render because the array identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isAuthenticated, pathname, router, rolesKey]);
 
   const handleLogout = async () => {
     await logout();
@@ -123,7 +131,7 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Page Content — add bottom padding on mobile so content isn't hidden by bottom nav */}
+        {/* Page Content - add bottom padding on mobile so content isn't hidden by bottom nav */}
         <main className="min-h-[calc(100vh-4rem)] pb-16 lg:pb-0 min-w-0 w-full max-w-full">{children}</main>
       </div>
 

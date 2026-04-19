@@ -35,6 +35,7 @@ export declare class CustomerResponseDto {
     isActive: boolean;
     isVIP: boolean;
     isBlacklisted: boolean;
+    autoSendMilestoneDemandDrafts?: boolean | null;
     createdAt: string | Date;
     updatedAt: string | Date;
     fullName?: string;

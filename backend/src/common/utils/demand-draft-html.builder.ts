@@ -2,7 +2,7 @@
  * Canonical Demand Draft HTML Builder
  *
  * Single source of truth for the visual format of all demand drafts
- * generated in the Eastern Estate ERP — regardless of where they originate
+ * generated in the Eastern Estate ERP - regardless of where they originate
  * (payment plan page, construction milestone trigger, auto-generation).
  */
 
@@ -30,14 +30,14 @@ export interface DemandDraftHtmlData {
   constructionPhase?: string;
   phasePercentage?: number;
 
-  /* Amounts — all pre-formatted strings, e.g. "12,50,000" (no ₹ prefix) */
+  /* Amounts - all pre-formatted strings, e.g. "12,50,000" (no ₹ prefix) */
   amount: string;
   dueDate: string;
   totalAmount?: string;
   paidAmount?: string;
   balanceAfterPayment?: string;
 
-  /* Bank details — use placeholder if not yet filled */
+  /* Bank details - use placeholder if not yet filled */
   bankName?: string;
   accountName?: string;
   accountNumber?: string;
@@ -117,7 +117,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
 
 /** Format a raw number string for display (adds commas using en-IN locale) */
 function fmtRaw(val: string | undefined): string {
-  if (!val) return '—';
+  if (!val) return '-';
   const n = parseFloat(val.replace(/[^0-9.]/g, ''));
   if (isNaN(n)) return val;
   return n.toLocaleString('en-IN');
@@ -141,14 +141,14 @@ export function buildDemandDraftHtml(d: DemandDraftHtmlData): string {
     : '';
 
   const constructionLine = d.constructionPhase
-    ? ` (${d.constructionPhase}${d.phasePercentage != null ? ` — ${d.phasePercentage}%` : ''})`
+    ? ` (${d.constructionPhase}${d.phasePercentage != null ? ` - ${d.phasePercentage}%` : ''})`
     : '';
 
   const descLine = d.milestoneDescription
     ? `<br/><span style="font-size:11.5px;color:#666;">${d.milestoneDescription}</span>`
     : '';
 
-  /* Summary grid — only if we have financial totals */
+  /* Summary grid - only if we have financial totals */
   const summaryHtml = (d.totalAmount || d.paidAmount || d.balanceAfterPayment)
     ? `<div class="sg">
         <div class="sg-cell"><label>Total Property Value</label><div class="sg-val">₹ ${fmtRaw(d.totalAmount)}</div></div>
@@ -159,10 +159,10 @@ export function buildDemandDraftHtml(d: DemandDraftHtmlData): string {
     : '';
 
   /* Bank details */
-  const bankName     = d.bankName     || '[Bank Name — to be filled]';
+  const bankName     = d.bankName     || '[Bank Name - to be filled]';
   const accountName  = d.accountName  || 'Eastern Estate';
-  const accountNumber = d.accountNumber || '[Account Number — to be filled]';
-  const ifscCode     = d.ifscCode     || '[IFSC Code — to be filled]';
+  const accountNumber = d.accountNumber || '[Account Number - to be filled]';
+  const ifscCode     = d.ifscCode     || '[IFSC Code - to be filled]';
   const branchHtml   = d.branch
     ? `<div><label>Branch</label><div class="bv">${d.branch}</div></div>`
     : '';

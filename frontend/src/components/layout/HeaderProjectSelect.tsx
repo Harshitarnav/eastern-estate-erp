@@ -9,7 +9,7 @@ import { seesAllAccountingProjects } from '@/lib/roles';
 import { Building2, ChevronDown } from 'lucide-react';
 
 /**
- * Global project scope for the dashboard header — drives the same Zustand selection
+ * Global project scope for the dashboard header - drives the same Zustand selection
  * as accounting and other modules (via usePropertyStore).
  */
 export function HeaderProjectSelect() {
@@ -121,7 +121,7 @@ export function HeaderProjectSelect() {
       <div className="flex items-center gap-1.5 min-w-0 flex-1 basis-0 sm:max-w-[min(100%,20rem)]">
         <Building2 className="h-3.5 w-3.5 shrink-0 hidden sm:block text-amber-600" />
         <span className="text-xs text-amber-800 truncate" title="Ask an admin to assign property access">
-          No project assigned — contact admin
+          No project assigned - contact admin
         </span>
       </div>
     );

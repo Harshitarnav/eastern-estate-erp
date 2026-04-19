@@ -35,6 +35,7 @@ export declare class PropertyResponseDto {
     nearbyLandmarks?: string;
     isActive: boolean;
     isFeatured?: boolean;
+    autoSendMilestoneDemandDrafts?: boolean | null;
     createdBy?: string;
     updatedBy?: string;
     createdAt: string | Date;

@@ -162,7 +162,7 @@ export default function EditEmployeePage() {
       const messages = parseApiErrors(error);
       setBanner({
         type: 'error',
-        title: 'Could not save changes — please fix the following:',
+        title: 'Could not save changes - please fix the following:',
         messages,
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -173,7 +173,7 @@ export default function EditEmployeePage() {
 
   const handleCancel = () => router.push(`/employees/${employeeId}`);
 
-  // Loading state — skeleton for the edit form
+  // Loading state - skeleton for the edit form
   if (initialLoading) {
     return (
       <div className="p-6 animate-pulse">

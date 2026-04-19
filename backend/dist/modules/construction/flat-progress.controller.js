@@ -18,19 +18,37 @@ const flat_progress_service_1 = require("./flat-progress.service");
 const create_flat_progress_dto_1 = require("./dto/create-flat-progress.dto");
 const update_flat_progress_dto_1 = require("./dto/update-flat-progress.dto");
 const construction_tower_progress_entity_1 = require("./entities/construction-tower-progress.entity");
+const construction_workflow_service_1 = require("./services/construction-workflow.service");
+const construction_projects_service_1 = require("./construction-projects.service");
 let FlatProgressController = class FlatProgressController {
-    constructor(flatProgressService) {
+    constructor(flatProgressService, workflowService, projectsService) {
         this.flatProgressService = flatProgressService;
+        this.workflowService = workflowService;
+        this.projectsService = projectsService;
     }
     async createFlatProgress(projectId, flatId, createDto) {
-        return this.flatProgressService.create({
+        const saved = await this.flatProgressService.create({
             ...createDto,
             constructionProjectId: projectId,
             flatId,
         });
+        this.workflowService
+            .processConstructionUpdate(flatId, saved.phase, Number(saved.phaseProgress ?? 0), Number(saved.overallProgress ?? saved.phaseProgress ?? 0))
+            .catch(() => { });
+        this.projectsService.recomputeOverallProgress(projectId).catch(() => { });
+        return saved;
     }
     async updateFlatProgress(id, updateDto) {
-        return this.flatProgressService.update(id, updateDto);
+        const saved = await this.flatProgressService.update(id, updateDto);
+        this.workflowService
+            .processConstructionUpdate(saved.flatId, saved.phase, Number(saved.phaseProgress ?? 0), Number(saved.overallProgress ?? saved.phaseProgress ?? 0))
+            .catch(() => { });
+        if (saved?.constructionProjectId) {
+            this.projectsService
+                .recomputeOverallProgress(saved.constructionProjectId)
+                .catch(() => { });
+        }
+        return saved;
     }
     async getFlatProgress(projectId, flatId, phase) {
         if (phase) {
@@ -164,6 +182,8 @@ __decorate([
 ], FlatProgressController.prototype, "getAllFlatProgress", null);
 exports.FlatProgressController = FlatProgressController = __decorate([
     (0, common_1.Controller)('construction-projects'),
-    __metadata("design:paramtypes", [flat_progress_service_1.FlatProgressService])
+    __metadata("design:paramtypes", [flat_progress_service_1.FlatProgressService,
+        construction_workflow_service_1.ConstructionWorkflowService,
+        construction_projects_service_1.ConstructionProjectsService])
 ], FlatProgressController);
 //# sourceMappingURL=flat-progress.controller.js.map

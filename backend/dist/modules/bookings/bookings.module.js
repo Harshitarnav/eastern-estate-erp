@@ -19,16 +19,19 @@ const customer_entity_1 = require("../customers/entities/customer.entity");
 const payments_module_1 = require("../payments/payments.module");
 const notifications_module_1 = require("../notifications/notifications.module");
 const accounting_module_1 = require("../accounting/accounting.module");
+const payment_plans_module_1 = require("../payment-plans/payment-plans.module");
+const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
 let BookingsModule = class BookingsModule {
 };
 exports.BookingsModule = BookingsModule;
 exports.BookingsModule = BookingsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([booking_entity_1.Booking, flat_entity_1.Flat, property_entity_1.Property, tower_entity_1.Tower, customer_entity_1.Customer]),
+            typeorm_1.TypeOrmModule.forFeature([booking_entity_1.Booking, flat_entity_1.Flat, property_entity_1.Property, tower_entity_1.Tower, customer_entity_1.Customer, flat_payment_plan_entity_1.FlatPaymentPlan]),
             payments_module_1.PaymentsModule,
             notifications_module_1.NotificationsModule,
             accounting_module_1.AccountingModule,
+            payment_plans_module_1.PaymentPlansModule,
         ],
         controllers: [bookings_controller_1.BookingsController],
         providers: [bookings_service_1.BookingsService],

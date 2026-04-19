@@ -12,10 +12,10 @@ const withPWA = require('next-pwa')({
   fallbacks: {
     document: '/offline',
   },
-  // Never let the service worker touch API calls — go straight to network
+  // Never let the service worker touch API calls - go straight to network
   runtimeCaching: [
     {
-      // Static assets: fonts, images, icons — cache aggressively
+      // Static assets: fonts, images, icons - cache aggressively
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot)$/i,
       handler: 'CacheFirst',
       options: {
@@ -24,7 +24,7 @@ const withPWA = require('next-pwa')({
       },
     },
     {
-      // Next.js JS/CSS chunks — cache with network fallback
+      // Next.js JS/CSS chunks - cache with network fallback
       urlPattern: /\/_next\/static\/.*/,
       handler: 'CacheFirst',
       options: {

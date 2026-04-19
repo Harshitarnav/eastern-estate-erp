@@ -41,7 +41,7 @@ const fmtINR = (n: number) =>
   '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const fmtDate = (s: string | null | undefined) => {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -271,7 +271,7 @@ export default function LedgerPage() {
           <div>
             <h1 className="text-2xl font-bold text-[#7B1E12]">Unit-wise Ledger</h1>
             <p className="text-gray-500 mt-0.5 text-sm">
-              {unitLabel || 'Unit'} — {customer?.fullName ?? 'Customer'}
+              {unitLabel || 'Unit'} - {customer?.fullName ?? 'Customer'}
             </p>
             {booking?.bookingNumber && (
               <p className="text-xs text-gray-400">Booking: {booking.bookingNumber}</p>
@@ -409,7 +409,7 @@ export default function LedgerPage() {
                               {fmtINR(row.debit)}
                             </span>
                           ) : (
-                            <span className="text-gray-300 text-xs">—</span>
+                            <span className="text-gray-300 text-xs">-</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
@@ -418,7 +418,7 @@ export default function LedgerPage() {
                               {fmtINR(row.credit)}
                             </span>
                           ) : (
-                            <span className="text-gray-300 text-xs">—</span>
+                            <span className="text-gray-300 text-xs">-</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right font-semibold">

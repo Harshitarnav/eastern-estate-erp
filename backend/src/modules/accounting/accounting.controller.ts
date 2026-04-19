@@ -145,12 +145,17 @@ export class AccountingController {
 
   // ============ AR AGING ============
   @Get('reports/ar-aging')
-  getARAgingReport(@Query('asOf') asOf?: string) {
+  getARAgingReport(
+    @Query('asOf') asOf?: string,
+    @Query('propertyId') propertyId?: string,
+  ) {
     const date = asOf ? new Date(asOf) : new Date();
-    return this.accountingService.getARAgingReport(date);
+    return this.accountingService.getARAgingReport(date, propertyId);
   }
 
   // ============ AP AGING ============
+  // Vendors are not property-scoped in this app (shared across projects),
+  // so we intentionally ignore propertyId here.
   @Get('reports/ap-aging')
   getAPAgingReport(@Query('asOf') asOf?: string) {
     const date = asOf ? new Date(asOf) : new Date();
@@ -162,10 +167,11 @@ export class AccountingController {
   getCashFlowStatement(
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
+    @Query('propertyId') propertyId?: string,
   ) {
     const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
     const end = endDate ? new Date(endDate) : new Date();
-    return this.accountingService.getCashFlowStatement(start, end);
+    return this.accountingService.getCashFlowStatement(start, end, propertyId);
   }
 
   // ============ ITR EXPORTS ============

@@ -2,7 +2,17 @@ export declare enum DemandDraftStatus {
     DRAFT = "DRAFT",
     READY = "READY",
     SENT = "SENT",
-    FAILED = "FAILED"
+    FAILED = "FAILED",
+    PAID = "PAID"
+}
+export declare enum DemandDraftTone {
+    ON_TIME = "ON_TIME",
+    REMINDER_1 = "REMINDER_1",
+    REMINDER_2 = "REMINDER_2",
+    REMINDER_3 = "REMINDER_3",
+    REMINDER_4 = "REMINDER_4",
+    CANCELLATION_WARNING = "CANCELLATION_WARNING",
+    POST_WARNING = "POST_WARNING"
 }
 export declare class DemandDraft {
     id: string;
@@ -19,6 +29,8 @@ export declare class DemandDraft {
     metadata: any;
     generatedAt: Date | null;
     sentAt: Date | null;
+    paidAt: Date | null;
+    paidPaymentId: string | null;
     paymentScheduleId: string | null;
     flatPaymentPlanId: string | null;
     constructionCheckpointId: string | null;
@@ -31,6 +43,18 @@ export declare class DemandDraft {
     templateData: any;
     createdBy: string | null;
     updatedBy: string | null;
+    tone: DemandDraftTone;
+    reminderCount: number;
+    lastReminderAt: Date | null;
+    nextReminderDueAt: Date | null;
+    escalationLevel: number;
+    daysOverdue: number;
+    cancellationWarningIssuedAt: Date | null;
+    parentDemandDraftId: string | null;
+    importBatchId: string | null;
+    collectorUserId: string | null;
+    assignedAt: Date | null;
+    assignedBy: string | null;
     createdAt: Date;
     updatedAt: Date;
 }

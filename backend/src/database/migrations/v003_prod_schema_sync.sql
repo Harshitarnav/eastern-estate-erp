@@ -1,7 +1,7 @@
 -- ============================================================
 -- v003: Production Schema Sync
 -- Adds any columns/tables that production might be missing.
--- FULLY IDEMPOTENT — safe to run multiple times.
+-- FULLY IDEMPOTENT - safe to run multiple times.
 -- Run AFTER v002.
 --
 -- On the server:

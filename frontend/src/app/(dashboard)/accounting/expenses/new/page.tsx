@@ -22,7 +22,7 @@ const EXPENSE_CATEGORIES = [
   'Other',
 ];
 
-// Suggested sub-types per category — user can still type anything
+// Suggested sub-types per category - user can still type anything
 const TYPE_SUGGESTIONS: Record<string, string[]> = {
   Rent:              ['Office Rent', 'Warehouse Rent', 'Site Rent'],
   Utilities:         ['Electricity', 'Water', 'Internet', 'Phone'],
@@ -174,7 +174,7 @@ export default function NewExpensePage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type <span className="text-gray-400 font-normal">(optional — specific label)</span>
+                Type <span className="text-gray-400 font-normal">(optional - specific label)</span>
               </label>
               {(() => {
                 const suggestions = TYPE_SUGGESTIONS[formData.expenseCategory] || [];
@@ -193,7 +193,7 @@ export default function NewExpensePage() {
                       }}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
                     >
-                      <option value="">— Same as category —</option>
+                      <option value="">- Same as category -</option>
                       {suggestions.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}
@@ -258,10 +258,10 @@ export default function NewExpensePage() {
                 onChange={(e) => setFormData({ ...formData, accountId: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
               >
-                <option value="">— Auto (no account) —</option>
+                <option value="">- Auto (no account) -</option>
                 {accounts.map((account) => (
                   <option key={account.id} value={account.id}>
-                    {account.accountCode} — {account.accountName}
+                    {account.accountCode} - {account.accountName}
                   </option>
                 ))}
               </select>
@@ -309,7 +309,7 @@ export default function NewExpensePage() {
                 onChange={(e) => setFormData({ ...formData, propertyId: e.target.value, accountId: '' })}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
               >
-                <option value="">— Select project —</option>
+                <option value="">- Select project -</option>
                 {properties.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}

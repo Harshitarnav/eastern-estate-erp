@@ -40,6 +40,7 @@ export declare class Property {
     amenities: any;
     isFeatured: boolean;
     isActive: boolean;
+    autoSendMilestoneDemandDrafts: boolean | null;
     inventoryChecklist: Record<string, boolean> | null;
     dataCompletionPct: number;
     dataCompletenessStatus: DataCompletenessStatus;

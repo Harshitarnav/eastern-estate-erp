@@ -42,6 +42,13 @@ export interface Customer {
   isActive: boolean;
   isVIP: boolean;
   isBlacklisted: boolean;
+  /**
+   * Tri-state per-customer override for milestone-DD auto-send.
+   *   null  → inherit from property / company default
+   *   true  → always auto-send (skip review) for this customer
+   *   false → always require human review for this customer
+   */
+  autoSendMilestoneDemandDrafts?: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,8 +103,11 @@ class CustomersService {
     return response;
   }
 
-  async getStatistics(): Promise<any> {
-    const response = await api.get<any>(`${this.baseUrl}/statistics`);
+  async getStatistics(params?: { propertyId?: string }): Promise<any> {
+    const qs = new URLSearchParams();
+    if (params?.propertyId) qs.append('propertyId', params.propertyId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const response = await api.get<any>(`${this.baseUrl}/statistics${suffix}`);
     return response;
   }
 

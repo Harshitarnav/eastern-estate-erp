@@ -12,7 +12,7 @@
  * Run from the backend/ directory:
  *   npx ts-node --transpile-only scripts/migrate-uploads-to-minio.ts
  *
- * Safe to re-run — files already in MinIO are skipped, rows already pointing
+ * Safe to re-run - files already in MinIO are skipped, rows already pointing
  * to /files/ are also skipped.
  */
 
@@ -138,7 +138,7 @@ async function migrateTable(spec: TableSpec): Promise<{ migrated: number; skippe
     `SELECT 1 FROM information_schema.tables WHERE table_name = $1`, [spec.table],
   );
   if (exists.rowCount === 0) {
-    console.log(`  ⏭️  Table '${spec.table}' not found — skipping.\n`);
+    console.log(`  ⏭️  Table '${spec.table}' not found - skipping.\n`);
     return { migrated: 0, skipped: 0, failed: 0 };
   }
 
@@ -170,7 +170,7 @@ async function migrateTable(spec: TableSpec): Promise<{ migrated: number; skippe
       skipped++; continue;
     }
 
-    // Already in MinIO — just fix the DB URL
+    // Already in MinIO - just fix the DB URL
     if (await fileExistsInMinio(key)) {
       await db.query(
         `UPDATE ${spec.table} SET ${spec.urlCol} = $1, updated_at = NOW() WHERE ${spec.idCol} = $2`,

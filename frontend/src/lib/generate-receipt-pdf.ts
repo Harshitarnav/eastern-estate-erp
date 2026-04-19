@@ -51,7 +51,7 @@ const fmt = (n: number) =>
   '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const fmtDate = (s: string | undefined) => {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch { return s; }
@@ -89,7 +89,7 @@ export function generateReceiptPdf(data: ReceiptData): void {
     img.src = '/logo-white.png';
     doc.addImage(img, 'PNG', ML, 4, 30, 20, '', 'FAST');
   } catch {
-    // Logo unavailable — skip silently
+    // Logo unavailable - skip silently
   }
 
   doc.setFont('helvetica', 'bold');
@@ -127,7 +127,7 @@ export function generateReceiptPdf(data: ReceiptData): void {
     doc.text(label + ':', xBase, yPos);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor('#111111');
-    doc.text(value || '—', xBase + 28, yPos);
+    doc.text(value || '-', xBase + 28, yPos);
   };
 
   metaRow('Receipt No',   data.receiptNumber,           col1, y);
@@ -157,9 +157,9 @@ export function generateReceiptPdf(data: ReceiptData): void {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#111111');
-  doc.text(data.customerName || '—', col1, y);
+  doc.text(data.customerName || '-', col1, y);
   const unitLabel = [data.propertyName, data.towerName, data.flatNumber].filter(Boolean).join(' › ');
-  doc.text(unitLabel || '—', col2, y);
+  doc.text(unitLabel || '-', col2, y);
   y += 4;
 
   doc.setFont('helvetica', 'normal');
@@ -325,7 +325,7 @@ export function generateReceiptPdf(data: ReceiptData): void {
   doc.text('This is a computer-generated receipt and does not require a physical signature.', ML, footerY + 5);
   doc.text('Please retain this receipt for your records.', ML, footerY + 10);
 
-  // Signatory block — right side
+  // Signatory block - right side
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor('#333333');

@@ -26,15 +26,25 @@ export interface DemandDraft {
 }
 
 class DemandDraftsService {
-  async getDemandDrafts(): Promise<DemandDraft[]> {
-    return await apiService.get<DemandDraft[]>('/demand-drafts');
+  async getDemandDrafts(params?: { propertyId?: string; status?: string }): Promise<DemandDraft[]> {
+    const qs = new URLSearchParams();
+    if (params?.propertyId) qs.append('propertyId', params.propertyId);
+    if (params?.status) qs.append('status', params.status);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return await apiService.get<DemandDraft[]>(`/demand-drafts${suffix}`);
   }
 
   async getDemandDraft(id: string): Promise<DemandDraft> {
     return await apiService.get<DemandDraft>(`/demand-drafts/${id}`);
   }
 
-  async list(params: { flatId?: string; customerId?: string; bookingId?: string; milestoneId?: string }) {
+  async list(params: {
+    flatId?: string;
+    customerId?: string;
+    bookingId?: string;
+    milestoneId?: string;
+    propertyId?: string;
+  }) {
     const query = new URLSearchParams();
     Object.entries(params || {}).forEach(([k, v]) => {
       if (v) query.append(k, v);

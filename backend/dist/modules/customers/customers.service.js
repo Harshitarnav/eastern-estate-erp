@@ -18,11 +18,56 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const customer_entity_1 = require("./entities/customer.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
 const dto_1 = require("./dto");
 let CustomersService = CustomersService_1 = class CustomersService {
-    constructor(customersRepository) {
+    constructor(customersRepository, bookingsRepository) {
         this.customersRepository = customersRepository;
+        this.bookingsRepository = bookingsRepository;
         this.logger = new common_1.Logger(CustomersService_1.name);
+    }
+    async loadBookingAggregates(customerIds) {
+        const map = new Map();
+        if (customerIds.length === 0)
+            return map;
+        const rows = await this.bookingsRepository
+            .createQueryBuilder('b')
+            .select('b.customerId', 'customerId')
+            .addSelect('COUNT(*)', 'totalBookings')
+            .addSelect('COALESCE(SUM(b.totalAmount), 0)', 'totalAgreement')
+            .addSelect('COALESCE(SUM(b.paidAmount), 0)', 'totalPaid')
+            .addSelect('MAX(b.bookingDate)', 'lastBookingDate')
+            .where('b.customerId IN (:...ids)', { ids: customerIds })
+            .andWhere('b.isActive = true')
+            .andWhere("b.status <> 'CANCELLED'")
+            .groupBy('b.customerId')
+            .getRawMany();
+        for (const r of rows) {
+            map.set(r.customerId, {
+                totalBookings: Number(r.totalBookings) || 0,
+                totalAgreement: Number(r.totalAgreement) || 0,
+                totalPaid: Number(r.totalPaid) || 0,
+                lastBookingDate: r.lastBookingDate ? new Date(r.lastBookingDate) : null,
+            });
+        }
+        return map;
+    }
+    applyBookingAggregates(dtos, agg) {
+        for (const dto of dtos) {
+            const row = agg.get(dto.id);
+            if (!row) {
+                dto.totalBookings = 0;
+                dto.totalPurchases = 0;
+                dto.totalSpent = 0;
+                continue;
+            }
+            dto.totalBookings = row.totalBookings;
+            dto.totalPurchases = row.totalAgreement;
+            dto.totalSpent = row.totalPaid;
+            if (!dto.lastPurchaseDate && row.lastBookingDate) {
+                dto.lastPurchaseDate = row.lastBookingDate;
+            }
+        }
     }
     async generateCustomerCode() {
         const date = new Date();
@@ -143,12 +188,31 @@ let CustomersService = CustomersService_1 = class CustomersService {
                 qb.andWhere('customer.isActive = :isActive', { isActive });
             }
             if (query.propertyId) {
-                qb.andWhere('EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))', { pid: query.propertyId });
+                if (accessiblePropertyIds &&
+                    accessiblePropertyIds.length > 0 &&
+                    !accessiblePropertyIds.includes(query.propertyId)) {
+                    qb.andWhere('1 = 0');
+                }
+                else {
+                    qb.andWhere(`(
+              (customer.metadata ->> 'propertyId') = :pidText
+              OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))
+            )`, { pid: query.propertyId, pidText: query.propertyId });
+                }
             }
             else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
-                qb.andWhere('EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))', { pids: accessiblePropertyIds });
+                qb.andWhere(`(
+            (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
+            OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
+          )`, { pids: accessiblePropertyIds, pidsText: accessiblePropertyIds });
             }
             qb.orderBy(`customer.${safeSortBy}`, sortOrder);
+        };
+        const materializeDtos = async (customers) => {
+            const dtos = dto_1.CustomerResponseDto.fromEntities(customers);
+            const agg = await this.loadBookingAggregates(dtos.map((d) => d.id));
+            this.applyBookingAggregates(dtos, agg);
+            return dtos;
         };
         try {
             const qb = this.customersRepository.createQueryBuilder('customer');
@@ -159,7 +223,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
                 .take(limit)
                 .getMany();
             return {
-                data: dto_1.CustomerResponseDto.fromEntities(customers),
+                data: await materializeDtos(customers),
                 meta: {
                     total,
                     page,
@@ -178,7 +242,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
                 .take(limit)
                 .getMany();
             return {
-                data: dto_1.CustomerResponseDto.fromEntities(customers),
+                data: await materializeDtos(customers),
                 meta: {
                     total,
                     page,
@@ -189,18 +253,38 @@ let CustomersService = CustomersService_1 = class CustomersService {
             };
         }
     }
-    async findOne(id) {
-        const customer = await this.customersRepository.findOne({ where: { id } });
-        if (!customer) {
-            throw new common_1.NotFoundException(`Customer with ID ${id} not found`);
+    async assertCustomerAccessible(customerId, accessiblePropertyIds) {
+        if (!accessiblePropertyIds || accessiblePropertyIds.length === 0)
+            return;
+        const accessible = await this.customersRepository
+            .createQueryBuilder('customer')
+            .where('customer.id = :id', { id: customerId })
+            .andWhere(`(
+          (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
+          OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
+        )`, { pids: accessiblePropertyIds, pidsText: accessiblePropertyIds })
+            .getCount();
+        if (accessible === 0) {
+            throw new common_1.NotFoundException(`Customer with ID ${customerId} not found`);
         }
-        return dto_1.CustomerResponseDto.fromEntity(customer);
     }
-    async update(id, updateCustomerDto) {
+    async findOne(id, accessiblePropertyIds) {
         const customer = await this.customersRepository.findOne({ where: { id } });
         if (!customer) {
             throw new common_1.NotFoundException(`Customer with ID ${id} not found`);
         }
+        await this.assertCustomerAccessible(id, accessiblePropertyIds);
+        const dto = dto_1.CustomerResponseDto.fromEntity(customer);
+        const agg = await this.loadBookingAggregates([id]);
+        this.applyBookingAggregates([dto], agg);
+        return dto;
+    }
+    async update(id, updateCustomerDto, accessiblePropertyIds) {
+        const customer = await this.customersRepository.findOne({ where: { id } });
+        if (!customer) {
+            throw new common_1.NotFoundException(`Customer with ID ${id} not found`);
+        }
+        await this.assertCustomerAccessible(id, accessiblePropertyIds);
         if (updateCustomerDto.email || updateCustomerDto.phone) {
             const existing = await this.customersRepository.findOne({
                 where: [
@@ -271,26 +355,73 @@ let CustomersService = CustomersService_1 = class CustomersService {
             customer.metadata = { ...(customer.metadata || {}), ...metaPatch };
         }
         assignIfPresent(updateCustomerDto.notes, (v) => (customer.notes = v));
+        if (updateCustomerDto.autoSendMilestoneDemandDrafts !== undefined) {
+            customer.autoSendMilestoneDemandDrafts =
+                updateCustomerDto.autoSendMilestoneDemandDrafts;
+        }
         const updatedCustomer = await this.customersRepository.save(customer);
         return dto_1.CustomerResponseDto.fromEntity(updatedCustomer);
     }
-    async remove(id) {
+    async remove(id, accessiblePropertyIds) {
         const customer = await this.customersRepository.findOne({ where: { id } });
         if (!customer) {
             throw new common_1.NotFoundException(`Customer with ID ${id} not found`);
         }
+        await this.assertCustomerAccessible(id, accessiblePropertyIds);
         customer.isActive = false;
         await this.customersRepository.save(customer);
     }
-    async getStatistics() {
-        const customers = await this.customersRepository.find({ where: { isActive: true } });
+    async getStatistics(propertyId, accessiblePropertyIds) {
+        const qb = this.customersRepository
+            .createQueryBuilder('customer')
+            .where('customer.isActive = true');
+        if (propertyId) {
+            if (accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0 &&
+                !accessiblePropertyIds.includes(propertyId)) {
+                qb.andWhere('1 = 0');
+            }
+            else {
+                qb.andWhere(`(
+            (customer.metadata ->> 'propertyId') = :pidText
+            OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = CAST(:pid AS uuid))
+          )`, { pid: propertyId, pidText: propertyId });
+            }
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            qb.andWhere(`(
+          (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
+          OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
+        )`, { pids: accessiblePropertyIds, pidsText: accessiblePropertyIds });
+        }
+        const customers = await qb.getMany();
         const total = customers.length;
         const individual = customers.filter((c) => c.type === 'INDIVIDUAL').length;
         const corporate = customers.filter((c) => c.type === 'CORPORATE').length;
         const nri = customers.filter((c) => c.type === 'NRI').length;
         const vip = customers.filter((c) => c.isVIP).length;
         const kycVerified = customers.filter((c) => c.kycStatus === 'VERIFIED').length;
-        const totalRevenue = customers.reduce((sum, c) => sum + Number(c.totalSpent), 0);
+        const revQb = this.bookingsRepository
+            .createQueryBuilder('b')
+            .select('COALESCE(SUM(b.paidAmount), 0)', 'totalRevenue')
+            .where('b.isActive = true')
+            .andWhere("b.status <> 'CANCELLED'");
+        if (propertyId) {
+            if (accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0 &&
+                !accessiblePropertyIds.includes(propertyId)) {
+                revQb.andWhere('1 = 0');
+            }
+            else {
+                revQb.andWhere('b.propertyId = :propertyId', { propertyId });
+            }
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            revQb.andWhere('b.propertyId IN (:...accessiblePropertyIds)', {
+                accessiblePropertyIds,
+            });
+        }
+        const { totalRevenue } = (await revQb.getRawOne()) ?? { totalRevenue: '0' };
         return {
             total,
             individual,
@@ -298,7 +429,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
             nri,
             vip,
             kycVerified,
-            totalRevenue,
+            totalRevenue: Number(totalRevenue) || 0,
         };
     }
 };
@@ -306,6 +437,8 @@ exports.CustomersService = CustomersService;
 exports.CustomersService = CustomersService = CustomersService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], CustomersService);
 //# sourceMappingURL=customers.service.js.map

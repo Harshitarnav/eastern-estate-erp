@@ -44,6 +44,7 @@ export default function CustomersPage() {
     limit: 12,
     totalPages: 0,
   });
+  const [serverStats, setServerStats] = useState<any>(null);
 
   const fetchCustomers = async () => {
     try {
@@ -63,8 +64,22 @@ export default function CustomersPage() {
     }
   };
 
+  const fetchServerStats = async () => {
+    try {
+      const data = await customersService.getStatistics({
+        propertyId:
+          filters.propertyId ||
+          (selectedProperties.length > 0 ? selectedProperties[0] : undefined),
+      });
+      setServerStats(data);
+    } catch (err) {
+      console.error('Error fetching customer stats:', err);
+    }
+  };
+
   useEffect(() => {
     fetchCustomers();
+    fetchServerStats();
   }, [filters, selectedProperties]);
 
   useEffect(() => {
@@ -88,14 +103,30 @@ export default function CustomersPage() {
   }, [properties.length, setProperties]);
 
   const stats = useMemo(() => {
+    // Prefer server-side aggregates scoped to the top-bar property.
+    // Client-side math on the current page was misleading once pagination
+    // kicked in (e.g. VIP count only reflected visible rows).
+    if (serverStats) {
+      const total = Number(serverStats.total) || 0;
+      const verified = Number(serverStats.kycVerified) || 0;
+      const vip = Number(serverStats.vip) || 0;
+      const totalSpent = Number(serverStats.totalRevenue) || 0;
+      return {
+        total,
+        verified,
+        vip,
+        totalSpent,
+        avgValue: total > 0 ? totalSpent / total : 0,
+        verificationRate: total > 0 ? (verified / total) * 100 : 0,
+      };
+    }
     const total = meta.total || (customers || []).length;
-    const verified = ((customers || [])).filter((customer) => customer.kycStatus === 'VERIFIED').length;
-    const vip = ((customers || [])).filter((customer) => customer.isVIP).length;
-    const totalSpent = ((customers || [])).reduce((sum, customer) => sum + Number(customer.totalSpent || 0), 0);
+    const verified = (customers || []).filter((c) => c.kycStatus === 'VERIFIED').length;
+    const vip = (customers || []).filter((c) => c.isVIP).length;
+    const totalSpent = (customers || []).reduce((s, c) => s + Number(c.totalSpent || 0), 0);
     const avgValue =
-      ((customers || [])).reduce((sum, customer) => sum + Number(customer.totalSpent || 0), 0) /
+      (customers || []).reduce((s, c) => s + Number(c.totalSpent || 0), 0) /
       ((customers || []).length || 1);
-
     return {
       total,
       verified,
@@ -104,7 +135,7 @@ export default function CustomersPage() {
       avgValue,
       verificationRate: total > 0 ? (verified / total) * 100 : 0,
     };
-  }, [customers, meta.total]);
+  }, [serverStats, customers, meta.total]);
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to deactivate customer "${name}"?\n\nThis will mark the customer as inactive but preserve all their booking history and data.`)) {
@@ -135,10 +166,12 @@ export default function CustomersPage() {
     }
   };
 
-  const formatAmount = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
-    return `₹${(amount / 1000).toFixed(0)}K`;
+  const formatAmount = (amount: number | null | undefined) => {
+    const safe = Number(amount);
+    const v = Number.isFinite(safe) ? safe : 0;
+    if (v >= 10000000) return `₹${(v / 10000000).toFixed(2)}Cr`;
+    if (v >= 100000) return `₹${(v / 100000).toFixed(2)}L`;
+    return `₹${(v / 1000).toFixed(0)}K`;
   };
 
   return (
@@ -155,7 +188,7 @@ export default function CustomersPage() {
             <span style={{ color: brandPalette.accent }}>greatest assets</span>
           </>
         }
-        description="Manage verified customers, track KYC status, monitor lifetime value, and identify your most valuable relationships — all in one place."
+        description="Manage verified customers, track KYC status, monitor lifetime value, and identify your most valuable relationships - all in one place."
         actions={
           <>
             <BrandPrimaryButton 

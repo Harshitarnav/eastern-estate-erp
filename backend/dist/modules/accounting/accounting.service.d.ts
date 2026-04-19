@@ -158,9 +158,9 @@ export declare class AccountingService {
     getUnreconciledTransactions(bankAccountId: string): Promise<BankStatement[]>;
     reconcileTransaction(statementId: string, journalEntryId: string): Promise<BankStatement>;
     private getDateOfWeek;
-    getARAgingReport(asOf?: Date): Promise<any>;
+    getARAgingReport(asOf?: Date, propertyId?: string): Promise<any>;
     getAPAgingReport(asOf?: Date): Promise<any>;
-    getCashFlowStatement(startDate: Date, endDate: Date): Promise<any>;
+    getCashFlowStatement(startDate: Date, endDate: Date, propertyId?: string): Promise<any>;
     createBankAccount(data: any): Promise<BankAccount[]>;
     getAllBankAccounts(): Promise<BankAccount[]>;
     getBankAccountById(id: string): Promise<BankAccount>;

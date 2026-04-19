@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CheckCircle, Edit, Loader2 } from 'lucide-react';
 import BookingForm from '@/components/forms/BookingForm';
+import BookingPaymentPlanStep, {
+  type BookingPaymentPlanStepValue,
+} from '@/components/forms/BookingPaymentPlanStep';
 import { bookingsService } from '@/services/bookings.service';
 import { customersService } from '@/services/customers.service';
 import { flatsService } from '@/services/flats.service';
@@ -13,8 +16,8 @@ import { usePropertyStore } from '@/store/propertyStore';
 import { showApiError } from '@/utils/error-handler';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
-const fmtDate = (d: string) => (d ? new Date(d).toLocaleDateString('en-IN') : '—');
-const fmtAmt  = (n: any)    => (n ? '₹' + Number(n).toLocaleString('en-IN') : '—');
+const fmtDate = (d: string) => (d ? new Date(d).toLocaleDateString('en-IN') : '-');
+const fmtAmt  = (n: any)    => (n ? '₹' + Number(n).toLocaleString('en-IN') : '-');
 
 const STATUS_LABELS: Record<string, string> = {
   TOKEN_PAID: 'Token Paid',
@@ -42,13 +45,17 @@ export default function NewBookingPage() {
   const [reviewMeta, setReviewMeta]     = useState<ReviewMeta>({ customerName: '', propertyName: '', flatLabel: '', towerName: '' });
   const [resolving, setResolving]       = useState(false);
   const [submitting, setSubmitting]     = useState(false);
+  const [planValue, setPlanValue]       = useState<BookingPaymentPlanStepValue>({
+    mode: 'template',
+    milestones: [],
+  });
 
   const handleFormSubmit = async (data: any) => {
     setResolving(true);
 
-    let customerName = data.customerId  || '—';
-    let propertyName = data.propertyId  || '—';
-    let flatLabel    = data.flatId      || '—';
+    let customerName = data.customerId  || '-';
+    let propertyName = data.propertyId  || '-';
+    let flatLabel    = data.flatId      || '-';
     let towerName    = '';
 
     try {
@@ -73,6 +80,32 @@ export default function NewBookingPage() {
   };
 
   const handleConfirm = async () => {
+    // Validate plan step before submit
+    const total = parseFloat(pendingData?.totalAmount) || 0;
+    if (planValue.mode !== 'skip' && planValue.mode !== 'template') {
+      // template-edit or custom → must have milestones and sum to 100
+      if (!planValue.milestones.length) {
+        toast.error('Add at least one payment milestone, or choose "Skip for now".');
+        return;
+      }
+      const totalPct = planValue.milestones.reduce(
+        (s, m) => s + Number(m.paymentPercentage || 0),
+        0,
+      );
+      if (Math.abs(totalPct - 100) > 0.5) {
+        toast.error(`Milestone percentages must add up to 100% (currently ${totalPct.toFixed(1)}%).`);
+        return;
+      }
+      if (planValue.milestones.some((m) => !m.name.trim())) {
+        toast.error('Every milestone needs a name.');
+        return;
+      }
+    }
+    if (planValue.mode === 'template' && !planValue.templateId) {
+      toast.error('Please pick a template, or switch to "Build custom" / "Skip for now".');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const bookingData = {
@@ -125,9 +158,27 @@ export default function NewBookingPage() {
         coApplicantRelation: pendingData.coApplicantRelation || null,
         notes: pendingData.notes || null,
         specialTerms: pendingData.specialTerms || null,
+        paymentPlanPayload:
+          planValue.mode === 'skip'
+            ? undefined
+            : {
+                mode: planValue.mode,
+                templateId: planValue.templateId,
+                milestones:
+                  planValue.mode === 'template'
+                    ? undefined
+                    : planValue.milestones.map((m) => ({
+                        sequence: m.sequence,
+                        name: m.name,
+                        constructionPhase: m.constructionPhase ?? null,
+                        phasePercentage: m.phasePercentage ?? null,
+                        paymentPercentage: Number(m.paymentPercentage) || 0,
+                        description: m.description ?? '',
+                      })),
+              },
       };
 
-      await bookingsService.createBooking(bookingData);
+      await bookingsService.createBooking(bookingData as any);
       toast.success('Booking created successfully!');
       if (pendingData.propertyId) {
         setSelectedProperties([pendingData.propertyId]);
@@ -143,14 +194,14 @@ export default function NewBookingPage() {
   const handleBackToForm = () => setPendingData(null);
   const handleCancel     = () => router.push('/bookings');
 
-  // ── Review row — only renders when value is truthy (or required flag is set) ─
+  // ── Review row - only renders when value is truthy (or required flag is set) ─
   const ReviewRow = ({ label, value, required }: { label: string; value: React.ReactNode; required?: boolean }) => {
     if (!value && !required) return null;
     return (
       <div className="border-b pb-3">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">{label}</p>
         <p className={`font-semibold ${!value ? 'text-red-500 italic' : 'text-gray-800'}`}>
-          {value || 'Not filled — go back and enter this'}
+          {value || 'Not filled - go back and enter this'}
         </p>
       </div>
     );
@@ -186,7 +237,7 @@ export default function NewBookingPage() {
         </div>
       )}
 
-      {/* ── Booking Form — hidden (not unmounted) while reviewing ──────────── */}
+      {/* ── Booking Form - hidden (not unmounted) while reviewing ──────────── */}
       <div className={pendingData || resolving ? 'hidden' : ''}>
         <div className="bg-white rounded-lg shadow-md p-6">
           <BookingForm onSubmit={handleFormSubmit} onCancel={handleCancel} />
@@ -355,6 +406,13 @@ export default function NewBookingPage() {
               {pendingData.specialTerms && <><p className="text-xs text-gray-500 mb-1">Special Terms</p><p className="text-gray-700">{pendingData.specialTerms}</p></>}
             </div>
           )}
+
+          {/* Card: Payment Plan */}
+          <BookingPaymentPlanStep
+            totalAmount={parseFloat(pendingData.totalAmount) || 0}
+            value={planValue}
+            onChange={setPlanValue}
+          />
 
           {/* Action buttons */}
           <div className="bg-white rounded-lg shadow-md p-6">

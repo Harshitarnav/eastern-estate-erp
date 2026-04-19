@@ -33,11 +33,13 @@ const flat_progress_controller_1 = require("./flat-progress.controller");
 const flat_progress_simple_controller_1 = require("./controllers/flat-progress-simple.controller");
 const development_updates_service_1 = require("./development-updates.service");
 const development_updates_controller_1 = require("./development-updates.controller");
+const scoped_development_updates_controller_1 = require("./scoped-development-updates.controller");
 const projects_alias_controller_1 = require("./projects-alias.controller");
 const milestones_controller_1 = require("./controllers/milestones.controller");
 const construction_schema_sync_service_1 = require("./construction.schema-sync.service");
 const milestone_detection_service_1 = require("./services/milestone-detection.service");
 const auto_demand_draft_service_1 = require("./services/auto-demand-draft.service");
+const auto_send_resolver_service_1 = require("./services/auto-send-resolver.service");
 const construction_workflow_service_1 = require("./services/construction-workflow.service");
 const ra_bills_service_1 = require("./ra-bills.service");
 const ra_bills_controller_1 = require("./ra-bills.controller");
@@ -101,6 +103,7 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             flat_progress_controller_1.FlatProgressController,
             flat_progress_simple_controller_1.FlatProgressSimpleController,
             development_updates_controller_1.DevelopmentUpdatesController,
+            scoped_development_updates_controller_1.ScopedDevelopmentUpdatesController,
             milestones_controller_1.MilestonesController,
             ra_bills_controller_1.RABillsController,
             qc_controller_1.QCController,
@@ -117,6 +120,7 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             development_updates_service_1.DevelopmentUpdatesService,
             milestone_detection_service_1.MilestoneDetectionService,
             auto_demand_draft_service_1.AutoDemandDraftService,
+            auto_send_resolver_service_1.AutoSendResolverService,
             construction_workflow_service_1.ConstructionWorkflowService,
             ra_bills_service_1.RABillsService,
             qc_service_1.QCService,
@@ -132,6 +136,7 @@ exports.ConstructionModule = ConstructionModule = __decorate([
             development_updates_service_1.DevelopmentUpdatesService,
             milestone_detection_service_1.MilestoneDetectionService,
             auto_demand_draft_service_1.AutoDemandDraftService,
+            auto_send_resolver_service_1.AutoSendResolverService,
             construction_workflow_service_1.ConstructionWorkflowService,
             ra_bills_service_1.RABillsService,
             qc_service_1.QCService,

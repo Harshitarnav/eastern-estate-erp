@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { api } from '@/services/api';
 import { brandPalette } from '@/utils/brand';
 import { ChevronLeft, Loader2, Save } from 'lucide-react';
+import { HinglishLoader } from '@/components/HinglishLoader';
 
 const STATUS_OPTIONS = [
   { value: 'PLANNING',    label: 'Planning' },
@@ -97,7 +98,7 @@ export default function EditConstructionProjectPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: brandPalette.primary }} />
+        <HinglishLoader context="construction" label="Project load ho raha hai" />
       </div>
     );
   }
@@ -132,7 +133,7 @@ export default function EditConstructionProjectPage() {
               value={form.projectName}
               onChange={handleChange}
               required
-              placeholder="e.g. Tower A — Phase 1"
+              placeholder="e.g. Tower A - Phase 1"
               className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A8211B] focus:border-transparent text-sm"
             />
           </div>
@@ -243,7 +244,7 @@ export default function EditConstructionProjectPage() {
               <option value="">Unassigned</option>
               {employees.map(e => (
                 <option key={e.id} value={e.id}>
-                  {e.fullName}{e.designation ? ` — ${e.designation}` : ''}
+                  {e.fullName}{e.designation ? ` - ${e.designation}` : ''}
                 </option>
               ))}
             </select>

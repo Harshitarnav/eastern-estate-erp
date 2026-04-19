@@ -12,7 +12,27 @@ export declare class AccountsController {
         created: number;
         skipped: number;
     }>;
-    findAll(req: Request, accountType?: AccountType, isActive?: string, propertyId?: string): Promise<import("./entities/account.entity").Account[]>;
+    bulkImport(body: {
+        propertyId?: string | null;
+        rows: Array<{
+            accountCode: string;
+            accountName: string;
+            accountType: string;
+            accountCategory: string;
+            description?: string;
+            openingBalance?: number;
+        }>;
+    }, req: Request): Promise<{
+        created: number;
+        skipped: number;
+        errors: Array<{
+            row: number;
+            code: string;
+            message: string;
+        }>;
+        createdIds: string[];
+    }>;
+    findAll(req: Request, accountType?: AccountType, isActive?: string, propertyId?: string, projectOnlyCoa?: string): Promise<import("./entities/account.entity").Account[]>;
     getHierarchy(req: Request): Promise<import("./entities/account.entity").Account[]>;
     getBalanceSheet(propertyId: string | undefined, req: Request): Promise<{
         assets: import("./entities/account.entity").Account[];
@@ -58,7 +78,7 @@ export declare class AccountsController {
         netProfit: number;
     }>;
     findByCode(code: string, req: Request): Promise<import("./entities/account.entity").Account>;
-    findOne(id: string, req: Request): Promise<import("./entities/account.entity").Account>;
+    findOne(id: string, propertyId: string | undefined, req: Request): Promise<import("./entities/account.entity").Account>;
     update(id: string, updateAccountDto: UpdateAccountDto, req: Request): Promise<import("./entities/account.entity").Account>;
     remove(id: string, req: Request): Promise<void>;
 }

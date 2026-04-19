@@ -194,6 +194,18 @@ export class Property {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  // Per-project override for milestone-DD auto-send.
+  //   null     → inherit from company_settings.auto_send_milestone_demand_drafts
+  //   true     → auto-send for every DD generated on this project
+  //   false    → force review for every DD generated on this project
+  // A per-customer override, if set, still wins over this value.
+  @Column({
+    name: 'auto_send_milestone_demand_drafts',
+    type: 'boolean',
+    nullable: true,
+  })
+  autoSendMilestoneDemandDrafts: boolean | null;
+
   @Column({
     name: 'inventory_checklist',
     type: 'jsonb',
@@ -221,7 +233,7 @@ export class Property {
   dataCompletenessStatus: DataCompletenessStatus;
 
   // ── Project-level legal & bank details (override company-wide defaults) ───────
-  /** Project-specific GSTIN — e.g. different legal entity per project */
+  /** Project-specific GSTIN - e.g. different legal entity per project */
   @Column({ nullable: true, length: 50 })
   gstin: string;
 

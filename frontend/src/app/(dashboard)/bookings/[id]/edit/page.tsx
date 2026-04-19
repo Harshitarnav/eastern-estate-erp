@@ -34,7 +34,7 @@ export default function BookingEditPage() {
         status: booking.status || 'TOKEN_PAID',
         customerId: booking.customerId || '',
         propertyId: booking.propertyId || '',
-        towerId: booking.towerId || undefined,   // optional UUID — must be undefined (not '') when absent
+        towerId: booking.towerId || undefined,   // optional UUID - must be undefined (not '') when absent
         flatId: booking.flatId || '',
         totalAmount: booking.totalAmount || 0,
         tokenAmount: booking.tokenAmount || 0,

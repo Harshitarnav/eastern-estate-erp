@@ -2,7 +2,7 @@ import { ConstructionProgressLogsService } from './construction-progress-logs.se
 export declare class ConstructionProgressLogsController {
     private readonly constructionProgressLogsService;
     constructor(constructionProgressLogsService: ConstructionProgressLogsService);
-    create(createDto: any): Promise<import("./entities/construction-progress-log.entity").ConstructionProgressLog>;
+    create(createDto: any): Promise<import("./construction-progress-logs.service").CreateProgressLogResult>;
     findAll(constructionProjectId?: string, propertyId?: string): Promise<import("./entities/construction-progress-log.entity").ConstructionProgressLog[]>;
     findByProject(projectId: string): Promise<import("./entities/construction-progress-log.entity").ConstructionProgressLog[]>;
     getLatestByProject(projectId: string): Promise<import("./entities/construction-progress-log.entity").ConstructionProgressLog>;

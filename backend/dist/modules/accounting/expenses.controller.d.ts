@@ -6,8 +6,20 @@ export declare class ExpensesController {
     private readonly expensesService;
     constructor(expensesService: ExpensesService);
     create(createExpenseDto: CreateExpenseDto, req: any): Promise<import("./entities/expense.entity").Expense>;
+    bulkImport(body: {
+        propertyId?: string | null;
+        rows: Array<Record<string, unknown>>;
+    }, req: ExpressRequest): Promise<{
+        created: number;
+        skipped: number;
+        errors: Array<{
+            row: number;
+            message: string;
+        }>;
+        createdIds: string[];
+    }>;
     findAll(req: ExpressRequest, category?: string, status?: ExpenseStatus, startDate?: string, endDate?: string, propertyId?: string): Promise<import("./entities/expense.entity").Expense[]>;
-    getSummary(req: ExpressRequest, startDate?: string, endDate?: string): Promise<{
+    getSummary(req: ExpressRequest, startDate?: string, endDate?: string, propertyId?: string): Promise<{
         totalExpenses: number;
         byCategory: {
             category: string;

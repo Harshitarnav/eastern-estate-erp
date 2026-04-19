@@ -8,7 +8,7 @@ export declare class DemandDraftsService {
     private readonly notificationsService;
     private readonly logger;
     constructor(demandDraftRepository: Repository<DemandDraft>, userRepository: Repository<User>, notificationsService: NotificationsService);
-    findAll(query: any): Promise<DemandDraft[]>;
+    findAll(query: any, accessiblePropertyIds?: string[] | null): Promise<DemandDraft[]>;
     findOne(id: string): Promise<DemandDraft>;
     create(createDto: any, userId: string): Promise<DemandDraft>;
     private notifyCustomerOnDraftCreated;

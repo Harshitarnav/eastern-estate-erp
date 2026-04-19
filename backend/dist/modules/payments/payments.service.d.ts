@@ -6,15 +6,19 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ModuleRef } from '@nestjs/core';
 export declare class PaymentsService {
     private paymentRepository;
     private bookingRepository;
     private userRepository;
     private readonly accountingIntegrationService;
     private readonly notificationsService;
+    private readonly moduleRef;
     private readonly logger;
-    constructor(paymentRepository: Repository<Payment>, bookingRepository: Repository<Booking>, userRepository: Repository<User>, accountingIntegrationService: AccountingIntegrationService, notificationsService: NotificationsService);
+    constructor(paymentRepository: Repository<Payment>, bookingRepository: Repository<Booking>, userRepository: Repository<User>, accountingIntegrationService: AccountingIntegrationService, notificationsService: NotificationsService, moduleRef: ModuleRef);
+    private getCompletionService;
     create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment>;
+    private buildFilteredQuery;
     findAll(filters?: {
         bookingId?: string;
         customerId?: string;
@@ -26,12 +30,20 @@ export declare class PaymentsService {
         endDate?: Date;
         minAmount?: number;
         maxAmount?: number;
+        propertyId?: string;
         accessiblePropertyIds?: string[] | null;
     }): Promise<Payment[]>;
+    findAllPaginated(filters: Parameters<PaymentsService['findAll']>[0], page: number, limit: number): Promise<{
+        data: Payment[];
+        total: number;
+    }>;
+    private applyPaymentFilters;
     findOne(id: string): Promise<Payment>;
     findByPaymentCode(paymentCode: string): Promise<Payment>;
     update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<Payment>;
+    markRefunded(id: string, userId?: string | null): Promise<Payment>;
     verify(id: string, userId: string): Promise<Payment>;
+    runPostCompletionHooks(paymentId: string, userId?: string | null): Promise<void>;
     private notifyCustomerOnPaymentVerified;
     cancel(id: string): Promise<Payment>;
     remove(id: string): Promise<void>;
@@ -39,6 +51,7 @@ export declare class PaymentsService {
         startDate?: Date;
         endDate?: Date;
         paymentType?: string;
+        propertyId?: string;
         accessiblePropertyIds?: string[] | null;
     }): Promise<{
         totalPayments: number;

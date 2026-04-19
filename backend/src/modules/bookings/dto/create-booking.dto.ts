@@ -9,9 +9,72 @@ import {
   IsDateString,
   IsArray,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { BookingStatus, PaymentStatus } from '../entities/booking.entity';
+
+/**
+ * Milestone row for a custom / edited payment plan payload.
+ * Either `paymentPercentage` (split of totalAmount) or a fixed `amount` must be given.
+ */
+export class BookingPlanMilestoneDto {
+  @IsNumber()
+  sequence: number;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  constructionPhase?: 'FOUNDATION' | 'STRUCTURE' | 'MEP' | 'FINISHING' | 'HANDOVER' | null;
+
+  @IsOptional()
+  @IsNumber()
+  phasePercentage?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  paymentPercentage?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  amount?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+/**
+ * Optional inline payment plan for a booking.
+ *
+ * - `mode: 'template'`    → just use the template as-is (must set `templateId`)
+ * - `mode: 'template-edit'` → seed from template but override milestones (`templateId` + `milestones`)
+ * - `mode: 'custom'`      → no template, just `milestones`
+ * - omit the whole block  → "create plan later", booking is flagged on the list
+ */
+export class BookingPlanDto {
+  @IsEnum(['template', 'template-edit', 'custom'])
+  mode: 'template' | 'template-edit' | 'custom';
+
+  @IsOptional()
+  @IsUUID()
+  templateId?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT' | 'CUSTOM';
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BookingPlanMilestoneDto)
+  milestones?: BookingPlanMilestoneDto[];
+}
 
 export class CreateBookingDto {
   private static nullableDate = ({ value }: { value: any }) =>
@@ -283,4 +346,13 @@ export class CreateBookingDto {
   @IsOptional()
   @IsUUID()
   towerId?: string;
+
+  /**
+   * Optional payment plan to be created together with the booking.
+   * If omitted, the booking is created without a plan (sales can attach one later).
+   */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BookingPlanDto)
+  paymentPlanPayload?: BookingPlanDto;
 }

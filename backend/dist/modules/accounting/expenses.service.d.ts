@@ -23,11 +23,37 @@ export declare class ExpensesService {
     approve(id: string, userId: string, approveDto?: ApproveExpenseDto): Promise<Expense>;
     reject(id: string, userId: string, rejectDto: RejectExpenseDto): Promise<Expense>;
     markAsPaid(id: string, userId?: string): Promise<Expense>;
+    bulkImport(rows: Array<{
+        expenseCategory?: string;
+        amount?: number | string;
+        expenseDate?: string;
+        description?: string;
+        expenseType?: string;
+        paymentMethod?: string;
+        paymentReference?: string;
+        invoiceNumber?: string;
+        invoiceDate?: string;
+        propertyId?: string;
+        vendorId?: string;
+        employeeId?: string;
+        accountId?: string;
+    }>, userId: string, defaults?: {
+        propertyId?: string | null;
+    }): Promise<{
+        created: number;
+        skipped: number;
+        errors: Array<{
+            row: number;
+            message: string;
+        }>;
+        createdIds: string[];
+    }>;
     remove(id: string): Promise<void>;
     getExpensesSummary(filters?: {
         startDate?: Date;
         endDate?: Date;
         accessiblePropertyIds?: string[] | null;
+        propertyId?: string;
     }): Promise<{
         totalExpenses: number;
         byCategory: {

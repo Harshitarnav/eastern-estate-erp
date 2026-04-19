@@ -36,7 +36,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 const fmtDate = (s: string) =>
-  s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  s ? new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -390,7 +390,7 @@ function ProjectAccessContent() {
                               {access.property?.name || 'Unknown'}
                             </td>
                             <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                              {access.property?.propertyCode || '—'}
+                              {access.property?.propertyCode || '-'}
                             </td>
                             <td className="px-4 py-3 text-gray-500 text-xs">{fmtDate(access.assignedAt)}</td>
                             <td className="px-4 py-3">
@@ -412,7 +412,7 @@ function ProjectAccessContent() {
                 {/* Unassigned properties hint */}
                 {!loadingAccess && availableProperties.length > 0 && activeAccess.length > 0 && (
                   <div className="px-5 py-3 border-t bg-gray-50 text-xs text-gray-500" style={{ borderColor: `${brandPalette.neutral}40` }}>
-                    {availableProperties.length} project{availableProperties.length !== 1 ? 's' : ''} not yet assigned —{' '}
+                    {availableProperties.length} project{availableProperties.length !== 1 ? 's' : ''} not yet assigned -{' '}
                     <button onClick={() => setGrantOpen(true)} className="underline font-medium" style={{ color: brandPalette.primary }}>
                       assign now
                     </button>

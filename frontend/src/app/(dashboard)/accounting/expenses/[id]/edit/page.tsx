@@ -202,7 +202,7 @@ export default function EditExpensePage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type <span className="text-gray-400 font-normal">(optional — specific label)</span>
+                Type <span className="text-gray-400 font-normal">(optional - specific label)</span>
               </label>
               {(() => {
                 const suggestions = TYPE_SUGGESTIONS[formData.expenseCategory] || [];
@@ -221,7 +221,7 @@ export default function EditExpensePage() {
                       }}
                       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
                     >
-                      <option value="">— Same as category —</option>
+                      <option value="">- Same as category -</option>
                       {suggestions.map((t) => (
                         <option key={t} value={t}>{t}</option>
                       ))}

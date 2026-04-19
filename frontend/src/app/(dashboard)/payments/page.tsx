@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { paymentsService, Payment, PaymentFilters } from '@/services/payments.service';
 import { useAuthStore } from '@/store/authStore';
+import { usePropertyStore } from '@/store/propertyStore';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { TableSkeleton } from '@/components/Skeletons';
 import { BrandStatCard } from '@/components/layout/BrandStatCard';
@@ -28,6 +29,9 @@ import { showApiError } from '@/utils/error-handler';
 export default function PaymentsPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId =
+    selectedProperties.length > 0 ? selectedProperties[0] : undefined;
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,11 +46,15 @@ export default function PaymentsPage() {
     limit: 12,
     totalPages: 0,
   });
+  const [serverStats, setServerStats] = useState<any>(null);
 
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await paymentsService.getPayments(filters);
+      const response = await paymentsService.getPayments({
+        ...filters,
+        propertyId: selectedPropertyId,
+      });
       setPayments(response.data);
       setMeta(response.meta);
       setError('');
@@ -58,21 +66,53 @@ export default function PaymentsPage() {
     }
   };
 
+  const fetchServerStats = async () => {
+    try {
+      const data = await paymentsService.getStatistics({
+        propertyId: selectedPropertyId,
+      });
+      setServerStats(data);
+    } catch (err) {
+      console.error('Error fetching payment stats:', err);
+    }
+  };
+
   useEffect(() => {
     fetchPayments();
-  }, [filters]);
+    fetchServerStats();
+  }, [filters, selectedPropertyId]);
 
   const stats = useMemo(() => {
+    // Prefer server-side aggregates (scoped by property + accessible set)
+    // over a client-only reduction of the current page. Fall back to
+    // page-level math if the stats call is still in flight.
+    if (serverStats) {
+      const total = Number(serverStats.totalPayments) || 0;
+      const verified = Number(serverStats.completedPayments) || 0;
+      const pending = Number(serverStats.pendingPayments) || 0;
+      const totalAmount = Number(serverStats.totalAmount) || 0;
+      const pendingAmount = Number(serverStats.pendingAmount) || 0;
+      const averageAmount = total > 0 ? totalAmount / total : 0;
+      return {
+        total,
+        verified,
+        pending,
+        totalAmount,
+        outstandingAmount: pendingAmount,
+        averageAmount,
+        verificationRate: total > 0 ? (verified / total) * 100 : 0,
+      };
+    }
     const total = meta.total || (payments || []).length;
-    const verified = ((payments || [])).filter((payment) => payment.status === 'COMPLETED').length;
-    const pending = ((payments || [])).filter((payment) => payment.status === 'PENDING').length;
-    const totalAmount = ((payments || [])).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
-    const outstandingAmount = ((payments || [])).reduce(
-      (sum, payment: any) => sum + Number(payment?.balanceAmount ?? 0),
+    const verified = (payments || []).filter((p) => p.status === 'COMPLETED').length;
+    const pending = (payments || []).filter((p) => p.status === 'PENDING').length;
+    const totalAmount = (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0);
+    const outstandingAmount = (payments || []).reduce(
+      (s, p: any) => s + Number(p?.balanceAmount ?? 0),
       0,
     );
     const averageAmount =
-      ((payments || [])).reduce((sum, payment) => sum + Number(payment.amount || 0), 0) /
+      (payments || []).reduce((s, p) => s + Number(p.amount || 0), 0) /
       ((payments || []).length || 1);
     return {
       total,
@@ -83,7 +123,7 @@ export default function PaymentsPage() {
       averageAmount,
       verificationRate: total > 0 ? (verified / total) * 100 : 0,
     };
-  }, [payments, meta.total]);
+  }, [serverStats, payments, meta.total]);
 
   const handleDelete = async (id: string, paymentNumber: string) => {
     if (!confirm(`Are you sure you want to delete payment "${paymentNumber}"?`)) {
@@ -101,7 +141,7 @@ export default function PaymentsPage() {
   const handleVerify = async (id: string) => {
     try {
       await paymentsService.verifyPayment(id, user?.id || '');
-      toast.success('Payment verified — Journal Entry auto-created');
+      toast.success('Payment verified - Journal Entry auto-created');
       fetchPayments();
     } catch (err: any) {
       showApiError(err, 'Failed to verify payment');
@@ -147,10 +187,12 @@ export default function PaymentsPage() {
     }
   };
 
-  const formatAmount = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
-    return `₹${(amount / 1000).toFixed(0)}K`;
+  const formatAmount = (amount: number | null | undefined) => {
+    const safe = Number(amount);
+    const v = Number.isFinite(safe) ? safe : 0;
+    if (v >= 10000000) return `₹${(v / 10000000).toFixed(2)}Cr`;
+    if (v >= 100000) return `₹${(v / 100000).toFixed(2)}L`;
+    return `₹${(v / 1000).toFixed(0)}K`;
   };
 
   const formatStatus = (status: string) => status.replace(/_/g, ' ');
@@ -370,7 +412,7 @@ export default function PaymentsPage() {
                       <Calendar className="h-4 w-4 text-gray-400" />
                       {payment.paymentDate
                         ? new Date(payment.paymentDate).toLocaleDateString('en-IN')
-                        : '—'}
+                        : '-'}
                     </span>
                     <span className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-400" />

@@ -26,12 +26,34 @@ export class LeadsSchemaSyncService implements OnModuleInit {
         ALTER TABLE leads ADD COLUMN IF NOT EXISTS flat_id UUID;
       `);
 
+      // Convert legacy text columns to UUID so comparisons don't blow up with
+      // "operator does not exist: text = uuid". Safe to re-run: the DO block
+      // checks actual column type before altering.
+      for (const col of ['property_id', 'tower_id', 'flat_id']) {
+        await queryRunner.query(`
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+               WHERE table_name = 'leads'
+                 AND column_name = '${col}'
+                 AND data_type IN ('character varying', 'text')
+            ) THEN
+              UPDATE leads SET ${col} = NULL
+               WHERE ${col} IS NOT NULL
+                 AND ${col} !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';
+              ALTER TABLE leads ALTER COLUMN ${col} TYPE uuid USING ${col}::uuid;
+            END IF;
+          END $$;
+        `);
+      }
+
       await queryRunner.query(`
         ALTER TABLE leads ADD COLUMN IF NOT EXISTS assignment_history JSONB;
       `);
 
       // Convert assigned_to from varchar to uuid so it can JOIN with users.id
-      // Safe to run repeatedly — DO block checks actual column type first
+      // Safe to run repeatedly - DO block checks actual column type first
       await queryRunner.query(`
         DO $$
         BEGIN

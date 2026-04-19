@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,28 +10,60 @@ import {
   Hammer,
   Calculator,
   Menu,
+  Home,
+  CreditCard,
+  Briefcase,
+  Target,
+  BarChart3,
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { hasModuleAccess } from '@/lib/roles';
 
 interface MobileBottomNavProps {
   onMenuOpen: () => void;
 }
 
-const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Home',       icon: LayoutDashboard, href: '/' },
-  { id: 'customers', label: 'Customers',  icon: Users,            href: '/customers' },
-  { id: 'bookings',  label: 'Bookings',   icon: Calendar,         href: '/bookings' },
-  { id: 'construct', label: 'Build',      icon: Hammer,           href: '/construction' },
-  { id: 'accounts',  label: 'Accounts',   icon: Calculator,       href: '/accounting' },
+type NavItem = {
+  id: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  href: string;
+  moduleIds: string[]; // any-of match
+};
+
+// Superset — we pick the first 4 the user can actually access.
+const ALL_NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard',  label: 'Home',      icon: LayoutDashboard, href: '/',                moduleIds: ['dashboard'] },
+  { id: 'customers',  label: 'Customers', icon: Users,           href: '/customers',       moduleIds: ['customers'] },
+  { id: 'bookings',   label: 'Bookings',  icon: Calendar,        href: '/bookings',        moduleIds: ['bookings'] },
+  { id: 'payments',   label: 'Payments',  icon: CreditCard,      href: '/payments',        moduleIds: ['payments', 'payments-list'] },
+  { id: 'construct',  label: 'Build',     icon: Hammer,          href: '/construction',    moduleIds: ['construction', 'construction-overview'] },
+  { id: 'accounts',   label: 'Accounts',  icon: Calculator,      href: '/accounting',      moduleIds: ['accounting', 'accounting-dashboard'] },
+  { id: 'hr',         label: 'HR',        icon: Briefcase,       href: '/hr',              moduleIds: ['hr', 'employees'] },
+  { id: 'leads',      label: 'Leads',     icon: Target,          href: '/leads',           moduleIds: ['leads'] },
+  { id: 'reports',    label: 'Reports',   icon: BarChart3,       href: '/reports',         moduleIds: ['reports'] },
+  { id: 'my-home',    label: 'My Home',   icon: Home,            href: '/portal',          moduleIds: ['my-bookings'] },
 ];
 
 export function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const { user } = useAuthStore();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // Clear pending state when route changes
   useEffect(() => {
     setPendingHref(null);
   }, [pathname]);
+
+  const userRoles = useMemo<string[]>(
+    () => user?.roles?.map((r: any) => (typeof r === 'string' ? r : r.name)) || [],
+    [user],
+  );
+
+  const visibleItems = useMemo(() => {
+    return ALL_NAV_ITEMS.filter((item) =>
+      item.moduleIds.some((m) => hasModuleAccess(userRoles, m)),
+    ).slice(0, 4);
+  }, [userRoles]);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
@@ -41,7 +73,7 @@ export function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
       className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t flex items-stretch"
       style={{ borderColor: '#F3E3C1', paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {NAV_ITEMS.map(({ id, label, icon: Icon, href }) => {
+      {visibleItems.map(({ id, label, icon: Icon, href }) => {
         const active = isActive(href);
         const pending = pendingHref === href && !active;
         return (
@@ -68,7 +100,6 @@ export function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
         );
       })}
 
-      {/* More — opens the full sidebar */}
       <button
         onClick={onMenuOpen}
         className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors"

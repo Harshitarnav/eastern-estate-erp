@@ -1,4 +1,19 @@
 import { BookingStatus, PaymentStatus } from '../entities/booking.entity';
+export declare class BookingPlanMilestoneDto {
+    sequence: number;
+    name: string;
+    constructionPhase?: 'FOUNDATION' | 'STRUCTURE' | 'MEP' | 'FINISHING' | 'HANDOVER' | null;
+    phasePercentage?: number | null;
+    paymentPercentage?: number;
+    amount?: number;
+    description?: string;
+}
+export declare class BookingPlanDto {
+    mode: 'template' | 'template-edit' | 'custom';
+    templateId?: string;
+    type?: 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT' | 'CUSTOM';
+    milestones?: BookingPlanMilestoneDto[];
+}
 export declare class CreateBookingDto {
     private static nullableDate;
     bookingNumber: string;
@@ -62,4 +77,5 @@ export declare class CreateBookingDto {
     isActive?: boolean;
     paymentPlan?: 'CONSTRUCTION_LINKED' | 'TIME_LINKED' | 'DOWN_PAYMENT';
     towerId?: string;
+    paymentPlanPayload?: BookingPlanDto;
 }

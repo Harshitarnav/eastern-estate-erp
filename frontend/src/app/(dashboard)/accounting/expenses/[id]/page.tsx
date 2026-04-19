@@ -153,7 +153,7 @@ export default function ViewExpensePage() {
             <p className="text-lg font-semibold">
               {expense.expenseType && expense.expenseType !== expense.expenseCategory
                 ? expense.expenseType
-                : <span className="text-gray-400 font-normal">—</span>}
+                : <span className="text-gray-400 font-normal">-</span>}
             </p>
           </div>
 
@@ -161,7 +161,7 @@ export default function ViewExpensePage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Payment Method
             </label>
-            <p className="text-lg font-semibold">{expense.paymentMethod || '—'}</p>
+            <p className="text-lg font-semibold">{expense.paymentMethod || '-'}</p>
           </div>
 
           {expense.paymentReference && (

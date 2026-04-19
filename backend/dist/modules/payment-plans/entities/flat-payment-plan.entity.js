@@ -90,6 +90,32 @@ __decorate([
     __metadata("design:type", String)
 ], FlatPaymentPlan.prototype, "status", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'is_legacy_import', type: 'boolean', default: false }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", Boolean)
+], FlatPaymentPlan.prototype, "isLegacyImport", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'imported_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], FlatPaymentPlan.prototype, "importedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'initial_escalation_level', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], FlatPaymentPlan.prototype, "initialEscalationLevel", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'reminders_enabled', type: 'boolean', default: true }),
+    __metadata("design:type", Boolean)
+], FlatPaymentPlan.prototype, "remindersEnabled", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'pause_reminders_until', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], FlatPaymentPlan.prototype, "pauseRemindersUntil", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'import_batch_id', type: 'varchar', length: 64, nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], FlatPaymentPlan.prototype, "importBatchId", void 0);
+__decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)
 ], FlatPaymentPlan.prototype, "createdAt", void 0);

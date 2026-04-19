@@ -102,7 +102,8 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         catch (error) {
         }
         try {
-            const staffRole = await this.usersService.getRoleByName('staff');
+            const primaryRole = (await this.usersService.getRoleByName('sales_team')) ||
+                (await this.usersService.getRoleByName('staff'));
             const user = await this.usersService.create({
                 email: employee.email,
                 username: username,
@@ -110,7 +111,7 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
                 firstName: employee.fullName.split(' ')[0] || username,
                 lastName: employee.fullName.split(' ').slice(1).join(' ') || '',
                 phone: employee.phoneNumber,
-                roleIds: staffRole ? [staffRole.id] : [],
+                roleIds: primaryRole ? [primaryRole.id] : [],
             }, createdBy);
             this.logger.log(`Auto-created user account for employee: ${employee.email}`);
             await this.notificationsService.create({

@@ -481,7 +481,7 @@ export default function SalesDashboard() {
             <div className="rounded-2xl bg-white/12 p-4 shadow-inner backdrop-blur">
               <p className="text-xs uppercase tracking-wide text-white/70">Self Target</p>
               <p className="mt-2 text-xl font-semibold">
-                {currentTarget?.selfTargetBookings ?? '—'} bookings
+                {currentTarget?.selfTargetBookings ?? '-'} bookings
               </p>
               <p className="text-sm text-white/70">
                 ₹{formatIndianNumber(currentTarget?.selfTargetRevenue ?? 0)}
@@ -794,7 +794,7 @@ export default function SalesDashboard() {
                     🔥 {formatIndianNumber(metrics.leads.hot)} hot
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-[rgba(242,201,76,0.2)] px-3 py-1 text-[#7B1E12]">
-                    {metrics.leads.conversionRate.toFixed(1)}% conversion
+                    {(Number(metrics.leads.conversionRate) || 0).toFixed(1)}% conversion
                   </span>
                 </div>
               </CardContent>
@@ -834,7 +834,7 @@ export default function SalesDashboard() {
                       {formatIndianNumber(metrics.siteVisits.pendingThisWeek)} pending
                     </span>
                     <span className="text-gray-500">
-                      ⭐ {metrics.siteVisits.avgRating.toFixed(1)} avg rating
+                      ⭐ {(Number(metrics.siteVisits.avgRating) || 0).toFixed(1)} avg rating
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-gray-500">
@@ -1227,7 +1227,7 @@ export default function SalesDashboard() {
             <CardHeader>
               <CardTitle>Task Management</CardTitle>
               <CardDescription>
-                Completion Rate: {metrics.tasks.completionRate.toFixed(1)}%
+                Completion Rate: {(Number(metrics.tasks.completionRate) || 0).toFixed(1)}%
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1249,7 +1249,7 @@ export default function SalesDashboard() {
                   <p className="text-xs text-gray-600">Done Today</p>
                 </div>
                 <div className="text-center p-3 border rounded">
-                  <p className="text-2xl font-bold">{metrics.tasks.completionRate.toFixed(0)}%</p>
+                  <p className="text-2xl font-bold">{(Number(metrics.tasks.completionRate) || 0).toFixed(0)}%</p>
                   <p className="text-xs text-gray-600">Completion</p>
                 </div>
               </div>

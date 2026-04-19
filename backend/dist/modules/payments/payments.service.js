@@ -23,14 +23,20 @@ const user_entity_1 = require("../users/entities/user.entity");
 const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const notification_entity_1 = require("../notifications/entities/notification.entity");
+const core_1 = require("@nestjs/core");
+const payment_completion_service_1 = require("./services/payment-completion.service");
 let PaymentsService = PaymentsService_1 = class PaymentsService {
-    constructor(paymentRepository, bookingRepository, userRepository, accountingIntegrationService, notificationsService) {
+    constructor(paymentRepository, bookingRepository, userRepository, accountingIntegrationService, notificationsService, moduleRef) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.accountingIntegrationService = accountingIntegrationService;
         this.notificationsService = notificationsService;
+        this.moduleRef = moduleRef;
         this.logger = new common_1.Logger(PaymentsService_1.name);
+    }
+    getCompletionService() {
+        return this.moduleRef.get(payment_completion_service_1.PaymentCompletionService, { strict: false });
     }
     async create(createPaymentDto, userId) {
         if (createPaymentDto.status === payment_entity_1.PaymentStatus.COMPLETED) {
@@ -42,10 +48,27 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         const payment = this.paymentRepository.create(createPaymentDto);
         return this.paymentRepository.save(payment);
     }
-    async findAll(filters) {
-        const query = this.paymentRepository.createQueryBuilder('payment')
+    buildFilteredQuery(filters) {
+        const query = this.paymentRepository
+            .createQueryBuilder('payment')
             .leftJoinAndSelect('payment.booking', 'booking')
             .leftJoinAndSelect('payment.customer', 'customer');
+        this.applyPaymentFilters(query, filters);
+        return query;
+    }
+    async findAll(filters) {
+        const query = this.buildFilteredQuery(filters);
+        query.orderBy('payment.paymentDate', 'DESC');
+        return query.getMany();
+    }
+    async findAllPaginated(filters, page, limit) {
+        const query = this.buildFilteredQuery(filters);
+        query.orderBy('payment.paymentDate', 'DESC');
+        const total = await query.getCount();
+        const data = await query.skip((page - 1) * limit).take(limit).getMany();
+        return { data, total };
+    }
+    applyPaymentFilters(query, filters) {
         if (filters?.bookingId) {
             query.andWhere('payment.bookingId = :bookingId', { bookingId: filters.bookingId });
         }
@@ -81,13 +104,24 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         if (filters?.maxAmount) {
             query.andWhere('payment.amount <= :maxAmount', { maxAmount: filters.maxAmount });
         }
-        if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+        if (filters?.propertyId) {
+            if (filters.accessiblePropertyIds &&
+                filters.accessiblePropertyIds.length > 0 &&
+                !filters.accessiblePropertyIds.includes(filters.propertyId)) {
+                query.andWhere('1 = 0');
+            }
+            else {
+                query.andWhere('booking.propertyId = :propertyId', {
+                    propertyId: filters.propertyId,
+                });
+            }
+        }
+        else if (filters?.accessiblePropertyIds &&
+            filters.accessiblePropertyIds.length > 0) {
             query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
                 accessiblePropertyIds: filters.accessiblePropertyIds,
             });
         }
-        query.orderBy('payment.paymentDate', 'DESC');
-        return query.getMany();
     }
     async findOne(id) {
         const payment = await this.paymentRepository.findOne({
@@ -117,6 +151,19 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         Object.assign(payment, updatePaymentDto);
         return this.paymentRepository.save(payment);
     }
+    async markRefunded(id, userId) {
+        const payment = await this.findOne(id);
+        if (payment.status === payment_entity_1.PaymentStatus.REFUNDED)
+            return payment;
+        if (payment.status !== payment_entity_1.PaymentStatus.COMPLETED) {
+            throw new common_1.BadRequestException(`Only COMPLETED payments can be marked REFUNDED (current: ${payment.status})`);
+        }
+        payment.status = payment_entity_1.PaymentStatus.REFUNDED;
+        payment.notes = [payment.notes, userId ? `Refunded by ${userId}` : 'Refunded']
+            .filter(Boolean)
+            .join(' | ');
+        return this.paymentRepository.save(payment);
+    }
     async verify(id, userId) {
         const payment = await this.findOne(id);
         if (payment.status === payment_entity_1.PaymentStatus.COMPLETED) {
@@ -126,16 +173,35 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         payment.verifiedBy = userId;
         payment.verifiedAt = new Date();
         const saved = await this.paymentRepository.save(payment);
-        await this.accountingIntegrationService.onPaymentCompleted({
-            id: saved.id,
-            paymentCode: saved.paymentCode,
-            amount: Number(saved.amount),
-            paymentDate: saved.paymentDate,
-            paymentMethod: saved.paymentMethod,
-            createdBy: userId,
-        });
-        this.notifyCustomerOnPaymentVerified(saved).catch(e => this.logger.warn(`Failed to send payment notification: ${e.message}`));
+        await this.runPostCompletionHooks(saved.id, userId);
         return saved;
+    }
+    async runPostCompletionHooks(paymentId, userId) {
+        const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
+        if (!payment) {
+            this.logger.warn(`runPostCompletionHooks: payment ${paymentId} not found`);
+            return;
+        }
+        try {
+            await this.getCompletionService().processPaymentCompletion(payment.id);
+        }
+        catch (err) {
+            this.logger.error(`Payment completion workflow failed for payment ${payment.paymentCode}: ${err.message}`);
+        }
+        try {
+            await this.accountingIntegrationService.onPaymentCompleted({
+                id: payment.id,
+                paymentCode: payment.paymentCode,
+                amount: Number(payment.amount),
+                paymentDate: payment.paymentDate,
+                paymentMethod: payment.paymentMethod,
+                createdBy: userId ?? undefined,
+            });
+        }
+        catch (err) {
+            this.logger.error(`Auto JE failed for payment ${payment.paymentCode}: ${err.message}`);
+        }
+        this.notifyCustomerOnPaymentVerified(payment).catch((e) => this.logger.warn(`Failed to send payment notification: ${e.message}`));
     }
     async notifyCustomerOnPaymentVerified(payment) {
         if (!payment.bookingId)
@@ -194,7 +260,20 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         if (filters?.paymentType) {
             query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
         }
-        if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+        if (filters?.propertyId) {
+            if (filters.accessiblePropertyIds &&
+                filters.accessiblePropertyIds.length > 0 &&
+                !filters.accessiblePropertyIds.includes(filters.propertyId)) {
+                query.andWhere('1 = 0');
+            }
+            else {
+                query.andWhere('booking.propertyId = :propertyId', {
+                    propertyId: filters.propertyId,
+                });
+            }
+        }
+        else if (filters?.accessiblePropertyIds &&
+            filters.accessiblePropertyIds.length > 0) {
             query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
                 accessiblePropertyIds: filters.accessiblePropertyIds,
             });
@@ -267,6 +346,7 @@ exports.PaymentsService = PaymentsService = PaymentsService_1 = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         accounting_integration_service_1.AccountingIntegrationService,
-        notifications_service_1.NotificationsService])
+        notifications_service_1.NotificationsService,
+        core_1.ModuleRef])
 ], PaymentsService);
 //# sourceMappingURL=payments.service.js.map

@@ -46,12 +46,25 @@ export declare class DatabaseService {
         totalRows: number;
         databaseSize: string;
     }>;
+    getExplorerSummary(): Promise<{
+        tables: Array<{
+            name: string;
+            rowCount: number;
+            columnCount: number;
+        }>;
+        stats: {
+            totalTables: number;
+            totalRows: number;
+            databaseSize: string;
+        };
+    }>;
     getTableRelationships(): Promise<Array<{
         fromTable: string;
         fromColumn: string;
         toTable: string;
         toColumn: string;
         constraintName: string;
+        kind: 'foreign_key' | 'inferred';
     }>>;
     executeQuery(sql: string): Promise<any>;
     getPrimaryKeyColumns(tableName: string): Promise<string[]>;

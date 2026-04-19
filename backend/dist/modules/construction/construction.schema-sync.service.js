@@ -223,6 +223,88 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
           END $$;
         `);
             });
+            await runIsolated('extend construction_development_updates columns', async (qr) => {
+                await qr.query(`
+          DO $$
+          BEGIN
+            -- Make project_id optional so property-wide updates don't need a fake project.
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates'
+                AND column_name = 'construction_project_id'
+                AND is_nullable = 'NO'
+            ) THEN
+              ALTER TABLE construction_development_updates
+                ALTER COLUMN construction_project_id DROP NOT NULL;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'property_id'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN property_id UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'tower_id'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN tower_id UUID;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'scope_type'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN scope_type VARCHAR(30);
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'common_area_label'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN common_area_label VARCHAR(200);
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'category'
+            ) THEN
+              ALTER TABLE construction_development_updates ADD COLUMN category VARCHAR(40);
+            END IF;
+          END $$;
+        `);
+                await qr.query(`
+          CREATE INDEX IF NOT EXISTS idx_dev_updates_property_date
+            ON construction_development_updates (property_id, update_date DESC);
+          CREATE INDEX IF NOT EXISTS idx_dev_updates_scope
+            ON construction_development_updates (scope_type);
+          CREATE INDEX IF NOT EXISTS idx_dev_updates_category
+            ON construction_development_updates (category);
+          CREATE INDEX IF NOT EXISTS idx_dev_updates_tower
+            ON construction_development_updates (tower_id);
+        `);
+                await qr.query(`
+          UPDATE construction_development_updates du
+          SET property_id = cp.property_id
+          FROM construction_projects cp
+          WHERE du.construction_project_id = cp.id
+            AND du.property_id IS NULL;
+        `);
+            });
+            await runIsolated('add photos column to construction_flat_progress', async (qr) => {
+                await qr.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_flat_progress' AND column_name = 'photos'
+            ) THEN
+              ALTER TABLE construction_flat_progress ADD COLUMN photos TEXT[];
+            END IF;
+          END $$;
+        `);
+            });
             await runIsolated('add journal_entry_id to vendor_payments', async (qr) => {
                 await qr.query(`
           DO $$

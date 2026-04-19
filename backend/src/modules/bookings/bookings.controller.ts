@@ -39,27 +39,34 @@ export class BookingsController {
   }
 
   @Get('statistics')
-  async getStatistics(@Request() req: any) {
-    return this.bookingsService.getStatistics(req.accessiblePropertyIds);
+  async getStatistics(
+    @Query('propertyId') propertyId: string | undefined,
+    @Request() req: any,
+  ) {
+    return this.bookingsService.getStatistics(
+      req.accessiblePropertyIds,
+      propertyId,
+    );
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<BookingResponseDto> {
-    return this.bookingsService.findOne(id);
+  async findOne(@Param('id') id: string, @Request() req: any): Promise<BookingResponseDto> {
+    return this.bookingsService.findOne(id, req?.accessiblePropertyIds);
   }
 
   @Put(':id')
   async update(
     @Param('id') id: string,
     @Body() updateBookingDto: UpdateBookingDto,
+    @Request() req: any,
   ): Promise<BookingResponseDto> {
-    return this.bookingsService.update(id, updateBookingDto);
+    return this.bookingsService.update(id, updateBookingDto, req?.accessiblePropertyIds);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.bookingsService.remove(id);
+  async remove(@Param('id') id: string, @Request() req: any): Promise<void> {
+    return this.bookingsService.remove(id, req?.accessiblePropertyIds);
   }
 
   @Post(':id/cancel')
@@ -67,7 +74,8 @@ export class BookingsController {
   async cancel(
     @Param('id') id: string,
     @Body() body: { reason: string; refundAmount?: number },
+    @Request() req: any,
   ): Promise<BookingResponseDto> {
-    return this.bookingsService.cancelBooking(id, body.reason, body.refundAmount);
+    return this.bookingsService.cancelBooking(id, body.reason, body.refundAmount, req?.accessiblePropertyIds);
   }
 }

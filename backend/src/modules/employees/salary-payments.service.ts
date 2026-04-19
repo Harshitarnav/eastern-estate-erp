@@ -204,7 +204,7 @@ export class SalaryPaymentsService {
     if (je) {
       return { success: true, journalEntryNumber: je.entryNumber, message: `Journal Entry ${je.entryNumber} created successfully.` };
     }
-    return { success: false, message: 'JE creation failed — ensure "Salary Expense" (EXPENSE type) and a Bank/Cash (ASSET type) account exist in Chart of Accounts.' };
+    return { success: false, message: 'JE creation failed - ensure "Salary Expense" (EXPENSE type) and a Bank/Cash (ASSET type) account exist in Chart of Accounts.' };
   }
 
   async cancel(id: string): Promise<SalaryPayment> {
@@ -235,7 +235,7 @@ export class SalaryPaymentsService {
 
     if (rows.length > 0) {
       await this.journalEntriesService.void(rows[0].id, userId, {
-        voidReason: `Salary payment reversed to pending — record ${sp.id}`,
+        voidReason: `Salary payment reversed to pending - record ${sp.id}`,
       });
     }
 

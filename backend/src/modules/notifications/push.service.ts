@@ -19,7 +19,7 @@ export class PushService {
       webpush.setVapidDetails('mailto:hr@eecd.in', pub, priv);
       this.enabled = true;
     } else {
-      this.logger.warn('VAPID keys not set — push notifications disabled');
+      this.logger.warn('VAPID keys not set - push notifications disabled');
       this.enabled = false;
     }
   }

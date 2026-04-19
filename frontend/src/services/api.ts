@@ -4,7 +4,7 @@ import { handleApiError } from '@/utils/error-handler';
 /**
  * Browser: same-origin `/api/v1` (Caddy proxies) or absolute NEXT_PUBLIC_API_URL.
  * Node (Next SSR / server): must use INTERNAL_API_URL (e.g. http://backend:3001/api/v1 in Docker)
- * — relative `/api/v1` would hit the Next server, not Nest, and causes ECONNRESET / redirect errors.
+ * - relative `/api/v1` would hit the Next server, not Nest, and causes ECONNRESET / redirect errors.
  */
 function resolveApiBaseUrl(): string {
   const publicUrl = process.env.NEXT_PUBLIC_API_URL || '/api/v1';

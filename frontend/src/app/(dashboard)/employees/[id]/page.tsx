@@ -65,7 +65,7 @@ const getDepartmentColor = (department: string) => {
   return colors[department] || '#6B7280';
 };
 
-const fmt = (status: string) => status?.replace(/_/g, ' ') ?? '—';
+const fmt = (status: string) => status?.replace(/_/g, ' ') ?? '-';
 
 const fmtCurrency = (value: number | string | null | undefined) => {
   const amount = Number(value) || 0;
@@ -300,7 +300,7 @@ export default function EmployeeDetailPage() {
       await api.patch(`/employees/${employeeId}`, { notes: noteValue });
       setEmployee({ ...employee, notes: noteValue });
       setEditingNote(false);
-    } catch { /* silent — user can retry */ }
+    } catch { /* silent - user can retry */ }
     finally { setSavingNote(false); }
   };
 
@@ -736,7 +736,7 @@ export default function EmployeeDetailPage() {
                       );
                     })}
                     <span className="text-sm font-semibold text-gray-700 ml-2">
-                      {employee.performanceRating ? `${Number(employee.performanceRating).toFixed(1)} / 5` : 'Not rated — click to rate'}
+                      {employee.performanceRating ? `${Number(employee.performanceRating).toFixed(1)} / 5` : 'Not rated - click to rate'}
                     </span>
                   </div>
                 </div>

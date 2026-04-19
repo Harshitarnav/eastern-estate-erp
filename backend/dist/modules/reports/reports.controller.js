@@ -20,28 +20,68 @@ let ReportsController = class ReportsController {
     constructor(reportsService) {
         this.reportsService = reportsService;
     }
-    async getDashboard() {
-        return this.reportsService.getDashboard();
+    async getDashboard(propertyId, req) {
+        const accessible = req?.accessiblePropertyIds;
+        let effective = propertyId;
+        if (accessible && accessible.length > 0) {
+            if (propertyId && !accessible.includes(propertyId)) {
+                effective = '00000000-0000-0000-0000-000000000000';
+            }
+            else if (!propertyId) {
+                effective = accessible[0];
+            }
+        }
+        return this.reportsService.getDashboard(effective);
     }
-    async getOutstanding(propertyId, towerId, status) {
+    async getOutstanding(propertyId, towerId, status, req) {
+        const accessible = req?.accessiblePropertyIds;
+        let effective = propertyId;
+        if (accessible && accessible.length > 0) {
+            if (propertyId && !accessible.includes(propertyId)) {
+                effective = '00000000-0000-0000-0000-000000000000';
+            }
+            else if (!propertyId) {
+                effective = accessible[0];
+            }
+        }
         return this.reportsService.getOutstandingReport({
-            propertyId: propertyId || undefined,
+            propertyId: effective || undefined,
             towerId: towerId || undefined,
             status: status || undefined,
         });
     }
-    async getCollection(propertyId, towerId, startDate, endDate, paymentMethod) {
+    async getCollection(propertyId, towerId, startDate, endDate, paymentMethod, req) {
+        const accessible = req?.accessiblePropertyIds;
+        let effective = propertyId;
+        if (accessible && accessible.length > 0) {
+            if (propertyId && !accessible.includes(propertyId)) {
+                effective = '00000000-0000-0000-0000-000000000000';
+            }
+            else if (!propertyId) {
+                effective = accessible[0];
+            }
+        }
         return this.reportsService.getCollectionReport({
-            propertyId: propertyId || undefined,
+            propertyId: effective || undefined,
             towerId: towerId || undefined,
             startDate: startDate || undefined,
             endDate: endDate || undefined,
             paymentMethod: paymentMethod || undefined,
         });
     }
-    async getInventory(propertyId, towerId, status, flatType) {
+    async getInventory(propertyId, towerId, status, flatType, req) {
+        const accessible = req?.accessiblePropertyIds;
+        let effective = propertyId;
+        if (accessible && accessible.length > 0) {
+            if (propertyId && !accessible.includes(propertyId)) {
+                effective = '00000000-0000-0000-0000-000000000000';
+            }
+            else if (!propertyId) {
+                effective = accessible[0];
+            }
+        }
         return this.reportsService.getInventoryReport({
-            propertyId: propertyId || undefined,
+            propertyId: effective || undefined,
             towerId: towerId || undefined,
             status: status || undefined,
             flatType: flatType || undefined,
@@ -51,8 +91,10 @@ let ReportsController = class ReportsController {
 exports.ReportsController = ReportsController;
 __decorate([
     (0, common_1.Get)('dashboard'),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getDashboard", null);
 __decorate([
@@ -60,8 +102,9 @@ __decorate([
     __param(0, (0, common_1.Query)('propertyId')),
     __param(1, (0, common_1.Query)('towerId')),
     __param(2, (0, common_1.Query)('status')),
+    __param(3, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getOutstanding", null);
 __decorate([
@@ -71,8 +114,9 @@ __decorate([
     __param(2, (0, common_1.Query)('startDate')),
     __param(3, (0, common_1.Query)('endDate')),
     __param(4, (0, common_1.Query)('paymentMethod')),
+    __param(5, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getCollection", null);
 __decorate([
@@ -81,8 +125,9 @@ __decorate([
     __param(1, (0, common_1.Query)('towerId')),
     __param(2, (0, common_1.Query)('status')),
     __param(3, (0, common_1.Query)('flatType')),
+    __param(4, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, String]),
+    __metadata("design:paramtypes", [String, String, String, String, Object]),
     __metadata("design:returntype", Promise)
 ], ReportsController.prototype, "getInventory", null);
 exports.ReportsController = ReportsController = __decorate([

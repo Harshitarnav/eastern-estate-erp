@@ -27,7 +27,9 @@ const ROUTE_RULES: { prefix: string; modules: string[] }[] = [
     ],
   },
   { prefix: '/construction-milestones', modules: ['construction-milestones'] },
-  { prefix: '/construction-progress-simple', modules: ['construction-progress'] },
+  { prefix: '/construction/log', modules: ['construction-log', 'construction-progress'] },
+  { prefix: '/construction/flats', modules: ['construction-log', 'construction-progress'] },
+  { prefix: '/construction/development-updates', modules: ['development-updates', 'construction-progress'] },
   { prefix: '/construction/inventory', modules: ['materials', 'reports-inventory'] },
   {
     prefix: '/construction',
@@ -51,6 +53,15 @@ const ROUTE_RULES: { prefix: string; modules: string[] }[] = [
   { prefix: '/payments', modules: ['payments', 'payments-list'] },
   { prefix: '/payment-plans', modules: ['payment-plans'] },
   { prefix: '/demand-drafts', modules: ['demand-drafts'] },
+  {
+    prefix: '/collections',
+    modules: [
+      'collections',
+      'collections-workstation',
+      'collections-legacy-import',
+      'demand-drafts',
+    ],
+  },
   { prefix: '/marketing', modules: ['marketing'] },
   { prefix: '/hr/payroll', modules: ['payroll'] },
   { prefix: '/hr', modules: ['hr', 'employees', 'payroll'] },

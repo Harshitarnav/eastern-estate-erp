@@ -124,7 +124,7 @@ export class BankAccountsService {
     });
     const saved = await this.bankAccountsRepo.save(account);
 
-    // Auto-create the matching COA entry (non-blocking — bank account is saved even if COA fails)
+    // Auto-create the matching COA entry (non-blocking - bank account is saved even if COA fails)
     let coaAccount: Account | null = null;
     try {
       coaAccount = await this.ensureCOAAccount(saved);

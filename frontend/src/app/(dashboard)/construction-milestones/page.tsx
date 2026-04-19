@@ -313,8 +313,8 @@ export default function ConstructionMilestonesPage() {
     }
   };
 
-  const navigateToProgressLog = (propertyId: string, towerId: string, flatId: string) => {
-    router.push(`/construction-progress-simple?property=${propertyId}&tower=${towerId}&flat=${flatId}`);
+  const navigateToProgressLog = (_propertyId: string, _towerId: string, flatId: string) => {
+    router.push(`/construction/flats/${flatId}/log`);
   };
 
   const getStatusBadge = (status: string) => {
@@ -364,7 +364,7 @@ export default function ConstructionMilestonesPage() {
               </SelectContent>
             </Select>
           )}
-          <Button onClick={() => router.push('/construction-progress-simple')}>
+          <Button onClick={() => router.push('/construction/log')}>
             <Hammer className="mr-2 h-4 w-4" />
             Log Progress
           </Button>

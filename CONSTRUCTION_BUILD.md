@@ -1,7 +1,7 @@
 # 🏗️ Construction Module Build Tracker
 **Project:** Eastern Estate ERP  
 **Started:** March 2026  
-**Goal:** Full site-operations module — projects, teams, materials, vendors, POs, RA bills, QC, and daily logs
+**Goal:** Full site-operations module - projects, teams, materials, vendors, POs, RA bills, QC, and daily logs
 
 ---
 
@@ -9,24 +9,24 @@
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| Phase 1 | Backend scaffolding — entities, services, controllers, module wiring | ✅ Complete |
-| Phase 2 | Frontend CRUD pages — Projects, Teams, Materials, Vendors, POs | ✅ Complete |
-| Phase 3 | RA Bills + QC Checklists — entities, API, UI | ✅ Complete |
-| Phase 4 | Daily Progress Logs — schema fix, new fields, frontend overhaul | ✅ Complete |
-| Phase 5 | UI/UX Redesign — BrandHero, BrandStatCard, brandPalette, pristine design | ✅ Complete |
-| Phase 6 | Roles & Access — CONSTRUCTION_TEAM role, module permissions | ✅ Complete |
-| Phase 7 | Schema Sync Service — idempotent startup migrations | ✅ Complete |
-| Phase 8 | Accounting Integration — auto-JE from RA Bill payments, Vendor payments | ✅ Complete |
-| Phase 9 | Reports — Cost-to-complete, project budget variance, vendor spend | ✅ Complete |
-| Phase 10 | Photo Uploads — site diary photos on progress logs | ✅ Complete |
+| Phase 1 | Backend scaffolding - entities, services, controllers, module wiring | ✅ Complete |
+| Phase 2 | Frontend CRUD pages - Projects, Teams, Materials, Vendors, POs | ✅ Complete |
+| Phase 3 | RA Bills + QC Checklists - entities, API, UI | ✅ Complete |
+| Phase 4 | Daily Progress Logs - schema fix, new fields, frontend overhaul | ✅ Complete |
+| Phase 5 | UI/UX Redesign - BrandHero, BrandStatCard, brandPalette, pristine design | ✅ Complete |
+| Phase 6 | Roles & Access - CONSTRUCTION_TEAM role, module permissions | ✅ Complete |
+| Phase 7 | Schema Sync Service - idempotent startup migrations | ✅ Complete |
+| Phase 8 | Accounting Integration - auto-JE from RA Bill payments, Vendor payments | ✅ Complete |
+| Phase 9 | Reports - Cost-to-complete, project budget variance, vendor spend | ✅ Complete |
+| Phase 10 | Photo Uploads - site diary photos on progress logs | ✅ Complete |
 
 ---
 
-## Phase 1 — Backend Scaffolding
+## Phase 1 - Backend Scaffolding
 
 **Goal:** Build all TypeORM entities, services, controllers, and wire the NestJS module.
 
-### 1.1 — Entities Created
+### 1.1 - Entities Created
 
 | Entity | Table | Key Fields |
 |--------|-------|-----------|
@@ -42,7 +42,7 @@
 
 - **Status:** ✅ Done
 
-### 1.2 — Services & Controllers
+### 1.2 - Services & Controllers
 
 | Controller / Service | Routes |
 |---------------------|--------|
@@ -56,7 +56,7 @@
 
 - **Status:** ✅ Done
 
-### 1.3 — Module Wiring (`construction.module.ts`)
+### 1.3 - Module Wiring (`construction.module.ts`)
 
 - All entities registered via `TypeOrmModule.forFeature([...])`
 - All services and controllers provided/exported
@@ -65,11 +65,11 @@
 
 ---
 
-## Phase 2 — Frontend CRUD Pages
+## Phase 2 - Frontend CRUD Pages
 
 **Goal:** Build all day-to-day management pages linked from the sidebar.
 
-### 2.1 — Sidebar Navigation
+### 2.1 - Sidebar Navigation
 - **File:** `frontend/src/components/layout/Sidebar.tsx`
 - **Added sub-items under "Construction":**
   - Overview → `/construction`
@@ -82,13 +82,13 @@
   - QC Checklists → `/construction/quality`
 - **Status:** ✅ Done
 
-### 2.2 — Role-Based Access
+### 2.2 - Role-Based Access
 - **File:** `frontend/src/lib/roles.ts`
 - `SUPER_ADMIN`, `ADMIN`: full access to all construction sub-pages
 - `CONSTRUCTION_TEAM`: access to all sub-pages except admin-only sections
 - **Status:** ✅ Done
 
-### 2.3 — Construction Overview Dashboard
+### 2.3 - Construction Overview Dashboard
 - **Route:** `/construction`
 - **File:** `frontend/src/app/(dashboard)/construction/page.tsx`
 - **Features:**
@@ -98,7 +98,7 @@
   - Fetches live data from 4 concurrent API calls
 - **Status:** ✅ Done
 
-### 2.4 — Projects List Page
+### 2.4 - Projects List Page
 - **Route:** `/construction/projects`
 - **File:** `frontend/src/app/(dashboard)/construction/projects/page.tsx`
 - **Features:**
@@ -108,7 +108,7 @@
   - Safe null-check for `project.property` (crashes fixed)
 - **Status:** ✅ Done
 
-### 2.5 — New Project Form
+### 2.5 - New Project Form
 - **Route:** `/construction/projects/new`
 - **File:** `frontend/src/app/(dashboard)/construction/projects/new/page.tsx`
 - **Features:**
@@ -117,7 +117,7 @@
   - All dropdowns use `response.data?.data` pattern (API wraps in `{ data: [...] }`)
 - **Status:** ✅ Done
 
-### 2.6 — Project Detail Page
+### 2.6 - Project Detail Page
 - **Route:** `/construction/projects/[id]`
 - **File:** `frontend/src/app/(dashboard)/construction/projects/[id]/page.tsx`
 - **Features:**
@@ -126,7 +126,7 @@
   - Tabbed view: Overview | Teams | Progress Logs | RA Bills | QC | Materials
 - **Status:** ✅ Done
 
-### 2.7 — Teams Page
+### 2.7 - Teams Page
 - **Route:** `/construction/teams`
 - **File:** `frontend/src/app/(dashboard)/construction/teams/page.tsx`
 - **Features:**
@@ -136,7 +136,7 @@
   - `BrandHero` + `BrandStatCard` design
 - **Status:** ✅ Done
 
-### 2.8 — Materials Inventory Page
+### 2.8 - Materials Inventory Page
 - **Route:** `/construction/materials`
 - **File:** `frontend/src/app/(dashboard)/construction/materials/page.tsx`
 - **Features:**
@@ -147,7 +147,7 @@
   - Slide-in panel for create/edit
 - **Status:** ✅ Done
 
-### 2.9 — Vendors Page
+### 2.9 - Vendors Page
 - **Route:** `/construction/vendors`
 - **File:** `frontend/src/app/(dashboard)/construction/vendors/page.tsx`
 - **Features:**
@@ -157,7 +157,7 @@
   - Fixed: `rating.toFixed is not a function` (PostgreSQL NUMERIC → string coercion)
 - **Status:** ✅ Done
 
-### 2.10 — Purchase Orders Page
+### 2.10 - Purchase Orders Page
 - **Route:** `/construction/purchase-orders`
 - **File:** `frontend/src/app/(dashboard)/construction/purchase-orders/page.tsx`
 - **Features:**
@@ -169,11 +169,11 @@
 
 ---
 
-## Phase 3 — RA Bills & QC Checklists
+## Phase 3 - RA Bills & QC Checklists
 
 **Goal:** Full running-account billing and quality inspection workflows.
 
-### 3.1 — RA Bills API & UI
+### 3.1 - RA Bills API & UI
 - **Backend:** `ra-bills.controller.ts`, `ra-bills.service.ts`, `ra-bill.entity.ts`
 - **Frontend:** `frontend/src/app/(dashboard)/construction/ra-bills/page.tsx`
 - **Workflow:** `DRAFT → SUBMITTED → CERTIFIED → APPROVED → PAID`
@@ -184,12 +184,12 @@
 - **TypeScript Fix:** Added `as RABill` type assertion to `raBillRepository.save()` to resolve `TS2740` overload error
 - **Status:** ✅ Done
 
-### 3.2 — QC Checklists API & UI
+### 3.2 - QC Checklists API & UI
 - **Backend:** `qc.controller.ts`, `qc.service.ts`, `qc-checklist.entity.ts`
 - **Frontend:** `frontend/src/app/(dashboard)/construction/quality/page.tsx`
 - **Phase Enum:** `FOUNDATION | STRUCTURE | MEP | FINISHING | HANDOVER`
 - **Result Enum:** `PASS | FAIL | PARTIAL | PENDING`
-- **Checklist Items & Defects:** Stored as JSONB arrays in the same row — no separate tables needed
+- **Checklist Items & Defects:** Stored as JSONB arrays in the same row - no separate tables needed
 - **Defect Severity:** `LOW | MEDIUM | HIGH | CRITICAL`
 - **Actions:** Create inspection → update item statuses → add defects → mark defects resolved
 - **TypeScript Fix:** Added `as QCChecklist` type assertion to `qcRepo.save()` to resolve `TS2740` overload error
@@ -197,23 +197,23 @@
 
 ---
 
-## Phase 4 — Daily Progress Logs (Schema Fix + New Fields)
+## Phase 4 - Daily Progress Logs (Schema Fix + New Fields)
 
 **Goal:** Allow the `AddProgressLogModal` to submit comprehensive daily logs without DB constraint errors.
 
-### 4.1 — Root Cause
-The `construction_progress_logs` table had `NOT NULL` constraints on `property_id`, `progress_type`, `description`, and `logged_by`. The new project-based modal was not sending these fields (by design — logs are now linked via `constructionProjectId`). This caused:
+### 4.1 - Root Cause
+The `construction_progress_logs` table had `NOT NULL` constraints on `property_id`, `progress_type`, `description`, and `logged_by`. The new project-based modal was not sending these fields (by design - logs are now linked via `constructionProjectId`). This caused:
 ```
 QueryFailedError: null value in column "property_id" violates not-null constraint
 ```
 
-### 4.2 — Backend Entity Changes
+### 4.2 - Backend Entity Changes
 - **File:** `backend/src/modules/construction/entities/construction-progress-log.entity.ts`
 - Made nullable: `propertyId`, `progressType`, `description`, `loggedBy`
 - **Added 8 new columns:** `shift` (enum: DAY/NIGHT), `workersPresent`, `workersAbsent`, `materialsUsed`, `issuesDelays`, `supervisorName`, `nextDayPlan`, `remarks`
 - **Added enum:** `ShiftType { DAY, NIGHT }`
 
-### 4.3 — Schema Sync Service
+### 4.3 - Schema Sync Service
 - **File:** `backend/src/modules/construction/construction.schema-sync.service.ts`
 - Runs idempotent SQL on `onModuleInit` (every server start)
 - Checks column nullability before dropping NOT NULL (safe to re-run)
@@ -242,7 +242,7 @@ ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS next_day_plan TE
 ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS remarks TEXT NULL;
 ```
 
-### 4.4 — Service Update
+### 4.4 - Service Update
 - **File:** `backend/src/modules/construction/construction-progress-logs.service.ts`
 - Injected `ConstructionProject` repository
 - `create()` now:
@@ -250,13 +250,13 @@ ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS remarks TEXT NUL
   - Auto-derives `propertyId` from the project's `propertyId` if not explicitly provided
   - Explicitly maps all 8 new fields from the DTO
 
-### 4.5 — Frontend Modal Fix
+### 4.5 - Frontend Modal Fix
 - **File:** `frontend/src/components/modals/AddProgressLogModal.tsx`
 - Fixed: payload field was `projectId`, should be `constructionProjectId`
-- Fixed: `loadProjects()` was filtering by `propertyId` even when empty — now loads all projects if no `propertyId`
+- Fixed: `loadProjects()` was filtering by `propertyId` even when empty - now loads all projects if no `propertyId`
 - **Status:** ✅ Done
 
-### 4.6 — Progress Logs Page
+### 4.6 - Progress Logs Page
 - **Route:** `/construction/progress`
 - **File:** `frontend/src/app/(dashboard)/construction/progress/page.tsx`
 - Displays `log.description` (not the old `log.workCompleted`)
@@ -266,7 +266,7 @@ ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS remarks TEXT NUL
 
 ---
 
-## Phase 5 — UI/UX Redesign
+## Phase 5 - UI/UX Redesign
 
 **Goal:** Make every Construction page look as polished as the Customers and Bookings pages.
 
@@ -309,7 +309,7 @@ ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS remarks TEXT NUL
 ### Critical Bug Fixes Applied During Redesign
 
 #### Bug 1: `res.data` anti-pattern (affected ALL pages)
-- `api.get()` already returns `response.data` — calling `.data` again returned `undefined`
+- `api.get()` already returns `response.data` - calling `.data` again returned `undefined`
 - **Fix:** Use `res` directly, not `res.data`, across all construction pages and modals
 
 #### Bug 2: `project.property?.name.toLowerCase()` crash
@@ -317,12 +317,12 @@ ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS remarks TEXT NUL
 - **Fix:** `project.property?.name?.toLowerCase()` and `project.property?.name || 'N/A'`
 
 #### Bug 3: Empty property/employee dropdowns on New Project form
-- API response is `{ data: [...], total: N }` — code was treating it as a flat array
+- API response is `{ data: [...], total: N }` - code was treating it as a flat array
 - **Fix:** `response.data?.data || []` everywhere
 
 #### Bug 4: `rating.toFixed is not a function` on Vendors page
 - PostgreSQL `NUMERIC` columns come back as strings via pg driver
-- **Fix:** `Number(vendor.rating).toFixed(1)` — always coerce before calling `.toFixed()`
+- **Fix:** `Number(vendor.rating).toFixed(1)` - always coerce before calling `.toFixed()`
 
 #### Bug 5: Empty project dropdown in modals
 - `loadProjects()` filtered by `propertyId` even when empty string → returned zero results
@@ -332,7 +332,7 @@ ALTER TABLE construction_progress_logs ADD COLUMN IF NOT EXISTS remarks TEXT NUL
 
 ---
 
-## Phase 6 — Roles & Access Control
+## Phase 6 - Roles & Access Control
 
 **File:** `frontend/src/lib/roles.ts`
 
@@ -349,14 +349,14 @@ All new sub-page IDs (`construction-overview`, `projects`, `teams`, `materials`,
 
 ---
 
-## Phase 7 — Schema Sync Service
+## Phase 7 - Schema Sync Service
 
 **Goal:** Handle schema evolution without manual migrations, since `synchronize: false` is set globally.
 
 **File:** `backend/src/modules/construction/construction.schema-sync.service.ts`
 
 ### How It Works
-1. Implements `OnModuleInit` — runs every time the NestJS app starts
+1. Implements `OnModuleInit` - runs every time the NestJS app starts
 2. Uses a `QueryRunner` inside a transaction
 3. All SQL statements are idempotent (safe to re-run):
    - `IF EXISTS` / `IF NOT EXISTS` guards for column changes
@@ -489,7 +489,7 @@ All new sub-page IDs (`construction-overview`, `projects`, `teams`, `materials`,
 | `construction_project_id` | UUID | nullable |
 | `log_date` | DATE | |
 | `progress_type` | ENUM | **nullable**: STRUCTURE / INTERIOR / FINISHING / QUALITY_CHECK |
-| `description` | TEXT | **nullable** — mapped from `workCompleted` |
+| `description` | TEXT | **nullable** - mapped from `workCompleted` |
 | `progress_percentage` | DECIMAL(5,2) | nullable |
 | `weather_condition` | VARCHAR(100) | nullable |
 | `logged_by` | UUID FK → users | **nullable** |
@@ -577,15 +577,15 @@ POST http://localhost:3001/api/v1/construction-teams
 ### Test In the UI
 
 1. Navigate to **Construction → Projects** in the sidebar
-2. Click **"New Project"** — form opens with Property, Tower, Flat, Project Manager dropdowns
-3. Fill in project name, dates, budget — submit
+2. Click **"New Project"** - form opens with Property, Tower, Flat, Project Manager dropdowns
+3. Fill in project name, dates, budget - submit
 4. New project appears in the list card grid
 5. Click the project card → detail page loads with hero, metrics, tabs
 6. Navigate to **Teams** → **"Add New Team"** → fill form → team card appears
 
 ---
 
-## 🧪 Phase 3 Test Guide — RA Bills & QC
+## 🧪 Phase 3 Test Guide - RA Bills & QC
 
 ### RA Bills Workflow
 
@@ -607,7 +607,7 @@ POST http://localhost:3001/api/v1/construction-teams
 2. Click **"New Inspection"**
 3. Select project, phase (e.g. FOUNDATION), inspection date, inspector name
 4. Submit → checklist created with auto-populated items for that phase
-5. Checklist appears in the list — click it to open the detail panel
+5. Checklist appears in the list - click it to open the detail panel
 6. Change item status dropdowns (Pending → Pass / Fail / N/A)
 7. Click **"+ Defect"** → add a HIGH severity defect
 8. Defect appears in the list with "Open" badge
@@ -636,21 +636,21 @@ POST http://localhost:3001/api/v1/qc-checklists/<id>/defects
 
 ---
 
-## 🧪 Phase 4 Test Guide — Progress Logs
+## 🧪 Phase 4 Test Guide - Progress Logs
 
 ### Add a Daily Log
 
 1. Go to **Construction → Progress Logs** (or the Daily Logs card on the Overview)
 2. Click **"Add Today's Log"** → `AddProgressLogModal` opens
-3. **Select a project from the dropdown** — should list ALL projects (not just filtered)
+3. **Select a project from the dropdown** - should list ALL projects (not just filtered)
 4. Fill: Date = today, Shift = Day, Workers Present = 45, Workers Absent = 5
 5. Work Completed = "Poured RCC for Columns C7–C12"
-6. Issues/Delays = "Concrete mixer broke down at 3pm — 2hr delay"
+6. Issues/Delays = "Concrete mixer broke down at 3pm - 2hr delay"
 7. Next Day Plan = "Complete remaining 4 columns"
 8. Submit
 9. Log appears in the list with an expandable card
 10. Click the log card → expands to show progress bar, workforce counts, issues section (orange)
-11. Verify `property_id` is auto-derived — check DB: `SELECT property_id FROM construction_progress_logs ORDER BY created_at DESC LIMIT 1;`
+11. Verify `property_id` is auto-derived - check DB: `SELECT property_id FROM construction_progress_logs ORDER BY created_at DESC LIMIT 1;`
 
 ### Verify Schema Sync Ran
 
@@ -661,28 +661,28 @@ FROM information_schema.columns
 WHERE table_name = 'construction_progress_logs'
 ORDER BY ordinal_position;
 ```
-Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, `issues_delays`, `supervisor_name`, `next_day_plan`, `remarks` — all nullable.
+Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, `issues_delays`, `supervisor_name`, `next_day_plan`, `remarks` - all nullable.
 
 ---
 
 ## Deployment Notes
 
-- **No manual migrations needed** — `ConstructionSchemaSyncService` handles all schema changes on startup
-- Schema sync is fully idempotent — re-running never breaks the DB
+- **No manual migrations needed** - `ConstructionSchemaSyncService` handles all schema changes on startup
+- Schema sync is fully idempotent - re-running never breaks the DB
 - Deploy backend first (runs schema sync), then frontend
 - If adding new schema changes: add them to `construction.schema-sync.service.ts` (not a separate SQL file)
-- `synchronize: false` is set globally in `app.module.ts` — TypeORM will NOT auto-sync entities
+- `synchronize: false` is set globally in `app.module.ts` - TypeORM will NOT auto-sync entities
 
 ### Environment Checklist Before Deploy
 - [ ] `DATABASE_URL` (or individual `DB_*` vars) set in production env
 - [ ] `JWT_SECRET` set
 - [ ] `NEXT_PUBLIC_API_URL` points to production backend
-- [ ] Backend starts without errors — check logs for schema sync completion
+- [ ] Backend starts without errors - check logs for schema sync completion
 - [ ] Run a quick smoke test on `/construction-projects` endpoint
 
 ---
 
-## ✅ Phase 8 — Accounting Integration
+## ✅ Phase 8 - Accounting Integration
 
 **Goal:** Auto-generate double-entry journal entries when construction payments are made.
 
@@ -698,10 +698,10 @@ Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, 
 ### What Was Built
 
 #### `AccountingIntegrationService` (new methods)
-- `findConstructionExpenseAccount()` — searches for accounts named "construction", "WIP", "contractor", "civil"
-- `findMaterialPurchaseAccount()` — searches for accounts named "material", "purchase", "procurement"
-- `onRABillPaid()` — Dr: Construction Expense / Cr: Bank; stores JE ref on bill
-- `onVendorPaymentRecorded()` — Dr: Material Purchase / Cr: Bank; stores JE ref on payment
+- `findConstructionExpenseAccount()` - searches for accounts named "construction", "WIP", "contractor", "civil"
+- `findMaterialPurchaseAccount()` - searches for accounts named "material", "purchase", "procurement"
+- `onRABillPaid()` - Dr: Construction Expense / Cr: Bank; stores JE ref on bill
+- `onVendorPaymentRecorded()` - Dr: Material Purchase / Cr: Bank; stores JE ref on payment
 
 #### `RABillsService.markPaid()` changes
 - Now accepts optional `userId` parameter
@@ -714,8 +714,8 @@ Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, 
 - Stores returned `journalEntryId` on the payment row
 
 #### Schema Changes (via ConstructionSchemaSyncService)
-- `ra_bills.journal_entry_id` UUID nullable — added on startup
-- `vendor_payments.journal_entry_id` UUID nullable — added on startup
+- `ra_bills.journal_entry_id` UUID nullable - added on startup
+- `vendor_payments.journal_entry_id` UUID nullable - added on startup
 
 #### Module Wiring
 - `AccountingModule` imported into `ConstructionModule`
@@ -730,13 +730,13 @@ Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, 
 6. Check `ra_bills.journal_entry_id` and `vendor_payments.journal_entry_id` columns are populated
 
 ### Important Notes
-- JE creation never blocks the payment operation — it silently logs on failure
+- JE creation never blocks the payment operation - it silently logs on failure
 - If no matching account exists in Chart of Accounts, JE is skipped with a warning log
 - Both JEs are auto-POSTED (not DRAFT) since they originate from confirmed transactions
 
 ---
 
-## ✅ Phase 9 — Construction Reports
+## ✅ Phase 9 - Construction Reports
 
 **Goal:** Management-level visibility into project costs, timelines, and vendor spends.
 
@@ -766,16 +766,16 @@ Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, 
 
 ### Frontend UI Features
 - **4 summary stat cards** (Budget allocated, spent, at-risk count, QC pass rate)
-- **Tab 1 — Budget vs Actual**: sortable table with utilisation progress bars, variance coloured red/green
-- **Tab 2 — Cost-to-Complete**: card list with burn-rate estimate, at-risk badge, projected overrun
-- **Tab 3 — Vendor Spend**: date range filter, ranked vendor table with retention %
-- **Tab 4 — Labour Productivity**: per-project cards + last 60 log history table
-- **Tab 5 — QC Pass Rate**: phase-wise progress bars + project breakdown table
+- **Tab 1 - Budget vs Actual**: sortable table with utilisation progress bars, variance coloured red/green
+- **Tab 2 - Cost-to-Complete**: card list with burn-rate estimate, at-risk badge, projected overrun
+- **Tab 3 - Vendor Spend**: date range filter, ranked vendor table with retention %
+- **Tab 4 - Labour Productivity**: per-project cards + last 60 log history table
+- **Tab 5 - QC Pass Rate**: phase-wise progress bars + project breakdown table
 - Print/Export button (browser print)
 
 ---
 
-## ✅ Phase 10 — Photo Uploads on Progress Logs
+## ✅ Phase 10 - Photo Uploads on Progress Logs
 
 **Goal:** Site engineers can attach photos to each daily log.
 
@@ -784,19 +784,19 @@ Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, 
 ### What Was Built
 
 **Backend**
-- `POST /construction-progress-logs/:id/photos` — Multer `FilesInterceptor` (max 5 files, 10 MB each, JPEG/PNG/WebP/GIF). Files written to `./uploads/progress-photos/` with unique timestamped filenames. URLs appended to the log's `photos` JSONB array.
-- `DELETE /construction-progress-logs/:id/photos` — Body `{ photoUrl }`. Removes the URL from the array and deletes the physical file from disk.
+- `POST /construction-progress-logs/:id/photos` - Multer `FilesInterceptor` (max 5 files, 10 MB each, JPEG/PNG/WebP/GIF). Files written to `./uploads/progress-photos/` with unique timestamped filenames. URLs appended to the log's `photos` JSONB array.
+- `DELETE /construction-progress-logs/:id/photos` - Body `{ photoUrl }`. Removes the URL from the array and deletes the physical file from disk.
 - `addPhotos()` and `removePhoto()` service methods added to `ConstructionProgressLogsService`.
-- `@ManyToOne` relation `constructionProject` added to `ConstructionProgressLog` entity (was missing, only FK column existed) — also fixes the Phase 9 TypeScript errors in `ConstructionReportsService`.
+- `@ManyToOne` relation `constructionProject` added to `ConstructionProgressLog` entity (was missing, only FK column existed) - also fixes the Phase 9 TypeScript errors in `ConstructionReportsService`.
 - Static files are served via the existing `app.useStaticAssets` in `main.ts` at `/uploads/`.
 
-**Frontend — `AddProgressLogModal.tsx`**
+**Frontend - `AddProgressLogModal.tsx`**
 - New "Site Photos" section with a drag-target click zone + `<input type="file" multiple accept="image/*">`.
 - In-modal preview grid (up to 5 thumbnails, 88×88 px) with per-photo remove button and file-size label.
 - After the log is created, photos are uploaded via a `fetch` `multipart/form-data` POST to the photos endpoint with the JWT token.
 - Graceful fallback: if photo upload fails the log is still saved and the user is not blocked.
 
-**Frontend — `progress/page.tsx`**
+**Frontend - `progress/page.tsx`**
 - Camera icon + count badge in the log header row for logs that have photos.
 - Photo grid in the expanded details section (80×80 px thumbnails). Click → opens fullscreen lightbox. Hover → shows ×-delete button (calls `DELETE` endpoint and updates UI optimistically).
 - Fullscreen lightbox overlay (black backdrop + close button) with `object-contain` large image.
@@ -814,6 +814,6 @@ Should include: `shift`, `workers_present`, `workers_absent`, `materials_used`, 
 
 | Phase | Key Test |
 |-------|----------|
-| 8 — Accounting Integration | Mark RA Bill PAID → see JE in `/accounting/journal-entries` |
-| 9 — Budget Report | `/construction/reports/budget?projectId=<id>` → budget vs actual bar chart |
-| 10 — Photo Uploads | Attach photo to progress log → appears as thumbnail in expanded card |
+| 8 - Accounting Integration | Mark RA Bill PAID → see JE in `/accounting/journal-entries` |
+| 9 - Budget Report | `/construction/reports/budget?projectId=<id>` → budget vs actual bar chart |
+| 10 - Photo Uploads | Attach photo to progress log → appears as thumbnail in expanded card |

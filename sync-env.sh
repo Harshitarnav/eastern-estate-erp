@@ -1,6 +1,6 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────
-# sync-env.sh — Push local .env files to the production server
+# sync-env.sh - Push local .env files to the production server
 #
 # Usage:
 #   ./sync-env.sh           → syncs all three env files
@@ -56,7 +56,7 @@ sync_root() {
       exit 1
     fi
   else
-    echo -e "${YELLOW}⚠️  No root .env found — skipping${NC}"
+    echo -e "${YELLOW}⚠️  No root .env found - skipping${NC}"
   fi
 }
 

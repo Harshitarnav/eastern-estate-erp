@@ -4,32 +4,22 @@ import { InstallmentStatus } from './entities/payment-installment.entity';
 export declare class InstallmentsController {
     private readonly installmentsService;
     constructor(installmentsService: InstallmentsService);
-    create(createInstallmentDto: CreateInstallmentDto): Promise<import("./entities/payment-installment.entity").PaymentInstallment>;
-    createSchedule(scheduleDto: CreateInstallmentScheduleDto): Promise<import("./entities/payment-installment.entity").PaymentInstallment[]>;
-    findAll(bookingId?: string, status?: InstallmentStatus, overdue?: string): Promise<import("./entities/payment-installment.entity").PaymentInstallment[]>;
-    getOverdue(): Promise<import("./entities/payment-installment.entity").PaymentInstallment[]>;
-    getUpcoming(days?: string): Promise<import("./entities/payment-installment.entity").PaymentInstallment[]>;
-    findByBooking(bookingId: string): Promise<import("./entities/payment-installment.entity").PaymentInstallment[]>;
-    getBookingStats(bookingId: string): Promise<{
-        totalInstallments: number;
-        paidInstallments: number;
-        pendingInstallments: number;
-        overdueInstallments: number;
-        totalAmount: number;
-        paidAmount: number;
-        pendingAmount: number;
-        overdueAmount: number;
-        totalLateFees: number;
-    }>;
-    findOne(id: string): Promise<import("./entities/payment-installment.entity").PaymentInstallment>;
-    update(id: string, updateData: any): Promise<import("./entities/payment-installment.entity").PaymentInstallment>;
+    create(createInstallmentDto: CreateInstallmentDto): any;
+    createSchedule(scheduleDto: CreateInstallmentScheduleDto): any;
+    findAll(bookingId?: string, status?: InstallmentStatus, overdue?: string): any;
+    getOverdue(): any;
+    getUpcoming(days?: string): any;
+    findByBooking(bookingId: string): any;
+    getBookingStats(bookingId: string): any;
+    findOne(id: string): any;
+    update(id: string, updateData: any): any;
     markAsPaid(id: string, body: {
         paymentId: string;
         paidAmount?: number;
-    }): Promise<import("./entities/payment-installment.entity").PaymentInstallment>;
-    waive(id: string): Promise<import("./entities/payment-installment.entity").PaymentInstallment>;
+    }): any;
+    waive(id: string): any;
     updateLateFees(body: {
         lateFeePerDay?: number;
-    }): Promise<void>;
-    remove(id: string): Promise<void>;
+    }): any;
+    remove(id: string): any;
 }

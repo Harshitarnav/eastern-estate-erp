@@ -28,7 +28,7 @@ let DemandDraftsService = DemandDraftsService_1 = class DemandDraftsService {
         this.notificationsService = notificationsService;
         this.logger = new common_1.Logger(DemandDraftsService_1.name);
     }
-    async findAll(query) {
+    async findAll(query, accessiblePropertyIds) {
         const queryBuilder = this.demandDraftRepository.createQueryBuilder('draft');
         if (query.flatId) {
             queryBuilder.andWhere('draft.flatId = :flatId', { flatId: query.flatId });
@@ -46,6 +46,26 @@ let DemandDraftsService = DemandDraftsService_1 = class DemandDraftsService {
             queryBuilder.andWhere('draft.requiresReview = :requiresReview', {
                 requiresReview: query.requiresReview === 'true',
             });
+        }
+        const wantsPropertyScope = !!query.propertyId ||
+            (accessiblePropertyIds && accessiblePropertyIds.length > 0);
+        if (wantsPropertyScope) {
+            queryBuilder.leftJoin('flats', 'flat', 'flat.id = draft.flatId');
+            if (query.propertyId) {
+                if (accessiblePropertyIds &&
+                    accessiblePropertyIds.length > 0 &&
+                    !accessiblePropertyIds.includes(query.propertyId)) {
+                    queryBuilder.andWhere('1 = 0');
+                }
+                else {
+                    queryBuilder.andWhere('flat.property_id = :propertyId', {
+                        propertyId: query.propertyId,
+                    });
+                }
+            }
+            else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+                queryBuilder.andWhere('flat.property_id IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
+            }
         }
         queryBuilder.orderBy('draft.createdAt', 'DESC');
         return await queryBuilder.getMany();

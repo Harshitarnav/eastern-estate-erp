@@ -442,7 +442,7 @@ export default function PropertyForm({
           name: 'accountName',
           label: 'Account Name',
           type: 'text' as const,
-          placeholder: 'Eastern Estate Pvt Ltd — Diamond City',
+          placeholder: 'Eastern Estate Pvt Ltd - Diamond City',
         },
         {
           name: 'accountNumber',

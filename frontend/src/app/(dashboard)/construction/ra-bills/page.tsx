@@ -159,7 +159,7 @@ function RABillsContent() {
   };
 
   const fmt = (d: string) =>
-    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
   const fmtCur = (n: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
 
@@ -176,7 +176,7 @@ function RABillsContent() {
 
       {/* Hero */}
       <BrandHero
-        eyebrow="RA Bills — Running Account Bills"
+        eyebrow="RA Bills - Running Account Bills"
         title={<>Pay contractors by <span style={{ color: brandPalette.accent }}>certified work stages</span></>}
         description="Create, certify, approve and pay Running Account Bills. Track retention held, gross values, and payment status for every contractor and project."
         actions={
@@ -308,7 +308,7 @@ function RABillsContent() {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600">
-                      {bill.vendor?.vendorName || '—'} · {bill.constructionProject?.projectName || '—'}
+                      {bill.vendor?.vendorName || '-'} · {bill.constructionProject?.projectName || '-'}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
                       <Calendar className="w-3 h-3" />{fmt(bill.billDate)}

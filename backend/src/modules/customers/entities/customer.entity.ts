@@ -207,6 +207,25 @@ export class Customer {
   @Column({ type: 'jsonb', nullable: true })
   metadata: any;
 
+  // Account-wide pause on automated reminders for this customer. Used when
+  // a family is in negotiation, bereavement, or any sensitive situation
+  // where we must not blast reminders across all their bookings/plans.
+  @Column({ name: 'pause_reminders_until', type: 'timestamp', nullable: true })
+  pauseRemindersUntil: Date | null;
+
+  // Per-customer override for milestone-DD auto-send.
+  //   null     → inherit from property (then from company_settings)
+  //   true     → always auto-send for this customer
+  //   false    → always require human review for this customer
+  // Useful for VIPs who want personal contact, or corporate accounts
+  // that process many DDs automatically.
+  @Column({
+    name: 'auto_send_milestone_demand_drafts',
+    type: 'boolean',
+    nullable: true,
+  })
+  autoSendMilestoneDemandDrafts: boolean | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

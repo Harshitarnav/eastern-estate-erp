@@ -10,7 +10,7 @@ import { customersService } from '@/services/customers.service';
 import { toast } from 'sonner';
 
 // ── helpers ────────────────────────────────────────────────────────────────────
-const fmtDate = (d: string) => (d ? new Date(d).toLocaleDateString('en-IN') : '—');
+const fmtDate = (d: string) => (d ? new Date(d).toLocaleDateString('en-IN') : '-');
 const fmtAmt  = (n: any)    => n && Number(n) > 0 ? '₹' + Number(n).toLocaleString('en-IN') : null;
 
 const MODE_LABELS: Record<string, string> = {
@@ -75,8 +75,8 @@ function NewPaymentPageContent() {
 
   const handleFormSubmit = async (data: any) => {
     setResolving(true);
-    let customerName  = '—';
-    let bookingNumber = '—';
+    let customerName  = '-';
+    let bookingNumber = '-';
     try {
       const [customer, booking] = await Promise.all([
         data.customerId ? customersService.getCustomer(data.customerId) : Promise.resolve(null),
@@ -107,14 +107,14 @@ function NewPaymentPageContent() {
   const handleBackToForm = () => setPendingData(null);
   const handleCancel     = () => router.push('/payments');
 
-  // ── Review row — only renders when value is truthy ─────────────────────────
+  // ── Review row - only renders when value is truthy ─────────────────────────
   const ReviewRow = ({ label, value, required }: { label: string; value: React.ReactNode; required?: boolean }) => {
     if (!value && !required) return null;
     return (
       <div className="border-b pb-3">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-0.5">{label}</p>
         <p className={`font-semibold ${!value ? 'text-red-500 italic' : 'text-gray-800'}`}>
-          {value || 'Not filled — go back and enter this'}
+          {value || 'Not filled - go back and enter this'}
         </p>
       </div>
     );
@@ -148,7 +148,7 @@ function NewPaymentPageContent() {
         </div>
       )}
 
-      {/* ── Payment Form — hidden while reviewing (NOT unmounted so values are kept) ── */}
+      {/* ── Payment Form - hidden while reviewing (NOT unmounted so values are kept) ── */}
       <div className={pendingData || resolving ? 'hidden' : ''}>
         <div className="bg-white rounded-lg shadow-md p-6">
           <PaymentForm onSubmit={handleFormSubmit} onCancel={handleCancel} initialData={urlInitialData} />
@@ -183,7 +183,7 @@ function NewPaymentPageContent() {
             <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Payment Amount</span>
-                <span className="font-semibold text-red-700">{fmtAmt(pendingData.amount) ?? '—'}</span>
+                <span className="font-semibold text-red-700">{fmtAmt(pendingData.amount) ?? '-'}</span>
               </div>
               {fmtAmt(pendingData.tdsAmount) && (
                 <div className="flex justify-between text-sm">
@@ -206,7 +206,7 @@ function NewPaymentPageContent() {
             </div>
           </div>
 
-          {/* Card: Payment instrument — only if any instrument detail is filled */}
+          {/* Card: Payment instrument - only if any instrument detail is filled */}
           {(pendingData.bankName || pendingData.chequeNumber || pendingData.transactionId || pendingData.upiId) && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-base font-semibold mb-4" style={{ color: '#7B1E12' }}>Payment Instrument</h2>
@@ -220,7 +220,7 @@ function NewPaymentPageContent() {
             </div>
           )}
 
-          {/* Card: Remarks — only if filled */}
+          {/* Card: Remarks - only if filled */}
           {pendingData.remarks && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-base font-semibold mb-2" style={{ color: '#7B1E12' }}>Remarks</h2>

@@ -17,8 +17,35 @@ class CreateDevelopmentUpdateDto {
 exports.CreateDevelopmentUpdateDto = CreateDevelopmentUpdateDto;
 __decorate([
     (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateDevelopmentUpdateDto.prototype, "constructionProjectId", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateDevelopmentUpdateDto.prototype, "propertyId", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateDevelopmentUpdateDto.prototype, "towerId", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(construction_development_update_entity_1.DevelopmentUpdateScope),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateDevelopmentUpdateDto.prototype, "scopeType", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(200),
+    __metadata("design:type", String)
+], CreateDevelopmentUpdateDto.prototype, "commonAreaLabel", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(construction_development_update_entity_1.DevelopmentUpdateCategory),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateDevelopmentUpdateDto.prototype, "category", void 0);
 __decorate([
     (0, class_validator_1.IsDateString)(),
     (0, class_validator_1.IsOptional)(),

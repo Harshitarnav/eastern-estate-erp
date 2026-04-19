@@ -22,6 +22,12 @@ export declare class CompanySettings {
     smtpUser: string;
     smtpPass: string;
     smtpFrom: string;
+    overdueReminderIntervalDays: number;
+    cancellationWarningThresholdDays: number;
+    legacyAutoRemindMaxAgeDays: number;
+    overdueReminderDailyCap: number;
+    enableSmsReminders: boolean;
+    autoSendMilestoneDemandDrafts: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

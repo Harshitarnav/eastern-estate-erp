@@ -26,6 +26,16 @@ let ExpensesController = class ExpensesController {
     create(createExpenseDto, req) {
         return this.expensesService.create(createExpenseDto, req.user.userId);
     }
+    bulkImport(body, req) {
+        const targetPid = body.propertyId || null;
+        if (targetPid && !req.isGlobalAdmin) {
+            const ids = req.accessiblePropertyIds || [];
+            if (!ids.includes(targetPid)) {
+                throw new common_1.ForbiddenException('You do not have access to this project');
+            }
+        }
+        return this.expensesService.bulkImport(body.rows, req.user?.userId, { propertyId: targetPid });
+    }
     findAll(req, category, status, startDate, endDate, propertyId) {
         const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
         return this.expensesService.findAll({
@@ -37,12 +47,16 @@ let ExpensesController = class ExpensesController {
             accessiblePropertyIds: scopeIds || undefined,
         });
     }
-    getSummary(req, startDate, endDate) {
+    getSummary(req, startDate, endDate, propertyId) {
         const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
+        if (propertyId && scopeIds?.length && !scopeIds.includes(propertyId)) {
+            throw new common_1.ForbiddenException('You do not have access to this project');
+        }
         return this.expensesService.getExpensesSummary({
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
             accessiblePropertyIds: scopeIds || undefined,
+            propertyId,
         });
     }
     async findOne(id, req) {
@@ -86,6 +100,14 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ExpensesController.prototype, "create", null);
 __decorate([
+    (0, common_1.Post)('bulk-import'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], ExpensesController.prototype, "bulkImport", null);
+__decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('category')),
@@ -102,8 +124,9 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('startDate')),
     __param(2, (0, common_1.Query)('endDate')),
+    __param(3, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", void 0)
 ], ExpensesController.prototype, "getSummary", null);
 __decorate([

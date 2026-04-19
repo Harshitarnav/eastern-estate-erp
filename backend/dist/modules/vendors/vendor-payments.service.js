@@ -109,7 +109,7 @@ let VendorPaymentsService = class VendorPaymentsService {
                 throw new common_1.BadRequestException('Cannot delete a posted vendor payment without a user context to record the journal void.');
             }
             await this.journalEntriesService.void(payment.journalEntryId, userId, {
-                voidReason: `Vendor payment deleted — payment ${id}`,
+                voidReason: `Vendor payment deleted - payment ${id}`,
             });
         }
         const queryRunner = this.dataSource.createQueryRunner();

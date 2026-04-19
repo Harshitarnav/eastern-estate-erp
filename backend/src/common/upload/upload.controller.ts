@@ -51,7 +51,7 @@ export class UploadController {
       url: '', // filled below
     };
 
-    // Generate thumbnail BEFORE save() — save() deletes the temp file
+    // Generate thumbnail BEFORE save() - save() deletes the temp file
     if (this.imageProcessor.isImage(file.mimetype)) {
       const thumbKey = `thumbnails/${file.filename}`;
       const thumbTempPath = path.join(tmpdir(), `thumb_${file.filename}`);

@@ -12,6 +12,20 @@ export declare class DatabaseController {
             columnCount: number;
         }[];
     }>;
+    getExplorerSummary(): Promise<{
+        data: {
+            tables: Array<{
+                name: string;
+                rowCount: number;
+                columnCount: number;
+            }>;
+            stats: {
+                totalTables: number;
+                totalRows: number;
+                databaseSize: string;
+            };
+        };
+    }>;
     getStats(): Promise<{
         data: {
             totalTables: number;
@@ -26,6 +40,7 @@ export declare class DatabaseController {
             toTable: string;
             toColumn: string;
             constraintName: string;
+            kind: "foreign_key" | "inferred";
         }[];
     }>;
     getTableInfo(tableName: string): Promise<{

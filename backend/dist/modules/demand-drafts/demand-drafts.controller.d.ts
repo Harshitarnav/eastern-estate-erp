@@ -19,6 +19,10 @@ export declare class DemandDraftsController {
         html: string;
         metadata: any;
     }>;
+    previewHtml(id: string): Promise<{
+        html: string;
+        metadata: any;
+    }>;
     export(id: string): Promise<{
         html: string;
         filename: string;

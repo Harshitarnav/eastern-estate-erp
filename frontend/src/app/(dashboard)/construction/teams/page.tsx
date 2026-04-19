@@ -140,7 +140,7 @@ function TeamsContent() {
   const inHouseCount = teams.filter(t => t.teamType === 'IN_HOUSE').length;
 
   const fmt = (d?: string) =>
-    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
   return (
     <div className="p-6 md:p-8 space-y-8 min-h-full" style={{ backgroundColor: brandPalette.background }}>

@@ -34,7 +34,7 @@ export const validationSchema = Joi.object({
   RATE_LIMIT_MAX: Joi.number().positive().default(100),
   CORS_ORIGINS: Joi.string().allow('').optional(),
 
-  // MinIO / object storage — all optional; omit to fall back to local disk storage
+  // MinIO / object storage - all optional; omit to fall back to local disk storage
   MINIO_ENDPOINT: Joi.string().hostname().optional(),
   MINIO_PORT: Joi.number().port().default(9000),
   MINIO_ACCESS_KEY: Joi.string().allow('').optional(),

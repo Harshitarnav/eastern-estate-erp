@@ -19,5 +19,13 @@ export declare function assertJournalEntryReadable(entry: {
     }>;
 }, req: ReqScope): void;
 export declare function resolveAccountingPropertyScope(req: ReqScope, propertyId?: string): string | undefined;
+export type AccountingReportScope = {
+    kind: 'single';
+    propertyId: string;
+} | {
+    kind: 'consolidated';
+    restrictJournalPropertyIds: string[] | null;
+};
+export declare function resolveAccountingReportScope(req: ReqScope, propertyId?: string): AccountingReportScope;
 export declare function accessiblePropertyIdsOrThrow(req: ReqScope): string[] | null;
 export {};

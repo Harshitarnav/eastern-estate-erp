@@ -31,12 +31,23 @@ let AccountsController = class AccountsController {
     seedCoaForProject(propertyId) {
         return this.accountingService.seedCoaForProject(propertyId);
     }
-    findAll(req, accountType, isActive, propertyId) {
+    bulkImport(body, req) {
+        const targetPid = body.propertyId || null;
+        if (targetPid && !req.isGlobalAdmin) {
+            const ids = req.accessiblePropertyIds || [];
+            if (!ids.includes(targetPid)) {
+                throw new common_1.ForbiddenException('You do not have access to this project');
+            }
+        }
+        return this.accountsService.bulkImport(body.rows, targetPid);
+    }
+    findAll(req, accountType, isActive, propertyId, projectOnlyCoa) {
         const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
         return this.accountsService.findAll({
             accountType,
             isActive: isActive ? isActive === 'true' : undefined,
             propertyId,
+            projectOnlyCoa: projectOnlyCoa === 'true',
         }, scopeIds);
     }
     getHierarchy(req) {
@@ -44,15 +55,15 @@ let AccountsController = class AccountsController {
         return this.accountsService.getAccountHierarchy(scopeIds);
     }
     getBalanceSheet(propertyId, req) {
-        const resolved = (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
+        const resolved = (0, accounting_scope_util_1.resolveAccountingReportScope)(req, propertyId);
         return this.accountsService.getBalanceSheet(resolved);
     }
     getProfitAndLoss(req, propertyId, startDate, endDate) {
-        const resolved = (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
+        const resolved = (0, accounting_scope_util_1.resolveAccountingReportScope)(req, propertyId);
         return this.accountsService.getProfitAndLoss(startDate ? new Date(startDate) : undefined, endDate ? new Date(endDate) : undefined, resolved);
     }
     getTrialBalance(propertyId, req) {
-        const resolved = (0, accounting_scope_util_1.resolveAccountingPropertyScope)(req, propertyId);
+        const resolved = (0, accounting_scope_util_1.resolveAccountingReportScope)(req, propertyId);
         return this.accountsService.getTrialBalance(resolved);
     }
     getPropertyWisePL(propertyId, req) {
@@ -64,8 +75,14 @@ let AccountsController = class AccountsController {
         (0, accounting_scope_util_1.assertAccountReadable)(acc, req);
         return acc;
     }
-    async findOne(id, req) {
-        const acc = await this.accountsService.findOne(id);
+    async findOne(id, propertyId, req) {
+        if (propertyId && !req.isGlobalAdmin) {
+            const ids = req.accessiblePropertyIds || [];
+            if (!ids.includes(propertyId)) {
+                throw new common_1.ForbiddenException('You do not have access to this project');
+            }
+        }
+        const acc = await this.accountsService.findOne(id, propertyId);
         (0, accounting_scope_util_1.assertAccountReadable)(acc, req);
         return acc;
     }
@@ -96,13 +113,22 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "seedCoaForProject", null);
 __decorate([
+    (0, common_1.Post)('bulk-import'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], AccountsController.prototype, "bulkImport", null);
+__decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('accountType')),
     __param(2, (0, common_1.Query)('isActive')),
     __param(3, (0, common_1.Query)('propertyId')),
+    __param(4, (0, common_1.Query)('projectOnlyCoa')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], AccountsController.prototype, "findAll", null);
 __decorate([
@@ -157,9 +183,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('propertyId')),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", Promise)
 ], AccountsController.prototype, "findOne", null);
 __decorate([

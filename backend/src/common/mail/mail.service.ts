@@ -25,7 +25,7 @@ export class MailService {
 
     if (!settings.smtpHost || !settings.smtpUser) {
       this.logger.warn(
-        `SMTP not configured — email to ${options.to} was NOT sent. ` +
+        `SMTP not configured - email to ${options.to} was NOT sent. ` +
         `Go to Settings → Company to configure SMTP.`,
       );
       return { accepted: [], skipped: true };
@@ -53,7 +53,7 @@ export class MailService {
         text: options.text,
       });
 
-      this.logger.log(`Email sent to ${options.to} — messageId: ${info.messageId}`);
+      this.logger.log(`Email sent to ${options.to} - messageId: ${info.messageId}`);
       return { accepted: info.accepted as string[] };
     } catch (err: any) {
       this.logger.error(`Failed to send email to ${options.to}: ${err?.message}`);

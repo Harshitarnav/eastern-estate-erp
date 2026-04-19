@@ -14,7 +14,7 @@ export class SchemaSyncService implements OnModuleInit {
     try {
       await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`);
     } finally {
-      // Don't release yet — reuse for schema steps below
+      // Don't release yet - reuse for schema steps below
     }
 
     // Run each schema group in its own isolated transaction so that one
@@ -43,9 +43,217 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('company_settings', (qr) => this.ensureCompanySettingsSchema(qr));
       await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
       await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
+      await runIsolated('bookings_collections', (qr) => this.ensureBookingsCollectionsSchema(qr));
+      // Cleanup must run AFTER marketing (which migrates campaigns → marketing_campaigns)
+      await runIsolated('cleanup_legacy', (qr) => this.dropLegacyTables(qr));
+      // FK constraints last – they power the Database Relationships viewer.
+      await runIsolated('foreign_keys', (qr) => this.ensureForeignKeys(qr));
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * Drop tables that have been superseded by newer entities. Each DROP is
+   * wrapped in its own try/catch via the caller's isolated transaction, but
+   * we also defensively use IF EXISTS + CASCADE so missing tables don't
+   * abort the group.
+   *
+   * Why these are safe:
+   *  - `campaigns`   → data copied into `marketing_campaigns` in ensureMarketingSchema
+   *  - `transactions` → never attached to a live entity (accounting now uses
+   *                     `journal_entries` / `journal_entry_lines` / `bank_statements`)
+   *  - `construction_updates` → renamed to `construction_development_updates`
+   *  - `payment_installments` → replaced by `payment_schedules` (see migration 018)
+   *  - `payment_installments_archive` → snapshot created by some envs pre-migration-018
+   */
+  private async dropLegacyTables(queryRunner: QueryRunner) {
+    const legacy = [
+      'campaigns',
+      'transactions',
+      'construction_updates',
+      'payment_installments',
+    ];
+
+    for (const t of legacy) {
+      try {
+        await queryRunner.query(`DROP TABLE IF EXISTS "${t}" CASCADE;`);
+        this.logger.log(`Dropped legacy table "${t}" (if it existed)`);
+      } catch (e) {
+        // Don't abort the isolated transaction on a single table failure –
+        // just log and continue. Keeps deploys resilient.
+        this.logger.warn(`Could not drop legacy table "${t}": ${(e as Error).message}`);
+      }
+    }
+  }
+
+  /**
+   * Add foreign key constraints so the Database → Relationships viewer shows
+   * real edges. Each FK is wrapped in a DO block that:
+   *   1. checks the parent + child tables/columns actually exist,
+   *   2. cleans up orphaned rows (SETs the FK column to NULL if it points at
+   *      a non-existent parent), and only then
+   *   3. adds the constraint with DROP IF EXISTS / ADD CONSTRAINT.
+   *
+   * This is idempotent and safe to run on every boot.
+   */
+  private async ensureForeignKeys(queryRunner: QueryRunner) {
+    type FK = {
+      name: string;
+      table: string;
+      column: string;
+      refTable: string;
+      refColumn: string;
+      onDelete: 'SET NULL' | 'CASCADE';
+    };
+
+    const fks: FK[] = [
+      // Properties → Users
+      { name: 'fk_properties_created_by', table: 'properties', column: 'created_by', refTable: 'users', refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_properties_updated_by', table: 'properties', column: 'updated_by', refTable: 'users', refColumn: 'id', onDelete: 'SET NULL' },
+      // Towers
+      { name: 'fk_towers_property',       table: 'towers',     column: 'property_id', refTable: 'properties', refColumn: 'id', onDelete: 'CASCADE' },
+      // Flats
+      { name: 'fk_flats_property',        table: 'flats',      column: 'property_id', refTable: 'properties', refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_flats_tower',           table: 'flats',      column: 'tower_id',    refTable: 'towers',     refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_flats_customer',        table: 'flats',      column: 'customer_id', refTable: 'customers',  refColumn: 'id', onDelete: 'SET NULL' },
+      // Bookings
+      { name: 'fk_bookings_customer',     table: 'bookings',   column: 'customer_id', refTable: 'customers',  refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_bookings_flat',         table: 'bookings',   column: 'flat_id',     refTable: 'flats',      refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_bookings_property',     table: 'bookings',   column: 'property_id', refTable: 'properties', refColumn: 'id', onDelete: 'CASCADE' },
+      // Leads
+      { name: 'fk_leads_property',        table: 'leads',      column: 'property_id', refTable: 'properties', refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_leads_tower',           table: 'leads',      column: 'tower_id',    refTable: 'towers',     refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_leads_flat',            table: 'leads',      column: 'flat_id',     refTable: 'flats',      refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_leads_assigned_to',     table: 'leads',      column: 'assigned_to', refTable: 'users',      refColumn: 'id', onDelete: 'SET NULL' },
+      // Payments
+      { name: 'fk_payments_booking',      table: 'payments',   column: 'booking_id',  refTable: 'bookings',   refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_payments_customer',     table: 'payments',   column: 'customer_id', refTable: 'customers',  refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_payments_flat',         table: 'payments',   column: 'flat_id',     refTable: 'flats',      refColumn: 'id', onDelete: 'SET NULL' },
+      // Notifications
+      { name: 'fk_notifications_user',    table: 'notifications', column: 'user_id',    refTable: 'users', refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_notifications_created_by', table: 'notifications', column: 'created_by', refTable: 'users', refColumn: 'id', onDelete: 'SET NULL' },
+      // Accounts self-ref
+      { name: 'fk_accounts_parent',       table: 'accounts',   column: 'parent_account_id', refTable: 'accounts', refColumn: 'id', onDelete: 'SET NULL' },
+      // Journal entries
+      { name: 'fk_je_lines_entry',        table: 'journal_entry_lines', column: 'journal_entry_id', refTable: 'journal_entries', refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_je_lines_account',      table: 'journal_entry_lines', column: 'account_id',       refTable: 'accounts',        refColumn: 'id', onDelete: 'CASCADE' },
+      // Purchase orders
+      { name: 'fk_po_vendor',             table: 'purchase_orders', column: 'vendor_id',   refTable: 'vendors',    refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_po_property',           table: 'purchase_orders', column: 'property_id', refTable: 'properties', refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_po_items_po',           table: 'purchase_order_items', column: 'purchase_order_id', refTable: 'purchase_orders', refColumn: 'id', onDelete: 'CASCADE' },
+      // Vendor payments
+      { name: 'fk_vp_vendor',             table: 'vendor_payments', column: 'vendor_id',   refTable: 'vendors', refColumn: 'id', onDelete: 'CASCADE' },
+      // Demand drafts
+      { name: 'fk_dd_flat',               table: 'demand_drafts', column: 'flat_id',     refTable: 'flats',     refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_dd_customer',           table: 'demand_drafts', column: 'customer_id', refTable: 'customers', refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_dd_booking',            table: 'demand_drafts', column: 'booking_id',  refTable: 'bookings',  refColumn: 'id', onDelete: 'SET NULL' },
+      // Construction
+      { name: 'fk_cdu_property',          table: 'construction_development_updates', column: 'property_id', refTable: 'properties', refColumn: 'id', onDelete: 'CASCADE' },
+      // Employees
+      { name: 'fk_employees_user',        table: 'employees',  column: 'user_id',    refTable: 'users',     refColumn: 'id', onDelete: 'CASCADE' },
+      { name: 'fk_employees_manager',     table: 'employees',  column: 'manager_id', refTable: 'employees', refColumn: 'id', onDelete: 'SET NULL' },
+      // Expenses
+      { name: 'fk_expenses_account',      table: 'expenses', column: 'account_id',        refTable: 'accounts',         refColumn: 'id', onDelete: 'SET NULL' },
+      { name: 'fk_expenses_je',           table: 'expenses', column: 'journal_entry_id',  refTable: 'journal_entries',  refColumn: 'id', onDelete: 'SET NULL' },
+    ];
+
+    let added = 0;
+    let skipped = 0;
+    for (const fk of fks) {
+      // Each FK lives inside its own PL/pgSQL EXCEPTION block. That keeps the
+      // outer transaction healthy if e.g. the column is the wrong type or
+      // orphan cleanup isn't possible because the column is NOT NULL.
+      try {
+        await queryRunner.query(`
+          DO $$
+          DECLARE
+            has_cols boolean;
+          BEGIN
+            SELECT EXISTS (
+              SELECT 1 FROM information_schema.columns
+               WHERE table_schema = current_schema()
+                 AND table_name = '${fk.table}'
+                 AND column_name = '${fk.column}'
+            ) AND EXISTS (
+              SELECT 1 FROM information_schema.columns
+               WHERE table_schema = current_schema()
+                 AND table_name = '${fk.refTable}'
+                 AND column_name = '${fk.refColumn}'
+            )
+            INTO has_cols;
+
+            IF NOT has_cols THEN
+              RETURN;
+            END IF;
+
+            BEGIN
+              -- Clean up orphans where we can (nullable SET NULL columns).
+              IF '${fk.onDelete}' = 'SET NULL' THEN
+                EXECUTE 'UPDATE "${fk.table}" SET "${fk.column}" = NULL
+                          WHERE "${fk.column}" IS NOT NULL
+                            AND NOT EXISTS (
+                              SELECT 1 FROM "${fk.refTable}"
+                               WHERE "${fk.refTable}"."${fk.refColumn}" = "${fk.table}"."${fk.column}"
+                            )';
+              END IF;
+
+              EXECUTE 'ALTER TABLE "${fk.table}"
+                         DROP CONSTRAINT IF EXISTS "${fk.name}",
+                         ADD CONSTRAINT "${fk.name}"
+                         FOREIGN KEY ("${fk.column}")
+                         REFERENCES "${fk.refTable}"("${fk.refColumn}")
+                         ON DELETE ${fk.onDelete}';
+
+              RAISE NOTICE 'FK % added', '${fk.name}';
+            EXCEPTION WHEN OTHERS THEN
+              RAISE NOTICE 'FK % skipped: %', '${fk.name}', SQLERRM;
+            END;
+          END $$;
+        `);
+        added++;
+      } catch (e) {
+        skipped++;
+        this.logger.warn(`FK ${fk.name} guard failed: ${(e as Error).message}`);
+      }
+    }
+
+    this.logger.log(
+      `Foreign-key pass complete: ${added} attempted, ${skipped} skipped of ${fks.length} candidates`,
+    );
+  }
+
+  /**
+   * Ensure the bookings.status PG enum includes AT_RISK (added in PR1 for
+   * the collections workstation). Safe to run on every boot.
+   *
+   * PG requires ALTER TYPE ... ADD VALUE to run outside a transaction for
+   * some versions, so we use the pg_enum lookup + DO block guard.
+   */
+  private async ensureBookingsCollectionsSchema(queryRunner: QueryRunner) {
+    await queryRunner.query(`
+      DO $$
+      DECLARE
+        enum_typname TEXT;
+      BEGIN
+        SELECT t.typname INTO enum_typname
+        FROM pg_type t
+        JOIN pg_attribute a ON a.atttypid = t.oid
+        JOIN pg_class c ON c.oid = a.attrelid
+        WHERE c.relname = 'bookings' AND a.attname = 'status' AND t.typtype = 'e'
+        LIMIT 1;
+
+        IF enum_typname IS NOT NULL THEN
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_enum e
+            JOIN pg_type t ON t.oid = e.enumtypid
+            WHERE t.typname = enum_typname AND e.enumlabel = 'AT_RISK'
+          ) THEN
+            EXECUTE format('ALTER TYPE %I ADD VALUE IF NOT EXISTS %L', enum_typname, 'AT_RISK');
+          END IF;
+        END IF;
+      END $$;
+    `);
   }
 
   private async ensureCompanySettingsSchema(queryRunner: QueryRunner) {
@@ -94,6 +302,19 @@ export class SchemaSyncService implements OnModuleInit {
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_user VARCHAR(255)`,
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_pass VARCHAR(255)`,
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_from VARCHAR(255)`,
+      // Collections / overdue-reminder controls (PR1)
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS overdue_reminder_interval_days INT NOT NULL DEFAULT 7`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS cancellation_warning_threshold_days INT NOT NULL DEFAULT 30`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS legacy_auto_remind_max_age_days INT NOT NULL DEFAULT 180`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS overdue_reminder_daily_cap INT NOT NULL DEFAULT 50`,
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS enable_sms_reminders BOOLEAN NOT NULL DEFAULT FALSE`,
+      // Milestone-DD auto-send toggle (PR: auto-send)
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS auto_send_milestone_demand_drafts BOOLEAN NOT NULL DEFAULT FALSE`,
+      // Per-project / per-customer overrides (nullable so existing rows
+      // inherit from the company-wide default). A small partial index on
+      // non-null rows keeps the resolver query cheap.
+      `ALTER TABLE properties ADD COLUMN IF NOT EXISTS auto_send_milestone_demand_drafts BOOLEAN NULL`,
+      `ALTER TABLE customers ADD COLUMN IF NOT EXISTS auto_send_milestone_demand_drafts BOOLEAN NULL`,
     ];
     for (const sql of newCols) {
       await queryRunner.query(sql);
@@ -539,7 +760,7 @@ export class SchemaSyncService implements OnModuleInit {
    * The production DB was created from an older entity definition.
    * This migration safely adds ALL columns the current Customer entity expects,
    * preserving every existing row and copying data from old column names where applicable.
-   * Safe to run on every boot — all statements use ADD COLUMN IF NOT EXISTS.
+   * Safe to run on every boot - all statements use ADD COLUMN IF NOT EXISTS.
    */
   private async ensureCustomersSchema(queryRunner: QueryRunner) {
     // ── 1. Core identity columns ─────────────────────────────────────────────
@@ -602,6 +823,12 @@ export class SchemaSyncService implements OnModuleInit {
     await queryRunner.query(`
       ALTER TABLE customers
         ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
+    `);
+
+    // ── 6b. Collections: account-wide reminder pause (PR1) ────────────────────
+    await queryRunner.query(`
+      ALTER TABLE customers
+        ADD COLUMN IF NOT EXISTS pause_reminders_until TIMESTAMP NULL;
     `);
 
     // ── 7. Drop NOT NULL from legacy columns the entity no longer writes to ───
@@ -699,7 +926,7 @@ export class SchemaSyncService implements OnModuleInit {
        WHERE full_name IS NULL OR full_name = '';
     `);
 
-    this.logger.log('Customers schema ensured — all columns up to date');
+    this.logger.log('Customers schema ensured - all columns up to date');
   }
 
   /**
@@ -751,6 +978,6 @@ export class SchemaSyncService implements OnModuleInit {
       END $$;
     `);
 
-    this.logger.log('Payments schema ensured — all columns up to date');
+    this.logger.log('Payments schema ensured - all columns up to date');
   }
 }

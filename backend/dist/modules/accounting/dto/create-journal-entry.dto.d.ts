@@ -11,6 +11,7 @@ export declare class CreateJournalEntryDto {
     referenceType?: string;
     referenceId?: string;
     description: string;
+    propertyId?: string;
     lines: JournalEntryLineDto[];
     status?: JournalEntryStatus;
 }

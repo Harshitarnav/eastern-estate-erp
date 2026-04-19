@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, TrendingUp, TrendingDown, PieChart, FileText, BookOpen, BarChart3, RefreshCw, Calculator, Lightbulb, ArrowRight, Database, Building2, Users } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, PieChart, FileText, BookOpen, BarChart3, RefreshCw, Calculator, Lightbulb, ArrowRight, Database, Building2, Users, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { accountsService, expensesService } from '@/services/accounting.service';
 import { DashboardSkeleton } from '@/components/Skeletons';
@@ -10,8 +10,19 @@ import { usePropertyStore } from '@/store/propertyStore';
 
 export default function AccountingDashboard() {
   const { selectedProperties, properties } = usePropertyStore();
-  const reportPropertyId =
-    selectedProperties[0] ?? (properties.length > 0 ? properties[0].id : undefined);
+
+  /** Empty selection or “select all” in header = consolidated across projects (API omits propertyId). */
+  const allSelected =
+    properties.length > 0 && selectedProperties.length === properties.length;
+  const isAllPropertiesView = selectedProperties.length === 0 || allSelected;
+  const reportPropertyId = isAllPropertiesView ? undefined : selectedProperties[0];
+
+  const scopedPropertyName = useMemo(() => {
+    if (!properties.length) return null;
+    if (isAllPropertiesView) return 'All projects';
+    if (!reportPropertyId) return null;
+    return properties.find((p) => p.id === reportPropertyId)?.name ?? 'Selected project';
+  }, [reportPropertyId, properties, isAllPropertiesView]);
 
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -20,32 +31,39 @@ export default function AccountingDashboard() {
   const [expenseSummary, setExpenseSummary] = useState<any>(null);
 
   useEffect(() => {
-    setLoading(true);
-    setFetchError(false);
     const fetchData = async () => {
+      setLoading(true);
+      setFetchError(false);
       try {
-        const es = await expensesService.getSummary();
-        setExpenseSummary(es);
-        if (reportPropertyId) {
-          const [bs, pl] = await Promise.all([
-            accountsService.getBalanceSheet(reportPropertyId),
-            accountsService.getProfitLoss(reportPropertyId),
-          ]);
-          setBalanceSheet(bs);
-          setProfitLoss(pl);
-        } else {
+        if (!properties.length) {
           setBalanceSheet(null);
           setProfitLoss(null);
+          setExpenseSummary(null);
+          setFetchError(false);
+          return;
         }
+
+        const summaryParams = reportPropertyId ? { propertyId: reportPropertyId } : {};
+        const [es, bs, pl] = await Promise.all([
+          expensesService.getSummary(summaryParams),
+          accountsService.getBalanceSheet(reportPropertyId),
+          accountsService.getProfitLoss(reportPropertyId),
+        ]);
+        setExpenseSummary(es);
+        setBalanceSheet(bs);
+        setProfitLoss(pl);
       } catch (error) {
         console.error('Error fetching accounting data:', error);
         setFetchError(true);
+        setBalanceSheet(null);
+        setProfitLoss(null);
+        setExpenseSummary(null);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, [reportPropertyId]);
+  }, [reportPropertyId, properties.length, isAllPropertiesView, selectedProperties.length, allSelected]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -62,7 +80,14 @@ export default function AccountingDashboard() {
   return (
     <div className="p-4 sm:p-6 space-y-6 min-w-0 max-w-full">
       <div className="flex flex-wrap items-center justify-between gap-3 min-w-0">
-        <h1 className="text-2xl sm:text-3xl font-bold min-w-0">Accounting Dashboard</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold min-w-0">Accounting Dashboard</h1>
+          {scopedPropertyName && (
+            <p className="text-sm text-muted-foreground mt-1 truncate">
+              Figures for: <span className="font-medium text-foreground">{scopedPropertyName}</span>
+            </p>
+          )}
+        </div>
       </div>
 
       {fetchError && (
@@ -274,7 +299,7 @@ export default function AccountingDashboard() {
       <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 space-y-5">
         <div className="flex items-center gap-2">
           <Lightbulb className="h-5 w-5 text-amber-600 flex-shrink-0" />
-          <h2 className="text-base font-bold text-amber-900">Accountant's Quick Guide — Where to do What</h2>
+          <h2 className="text-base font-bold text-amber-900">Accountant's Quick Guide - Where to do What</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -290,7 +315,7 @@ export default function AccountingDashboard() {
                 <ArrowRight className="h-3 w-3 text-gray-400 ml-auto" />
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Set up and manage all your ledger accounts — Cash, Bank, Sales, Rent, etc. Think of this as the <strong>master list of all heads</strong> in your books. Create accounts here before recording any entry.
+                Set up and manage all your ledger accounts - Cash, Bank, Sales, Rent, etc. Think of this as the <strong>master list of all heads</strong> in your books. Create accounts here before recording any entry.
               </p>
               <div className="mt-3 flex flex-wrap gap-1">
                 {['Add new account', 'View balances', 'Open ledger'].map(t => (
@@ -311,11 +336,32 @@ export default function AccountingDashboard() {
                 <ArrowRight className="h-3 w-3 text-gray-400 ml-auto" />
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Record every financial transaction here using <strong>double-entry</strong> (Debit = Credit). This is the heart of accounting — like Tally's voucher entry. Save as <em>Draft</em> first, then <em>Post</em> to update balances.
+                Record every financial transaction here using <strong>double-entry</strong> (Debit = Credit). This is the heart of accounting - like Tally's voucher entry. Save as <em>Draft</em> first, then <em>Post</em> to update balances.
               </p>
               <div className="mt-3 flex flex-wrap gap-1">
                 {['Record transaction', 'Post entry', 'Void mistake'].map(t => (
                   <span key={t} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded px-2 py-0.5">{t}</span>
+                ))}
+              </div>
+            </div>
+          </Link>
+
+          {/* Day Book */}
+          <Link href="/accounting/day-book">
+            <div className="bg-white rounded-xl border border-amber-100 p-4 hover:shadow-md transition-shadow cursor-pointer h-full">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 rounded-lg bg-rose-100">
+                  <CalendarDays className="h-4 w-4 text-rose-700" />
+                </div>
+                <span className="font-semibold text-sm text-gray-800">Day Book</span>
+                <ArrowRight className="h-3 w-3 text-gray-400 ml-auto" />
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                The "morning check" - every voucher posted between any two dates, grouped by date with Dr/Cr totals. Export to Excel for your CA or upload to Tally. Same idea as Tally's <strong>Display → Day Book</strong>.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {['Chronological view', 'Per-day totals', 'Excel export'].map(t => (
+                  <span key={t} className="text-xs bg-rose-50 text-rose-700 border border-rose-200 rounded px-2 py-0.5">{t}</span>
                 ))}
               </div>
             </div>
@@ -332,7 +378,7 @@ export default function AccountingDashboard() {
                 <ArrowRight className="h-3 w-3 text-gray-400 ml-auto" />
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                See every transaction in a single account with running balance — exactly like Tally's ledger view. Go to <strong>Chart of Accounts → click Ledger</strong> on any account. Filter by date range and export to Excel.
+                See every transaction in a single account with running balance - exactly like Tally's ledger view. Go to <strong>Chart of Accounts → click Ledger</strong> on any account. Filter by date range and export to Excel.
               </p>
               <div className="mt-3 flex flex-wrap gap-1">
                 {['Running balance', 'Date filter', 'Export Excel'].map(t => (
@@ -353,7 +399,7 @@ export default function AccountingDashboard() {
                 <ArrowRight className="h-3 w-3 text-gray-400 ml-auto" />
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Log and approve operational expenses — site costs, office bills, vendor payments, etc. Expenses submitted by staff come here for <strong>approval or rejection</strong>. Approved expenses auto-update the P&amp;L.
+                Log and approve operational expenses - site costs, office bills, vendor payments, etc. Expenses submitted by staff come here for <strong>approval or rejection</strong>. Approved expenses auto-update the P&amp;L.
               </p>
               <div className="mt-3 flex flex-wrap gap-1">
                 {['Approve expense', 'Reject expense', 'Track by category'].map(t => (
@@ -416,7 +462,7 @@ export default function AccountingDashboard() {
                 <ArrowRight className="h-3 w-3 text-gray-400 ml-auto" />
               </div>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Full chronological ledger of all <strong>cash transactions</strong> (Cash Book) and <strong>bank transactions</strong> (Bank Book) with running balance — exactly like Tally. Filter by date, print, or export.
+                Full chronological ledger of all <strong>cash transactions</strong> (Cash Book) and <strong>bank transactions</strong> (Bank Book) with running balance - exactly like Tally. Filter by date, print, or export.
               </p>
               <div className="mt-3 flex flex-wrap gap-1">
                 {['Cash Book', 'Bank Book', 'Running balance'].map(t => (

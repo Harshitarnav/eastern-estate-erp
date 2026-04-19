@@ -230,7 +230,7 @@ export default function VendorPaymentModal({ isOpen, onClose, onSuccess, vendor 
             onChange={(e) => setFormData({ ...formData, propertyId: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
           >
-            <option value="">— Select project —</option>
+            <option value="">- Select project -</option>
             {properties.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}

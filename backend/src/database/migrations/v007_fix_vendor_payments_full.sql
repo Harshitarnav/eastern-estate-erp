@@ -2,7 +2,7 @@
 -- v007: Full vendor_payments column fix
 -- Production table was created from old schema with different
 -- column names. This adds all columns the entity expects.
--- IDEMPOTENT — safe to run multiple times.
+-- IDEMPOTENT - safe to run multiple times.
 -- ============================================================
 
 -- Columns the entity uses that the old schema didn't have

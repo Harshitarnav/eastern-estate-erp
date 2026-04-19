@@ -10,7 +10,7 @@
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, ILike } from 'typeorm';
+import { Repository, ILike, DataSource } from 'typeorm';
 import { Account, AccountType } from './entities/account.entity';
 import { JournalEntry, JournalEntryStatus } from './entities/journal-entry.entity';
 import { JournalEntryLine } from './entities/journal-entry-line.entity';
@@ -38,6 +38,7 @@ export class AccountingIntegrationService {
     private readonly jeRepo: Repository<JournalEntry>,
     @InjectRepository(JournalEntryLine)
     private readonly jelRepo: Repository<JournalEntryLine>,
+    private readonly dataSource: DataSource,
   ) {}
 
   // ─── Smart account lookup ─────────────────────────────────────────────────
@@ -163,72 +164,88 @@ export class AccountingIntegrationService {
     if (!amount || amount <= 0) return null;
 
     try {
-      const entryNumber = await this.generateEntryNumber();
+      // Wrap the JE header + lines + balance updates in a single DB
+      // transaction so a partial failure can't leave the books
+      // unbalanced. Previously these were 4 separate saves with no
+      // atomicity guarantee — if step 3 or 4 failed, the ledger would
+      // drift from the chart of accounts.
+      return await this.dataSource.transaction(async (manager) => {
+        const entryNumber = await this.generateEntryNumber();
 
-      const je = this.jeRepo.create({
-        entryNumber,
-        entryDate: opts.date,
-        description: opts.description,
-        referenceType: opts.referenceType,
-        referenceId: opts.referenceId,
-        status: JournalEntryStatus.POSTED, // Auto-created JEs are posted immediately
-        totalDebit: amount,
-        totalCredit: amount,
-        createdBy: opts.createdBy,
-        approvedBy: opts.createdBy,
-        approvedAt: new Date(),
-        propertyId: opts.propertyId ?? null,
+        const jeRepo = manager.getRepository(JournalEntry);
+        const jelRepo = manager.getRepository(JournalEntryLine);
+
+        const je = jeRepo.create({
+          entryNumber,
+          entryDate: opts.date,
+          description: opts.description,
+          referenceType: opts.referenceType,
+          referenceId: opts.referenceId,
+          status: JournalEntryStatus.POSTED,
+          totalDebit: amount,
+          totalCredit: amount,
+          createdBy: opts.createdBy,
+          approvedBy: opts.createdBy,
+          approvedAt: new Date(),
+          propertyId: opts.propertyId ?? null,
+        });
+
+        const savedJE = (await jeRepo.save(je)) as JournalEntry;
+
+        const debitLine = jelRepo.create({
+          journalEntryId: savedJE.id,
+          accountId: opts.debitAccountId,
+          debitAmount: amount,
+          creditAmount: 0,
+          description: opts.description,
+        });
+        const creditLine = jelRepo.create({
+          journalEntryId: savedJE.id,
+          accountId: opts.creditAccountId,
+          debitAmount: 0,
+          creditAmount: amount,
+          description: opts.description,
+        });
+
+        await jelRepo.save([debitLine, creditLine]);
+
+        await this.updateBalanceTx(manager, opts.debitAccountId, amount, 0);
+        await this.updateBalanceTx(manager, opts.creditAccountId, 0, amount);
+
+        this.logger.log(
+          `Auto JE created: ${entryNumber} | ${opts.referenceType} ${opts.referenceId} | ₹${amount}`,
+        );
+
+        return savedJE;
       });
-
-      const savedJE = await this.jeRepo.save(je) as JournalEntry;
-
-      // Debit line
-      const debitLine = this.jelRepo.create({
-        journalEntryId: savedJE.id,
-        accountId: opts.debitAccountId,
-        debitAmount: amount,
-        creditAmount: 0,
-        description: opts.description,
-      });
-
-      // Credit line
-      const creditLine = this.jelRepo.create({
-        journalEntryId: savedJE.id,
-        accountId: opts.creditAccountId,
-        debitAmount: 0,
-        creditAmount: amount,
-        description: opts.description,
-      });
-
-      await this.jelRepo.save([debitLine, creditLine]);
-
-      // Update account balances
-      await this.updateBalance(opts.debitAccountId, amount, 0);
-      await this.updateBalance(opts.creditAccountId, 0, amount);
-
-      this.logger.log(
-        `Auto JE created: ${entryNumber} | ${opts.referenceType} ${opts.referenceId} | ₹${amount}`,
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to create auto JE for ${opts.referenceType} ${opts.referenceId}: ${err?.message || err}`,
       );
-
-      return savedJE;
-    } catch (err) {
-      this.logger.error(`Failed to create auto JE for ${opts.referenceType} ${opts.referenceId}: ${err.message}`);
       return null; // Never block the triggering operation
     }
   }
 
-  private async updateBalance(accountId: string, debit: number, credit: number): Promise<void> {
-    const account = await this.accountsRepo.findOne({ where: { id: accountId } });
+  private async updateBalanceTx(
+    manager: import('typeorm').EntityManager,
+    accountId: string,
+    debit: number,
+    credit: number,
+  ): Promise<void> {
+    const accountsRepo = manager.getRepository(Account);
+    const account = await accountsRepo.findOne({ where: { id: accountId } });
     if (!account) return;
 
-    const isDebitType = account.accountType === AccountType.ASSET || account.accountType === AccountType.EXPENSE;
+    const isDebitType =
+      account.accountType === AccountType.ASSET ||
+      account.accountType === AccountType.EXPENSE;
     const current = Math.round(Number(account.currentBalance) * 100) / 100;
 
     account.currentBalance = isDebitType
       ? Math.round((current + debit - credit) * 100) / 100
       : Math.round((current + credit - debit) * 100) / 100;
 
-    await this.accountsRepo.save(account);
+    await accountsRepo.save(account);
   }
 
   // ─── Public hooks ─────────────────────────────────────────────────────────
@@ -261,7 +278,7 @@ export class AccountingIntegrationService {
 
     return this.createAutoJE({
       date: payment.paymentDate instanceof Date ? payment.paymentDate : new Date(payment.paymentDate),
-      description: `Payment received — ${payment.paymentCode} via ${payment.paymentMethod || 'N/A'}`,
+      description: `Payment received - ${payment.paymentCode} via ${payment.paymentMethod || 'N/A'}`,
       referenceType: 'PAYMENT',
       referenceId: payment.id,
       debitAccountId: bankAccount.id,
@@ -301,7 +318,7 @@ export class AccountingIntegrationService {
 
     return this.createAutoJE({
       date: expense.expenseDate instanceof Date ? expense.expenseDate : new Date(expense.expenseDate),
-      description: `Expense paid — ${expense.expenseCode}: ${expense.description}`,
+      description: `Expense paid - ${expense.expenseCode}: ${expense.description}`,
       referenceType: 'EXPENSE',
       referenceId: expense.id,
       debitAccountId: expenseAccount.id,
@@ -381,7 +398,7 @@ export class AccountingIntegrationService {
     }
 
     const description = [
-      `RA Bill paid — ${bill.raBillNumber}`,
+      `RA Bill paid - ${bill.raBillNumber}`,
       bill.vendorName ? `| Vendor: ${bill.vendorName}` : '',
       bill.projectName ? `| Project: ${bill.projectName}` : '',
     ].filter(Boolean).join(' ');
@@ -427,7 +444,7 @@ export class AccountingIntegrationService {
 
     const description = [
       `Vendor payment recorded`,
-      payment.vendorName ? `— ${payment.vendorName}` : '',
+      payment.vendorName ? `- ${payment.vendorName}` : '',
       payment.transactionReference ? `| Ref: ${payment.transactionReference}` : '',
     ].filter(Boolean).join(' ');
 
@@ -474,7 +491,7 @@ export class AccountingIntegrationService {
 
     return this.createAutoJE({
       date: salary.paymentDate instanceof Date ? salary.paymentDate : new Date(salary.paymentDate),
-      description: `Salary paid — ${salary.employeeName} for ${monthStr}`,
+      description: `Salary paid - ${salary.employeeName} for ${monthStr}`,
       referenceType: 'SALARY',
       referenceId: salary.id,
       debitAccountId: salaryAccount.id,

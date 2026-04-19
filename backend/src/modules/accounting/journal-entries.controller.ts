@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { Request as ExpressRequest } from 'express';
 import { JournalEntriesService } from './journal-entries.service';
@@ -27,8 +28,16 @@ export class JournalEntriesController {
   constructor(private readonly journalEntriesService: JournalEntriesService) {}
 
   @Post()
-  create(@Body() createJournalEntryDto: CreateJournalEntryDto, @Request() req) {
-    return this.journalEntriesService.create(createJournalEntryDto, req.user.userId);
+  create(@Body() createJournalEntryDto: CreateJournalEntryDto, @Req() req: ExpressRequest) {
+    if (createJournalEntryDto.propertyId && !(req as any).isGlobalAdmin) {
+      const ids = (req as any).accessiblePropertyIds || [];
+      if (!ids.includes(createJournalEntryDto.propertyId)) {
+        throw new ForbiddenException('You do not have access to this project');
+      }
+    }
+    return this.journalEntriesService.create(createJournalEntryDto, (req as any).user.userId, {
+      allowOrgWideWithoutProperty: !!(req as any).isGlobalAdmin,
+    });
   }
 
   @Get()
@@ -38,13 +47,19 @@ export class JournalEntriesController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('referenceType') referenceType?: string,
+    @Query('propertyId') propertyId?: string,
   ) {
     const scopeIds = accessiblePropertyIdsOrThrow(req as any);
+    // Guard: user cannot widen scope to a property they don't own.
+    if (propertyId && scopeIds && scopeIds.length > 0 && !scopeIds.includes(propertyId)) {
+      return [];
+    }
     return this.journalEntriesService.findAll({
       status,
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
       referenceType,
+      propertyId,
       accessiblePropertyIds: scopeIds || undefined,
     });
   }

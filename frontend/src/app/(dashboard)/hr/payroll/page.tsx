@@ -201,7 +201,7 @@ export default function PayrollPage() {
       if (result?.journalEntryNumber) {
         setJeMessage({ id: showPay.id, msg: `✅ Journal Entry ${result.journalEntryNumber} created automatically`, success: true });
       } else {
-        setJeMessage({ id: showPay.id, msg: '⚠️ Payment saved but JE was not created — click "Gen JE" to retry', success: false });
+        setJeMessage({ id: showPay.id, msg: '⚠️ Payment saved but JE was not created - click "Gen JE" to retry', success: false });
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to process payment');
@@ -218,7 +218,7 @@ export default function PayrollPage() {
     setJeMessage(null);
     try {
       await api.post(`/employees/salary-payments/${payment.id}/reverse-pay`, {});
-      toast.success('Payment reversed — record is Pending again; journal entry voided if one existed.');
+      toast.success('Payment reversed - record is Pending again; journal entry voided if one existed.');
       await loadData();
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message || 'Failed to reverse payment');
@@ -249,7 +249,7 @@ export default function PayrollPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold" style={{ color: '#7B1E12' }}>Payroll</h1>
-          <p className="text-gray-600 mt-1">Process monthly salaries — auto Journal Entry on payment</p>
+          <p className="text-gray-600 mt-1">Process monthly salaries - auto Journal Entry on payment</p>
         </div>
         <div className="flex gap-3 items-center">
           <div>
@@ -306,7 +306,7 @@ export default function PayrollPage() {
       {/* Salary Payments Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Salary Register — {monthLabel}</CardTitle>
+          <CardTitle>Salary Register - {monthLabel}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -382,7 +382,7 @@ export default function PayrollPage() {
                             </Button>
                           )
                         )}
-                        {p.paymentStatus !== 'PAID' && <span className="text-xs text-gray-400">—</span>}
+                        {p.paymentStatus !== 'PAID' && <span className="text-xs text-gray-400">-</span>}
                       </td>
                       <td className="px-4 py-3 text-center">
                         {p.paymentStatus === 'PENDING' && (
@@ -470,7 +470,7 @@ export default function PayrollPage() {
                 <SelectContent>
                   {employees.map(e => (
                     <SelectItem key={e.id} value={e.id}>
-                      {e.fullName} {e.designation ? `— ${e.designation}` : ''}
+                      {e.fullName} {e.designation ? `- ${e.designation}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -592,7 +592,7 @@ export default function PayrollPage() {
                 </p>
                 <p className="text-2xl font-bold text-green-700 mt-1">{fmt(showPay.netSalary)}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Gross: {fmt(showPay.grossSalary)} — Deductions: {fmt(showPay.totalDeductions)}
+                  Gross: {fmt(showPay.grossSalary)} - Deductions: {fmt(showPay.totalDeductions)}
                 </p>
               </div>
 
@@ -645,7 +645,7 @@ export default function PayrollPage() {
                   onChange={e => setPayForm(f => ({ ...f, propertyId: e.target.value }))}
                   className="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-green-500"
                 >
-                  <option value="">— Select project —</option>
+                  <option value="">- Select project -</option>
                   {allProperties.map(p => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}

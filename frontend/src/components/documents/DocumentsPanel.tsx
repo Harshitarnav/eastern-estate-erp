@@ -85,7 +85,7 @@ const categoryColor: Record<string, string> = {
  *
  *  "customer" → GET /documents/customer/:customerId
  *             Returns ALL docs whose customer_id column matches,
- *             regardless of entityType — so Booking docs uploaded
+ *             regardless of entityType - so Booking docs uploaded
  *             with a customerId show up here too.
  */
 type FetchMode = 'entity' | 'booking' | 'customer';
@@ -350,7 +350,7 @@ export default function DocumentsPanel({
             <div className="space-y-1">
               <Label htmlFor="docName">Document Name *</Label>
               <Input id="docName" value={docName} onChange={e => setDocName(e.target.value)}
-                placeholder="e.g. Aadhar Card — Front & Back" />
+                placeholder="e.g. Aadhar Card - Front & Back" />
             </div>
 
             {/* Category */}

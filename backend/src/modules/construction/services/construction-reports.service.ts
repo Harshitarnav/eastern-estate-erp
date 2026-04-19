@@ -46,8 +46,8 @@ export class ConstructionReportsService {
       return {
         id:             p.id,
         projectName:    p.projectName,
-        propertyName:   p.property?.name   || '—',
-        managerName:    p.projectManager?.fullName || '—',
+        propertyName:   p.property?.name   || '-',
+        managerName:    p.projectManager?.fullName || '-',
         status:         p.status,
         overallProgress: Number(p.overallProgress) || 0,
         budgetAllocated: allocated,
@@ -98,7 +98,7 @@ export class ConstructionReportsService {
       return {
         id:              p.id,
         projectName:     p.projectName,
-        propertyName:    p.property?.name   || '—',
+        propertyName:    p.property?.name   || '-',
         status:          p.status,
         overallProgress: progress,
         budgetAllocated: allocated,

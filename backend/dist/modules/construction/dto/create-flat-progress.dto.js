@@ -66,4 +66,10 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], CreateFlatProgressDto.prototype, "notes", void 0);
+__decorate([
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Array)
+], CreateFlatProgressDto.prototype, "photos", void 0);
 //# sourceMappingURL=create-flat-progress.dto.js.map

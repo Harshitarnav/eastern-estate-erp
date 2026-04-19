@@ -5,7 +5,7 @@ export declare class FlatPaymentPlanController {
     private readonly flatPaymentPlanService;
     constructor(flatPaymentPlanService: FlatPaymentPlanService);
     create(createDto: CreateFlatPaymentPlanDto, req: any): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
-    findAll(): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan[]>;
+    findAll(propertyId: string | undefined, req: any): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan[]>;
     findByFlatId(flatId: string): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
     findByBookingId(bookingId: string): Promise<import("../entities/flat-payment-plan.entity").FlatPaymentPlan>;
     getLedger(bookingId: string): Promise<import("../services/flat-payment-plan.service").LedgerResponse>;

@@ -2,23 +2,62 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConstructionFlatProgress } from '../entities/construction-flat-progress.entity';
+import {
+  ConstructionPhase,
+  PhaseStatus,
+} from '../entities/construction-tower-progress.entity';
+import { ConstructionProject } from '../entities/construction-project.entity';
 import { Flat } from '../../flats/entities/flat.entity';
-import { FlatPaymentPlan, FlatPaymentPlanStatus } from '../../payment-plans/entities/flat-payment-plan.entity';
-import { DemandDraft, DemandDraftStatus } from '../../demand-drafts/entities/demand-draft.entity';
-import { Customer } from '../../customers/entities/customer.entity';
-import { Booking } from '../../bookings/entities/booking.entity';
-import { buildDemandDraftHtml } from '../../../common/utils/demand-draft-html.builder';
-import { SettingsService } from '../../settings/settings.service';
+import {
+  FlatPaymentPlan,
+  FlatPaymentPlanStatus,
+} from '../../payment-plans/entities/flat-payment-plan.entity';
+import {
+  DemandDraft,
+  DemandDraftStatus,
+} from '../../demand-drafts/entities/demand-draft.entity';
+import { AutoDemandDraftService } from './auto-demand-draft.service';
+
+/**
+ * Shape returned to the caller when an automated demand draft is raised.
+ * Frontend uses this to surface a toast ("DD raised for X - ₹Y").
+ */
+export interface GeneratedDemandDraftSummary {
+  id: string;
+  title: string;
+  amount: number;
+  refNumber?: string;
+  milestoneName?: string;
+  flatNumber?: string;
+  towerName?: string;
+  propertyName?: string;
+  customerName?: string;
+  dueDate?: Date;
+}
+
+export interface ConstructionWorkflowResult {
+  milestonesTriggered: number;
+  generatedDemandDrafts: GeneratedDemandDraftSummary[];
+}
 
 /**
  * Construction Workflow Service
- * 
- * Handles the complete automated flow:
- * 1. Construction progress log updated
- * 2. Update flat module (stage and percentage)
- * 3. If flat is sold → check payment plan
- * 4. Check if milestone reached → update status
- * 5. Auto-generate demand draft
+ *
+ * Entry point invoked after a construction progress log is saved.
+ * Responsibilities:
+ *   1. Stamp the flat's construction stage / % so lists stay fresh
+ *   2. Detect which payment plan milestones are now due
+ *   3. Delegate DD creation to {@link AutoDemandDraftService} (the single
+ *      source of truth for demand-draft generation, templating, scheduling,
+ *      auto-send resolution and email side-effects)
+ *
+ * Historically this service contained its own copy of the DD-generation
+ * logic. That duplicate diverged over time - one path stamped the
+ * construction checkpoint row, the other didn't; one path created a
+ * PaymentSchedule, the other didn't; one called FlatPaymentPlanService.
+ * updateMilestone, the other mutated in-memory and saved. Unifying on
+ * AutoDemandDraftService keeps the side-effects consistent no matter
+ * which entry point fired.
  */
 @Injectable()
 export class ConstructionWorkflowService {
@@ -26,18 +65,16 @@ export class ConstructionWorkflowService {
 
   constructor(
     @InjectRepository(Flat)
-    private flatRepository: Repository<Flat>,
+    private readonly flatRepository: Repository<Flat>,
     @InjectRepository(FlatPaymentPlan)
-    private flatPaymentPlanRepository: Repository<FlatPaymentPlan>,
+    private readonly flatPaymentPlanRepository: Repository<FlatPaymentPlan>,
     @InjectRepository(DemandDraft)
-    private demandDraftRepository: Repository<DemandDraft>,
+    private readonly demandDraftRepository: Repository<DemandDraft>,
     @InjectRepository(ConstructionFlatProgress)
-    private progressRepository: Repository<ConstructionFlatProgress>,
-    @InjectRepository(Customer)
-    private customerRepository: Repository<Customer>,
-    @InjectRepository(Booking)
-    private bookingRepository: Repository<Booking>,
-    private readonly settingsService: SettingsService,
+    private readonly progressRepository: Repository<ConstructionFlatProgress>,
+    @InjectRepository(ConstructionProject)
+    private readonly projectRepository: Repository<ConstructionProject>,
+    private readonly autoDemandDraftService: AutoDemandDraftService,
   ) {}
 
   /**
@@ -48,211 +85,238 @@ export class ConstructionWorkflowService {
     phase: string,
     phaseProgress: number,
     overallProgress: number,
-  ): Promise<void> {
+  ): Promise<ConstructionWorkflowResult> {
     this.logger.log(`Processing construction update for flat ${flatId}`);
 
-    try {
-      // Step 1: Update flat with latest construction info
-      await this.updateFlatConstructionStatus(flatId, phase, overallProgress);
+    const emptyResult: ConstructionWorkflowResult = {
+      milestonesTriggered: 0,
+      generatedDemandDrafts: [],
+    };
 
-      // Step 2: Check if flat has an active payment plan (i.e., is sold)
+    try {
+      await this.updateFlatConstructionStatus(
+        flatId,
+        phase,
+        phaseProgress,
+        overallProgress,
+      );
+
       const paymentPlan = await this.flatPaymentPlanRepository.findOne({
         where: { flatId, status: FlatPaymentPlanStatus.ACTIVE },
         relations: ['customer', 'booking', 'flat', 'flat.property', 'flat.tower'],
       });
 
       if (!paymentPlan) {
-        this.logger.log(`No active payment plan found for flat ${flatId} - skipping milestone check`);
-        return;
+        this.logger.log(
+          `No active payment plan found for flat ${flatId} - skipping milestone check`,
+        );
+        return emptyResult;
       }
 
-      this.logger.log(`Active payment plan found for flat ${flatId} - checking milestones`);
-
-      // Step 3: Check and update milestones
-      await this.checkAndUpdateMilestones(paymentPlan, phase, phaseProgress);
-
+      return await this.checkAndUpdateMilestones(paymentPlan, phase, phaseProgress);
     } catch (error) {
-      this.logger.error(`Error processing construction update for flat ${flatId}:`, error);
+      this.logger.error(
+        `Error processing construction update for flat ${flatId}:`,
+        error,
+      );
       throw error;
     }
   }
 
   /**
-   * Step 1: Update flat entity with current construction status
+   * Step 1: Update flat entity with current construction status.
+   * Also upserts the matching ConstructionFlatProgress row so the
+   * per-flat progress table stays in lockstep with flat.construction*
+   * columns. Downstream milestone detection reads from this table,
+   * so forgetting to write it means milestones never fire for the
+   * direct-update path.
    */
   private async updateFlatConstructionStatus(
     flatId: string,
     stage: string,
-    progress: number,
+    phaseProgress: number,
+    overallProgress: number,
   ): Promise<void> {
-    this.logger.log(`Updating flat ${flatId}: stage=${stage}, progress=${progress}%`);
+    this.logger.log(
+      `Updating flat ${flatId}: stage=${stage}, phaseProgress=${phaseProgress}%, overallProgress=${overallProgress}%`,
+    );
 
     await this.flatRepository.update(flatId, {
       constructionStage: stage,
-      constructionProgress: progress,
+      constructionProgress: overallProgress,
       lastConstructionUpdate: new Date(),
     });
 
-    this.logger.log(`Flat ${flatId} updated successfully`);
+    // Keep construction_flat_progress in sync. Historically this
+    // routine only stamped the flats table, leaving the phase-rows
+    // table to be updated by whichever controller happened to hit
+    // it - so milestone detection (which reads phase rows) saw
+    // stale data any time the caller was ConstructionProgressLogs
+    // (which writes neither table directly).
+    //
+    // Upsert strategy: find the (flatId, phase) row; if absent,
+    // resolve the project via flat.propertyId and create one.
+    try {
+      if (!this.isKnownPhase(stage)) return;
+      const phase = stage as ConstructionPhase;
+
+      let row = await this.progressRepository.findOne({
+        where: { flatId, phase },
+      });
+
+      if (!row) {
+        const flat = await this.flatRepository.findOne({
+          where: { id: flatId },
+        });
+        if (!flat?.propertyId) return;
+        const project = await this.projectRepository.findOne({
+          where: { propertyId: flat.propertyId },
+          select: ['id'] as any,
+        });
+        if (!project) return;
+
+        row = this.progressRepository.create({
+          constructionProjectId: project.id,
+          flatId,
+          phase,
+          phaseProgress,
+          overallProgress,
+          status:
+            phaseProgress >= 100
+              ? PhaseStatus.COMPLETED
+              : phaseProgress > 0
+                ? PhaseStatus.IN_PROGRESS
+                : PhaseStatus.NOT_STARTED,
+        });
+      } else {
+        row.phaseProgress = phaseProgress;
+        row.overallProgress = overallProgress;
+        if (phaseProgress >= 100) {
+          row.status = PhaseStatus.COMPLETED;
+          row.actualEndDate = row.actualEndDate ?? new Date();
+        } else if (phaseProgress > 0 && row.status === PhaseStatus.NOT_STARTED) {
+          row.status = PhaseStatus.IN_PROGRESS;
+        }
+      }
+      await this.progressRepository.save(row);
+    } catch (err: any) {
+      this.logger.warn(
+        `Could not sync construction_flat_progress for flat ${flatId}/${stage}: ${err?.message}`,
+      );
+    }
+  }
+
+  private isKnownPhase(v: string): boolean {
+    return (Object.values(ConstructionPhase) as string[]).includes(v);
   }
 
   /**
-   * Step 3: Check if any milestones are reached and update them
+   * Step 3: For each pending milestone whose construction phase matches
+   * the phase that was just logged, delegate generation to the unified
+   * AutoDemandDraftService. That service is responsible for:
+   *   - idempotency check (flatId + milestoneSequence)
+   *   - PaymentSchedule creation
+   *   - template rendering
+   *   - auto-send resolution (customer > property > company)
+   *   - email side-effect on auto-send
+   *   - flat_payment_plan milestone status update
+   *   - construction checkpoint stamping
    */
   private async checkAndUpdateMilestones(
     paymentPlan: FlatPaymentPlan,
     currentPhase: string,
     phaseProgress: number,
-  ): Promise<void> {
+  ): Promise<ConstructionWorkflowResult> {
     this.logger.log(`Checking milestones for payment plan ${paymentPlan.id}`);
 
-    let planUpdated = false;
+    const generatedDemandDrafts: GeneratedDemandDraftSummary[] = [];
+    let milestonesTriggered = 0;
 
-    for (const milestone of (paymentPlan.milestones ?? [])) {
-      // Skip if milestone is not pending
-      if (milestone.status !== 'PENDING') {
-        continue;
-      }
+    for (const milestone of paymentPlan.milestones ?? []) {
+      if (milestone.status !== 'PENDING') continue;
+      if (!milestone.constructionPhase) continue;
 
-      // Skip if milestone has no construction phase linkage
-      if (!milestone.constructionPhase) {
-        continue;
-      }
-
-      // Check if this milestone's construction phase matches and progress is reached
       if (
-        milestone.constructionPhase === currentPhase &&
-        phaseProgress >= (milestone.phasePercentage || 100)
+        milestone.constructionPhase !== currentPhase ||
+        phaseProgress < (milestone.phasePercentage || 100)
       ) {
-        this.logger.log(
-          `Milestone ${milestone.sequence} reached for flat ${paymentPlan.flatId}: ` +
+        continue;
+      }
+
+      this.logger.log(
+        `Milestone ${milestone.sequence} reached for flat ${paymentPlan.flatId}: ` +
           `${currentPhase} at ${phaseProgress}% (required: ${milestone.phasePercentage}%)`,
-        );
+      );
 
-        // Update milestone status to TRIGGERED
-        milestone.status = 'TRIGGERED';
-        planUpdated = true;
-
-        // Generate demand draft
-        await this.generateDemandDraft(paymentPlan, milestone);
+      const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
+      if (summary) {
+        generatedDemandDrafts.push(summary);
+        milestonesTriggered += 1;
       }
     }
 
-    // Save payment plan if any milestones were updated
-    if (planUpdated) {
-      await this.flatPaymentPlanRepository.save(paymentPlan);
-      this.logger.log(`Payment plan ${paymentPlan.id} updated with triggered milestones`);
-    } else {
-      this.logger.log(`No milestones reached for payment plan ${paymentPlan.id}`);
-    }
+    return { milestonesTriggered, generatedDemandDrafts };
   }
 
   /**
-   * Step 4: Auto-generate demand draft
+   * Thin wrapper around AutoDemandDraftService.generateDemandDraft.
+   *
+   * Returns null if a draft already exists for this milestone (caller
+   * treats null as "no toast this time"). Any lookup / validation
+   * errors from the unified generator bubble up as-is so the workflow
+   * caller can log them once per construction log.
    */
-  private async generateDemandDraft(
+  private async delegateDemandDraft(
     paymentPlan: FlatPaymentPlan,
     milestone: any,
-  ): Promise<void> {
-    this.logger.log(
-      `Generating demand draft for milestone ${milestone.sequence} of payment plan ${paymentPlan.id}`,
-    );
-
-    // Check if draft already exists for this milestone
-    const existingDraft = await this.demandDraftRepository.findOne({
+    currentPhase: string,
+  ): Promise<GeneratedDemandDraftSummary | null> {
+    const existing = await this.demandDraftRepository.findOne({
       where: {
         flatId: paymentPlan.flatId,
-        milestoneId: `${milestone.sequence}`,
+        milestoneId: String(milestone.sequence),
+      },
+    });
+    if (existing) {
+      this.logger.log(
+        `Demand draft already exists for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}`,
+      );
+      return null;
+    }
+
+    const constructionProgress = await this.progressRepository.findOne({
+      where: {
+        flatId: paymentPlan.flatId,
+        phase: currentPhase as ConstructionPhase,
       },
     });
 
-    if (existingDraft) {
-      this.logger.log(`Demand draft already exists for milestone ${milestone.sequence}`);
-      return;
-    }
-
-    // Get customer and booking details
-    const customer = paymentPlan.customer;
-    const booking = paymentPlan.booking;
-    const flat = paymentPlan.flat;
-
-    if (!customer || !flat) {
-      this.logger.warn(`Missing customer or flat data for payment plan ${paymentPlan.id}`);
-      return;
-    }
-
-    // Calculate due date (30 days from now)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
-
-    const dueDateStr = dueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-    const todayStr   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-    const bookingRef = booking?.bookingNumber ?? paymentPlan.bookingId.substring(0, 8).toUpperCase();
-    const refNumber  = `DD-${bookingRef}-${String(milestone.sequence).padStart(2, '0')}`;
-
-    let companySettings: Awaited<ReturnType<SettingsService['get']>> | null = null;
-    try { companySettings = await this.settingsService.get(); } catch { /* non-fatal */ }
-
-    const content = buildDemandDraftHtml({
-      refNumber,
-      dateIssued: todayStr,
-      customerName: customer.fullName,
-      customerEmail: customer.email || undefined,
-      customerPhone: customer.phoneNumber || undefined,
-      propertyName: flat.property?.name || '',
-      towerName: flat.tower?.name || undefined,
-      flatNumber: flat.flatNumber || 'N/A',
-      bookingNumber: booking?.bookingNumber || undefined,
-      milestoneSeq: milestone.sequence,
+    const saved = await this.autoDemandDraftService.generateDemandDraft({
+      flatPaymentPlan: paymentPlan,
+      milestoneSequence: milestone.sequence,
+      constructionProgress: constructionProgress ?? null,
       milestoneName: milestone.name,
-      milestoneDescription: milestone.description || undefined,
-      constructionPhase: milestone.constructionPhase || undefined,
-      amount: Number(milestone.amount).toLocaleString('en-IN'),
-      dueDate: dueDateStr,
-      totalAmount: String(paymentPlan.totalAmount),
-      paidAmount: String(paymentPlan.paidAmount),
-      balanceAfterPayment: String(Math.max(0, paymentPlan.balanceAmount - milestone.amount)),
-      // Property-level overrides → company settings fallback
-      bankName: flat.property?.bankName || companySettings?.bankName || undefined,
-      accountName: flat.property?.accountName || companySettings?.accountName || undefined,
-      accountNumber: flat.property?.accountNumber || companySettings?.accountNumber || undefined,
-      ifscCode: flat.property?.ifscCode || companySettings?.ifscCode || undefined,
-      branch: flat.property?.branch || companySettings?.branch || undefined,
+      amount: Number(milestone.amount) || 0,
     });
 
-    const towerLabel = flat.tower?.name ? `${flat.tower.name} / ` : '';
-    const draftTitle = `${flat.flatNumber || 'N/A'} / ${towerLabel}${milestone.name}`;
+    const flat = paymentPlan.flat;
+    const bookingRef =
+      paymentPlan.booking?.bookingNumber ??
+      paymentPlan.bookingId.substring(0, 8).toUpperCase();
+    const refNumber = `DD-${bookingRef}-${String(milestone.sequence).padStart(2, '0')}`;
 
-    // Create demand draft
-    const demandDraft = this.demandDraftRepository.create({
-      flatId: paymentPlan.flatId,
-      customerId: paymentPlan.customerId,
-      bookingId: paymentPlan.bookingId,
-      milestoneId: `${milestone.sequence}`,
-      title: draftTitle,
-      content,
-      amount: milestone.amount,
-      dueDate,
-      status: DemandDraftStatus.DRAFT,
-      requiresReview: true,
-      generatedAt: new Date(),
-      autoGenerated: true,
-      flatPaymentPlanId: paymentPlan.id,
-      metadata: {
-        subject: `Payment Demand – ${flat.flatNumber} – ${milestone.name}`,
-        dueDate: dueDate.toISOString(),
-        milestoneSequence: milestone.sequence,
-        milestoneName: milestone.name,
-        constructionPhase: milestone.constructionPhase,
-        autoGenerated: true,
-      },
-    });
-
-    await this.demandDraftRepository.save(demandDraft);
-
-    this.logger.log(
-      `Demand draft ${demandDraft.id} generated for milestone ${milestone.sequence}`,
-    );
+    return {
+      id: saved.id,
+      title: saved.title,
+      amount: Number(saved.amount) || 0,
+      refNumber,
+      milestoneName: milestone.name,
+      flatNumber: flat?.flatNumber || undefined,
+      towerName: flat?.tower?.name || undefined,
+      propertyName: flat?.property?.name || undefined,
+      customerName: paymentPlan.customer?.fullName || undefined,
+      dueDate: saved.dueDate,
+    };
   }
 
   /**
@@ -264,7 +328,7 @@ export class ConstructionWorkflowService {
         status: DemandDraftStatus.DRAFT,
         requiresReview: true,
       },
-      relations: ['customer', 'flat', 'flat.property', 'flat.tower', 'booking'],
+      relations: ['customer', 'flat', 'flat.property', 'flat.tower'],
       order: { generatedAt: 'DESC' },
     });
   }

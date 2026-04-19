@@ -21,10 +21,11 @@ const account_entity_1 = require("./entities/account.entity");
 const journal_entry_entity_1 = require("./entities/journal-entry.entity");
 const journal_entry_line_entity_1 = require("./entities/journal-entry-line.entity");
 let AccountingIntegrationService = AccountingIntegrationService_1 = class AccountingIntegrationService {
-    constructor(accountsRepo, jeRepo, jelRepo) {
+    constructor(accountsRepo, jeRepo, jelRepo, dataSource) {
         this.accountsRepo = accountsRepo;
         this.jeRepo = jeRepo;
         this.jelRepo = jelRepo;
+        this.dataSource = dataSource;
         this.logger = new common_1.Logger(AccountingIntegrationService_1.name);
     }
     async findCashOrBankAccount(propertyId) {
@@ -136,57 +137,63 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         if (!amount || amount <= 0)
             return null;
         try {
-            const entryNumber = await this.generateEntryNumber();
-            const je = this.jeRepo.create({
-                entryNumber,
-                entryDate: opts.date,
-                description: opts.description,
-                referenceType: opts.referenceType,
-                referenceId: opts.referenceId,
-                status: journal_entry_entity_1.JournalEntryStatus.POSTED,
-                totalDebit: amount,
-                totalCredit: amount,
-                createdBy: opts.createdBy,
-                approvedBy: opts.createdBy,
-                approvedAt: new Date(),
-                propertyId: opts.propertyId ?? null,
+            return await this.dataSource.transaction(async (manager) => {
+                const entryNumber = await this.generateEntryNumber();
+                const jeRepo = manager.getRepository(journal_entry_entity_1.JournalEntry);
+                const jelRepo = manager.getRepository(journal_entry_line_entity_1.JournalEntryLine);
+                const je = jeRepo.create({
+                    entryNumber,
+                    entryDate: opts.date,
+                    description: opts.description,
+                    referenceType: opts.referenceType,
+                    referenceId: opts.referenceId,
+                    status: journal_entry_entity_1.JournalEntryStatus.POSTED,
+                    totalDebit: amount,
+                    totalCredit: amount,
+                    createdBy: opts.createdBy,
+                    approvedBy: opts.createdBy,
+                    approvedAt: new Date(),
+                    propertyId: opts.propertyId ?? null,
+                });
+                const savedJE = (await jeRepo.save(je));
+                const debitLine = jelRepo.create({
+                    journalEntryId: savedJE.id,
+                    accountId: opts.debitAccountId,
+                    debitAmount: amount,
+                    creditAmount: 0,
+                    description: opts.description,
+                });
+                const creditLine = jelRepo.create({
+                    journalEntryId: savedJE.id,
+                    accountId: opts.creditAccountId,
+                    debitAmount: 0,
+                    creditAmount: amount,
+                    description: opts.description,
+                });
+                await jelRepo.save([debitLine, creditLine]);
+                await this.updateBalanceTx(manager, opts.debitAccountId, amount, 0);
+                await this.updateBalanceTx(manager, opts.creditAccountId, 0, amount);
+                this.logger.log(`Auto JE created: ${entryNumber} | ${opts.referenceType} ${opts.referenceId} | ₹${amount}`);
+                return savedJE;
             });
-            const savedJE = await this.jeRepo.save(je);
-            const debitLine = this.jelRepo.create({
-                journalEntryId: savedJE.id,
-                accountId: opts.debitAccountId,
-                debitAmount: amount,
-                creditAmount: 0,
-                description: opts.description,
-            });
-            const creditLine = this.jelRepo.create({
-                journalEntryId: savedJE.id,
-                accountId: opts.creditAccountId,
-                debitAmount: 0,
-                creditAmount: amount,
-                description: opts.description,
-            });
-            await this.jelRepo.save([debitLine, creditLine]);
-            await this.updateBalance(opts.debitAccountId, amount, 0);
-            await this.updateBalance(opts.creditAccountId, 0, amount);
-            this.logger.log(`Auto JE created: ${entryNumber} | ${opts.referenceType} ${opts.referenceId} | ₹${amount}`);
-            return savedJE;
         }
         catch (err) {
-            this.logger.error(`Failed to create auto JE for ${opts.referenceType} ${opts.referenceId}: ${err.message}`);
+            this.logger.error(`Failed to create auto JE for ${opts.referenceType} ${opts.referenceId}: ${err?.message || err}`);
             return null;
         }
     }
-    async updateBalance(accountId, debit, credit) {
-        const account = await this.accountsRepo.findOne({ where: { id: accountId } });
+    async updateBalanceTx(manager, accountId, debit, credit) {
+        const accountsRepo = manager.getRepository(account_entity_1.Account);
+        const account = await accountsRepo.findOne({ where: { id: accountId } });
         if (!account)
             return;
-        const isDebitType = account.accountType === account_entity_1.AccountType.ASSET || account.accountType === account_entity_1.AccountType.EXPENSE;
+        const isDebitType = account.accountType === account_entity_1.AccountType.ASSET ||
+            account.accountType === account_entity_1.AccountType.EXPENSE;
         const current = Math.round(Number(account.currentBalance) * 100) / 100;
         account.currentBalance = isDebitType
             ? Math.round((current + debit - credit) * 100) / 100
             : Math.round((current + credit - debit) * 100) / 100;
-        await this.accountsRepo.save(account);
+        await accountsRepo.save(account);
     }
     async onPaymentCompleted(payment) {
         const [bankAccount, revenueAccount] = await Promise.all([
@@ -199,7 +206,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         }
         return this.createAutoJE({
             date: payment.paymentDate instanceof Date ? payment.paymentDate : new Date(payment.paymentDate),
-            description: `Payment received — ${payment.paymentCode} via ${payment.paymentMethod || 'N/A'}`,
+            description: `Payment received - ${payment.paymentCode} via ${payment.paymentMethod || 'N/A'}`,
             referenceType: 'PAYMENT',
             referenceId: payment.id,
             debitAccountId: bankAccount.id,
@@ -220,7 +227,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         }
         return this.createAutoJE({
             date: expense.expenseDate instanceof Date ? expense.expenseDate : new Date(expense.expenseDate),
-            description: `Expense paid — ${expense.expenseCode}: ${expense.description}`,
+            description: `Expense paid - ${expense.expenseCode}: ${expense.description}`,
             referenceType: 'EXPENSE',
             referenceId: expense.id,
             debitAccountId: expenseAccount.id,
@@ -280,7 +287,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
             return null;
         }
         const description = [
-            `RA Bill paid — ${bill.raBillNumber}`,
+            `RA Bill paid - ${bill.raBillNumber}`,
             bill.vendorName ? `| Vendor: ${bill.vendorName}` : '',
             bill.projectName ? `| Project: ${bill.projectName}` : '',
         ].filter(Boolean).join(' ');
@@ -307,7 +314,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         }
         const description = [
             `Vendor payment recorded`,
-            payment.vendorName ? `— ${payment.vendorName}` : '',
+            payment.vendorName ? `- ${payment.vendorName}` : '',
             payment.transactionReference ? `| Ref: ${payment.transactionReference}` : '',
         ].filter(Boolean).join(' ');
         return this.createAutoJE({
@@ -334,7 +341,7 @@ let AccountingIntegrationService = AccountingIntegrationService_1 = class Accoun
         const monthStr = new Date(salary.paymentMonth).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
         return this.createAutoJE({
             date: salary.paymentDate instanceof Date ? salary.paymentDate : new Date(salary.paymentDate),
-            description: `Salary paid — ${salary.employeeName} for ${monthStr}`,
+            description: `Salary paid - ${salary.employeeName} for ${monthStr}`,
             referenceType: 'SALARY',
             referenceId: salary.id,
             debitAccountId: salaryAccount.id,
@@ -353,6 +360,7 @@ exports.AccountingIntegrationService = AccountingIntegrationService = Accounting
     __param(2, (0, typeorm_1.InjectRepository)(journal_entry_line_entity_1.JournalEntryLine)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_2.DataSource])
 ], AccountingIntegrationService);
 //# sourceMappingURL=accounting-integration.service.js.map

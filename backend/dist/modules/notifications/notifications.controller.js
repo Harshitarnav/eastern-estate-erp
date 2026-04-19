@@ -18,6 +18,12 @@ const notifications_service_1 = require("./notifications.service");
 const push_service_1 = require("./push.service");
 const create_notification_dto_1 = require("./dto/create-notification.dto");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const BROADCAST_ROLES = new Set([
+    'admin',
+    'super_admin',
+    'hr',
+    'head_accountant',
+]);
 let NotificationsController = class NotificationsController {
     constructor(notificationsService, pushService) {
         this.notificationsService = notificationsService;
@@ -25,6 +31,15 @@ let NotificationsController = class NotificationsController {
     }
     async create(createNotificationDto, req) {
         const userId = req.user?.userId || req.user?.id;
+        const userRoles = (req.user?.roles || []).map((r) => typeof r === 'string' ? r : r.name);
+        const isBroadcaster = userRoles.some((r) => BROADCAST_ROLES.has(r));
+        const targetsOther = createNotificationDto.userId &&
+            createNotificationDto.userId !== userId;
+        const targetsMany = createNotificationDto.targetRoles ||
+            createNotificationDto.userIds;
+        if (!isBroadcaster && (targetsOther || targetsMany)) {
+            throw new common_1.ForbiddenException('You are not allowed to send notifications to other users.');
+        }
         return this.notificationsService.create(createNotificationDto, userId);
     }
     async findAll(req, includeRead) {

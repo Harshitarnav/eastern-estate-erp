@@ -27,6 +27,19 @@ export interface CompanySettings {
   smtpUser?: string;
   smtpPass?: string;
   smtpFrom?: string;
+  // Collections / overdue reminders
+  overdueReminderIntervalDays?: number;
+  cancellationWarningThresholdDays?: number;
+  legacyAutoRemindMaxAgeDays?: number;
+  overdueReminderDailyCap?: number;
+  enableSmsReminders?: boolean;
+  // Company-wide default for milestone-triggered demand drafts.
+  //   false: each newly-generated DD lands in the Workstation as DRAFT
+  //   true:  each newly-generated DD is created as SENT and emailed
+  //          immediately (SMS + in-app follow once wired)
+  // Can be overridden per-project on the Property edit form and
+  // per-customer on the Customer edit form.
+  autoSendMilestoneDemandDrafts?: boolean;
 }
 
 export interface TestEmailResult {

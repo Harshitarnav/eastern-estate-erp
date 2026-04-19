@@ -24,11 +24,13 @@ import { FlatProgressController } from './flat-progress.controller';
 import { FlatProgressSimpleController } from './controllers/flat-progress-simple.controller';
 import { DevelopmentUpdatesService } from './development-updates.service';
 import { DevelopmentUpdatesController } from './development-updates.controller';
+import { ScopedDevelopmentUpdatesController } from './scoped-development-updates.controller';
 import { ProjectsAliasController } from './projects-alias.controller';
 import { MilestonesController } from './controllers/milestones.controller';
 import { ConstructionSchemaSyncService } from './construction.schema-sync.service';
 import { MilestoneDetectionService } from './services/milestone-detection.service';
 import { AutoDemandDraftService } from './services/auto-demand-draft.service';
+import { AutoSendResolverService } from './services/auto-send-resolver.service';
 import { ConstructionWorkflowService } from './services/construction-workflow.service';
 import { RABillsService } from './ra-bills.service';
 import { RABillsController } from './ra-bills.controller';
@@ -89,6 +91,7 @@ import { User } from '../users/entities/user.entity';
     FlatProgressController,
     FlatProgressSimpleController,
     DevelopmentUpdatesController,
+    ScopedDevelopmentUpdatesController,
     MilestonesController,
     RABillsController,
     QCController,
@@ -105,6 +108,7 @@ import { User } from '../users/entities/user.entity';
     DevelopmentUpdatesService,
     MilestoneDetectionService,
     AutoDemandDraftService,
+    AutoSendResolverService,
     ConstructionWorkflowService,
     RABillsService,
     QCService,
@@ -120,6 +124,7 @@ import { User } from '../users/entities/user.entity';
     DevelopmentUpdatesService,
     MilestoneDetectionService,
     AutoDemandDraftService,
+    AutoSendResolverService,
     ConstructionWorkflowService,
     RABillsService,
     QCService,

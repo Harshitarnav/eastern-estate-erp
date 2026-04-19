@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { DemandDraftTemplate } from '../entities/demand-draft-template.entity';
 import { CreateDemandDraftTemplateDto } from '../dto/create-demand-draft-template.dto';
 import { UpdateDemandDraftTemplateDto } from '../dto/update-demand-draft-template.dto';
+import { DEFAULT_TONE_HTML } from './demand-draft-template.defaults';
 
 @Injectable()
 export class DemandDraftTemplateService {
@@ -57,6 +58,92 @@ export class DemandDraftTemplateService {
       where: { isActive: true },
       order: { createdAt: 'ASC' }
     });
+  }
+
+  /**
+   * Find an active template for a given tone. Falls back to the first active
+   * template of any tone so the caller always gets something renderable.
+   */
+  async findByTone(tone: string): Promise<DemandDraftTemplate | null> {
+    const exact = await this.templateRepository.findOne({
+      where: { isActive: true, tone },
+      order: { createdAt: 'ASC' },
+    });
+    if (exact) return exact;
+    return this.findFirstActive();
+  }
+
+  /**
+   * Seed the 7 default templates (one per tone) if they do not already
+   * exist. Safe to call on every boot.
+   */
+  async seedDefaultTones(): Promise<void> {
+    const defaults: Array<{
+      tone: string;
+      name: string;
+      subject: string;
+      html: string;
+    }> = [
+      {
+        tone: 'ON_TIME',
+        name: 'Default Demand Letter',
+        subject: 'Payment Demand - {{milestoneName}} - {{flatNumber}}',
+        html: DEFAULT_TONE_HTML.ON_TIME,
+      },
+      {
+        tone: 'REMINDER_1',
+        name: 'Gentle Reminder (7 days overdue)',
+        subject: 'Friendly Reminder: Payment Due for {{flatNumber}}',
+        html: DEFAULT_TONE_HTML.REMINDER_1,
+      },
+      {
+        tone: 'REMINDER_2',
+        name: 'Firm Reminder (14 days overdue)',
+        subject: 'Important: Payment Overdue for {{flatNumber}} ({{daysOverdue}} days)',
+        html: DEFAULT_TONE_HTML.REMINDER_2,
+      },
+      {
+        tone: 'REMINDER_3',
+        name: 'Final Notice (21 days overdue)',
+        subject: 'FINAL NOTICE: Payment Overdue - {{flatNumber}}',
+        html: DEFAULT_TONE_HTML.REMINDER_3,
+      },
+      {
+        tone: 'REMINDER_4',
+        name: 'Last Chance Notice (28 days overdue)',
+        subject: 'LAST CHANCE: Clear Your Payment - {{flatNumber}}',
+        html: DEFAULT_TONE_HTML.REMINDER_4,
+      },
+      {
+        tone: 'CANCELLATION_WARNING',
+        name: 'Cancellation Warning (30+ days overdue)',
+        subject: 'NOTICE OF CANCELLATION WARNING - Booking {{bookingNumber}}',
+        html: DEFAULT_TONE_HTML.CANCELLATION_WARNING,
+      },
+      {
+        tone: 'POST_WARNING',
+        name: 'Post-Warning Weekly Reminder',
+        subject: 'Continued Payment Default - Booking {{bookingNumber}} ({{daysOverdue}} days overdue)',
+        html: DEFAULT_TONE_HTML.POST_WARNING,
+      },
+    ];
+
+    for (const d of defaults) {
+      const existing = await this.templateRepository.findOne({
+        where: { tone: d.tone },
+      });
+      if (existing) continue;
+      await this.templateRepository.save(
+        this.templateRepository.create({
+          tone: d.tone,
+          name: d.name,
+          subject: d.subject,
+          htmlContent: d.html,
+          isActive: true,
+          description: `Auto-seeded default template for tone ${d.tone}`,
+        }),
+      );
+    }
   }
 
   /**

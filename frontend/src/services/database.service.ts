@@ -44,6 +44,7 @@ export interface TableRelationship {
   toTable: string;
   toColumn: string;
   constraintName: string;
+  kind?: 'foreign_key' | 'inferred';
 }
 
 export const databaseService = {

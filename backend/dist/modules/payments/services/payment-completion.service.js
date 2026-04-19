@@ -23,13 +23,15 @@ const flat_payment_plan_entity_1 = require("../../payment-plans/entities/flat-pa
 const flat_payment_plan_service_1 = require("../../payment-plans/services/flat-payment-plan.service");
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const booking_entity_1 = require("../../bookings/entities/booking.entity");
+const demand_draft_entity_1 = require("../../demand-drafts/entities/demand-draft.entity");
 let PaymentCompletionService = PaymentCompletionService_1 = class PaymentCompletionService {
-    constructor(paymentRepository, paymentScheduleRepository, flatPaymentPlanRepository, flatRepository, bookingRepository, flatPaymentPlanService) {
+    constructor(paymentRepository, paymentScheduleRepository, flatPaymentPlanRepository, flatRepository, bookingRepository, demandDraftRepository, flatPaymentPlanService) {
         this.paymentRepository = paymentRepository;
         this.paymentScheduleRepository = paymentScheduleRepository;
         this.flatPaymentPlanRepository = flatPaymentPlanRepository;
         this.flatRepository = flatRepository;
         this.bookingRepository = bookingRepository;
+        this.demandDraftRepository = demandDraftRepository;
         this.flatPaymentPlanService = flatPaymentPlanService;
         this.logger = new common_1.Logger(PaymentCompletionService_1.name);
     }
@@ -87,6 +89,16 @@ let PaymentCompletionService = PaymentCompletionService_1 = class PaymentComplet
         if (flatPaymentPlan && paymentSchedule) {
             await this.updateFlatPaymentPlanMilestone(flatPaymentPlan, paymentSchedule, payment);
         }
+        try {
+            await this.closeDemandDraftsForPayment({
+                payment,
+                paymentSchedule,
+                flatPaymentPlan,
+            });
+        }
+        catch (err) {
+            this.logger.error(`Failed to close DDs for payment ${payment.id}: ${err.message}`);
+        }
         if (flat) {
             await this.updateFlatPaymentStatus(flat, payment);
         }
@@ -96,7 +108,7 @@ let PaymentCompletionService = PaymentCompletionService_1 = class PaymentComplet
         this.logger.log(`Completed payment processing for payment ${paymentId}`);
         return {
             payment,
-            paymentSchedule: paymentSchedule,
+            paymentSchedule,
             flatPaymentPlan,
             flat,
             booking,
@@ -132,18 +144,93 @@ let PaymentCompletionService = PaymentCompletionService_1 = class PaymentComplet
         }, 'SYSTEM');
         this.logger.log(`Updated milestone ${milestone.sequence} in payment plan ${flatPaymentPlan.id} to PAID`);
     }
+    async closeDemandDraftsForPayment(params) {
+        const { payment, paymentSchedule, flatPaymentPlan } = params;
+        const openStatuses = [
+            demand_draft_entity_1.DemandDraftStatus.DRAFT,
+            demand_draft_entity_1.DemandDraftStatus.READY,
+            demand_draft_entity_1.DemandDraftStatus.SENT,
+            demand_draft_entity_1.DemandDraftStatus.FAILED,
+        ];
+        let matches = [];
+        if (paymentSchedule) {
+            matches = await this.demandDraftRepository.find({
+                where: {
+                    paymentScheduleId: paymentSchedule.id,
+                    status: (0, typeorm_2.In)(openStatuses),
+                },
+            });
+        }
+        if (!matches.length && flatPaymentPlan && paymentSchedule?.milestone) {
+            matches = await this.demandDraftRepository.find({
+                where: {
+                    flatPaymentPlanId: flatPaymentPlan.id,
+                    milestoneId: paymentSchedule.milestone,
+                    status: (0, typeorm_2.In)(openStatuses),
+                },
+            });
+        }
+        if (!matches.length && payment.bookingId) {
+            const amt = Number(payment.amount) || 0;
+            if (amt > 0) {
+                matches = await this.demandDraftRepository
+                    .createQueryBuilder('dd')
+                    .where('dd.booking_id = :bookingId', { bookingId: payment.bookingId })
+                    .andWhere('dd.status IN (:...openStatuses)', { openStatuses })
+                    .andWhere('ROUND(dd.amount::numeric, 0) = ROUND(:amt::numeric, 0)', {
+                    amt,
+                })
+                    .orderBy('dd.created_at', 'ASC')
+                    .limit(1)
+                    .getMany();
+            }
+        }
+        if (!matches.length)
+            return;
+        const rootIds = new Set();
+        for (const dd of matches) {
+            rootIds.add(dd.parentDemandDraftId ?? dd.id);
+        }
+        const thread = await this.demandDraftRepository
+            .createQueryBuilder('dd')
+            .where('dd.status IN (:...openStatuses)', { openStatuses })
+            .andWhere('(dd.id IN (:...rootIds) OR dd.parent_demand_draft_id IN (:...rootIds))', { rootIds: Array.from(rootIds) })
+            .getMany();
+        const now = new Date();
+        for (const dd of thread) {
+            dd.status = demand_draft_entity_1.DemandDraftStatus.PAID;
+            dd.paidAt = now;
+            dd.paidPaymentId = payment.id;
+            dd.nextReminderDueAt = null;
+            dd.metadata = {
+                ...(dd.metadata || {}),
+                closedBy: {
+                    paymentId: payment.id,
+                    paymentCode: payment.paymentCode,
+                    amount: Number(payment.amount) || 0,
+                    at: now.toISOString(),
+                },
+            };
+        }
+        await this.demandDraftRepository.save(thread);
+        this.logger.log(`Closed ${thread.length} DD(s) for payment ${payment.paymentCode} ` +
+            `(roots: ${Array.from(rootIds).join(', ')})`);
+    }
     async updateFlatPaymentStatus(flat, payment) {
         await this.flatRepository.save(flat);
         this.logger.log(`Updated flat ${flat.id} payment information`);
     }
     async updateBookingPaymentStatus(booking, payment) {
-        booking.paidAmount = (booking.paidAmount || 0) + payment.amount;
-        const balance = booking.totalAmount - booking.paidAmount;
-        if (balance <= 0) {
+        const prevPaid = Number(booking.paidAmount) || 0;
+        const total = Number(booking.totalAmount) || 0;
+        const amt = Number(payment.amount) || 0;
+        booking.paidAmount = prevPaid + amt;
+        booking.balanceAmount = Math.max(0, total - booking.paidAmount);
+        if (booking.balanceAmount <= 0) {
             booking.status = booking_entity_1.BookingStatus.COMPLETED;
         }
         await this.bookingRepository.save(booking);
-        this.logger.log(`Updated booking ${booking.id}: paid=${booking.paidAmount}, status=${booking.status}`);
+        this.logger.log(`Updated booking ${booking.id}: paid=${booking.paidAmount}, balance=${booking.balanceAmount}, status=${booking.status}`);
     }
     async getFlatPaymentSummary(flatId) {
         const flatPaymentPlan = await this.flatPaymentPlanRepository.findOne({
@@ -181,7 +268,9 @@ exports.PaymentCompletionService = PaymentCompletionService = PaymentCompletionS
     __param(2, (0, typeorm_1.InjectRepository)(flat_payment_plan_entity_1.FlatPaymentPlan)),
     __param(3, (0, typeorm_1.InjectRepository)(flat_entity_1.Flat)),
     __param(4, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
+    __param(5, (0, typeorm_1.InjectRepository)(demand_draft_entity_1.DemandDraft)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

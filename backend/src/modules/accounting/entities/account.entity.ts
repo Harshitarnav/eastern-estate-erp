@@ -23,7 +23,7 @@ export class Account {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // unique constraint is now composite (account_code + property_id scope) — managed by migration v014
+  // unique constraint is now composite (account_code + property_id scope) - managed by migration v014
   @Column({ name: 'account_code', length: 50 })
   accountCode: string;
 

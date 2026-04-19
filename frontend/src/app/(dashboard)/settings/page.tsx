@@ -196,12 +196,12 @@ You're all set! Start exploring the system.`,
     },
     'smtp-setup': {
       title: '📧 SMTP Email Setup Guide',
-      content: `This guide explains how to configure Eastern Estate ERP to send real emails — demand drafts, payment reminders, etc.
+      content: `This guide explains how to configure Eastern Estate ERP to send real emails - demand drafts, payment reminders, etc.
 
 ## What is SMTP?
 SMTP (Simple Mail Transfer Protocol) is how email software sends emails. You need to give the ERP your email credentials so it can send emails on your behalf.
 
-## Option A — Gmail (Recommended for most teams)
+## Option A - Gmail (Recommended for most teams)
 
 ### Step 1: Enable 2-Factor Authentication on Gmail
 1. Go to myaccount.google.com
@@ -228,7 +228,7 @@ Go to Settings → Company & Bank → SMTP Configuration:
 
 Click Save. Done ✅
 
-## Option B — Business Email (e.g. info@easternestate.in)
+## Option B - Business Email (e.g. info@easternestate.in)
 
 ### If hosted on cPanel (GoDaddy, Hostinger, etc.)
 Contact your hosting provider or IT person for:
@@ -238,7 +238,7 @@ Contact your hosting provider or IT person for:
 - Password: your email account password
 
 ### If using Google Workspace (G Suite)
-Same as Gmail setup above — just use your workspace email.
+Same as Gmail setup above - just use your workspace email.
 
 ### If using Microsoft 365 / Outlook
 - SMTP Host: smtp.office365.com
@@ -247,7 +247,7 @@ Same as Gmail setup above — just use your workspace email.
 - Password: your Microsoft account password (or App Password if MFA is on)
 
 ## Testing the Setup
-After saving, go to any demand draft → click "Send Draft" — if SMTP is configured correctly, the customer will receive an email. Check the backend logs if the email doesn't arrive.
+After saving, go to any demand draft → click "Send Draft" - if SMTP is configured correctly, the customer will receive an email. Check the backend logs if the email doesn't arrive.
 
 ## Common Issues
 ❌ "Authentication failed" → Wrong App Password or 2FA not enabled
@@ -263,8 +263,8 @@ Your SMTP password is stored encrypted in the database. Never share it. If someo
       content: `Complete guide for senior management to monitor and lead the organization.
 
 ## Daily Morning Routine (15 Minutes)
-1. Open Dashboard — check live KPI cards
-2. Look at "Overdue Units" alert — any customer needs a call?
+1. Open Dashboard - check live KPI cards
+2. Look at "Overdue Units" alert - any customer needs a call?
 3. Check recent payments collected
 4. Review pending approvals in your inbox
 
@@ -309,7 +309,7 @@ Your leadership makes Eastern Estate successful!`,
 - Pipeline forecast
 
 ## Best Practices
-✅ Lead by example — log your own interactions
+✅ Lead by example - log your own interactions
 ✅ Be accessible to the team
 ✅ Celebrate wins publicly
 ✅ Use data from reports for decisions
@@ -370,7 +370,7 @@ You're the face of Eastern Estate!`,
 3. Create a Purchase Order for replenishment
 
 ## Best Practices
-✅ Log progress daily — this triggers payment milestones automatically
+✅ Log progress daily - this triggers payment milestones automatically
 ✅ Upload site photos as proof
 ✅ Report issues immediately
 ✅ Track material usage accurately
@@ -492,7 +492,7 @@ Smart procurement = Cost savings!`,
 **Solution**:
 - Check for red validation errors below the fields
 - Make sure all required fields (marked *) are filled
-- Look at the error message toast — it usually tells you exactly what's wrong
+- Look at the error message toast - it usually tells you exactly what's wrong
 
 ## Slow Performance
 **Problem**: System is slow
@@ -505,7 +505,7 @@ Smart procurement = Cost savings!`,
 ## API Errors
 **Problem**: Red "API Error" toast appears
 **Solution**:
-- Read the error message carefully — it tells you which field has a problem
+- Read the error message carefully - it tells you which field has a problem
 - If it says "Internal server error", contact your admin
 - If it says "Unauthorized", log out and log back in
 
@@ -588,7 +588,7 @@ Master these shortcuts to work like a pro!`,
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Personal Information</CardTitle>
-              <CardDescription>Update your name and phone number. Email and username cannot be changed here — contact an admin.</CardDescription>
+              <CardDescription>Update your name and phone number. Email and username cannot be changed here - contact an admin.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

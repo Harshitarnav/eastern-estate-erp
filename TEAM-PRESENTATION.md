@@ -1,4 +1,4 @@
-# Eastern Estate ERP — Team Onboarding Presentation
+# Eastern Estate ERP - Team Onboarding Presentation
 > Paste this into Gamma (gamma.app) or Claude to generate a visual presentation deck.  
 > Each `---` is a slide break. Each `##` is a slide title.
 
@@ -9,12 +9,12 @@
 
 **Built for Eastern Estate Construction & Development Pvt. Ltd.**
 
-> *"Life Long Bonding… — Creating a Lifestyle That Lasts a Lifetime"*
+> *"Life Long Bonding… - Creating a Lifestyle That Lasts a Lifetime"*
 
-- One system for every department — Sales, Accounts, HR, Construction
-- All data is live and connected — no Excel, no WhatsApp data loss
-- Works in your browser — no installation needed
-- Role-based access — each person sees only what they need
+- One system for every department - Sales, Accounts, HR, Construction
+- All data is live and connected - no Excel, no WhatsApp data loss
+- Works in your browser - no installation needed
+- Role-based access - each person sees only what they need
 
 ---
 
@@ -22,9 +22,9 @@
 
 | Role | Key Access |
 |------|-----------|
-| 🔴 **Super Admin** | Everything — full control |
+| 🔴 **Super Admin** | Everything - full control |
 | 🔴 **Admin** | Everything + Company Settings + User Management |
-| 🟤 **Head Accountant** | All projects — full accounting, reports, payroll visibility |
+| 🟤 **Head Accountant** | All projects - full accounting, reports, payroll visibility |
 | 🟠 **Accountant** | Accounting for **assigned projects only** (set under User → Property Access) |
 | 🟠 **Sales Team** | Leads, Customers, Bookings, Payment Plans, Demand Drafts |
 | 🟡 **Accounts** | Payments, Receipts, Reports, Ledger (as configured) |
@@ -40,42 +40,42 @@
 
 **Every screen shares one project dropdown** in the header (next to notifications).
 
-- Choose **All projects** or one project — accounting numbers and some lists follow this scope.
+- Choose **All projects** or one project - accounting numbers and some lists follow this scope.
 - If you only have one assigned project, it may already be selected for you.
-- **Mobile:** same dropdown as desktop — use it before opening Accounting or customer lists that filter by project.
+- **Mobile:** same dropdown as desktop - use it before opening Accounting or customer lists that filter by project.
 
 ---
 
-## The Dashboard — Your Morning Briefing
+## The Dashboard - Your Morning Briefing
 
 **Go to: Dashboard (first screen after login)**
 
-- Shows **live numbers** — nothing is hardcoded or fake
+- Shows **live numbers** - nothing is hardcoded or fake
 - Refreshes every time you open it (or click the 🔄 refresh button)
 
 **What you see:**
 - 💰 Total collected vs outstanding balance
 - 🏢 Available, booked, sold, on-hold unit counts
 - 📋 This month's payments received
-- ⚠️ Overdue units — who hasn't paid on time
-- 🕐 Last 5 payments — click any to open
+- ⚠️ Overdue units - who hasn't paid on time
+- 🕐 Last 5 payments - click any to open
 
 > **Tip:** If you see a red "Overdue Milestones" table at the bottom, those customers need a follow-up call today. Click any row to go directly to their ledger.
 
 ---
 
-## Before the First Sale — Admin Setup
+## Before the First Sale - Admin Setup
 
 **Go to: Settings → Company & Bank**
 
 Four things to do once before the team starts:
 
-1. **Fill in company details** — name, address, phone, email
-2. **Fill in SMTP email** — so demand drafts get emailed automatically
+1. **Fill in company details** - name, address, phone, email
+2. **Fill in SMTP email** - so demand drafts get emailed automatically
 3. **Open each Property** → fill in its own GSTIN + bank account details
 4. **Create user accounts** for every staff member (Settings → Users)
 
-> ⚠️ GSTIN and bank details must be set on each **Property page** — not just in Company Settings. Each project has its own GSTIN and bank account.
+> ⚠️ GSTIN and bank details must be set on each **Property page** - not just in Company Settings. Each project has its own GSTIN and bank account.
 
 ---
 
@@ -100,11 +100,11 @@ Property  (e.g. Diamond City)
 
 ---
 
-## Step 1 — Capture a Lead
+## Step 1 - Capture a Lead
 
 **Go to: Leads → + New Lead**
 
-When someone enquires — walk-in, call, or website — create a Lead immediately.
+When someone enquires - walk-in, call, or website - create a Lead immediately.
 
 **Fill in:**
 - Name, Phone, Email
@@ -117,11 +117,11 @@ When someone enquires — walk-in, call, or website — create a Lead immediatel
 - Update the status after each call (New → Contacted → Site Visit → Negotiation → Booked)
 - When the customer is ready → convert to Customer
 
-> ❌ Don't skip lead creation — it's how management tracks where every sale came from.
+> ❌ Don't skip lead creation - it's how management tracks where every sale came from.
 
 ---
 
-## Step 2 — Create a Customer
+## Step 2 - Create a Customer
 
 **Go to: Customers → + New Customer**
 
@@ -135,13 +135,13 @@ Fill in all tabs before creating the booking:
 | Bank | Customer's bank details (for refunds if needed) |
 
 - Upload **Aadhar copy** and **PAN card** directly from the customer's profile page
-- The customer gets a unique **Customer ID** — use this for all future references
+- The customer gets a unique **Customer ID** - use this for all future references
 
-> 💡 A customer can have **multiple bookings** — one profile, many units.
+> 💡 A customer can have **multiple bookings** - one profile, many units.
 
 ---
 
-## Step 3 — Create a Booking
+## Step 3 - Create a Booking
 
 **Go to: Bookings → + New Booking**
 
@@ -154,7 +154,7 @@ Select: **Customer → Property → Tower → Flat**
 - GST, Stamp Duty, Registration Charges
 - Booking Date and Agreement Date
 
-**Before confirming — the Review Screen appears:**
+**Before confirming - the Review Screen appears:**
 - Shows every field you filled in on one screen
 - Check everything carefully
 - Click **← Edit Details** to go back (values are preserved)
@@ -164,17 +164,17 @@ Select: **Customer → Property → Tower → Flat**
 
 ---
 
-## Step 4 — Set Up the Payment Plan (CLP)
+## Step 4 - Set Up the Payment Plan (CLP)
 
 **Go to: Booking → Quick Actions → Create Payment Plan**
 
 Every customer can have a **different payment schedule** (Dynamic CLP).
 
 **Add milestones:**
-- On Booking — ₹ X lakh — Due: today
-- On Foundation — ₹ X lakh — Due: 3 months
-- On Plinth — ₹ X lakh — linked to Foundation phase
-- On Possession — ₹ X lakh — Due: project completion
+- On Booking - ₹ X lakh - Due: today
+- On Foundation - ₹ X lakh - Due: 3 months
+- On Plinth - ₹ X lakh - linked to Foundation phase
+- On Possession - ₹ X lakh - Due: project completion
 
 **Rules:**
 - Total of all milestones must equal the agreement value
@@ -185,7 +185,7 @@ Every customer can have a **different payment schedule** (Dynamic CLP).
 
 ---
 
-## Step 5 — Raise a Demand Draft
+## Step 5 - Raise a Demand Draft
 
 **Go to: Payment Plans → open the booking's plan**
 
@@ -193,24 +193,24 @@ When a milestone is due, raise a Demand Notice to the customer.
 
 ### How to generate:
 1. Find the milestone row → click **Gen. Invoice**
-2. A preview appears — check: customer name, unit, amount, due date
+2. A preview appears - check: customer name, unit, amount, due date
 3. Click **Create Invoice** → draft opens automatically
 
 ### Three places you can generate a draft from:
-- **Payment Plan page** (most common — manual trigger)
+- **Payment Plan page** (most common - manual trigger)
 - **Construction Milestones page** (when a build phase completes)
 - **Automatically** (system creates it when construction crosses a threshold)
 
-> ℹ️ All three methods produce the same format — consistent, branded demand notice.
+> ℹ️ All three methods produce the same format - consistent, branded demand notice.
 
 ---
 
-## Step 5b — Edit & Approve the Demand Draft
+## Step 5b - Edit & Approve the Demand Draft
 
 **The draft opens automatically after creation**
 
 - Click **Edit Draft** to make changes
-- **Click directly into the notice text** to edit wording — no coding needed (WYSIWYG)
+- **Click directly into the notice text** to edit wording - no coding needed (WYSIWYG)
 - Update Title, Amount, Due Date using the fields at the top
 
 ### Download as a formal PDF Invoice:
@@ -224,7 +224,7 @@ When a milestone is due, raise a Demand Notice to the customer.
 
 ---
 
-## Step 5c — Send Demand Draft to Customer
+## Step 5c - Send Demand Draft to Customer
 
 **If SMTP email is configured (automatic):**
 1. Click **Send to Customer**
@@ -242,7 +242,7 @@ When a milestone is due, raise a Demand Notice to the customer.
 
 ---
 
-## Step 6 — Record a Payment
+## Step 6 - Record a Payment
 
 **Go to: Payments → + New Payment**
 
@@ -257,13 +257,13 @@ When the customer pays against a demand:
 **For Cheque:** enter cheque number, bank, branch, date  
 **For NEFT/IMPS/UPI:** enter UTR number or transaction ID
 
-**Review Screen appears** — check all details, then **Confirm & Save Payment**
+**Review Screen appears** - check all details, then **Confirm & Save Payment**
 
 > The payment plan balance updates automatically. The milestone status changes to PAID.
 
 ---
 
-## Step 6b — Generate a Money Receipt
+## Step 6b - Generate a Money Receipt
 
 **Go to: Payments → open any payment → click Generate Receipt**
 
@@ -274,7 +274,7 @@ Produces a formal receipt to give to the customer.
 - Customer name + unit (Property → Tower → Flat)
 - Payment mode details (method, bank, cheque number / UTR)
 - Amount table
-- Amount in words (Indian format — e.g. *Rupees Five Lakhs Only*)
+- Amount in words (Indian format - e.g. *Rupees Five Lakhs Only*)
 - Authorised Signatory space
 
 **Receipt number:**
@@ -289,23 +289,23 @@ Produces a formal receipt to give to the customer.
 
 **Go to: Booking → Quick Actions → View Ledger**
 
-A complete account statement for one unit — every demand raised and every payment received.
+A complete account statement for one unit - every demand raised and every payment received.
 
 **Reading the ledger table:**
 
 | Date | Description | Demanded | Paid | Balance |
 |------|-------------|----------|------|---------|
-| 01 Jan | On Booking | ₹5L | — | ₹5L |
-| 15 Jan | — | — | ₹5L | ₹0 |
-| 01 Mar | On Foundation | ₹10L | — | ₹10L |
+| 01 Jan | On Booking | ₹5L | - | ₹5L |
+| 15 Jan | - | - | ₹5L | ₹0 |
+| 01 Mar | On Foundation | ₹10L | - | ₹10L |
 
 **Summary cards at the top:**
 - Agreement Value / Total Demanded / Total Paid / **Outstanding Balance**
 
 **Share with Customer panel:**
 - Copy phone or email to clipboard
-- WhatsApp button — sends the outstanding balance in a pre-written message
-- Download PDF — exports full statement as a printable document
+- WhatsApp button - sends the outstanding balance in a pre-written message
+- Download PDF - exports full statement as a printable document
 
 ---
 
@@ -323,12 +323,12 @@ Documents can be stored at every level:
 | 🏠 Flat | Sale Agreement, Possession Letter, Snag List, Handover Checklist |
 | 👔 Employee | Offer letter, ID proof, certificates |
 
-**Flat — Documents & Compliance section:**
+**Flat - Documents & Compliance section:**
 - Named slots for each document type
 - Click **Upload** next to the document name
 - KYC badge updates automatically (e.g. `KYC: 2/4`)
 
-> 📎 Documents uploaded in a Booking automatically appear on the Customer profile — they are cross-linked.
+> 📎 Documents uploaded in a Booking automatically appear on the Customer profile - they are cross-linked.
 
 ---
 
@@ -371,37 +371,37 @@ Three reports, all exportable as **PDF or Excel**:
 - Click it → demand draft created automatically for all customers in that tower
 - Sales team reviews and sends
 
-> 🔗 This is the link between construction and finance — no manual coordination needed between site and accounts.
+> 🔗 This is the link between construction and finance - no manual coordination needed between site and accounts.
 
 ---
 
-## HR — Managing Employees
+## HR - Managing Employees
 
 **Go to: HR → Employees**
 
 ### Adding an employee:
 Fill all tabs:
-- **Personal** — Name, DOB, phone, address, emergency contact
-- **Employment** — Department, designation, join date, type (permanent / contract)
-- **Salary** — Basic, HRA, TA, DA, allowances, PF, ESI, TDS (net auto-calculates)
-- **Bank** — Account number, IFSC, UAN, PF number
-- **Leave** — Leave balances per type
+- **Personal** - Name, DOB, phone, address, emergency contact
+- **Employment** - Department, designation, join date, type (permanent / contract)
+- **Salary** - Basic, HRA, TA, DA, allowances, PF, ESI, TDS (net auto-calculates)
+- **Bank** - Account number, IFSC, UAN, PF number
+- **Leave** - Leave balances per type
 
 ### Documents:
 - Upload offer letter, ID proof, qualification certificates directly from the employee profile
 
 ### Key rules:
-- All fields save correctly — including salary components, bank details, leave balances
+- All fields save correctly - including salary components, bank details, leave balances
 - Net salary auto-calculates from components; type a custom value to override
 - Designations, departments are searchable from existing records
 
 ---
 
-## Settings — What Admins Need to Know
+## Settings - What Admins Need to Know
 
 ### Settings → Company & Bank
 - Company details → appear on all letterheads
-- GSTIN + bank → **fallback only** — set these on each Property page for accuracy
+- GSTIN + bank → **fallback only** - set these on each Property page for accuracy
 - SMTP → enables auto-email for demand drafts
 - **Send Test Email** button → verify SMTP is working before relying on it
 
@@ -417,31 +417,31 @@ Fill all tabs:
 
 ### Settings → Help & Guides
 - Step-by-step role guides (CEO, Sales, Accounts, Engineer, etc.)
-- **SMTP Email Setup Guide** — how to get Gmail App Password
+- **SMTP Email Setup Guide** - how to get Gmail App Password
 - Troubleshooting common errors
 
 ---
 
 ## Daily Workflow by Role
 
-### 🎯 Sales Executive — every morning
+### 🎯 Sales Executive - every morning
 1. Dashboard → check overdue units → call those customers
 2. Leads → filter by today's follow-up date → make calls → update status
 3. New enquiry → Leads → + New Lead
 4. Booking confirmed → Bookings → + New Booking → create Payment Plan
 
-### 💰 Accounts — every morning
+### 💰 Accounts - every morning
 1. Dashboard → check this month's collection
 2. Payment received → Payments → + New Payment → Generate Receipt
 3. Milestone due → Payment Plan → Gen. Invoice → Approve → Send
 4. Monday → Reports → Outstanding → export for management
 
-### 🏗️ Site Engineer — when work is done
+### 🏗️ Site Engineer - when work is done
 1. Construction → Progress Log → update % complete for completed phase
 2. Check Construction → Milestones → click Generate Draft if triggered
 3. Inform accounts that drafts are ready to review
 
-### 👨‍💼 Management — weekly
+### 👨‍💼 Management - weekly
 1. Dashboard → review all KPIs
 2. Reports → Outstanding → who owes what
 3. Reports → Collection → this month's inflow
@@ -453,20 +453,20 @@ Fill all tabs:
 
 | ❌ Don't do this | ✅ Do this instead |
 |-----------------|-------------------|
-| Skip creating a Lead | Always log enquiries in Leads — management tracks conversion |
+| Skip creating a Lead | Always log enquiries in Leads - management tracks conversion |
 | Create a booking without a payment plan | Always create the Payment Plan immediately after booking |
 | Send a demand draft without reviewing it | Always click Edit Draft + review the content first |
 | Upload bank payment proof later "by memory" | Upload the screenshot immediately when recording the payment |
 | Set GSTIN only in Company Settings | Set GSTIN on each **Property page** for the correct project |
 | Use a regular Gmail password for SMTP | Generate an **App Password** from Google Account settings |
-| Delete a demand draft that's been sent | Mark as SENT — never delete a sent notice |
+| Delete a demand draft that's been sent | Mark as SENT - never delete a sent notice |
 
 ---
 
 ## Getting Help
 
 ### If something looks wrong:
-1. Read the **error message** — it tells you exactly which field to fix
+1. Read the **error message** - it tells you exactly which field to fix
 2. Go to **Settings → Help & Guides** for step-by-step guides
 3. Check **Common Questions & Gotchas** in the System Flow Guide
 
@@ -475,7 +475,7 @@ Fill all tabs:
 - Ask your Admin: **Settings → Users → [your name] → check role**
 
 ### If an email didn't send:
-- Go to **Settings → Company & Bank → Test SMTP** — check if it's configured
+- Go to **Settings → Company & Bank → Test SMTP** - check if it's configured
 - Green result = SMTP is working, the email went through
 - Red result = follow the error message to fix it
 
@@ -496,4 +496,4 @@ Lead → Customer → Booking → Payment Plan → Demand Draft → Payment → 
 
 Every step connects to the next. Nothing gets lost. Everything is tracked.
 
-> **Eastern Estate ERP — Life Long Bonding…, Creating a Lifestyle That Lasts a Lifetime**
+> **Eastern Estate ERP - Life Long Bonding…, Creating a Lifestyle That Lasts a Lifetime**

@@ -53,7 +53,7 @@ export class PropertyAccessGuard implements CanActivate {
       typeof r === 'string' ? r : r.name,
     );
 
-    // Super Admin — always sees everything, no filtering ever
+    // Super Admin - always sees everything, no filtering ever
     if (userRoles.includes('super_admin')) {
       this.logger.debug(`User ${user.email} is super_admin - full bypass`);
       request.isGlobalAdmin = true;
@@ -61,7 +61,7 @@ export class PropertyAccessGuard implements CanActivate {
       return true;
     }
 
-    // Head Accountant — company-wide accounting (same property visibility as admin for API filtering)
+    // Head Accountant - company-wide accounting (same property visibility as admin for API filtering)
     if (userRoles.includes('head_accountant')) {
       this.logger.debug(`User ${user.email} is head_accountant - full property bypass`);
       request.isGlobalAdmin = true;
@@ -69,7 +69,7 @@ export class PropertyAccessGuard implements CanActivate {
       return true;
     }
 
-    // Customer portal users — scoped by customerId, not property assignments
+    // Customer portal users - scoped by customerId, not property assignments
     if (userRoles.includes('customer')) {
       this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);
       return true;
@@ -94,7 +94,7 @@ export class PropertyAccessGuard implements CanActivate {
       );
     }
 
-    // Attach accessible property IDs — services will filter by these
+    // Attach accessible property IDs - services will filter by these
     request.isGlobalAdmin = false;
     request.accessiblePropertyIds = userPropertyIds;
 

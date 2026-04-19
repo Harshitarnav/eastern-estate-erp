@@ -72,7 +72,7 @@ export default function NewEmployeePage() {
       const messages = parseApiErrors(error);
       setBanner({
         type: 'error',
-        title: 'Could not save the employee — please fix the following:',
+        title: 'Could not save the employee - please fix the following:',
         messages,
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });

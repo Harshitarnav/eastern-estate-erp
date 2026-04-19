@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const demand_draft_template_entity_1 = require("../entities/demand-draft-template.entity");
+const demand_draft_template_defaults_1 = require("./demand-draft-template.defaults");
 let DemandDraftTemplateService = class DemandDraftTemplateService {
     constructor(templateRepository) {
         this.templateRepository = templateRepository;
@@ -49,6 +50,76 @@ let DemandDraftTemplateService = class DemandDraftTemplateService {
             where: { isActive: true },
             order: { createdAt: 'ASC' }
         });
+    }
+    async findByTone(tone) {
+        const exact = await this.templateRepository.findOne({
+            where: { isActive: true, tone },
+            order: { createdAt: 'ASC' },
+        });
+        if (exact)
+            return exact;
+        return this.findFirstActive();
+    }
+    async seedDefaultTones() {
+        const defaults = [
+            {
+                tone: 'ON_TIME',
+                name: 'Default Demand Letter',
+                subject: 'Payment Demand - {{milestoneName}} - {{flatNumber}}',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.ON_TIME,
+            },
+            {
+                tone: 'REMINDER_1',
+                name: 'Gentle Reminder (7 days overdue)',
+                subject: 'Friendly Reminder: Payment Due for {{flatNumber}}',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.REMINDER_1,
+            },
+            {
+                tone: 'REMINDER_2',
+                name: 'Firm Reminder (14 days overdue)',
+                subject: 'Important: Payment Overdue for {{flatNumber}} ({{daysOverdue}} days)',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.REMINDER_2,
+            },
+            {
+                tone: 'REMINDER_3',
+                name: 'Final Notice (21 days overdue)',
+                subject: 'FINAL NOTICE: Payment Overdue - {{flatNumber}}',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.REMINDER_3,
+            },
+            {
+                tone: 'REMINDER_4',
+                name: 'Last Chance Notice (28 days overdue)',
+                subject: 'LAST CHANCE: Clear Your Payment - {{flatNumber}}',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.REMINDER_4,
+            },
+            {
+                tone: 'CANCELLATION_WARNING',
+                name: 'Cancellation Warning (30+ days overdue)',
+                subject: 'NOTICE OF CANCELLATION WARNING - Booking {{bookingNumber}}',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.CANCELLATION_WARNING,
+            },
+            {
+                tone: 'POST_WARNING',
+                name: 'Post-Warning Weekly Reminder',
+                subject: 'Continued Payment Default - Booking {{bookingNumber}} ({{daysOverdue}} days overdue)',
+                html: demand_draft_template_defaults_1.DEFAULT_TONE_HTML.POST_WARNING,
+            },
+        ];
+        for (const d of defaults) {
+            const existing = await this.templateRepository.findOne({
+                where: { tone: d.tone },
+            });
+            if (existing)
+                continue;
+            await this.templateRepository.save(this.templateRepository.create({
+                tone: d.tone,
+                name: d.name,
+                subject: d.subject,
+                htmlContent: d.html,
+                isActive: true,
+                description: `Auto-seeded default template for tone ${d.tone}`,
+            }));
+        }
     }
     async update(id, updateDto, userId) {
         const template = await this.findOne(id);

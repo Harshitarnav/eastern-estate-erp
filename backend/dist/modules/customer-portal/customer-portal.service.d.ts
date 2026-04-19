@@ -6,6 +6,8 @@ import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.ent
 import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 import { ConstructionProgressLog } from '../construction/entities/construction-progress-log.entity';
 import { ConstructionProject } from '../construction/entities/construction-project.entity';
+import { ConstructionFlatProgress } from '../construction/entities/construction-flat-progress.entity';
+import { ConstructionDevelopmentUpdate } from '../construction/entities/construction-development-update.entity';
 export declare class CustomerPortalService {
     private customersRepo;
     private bookingsRepo;
@@ -14,7 +16,9 @@ export declare class CustomerPortalService {
     private demandDraftsRepo;
     private progressLogsRepo;
     private constructionProjectsRepo;
-    constructor(customersRepo: Repository<Customer>, bookingsRepo: Repository<Booking>, paymentsRepo: Repository<Payment>, paymentPlansRepo: Repository<FlatPaymentPlan>, demandDraftsRepo: Repository<DemandDraft>, progressLogsRepo: Repository<ConstructionProgressLog>, constructionProjectsRepo: Repository<ConstructionProject>);
+    private flatProgressRepo;
+    private developmentUpdatesRepo;
+    constructor(customersRepo: Repository<Customer>, bookingsRepo: Repository<Booking>, paymentsRepo: Repository<Payment>, paymentPlansRepo: Repository<FlatPaymentPlan>, demandDraftsRepo: Repository<DemandDraft>, progressLogsRepo: Repository<ConstructionProgressLog>, constructionProjectsRepo: Repository<ConstructionProject>, flatProgressRepo: Repository<ConstructionFlatProgress>, developmentUpdatesRepo: Repository<ConstructionDevelopmentUpdate>);
     getProfile(customerId: string): Promise<{
         customer: Customer;
         stats: {
@@ -29,6 +33,7 @@ export declare class CustomerPortalService {
         paymentPlan: FlatPaymentPlan;
         payments: Payment[];
         demandDrafts: DemandDraft[];
+        flatProgress: ConstructionFlatProgress[];
     }>;
     getPayments(customerId: string): Promise<{
         payments: Payment[];
@@ -53,8 +58,10 @@ export declare class CustomerPortalService {
     }>;
     getConstructionUpdates(customerId: string): Promise<{
         bookings: Booking[];
-        updates: ConstructionProgressLog[];
         projects: ConstructionProject[];
+        updates: ConstructionProgressLog[];
+        flatProgress: ConstructionFlatProgress[];
+        developmentUpdates: ConstructionDevelopmentUpdate[];
     }>;
     getDemandDrafts(customerId: string): Promise<DemandDraft[]>;
 }

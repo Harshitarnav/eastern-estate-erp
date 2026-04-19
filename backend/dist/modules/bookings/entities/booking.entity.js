@@ -20,6 +20,7 @@ var BookingStatus;
     BookingStatus["AGREEMENT_PENDING"] = "AGREEMENT_PENDING";
     BookingStatus["AGREEMENT_SIGNED"] = "AGREEMENT_SIGNED";
     BookingStatus["CONFIRMED"] = "CONFIRMED";
+    BookingStatus["AT_RISK"] = "AT_RISK";
     BookingStatus["CANCELLED"] = "CANCELLED";
     BookingStatus["TRANSFERRED"] = "TRANSFERRED";
     BookingStatus["COMPLETED"] = "COMPLETED";

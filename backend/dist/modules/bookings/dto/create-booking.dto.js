@@ -9,10 +9,73 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateBookingDto = void 0;
+exports.CreateBookingDto = exports.BookingPlanDto = exports.BookingPlanMilestoneDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 const booking_entity_1 = require("../entities/booking.entity");
+class BookingPlanMilestoneDto {
+}
+exports.BookingPlanMilestoneDto = BookingPlanMilestoneDto;
+__decorate([
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], BookingPlanMilestoneDto.prototype, "sequence", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], BookingPlanMilestoneDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BookingPlanMilestoneDto.prototype, "constructionPhase", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], BookingPlanMilestoneDto.prototype, "phasePercentage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], BookingPlanMilestoneDto.prototype, "paymentPercentage", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], BookingPlanMilestoneDto.prototype, "amount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BookingPlanMilestoneDto.prototype, "description", void 0);
+class BookingPlanDto {
+}
+exports.BookingPlanDto = BookingPlanDto;
+__decorate([
+    (0, class_validator_1.IsEnum)(['template', 'template-edit', 'custom']),
+    __metadata("design:type", String)
+], BookingPlanDto.prototype, "mode", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], BookingPlanDto.prototype, "templateId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], BookingPlanDto.prototype, "type", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ValidateNested)({ each: true }),
+    (0, class_transformer_1.Type)(() => BookingPlanMilestoneDto),
+    __metadata("design:type", Array)
+], BookingPlanDto.prototype, "milestones", void 0);
 class CreateBookingDto {
 }
 exports.CreateBookingDto = CreateBookingDto;
@@ -345,4 +408,10 @@ __decorate([
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], CreateBookingDto.prototype, "towerId", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => BookingPlanDto),
+    __metadata("design:type", BookingPlanDto)
+], CreateBookingDto.prototype, "paymentPlanPayload", void 0);
 //# sourceMappingURL=create-booking.dto.js.map

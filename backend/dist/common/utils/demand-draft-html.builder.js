@@ -72,7 +72,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
 `.trim();
 function fmtRaw(val) {
     if (!val)
-        return '—';
+        return '-';
     const n = parseFloat(val.replace(/[^0-9.]/g, ''));
     if (isNaN(n))
         return val;
@@ -89,7 +89,7 @@ function buildDemandDraftHtml(d) {
         ? `<div>Booking No: <strong>${d.bookingNumber}</strong></div>`
         : '';
     const constructionLine = d.constructionPhase
-        ? ` (${d.constructionPhase}${d.phasePercentage != null ? ` — ${d.phasePercentage}%` : ''})`
+        ? ` (${d.constructionPhase}${d.phasePercentage != null ? ` - ${d.phasePercentage}%` : ''})`
         : '';
     const descLine = d.milestoneDescription
         ? `<br/><span style="font-size:11.5px;color:#666;">${d.milestoneDescription}</span>`
@@ -102,10 +102,10 @@ function buildDemandDraftHtml(d) {
         <div class="sg-cell"><label>Balance After This Payment</label><div class="sg-val">₹ ${fmtRaw(d.balanceAfterPayment)}</div></div>
       </div>`
         : '';
-    const bankName = d.bankName || '[Bank Name — to be filled]';
+    const bankName = d.bankName || '[Bank Name - to be filled]';
     const accountName = d.accountName || 'Eastern Estate';
-    const accountNumber = d.accountNumber || '[Account Number — to be filled]';
-    const ifscCode = d.ifscCode || '[IFSC Code — to be filled]';
+    const accountNumber = d.accountNumber || '[Account Number - to be filled]';
+    const ifscCode = d.ifscCode || '[IFSC Code - to be filled]';
     const branchHtml = d.branch
         ? `<div><label>Branch</label><div class="bv">${d.branch}</div></div>`
         : '';

@@ -85,14 +85,14 @@ export class DocumentsService {
   async remove(id: string, userId: string): Promise<void> {
     const doc = await this.findOne(id);
 
-    // Try to delete the physical file (best-effort — if it's gone already, that's fine)
+    // Try to delete the physical file (best-effort - if it's gone already, that's fine)
     try {
       // Extract just the filename/key from the stored URL
       // Handles both /uploads/<key> and /files/<key> patterns
       const key = path.basename(doc.fileUrl);
       await this.storage.delete(key);
     } catch {
-      // File might already be gone — continue with DB removal
+      // File might already be gone - continue with DB removal
     }
 
     await this.repo.remove(doc);

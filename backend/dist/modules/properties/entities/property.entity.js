@@ -234,6 +234,14 @@ __decorate([
 ], Property.prototype, "isActive", void 0);
 __decorate([
     (0, typeorm_1.Column)({
+        name: 'auto_send_milestone_demand_drafts',
+        type: 'boolean',
+        nullable: true,
+    }),
+    __metadata("design:type", Boolean)
+], Property.prototype, "autoSendMilestoneDemandDrafts", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
         name: 'inventory_checklist',
         type: 'jsonb',
         nullable: true,

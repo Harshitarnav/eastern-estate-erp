@@ -232,8 +232,8 @@ export const parseApiError = (error: any): ParsedApiError => {
 
     // ── HTTP status fallbacks ────────────────────────────────────────────────
     const statusMessages: Record<number, string> = {
-      400: 'Invalid request — please check the highlighted fields.',
-      401: 'Session expired — please log in again.',
+      400: 'Invalid request - please check the highlighted fields.',
+      401: 'Session expired - please log in again.',
       403: "You don't have permission to do this.",
       404: 'Record not found.',
       409: 'This record already exists or conflicts with existing data.',

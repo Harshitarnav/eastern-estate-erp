@@ -1,4 +1,4 @@
-import { IsUUID, IsEnum, IsNumber, IsDateString, IsOptional, IsString, Min, Max } from 'class-validator';
+import { IsUUID, IsEnum, IsNumber, IsDateString, IsOptional, IsString, Min, Max, IsArray } from 'class-validator';
 import { ConstructionPhase, PhaseStatus } from '../entities/construction-tower-progress.entity';
 
 export class CreateFlatProgressDto {
@@ -42,4 +42,9 @@ export class CreateFlatProgressDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  photos?: string[] | null;
 }

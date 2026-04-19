@@ -68,23 +68,61 @@ let AccountsService = class AccountsService {
             });
         }
         if (filters?.propertyId) {
-            query.andWhere('account.propertyId = :propertyId', {
-                propertyId: filters.propertyId,
-            });
+            if (filters.projectOnlyCoa) {
+                query.andWhere('account.propertyId = :propertyId', { propertyId: filters.propertyId });
+            }
+            else {
+                query.andWhere('(account.propertyId IS NULL OR account.propertyId = :propertyId)', {
+                    propertyId: filters.propertyId,
+                });
+            }
         }
         if (scopePropertyIds?.length) {
             query.andWhere('(account.propertyId IS NULL OR account.propertyId IN (:...scopePropertyIds))', { scopePropertyIds });
         }
         query.orderBy('account.accountCode', 'ASC');
-        return await query.getMany();
+        const rows = await query.getMany();
+        if (filters?.propertyId) {
+            const end = new Date();
+            end.setHours(23, 59, 59, 999);
+            const netMap = await this.journalNetMapForSingleProjectView(filters.propertyId, { to: end }, [
+                account_entity_1.AccountType.ASSET,
+                account_entity_1.AccountType.LIABILITY,
+                account_entity_1.AccountType.EQUITY,
+                account_entity_1.AccountType.INCOME,
+                account_entity_1.AccountType.EXPENSE,
+            ]);
+            return rows.map((a) => {
+                const jeNet = netMap.get(a.id) ?? 0;
+                return Object.assign(Object.create(Object.getPrototypeOf(a)), a, {
+                    currentBalance: Math.round(jeNet * 100) / 100,
+                });
+            });
+        }
+        return rows;
     }
-    async findOne(id) {
+    async findOne(id, overlayPropertyId) {
         const account = await this.accountsRepository.findOne({
             where: { id },
             relations: ['parentAccount', 'childAccounts'],
         });
         if (!account) {
             throw new common_1.NotFoundException(`Account with ID ${id} not found`);
+        }
+        if (overlayPropertyId) {
+            const end = new Date();
+            end.setHours(23, 59, 59, 999);
+            const netMap = await this.journalNetMapForSingleProjectView(overlayPropertyId, { to: end }, [
+                account_entity_1.AccountType.ASSET,
+                account_entity_1.AccountType.LIABILITY,
+                account_entity_1.AccountType.EQUITY,
+                account_entity_1.AccountType.INCOME,
+                account_entity_1.AccountType.EXPENSE,
+            ]);
+            const jeNet = netMap.get(account.id) ?? 0;
+            return Object.assign(Object.create(Object.getPrototypeOf(account)), account, {
+                currentBalance: Math.round(jeNet * 100) / 100,
+            });
         }
         return account;
     }
@@ -101,6 +139,75 @@ let AccountsService = class AccountsService {
         const account = await this.findOne(id);
         Object.assign(account, updateAccountDto);
         return await this.accountsRepository.save(account);
+    }
+    async bulkImport(rows, scopePropertyId) {
+        if (!Array.isArray(rows) || !rows.length) {
+            throw new common_1.BadRequestException('Provide at least one account row to import.');
+        }
+        const ALLOWED = new Set(Object.values(account_entity_1.AccountType));
+        const scopedPropertyId = scopePropertyId || null;
+        const existing = await this.accountsRepository
+            .createQueryBuilder('a')
+            .select(['a.accountCode'])
+            .where('a.propertyId IS NOT DISTINCT FROM :pid', { pid: scopedPropertyId })
+            .getMany();
+        const existingCodes = new Set(existing.map((a) => a.accountCode));
+        const seenInBatch = new Set();
+        const errors = [];
+        const toCreate = [];
+        rows.forEach((row, idx) => {
+            const humanRow = idx + 2;
+            const code = String(row.accountCode || '').trim();
+            const name = String(row.accountName || '').trim();
+            const type = String(row.accountType || '').trim().toUpperCase();
+            const category = String(row.accountCategory || '').trim();
+            if (!code) {
+                errors.push({ row: humanRow, code: '', message: 'Missing accountCode' });
+                return;
+            }
+            if (!name) {
+                errors.push({ row: humanRow, code, message: 'Missing accountName' });
+                return;
+            }
+            if (!ALLOWED.has(type)) {
+                errors.push({
+                    row: humanRow,
+                    code,
+                    message: `Invalid accountType "${type}". Use one of ${[...ALLOWED].join(', ')}`,
+                });
+                return;
+            }
+            if (!category) {
+                errors.push({ row: humanRow, code, message: 'Missing accountCategory' });
+                return;
+            }
+            if (existingCodes.has(code) || seenInBatch.has(code)) {
+                errors.push({ row: humanRow, code, message: 'Already exists - skipped' });
+                return;
+            }
+            seenInBatch.add(code);
+            toCreate.push({
+                accountCode: code,
+                accountName: name,
+                accountType: type,
+                accountCategory: category,
+                description: row.description?.toString().trim() || null,
+                openingBalance: Number(row.openingBalance) || 0,
+                currentBalance: Number(row.openingBalance) || 0,
+                propertyId: scopedPropertyId,
+                isActive: true,
+            });
+        });
+        if (!toCreate.length) {
+            return { created: 0, skipped: rows.length, errors, createdIds: [] };
+        }
+        const saved = await this.accountsRepository.save(toCreate.map((r) => this.accountsRepository.create(r)));
+        return {
+            created: saved.length,
+            skipped: rows.length - saved.length,
+            errors,
+            createdIds: saved.map((s) => s.id),
+        };
     }
     async remove(id) {
         const account = await this.findOne(id);
@@ -125,25 +232,149 @@ let AccountsService = class AccountsService {
         qb.orderBy('account.accountCode', 'ASC');
         return qb.getMany();
     }
-    async getBalanceSheet(propertyId) {
-        const scopeWhere = (type) => propertyId
-            ? { accountType: type, isActive: true, propertyId }
-            : { accountType: type, isActive: true };
-        const assets = await this.accountsRepository.find({
-            where: scopeWhere(account_entity_1.AccountType.ASSET),
+    async findAccountsByTypeAndPropertyScope(accountType, propertyId) {
+        const qb = this.accountsRepository
+            .createQueryBuilder('account')
+            .where('account.accountType = :type', { type: accountType })
+            .andWhere('account.isActive = :ia', { ia: true });
+        if (propertyId) {
+            qb.andWhere('(account.propertyId IS NULL OR account.propertyId = :pid)', { pid: propertyId });
+        }
+        qb.orderBy('account.accountCode', 'ASC');
+        return qb.getMany();
+    }
+    indiaFYStartDate(ref) {
+        const y = ref.getFullYear();
+        const m = ref.getMonth();
+        const fyYear = m < 3 ? y - 1 : y;
+        return new Date(fyYear, 3, 1);
+    }
+    async aggregateJournalNetByAccount(range, types, scope) {
+        const params = [journal_entry_entity_1.JournalEntryStatus.POSTED];
+        let cond = 'WHERE je.status = $1';
+        let n = 2;
+        if (scope.kind === 'single') {
+            cond += ` AND je.property_id = $${n}`;
+            params.push(scope.propertyId);
+            n++;
+        }
+        else if (scope.restrictJournalPropertyIds?.length) {
+            cond += ` AND (je.property_id IS NULL OR je.property_id = ANY($${n}::uuid[]))`;
+            params.push(scope.restrictJournalPropertyIds);
+            n++;
+        }
+        if (range.from) {
+            cond += ` AND je.entry_date >= $${n}`;
+            params.push(range.from);
+            n++;
+        }
+        if (range.to) {
+            cond += ` AND je.entry_date <= $${n}`;
+            params.push(range.to);
+            n++;
+        }
+        const typePlaceholders = types.map((_, i) => `$${n + i}`).join(', ');
+        types.forEach((t) => params.push(t));
+        const sql = `
+      SELECT account.id AS id,
+        SUM(
+          CASE
+            WHEN account.account_type IN ('ASSET', 'EXPENSE') THEN line.debit_amount - line.credit_amount
+            ELSE line.credit_amount - line.debit_amount
+          END
+        )::float AS net
+      FROM journal_entry_lines line
+      INNER JOIN journal_entries je ON je.id = line.journal_entry_id
+      INNER JOIN accounts account ON account.id = line.account_id
+      ${cond}
+        AND account.account_type IN (${typePlaceholders})
+      GROUP BY account.id
+    `;
+        const rows = await this.dataSource.query(sql, params);
+        const map = new Map();
+        for (const r of rows) {
+            map.set(r.id, Number(r.net) || 0);
+        }
+        return map;
+    }
+    async aggregateJournalNetForAccountsOwnedByProperty(range, types, propertyId) {
+        const params = [journal_entry_entity_1.JournalEntryStatus.POSTED, propertyId];
+        let cond = 'WHERE je.status = $1 AND account.property_id = $2';
+        let n = 3;
+        if (range.from) {
+            cond += ` AND je.entry_date >= $${n}`;
+            params.push(range.from);
+            n++;
+        }
+        if (range.to) {
+            cond += ` AND je.entry_date <= $${n}`;
+            params.push(range.to);
+            n++;
+        }
+        const typePlaceholders = types.map((_, i) => `$${n + i}`).join(', ');
+        types.forEach((t) => params.push(t));
+        const sql = `
+      SELECT account.id AS id,
+        SUM(
+          CASE
+            WHEN account.account_type IN ('ASSET', 'EXPENSE') THEN line.debit_amount - line.credit_amount
+            ELSE line.credit_amount - line.debit_amount
+          END
+        )::float AS net
+      FROM journal_entry_lines line
+      INNER JOIN journal_entries je ON je.id = line.journal_entry_id
+      INNER JOIN accounts account ON account.id = line.account_id
+      ${cond}
+        AND account.account_type IN (${typePlaceholders})
+      GROUP BY account.id
+    `;
+        const rows = await this.dataSource.query(sql, params);
+        const map = new Map();
+        for (const r of rows) {
+            map.set(r.id, Number(r.net) || 0);
+        }
+        return map;
+    }
+    async journalNetMapForSingleProjectView(propertyId, range, types) {
+        const [strict, owned] = await Promise.all([
+            this.aggregateJournalNetByAccount(range, types, { kind: 'single', propertyId }),
+            this.aggregateJournalNetForAccountsOwnedByProperty(range, types, propertyId),
+        ]);
+        const merged = new Map(strict);
+        for (const [id, v] of owned) {
+            merged.set(id, v);
+        }
+        return merged;
+    }
+    async accountsWithScopedBalances(netById) {
+        const ids = [...netById.keys()];
+        if (!ids.length)
+            return [];
+        const found = await this.accountsRepository.find({
+            where: { id: (0, typeorm_2.In)(ids), isActive: true },
             order: { accountCode: 'ASC' },
         });
-        const liabilities = await this.accountsRepository.find({
-            where: scopeWhere(account_entity_1.AccountType.LIABILITY),
-            order: { accountCode: 'ASC' },
-        });
-        const equity = await this.accountsRepository.find({
-            where: scopeWhere(account_entity_1.AccountType.EQUITY),
-            order: { accountCode: 'ASC' },
-        });
-        const totalAssets = assets.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
-        const totalLiabilities = liabilities.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
-        const totalEquity = equity.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
+        return found.map((a) => Object.assign(Object.create(Object.getPrototypeOf(a)), a, {
+            currentBalance: netById.get(a.id) ?? 0,
+        }));
+    }
+    async getBalanceSheet(scope) {
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        const netMap = scope.kind === 'single'
+            ? await this.journalNetMapForSingleProjectView(scope.propertyId, { to: end }, [
+                account_entity_1.AccountType.ASSET,
+                account_entity_1.AccountType.LIABILITY,
+                account_entity_1.AccountType.EQUITY,
+            ])
+            : await this.aggregateJournalNetByAccount({ to: end }, [account_entity_1.AccountType.ASSET, account_entity_1.AccountType.LIABILITY, account_entity_1.AccountType.EQUITY], scope);
+        const withBal = await this.accountsWithScopedBalances(netMap);
+        const assets = withBal.filter((a) => a.accountType === account_entity_1.AccountType.ASSET);
+        const liabilities = withBal.filter((a) => a.accountType === account_entity_1.AccountType.LIABILITY);
+        const equity = withBal.filter((a) => a.accountType === account_entity_1.AccountType.EQUITY);
+        const totalAssets = assets.reduce((s, a) => s + Number(a.currentBalance), 0);
+        const totalLiabilities = liabilities.reduce((s, a) => s + Number(a.currentBalance), 0);
+        const totalEquity = equity.reduce((s, a) => s + Number(a.currentBalance), 0);
         return {
             assets,
             liabilities,
@@ -153,46 +384,57 @@ let AccountsService = class AccountsService {
             totalEquity,
         };
     }
-    async getProfitAndLoss(startDate, endDate, propertyId) {
-        const scopeWhere = (type) => propertyId
-            ? { accountType: type, isActive: true, propertyId }
-            : { accountType: type, isActive: true };
-        const income = await this.accountsRepository.find({
-            where: scopeWhere(account_entity_1.AccountType.INCOME),
-            order: { accountCode: 'ASC' },
-        });
-        const expenses = await this.accountsRepository.find({
-            where: scopeWhere(account_entity_1.AccountType.EXPENSE),
-            order: { accountCode: 'ASC' },
-        });
-        const totalIncome = income.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
-        const totalExpenses = expenses.reduce((sum, acc) => sum + Number(acc.currentBalance), 0);
+    async getProfitAndLoss(startDate, endDate, scope) {
+        const rangeEnd = endDate ?? new Date();
+        rangeEnd.setHours(23, 59, 59, 999);
+        const rangeStart = startDate ?? this.indiaFYStartDate(rangeEnd);
+        const netMap = scope.kind === 'single'
+            ? await this.journalNetMapForSingleProjectView(scope.propertyId, { from: rangeStart, to: rangeEnd }, [
+                account_entity_1.AccountType.INCOME,
+                account_entity_1.AccountType.EXPENSE,
+            ])
+            : await this.aggregateJournalNetByAccount({ from: rangeStart, to: rangeEnd }, [account_entity_1.AccountType.INCOME, account_entity_1.AccountType.EXPENSE], scope);
+        const withBal = await this.accountsWithScopedBalances(netMap);
+        const income = withBal.filter((a) => a.accountType === account_entity_1.AccountType.INCOME);
+        const expenses = withBal.filter((a) => a.accountType === account_entity_1.AccountType.EXPENSE);
+        const totalIncome = income.reduce((s, a) => s + Number(a.currentBalance), 0);
+        const totalExpenses = expenses.reduce((s, a) => s + Number(a.currentBalance), 0);
         const netProfit = totalIncome - totalExpenses;
-        return {
-            income,
-            expenses,
-            totalIncome,
-            totalExpenses,
-            netProfit,
-        };
+        return { income, expenses, totalIncome, totalExpenses, netProfit };
     }
-    async getTrialBalance(propertyId) {
-        const where = { isActive: true };
-        if (propertyId)
-            where.propertyId = propertyId;
-        const allAccounts = await this.accountsRepository.find({
-            where,
-            order: { accountCode: 'ASC' },
-        });
+    async getTrialBalance(scope) {
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        const types = [
+            account_entity_1.AccountType.ASSET,
+            account_entity_1.AccountType.LIABILITY,
+            account_entity_1.AccountType.EQUITY,
+            account_entity_1.AccountType.INCOME,
+            account_entity_1.AccountType.EXPENSE,
+        ];
+        const netMap = scope.kind === 'single'
+            ? await this.journalNetMapForSingleProjectView(scope.propertyId, { to: end }, types)
+            : await this.aggregateJournalNetByAccount({ to: end }, types, scope);
+        const qb = this.accountsRepository.createQueryBuilder('account').where('account.isActive = :ia', { ia: true });
+        if (scope.kind === 'single') {
+            qb.andWhere('(account.propertyId IS NULL OR account.propertyId = :pid)', { pid: scope.propertyId });
+        }
+        else if (scope.restrictJournalPropertyIds?.length) {
+            qb.andWhere('(account.propertyId IS NULL OR account.propertyId IN (:...pids))', {
+                pids: scope.restrictJournalPropertyIds,
+            });
+        }
+        qb.orderBy('account.accountCode', 'ASC');
+        const allAccounts = await qb.getMany();
         const trialBalanceRows = allAccounts.map((account) => {
-            const balance = Number(account.currentBalance);
+            const balance = Number(netMap.get(account.id) ?? 0);
             const isDebitNormal = [account_entity_1.AccountType.ASSET, account_entity_1.AccountType.EXPENSE].includes(account.accountType);
             return {
                 accountCode: account.accountCode,
                 accountName: account.accountName,
                 accountType: account.accountType,
-                debitBalance: isDebitNormal ? (balance > 0 ? balance : 0) : (balance < 0 ? Math.abs(balance) : 0),
-                creditBalance: isDebitNormal ? (balance < 0 ? Math.abs(balance) : 0) : (balance > 0 ? balance : 0),
+                debitBalance: isDebitNormal ? (balance > 0 ? balance : 0) : balance < 0 ? Math.abs(balance) : 0,
+                creditBalance: isDebitNormal ? (balance < 0 ? Math.abs(balance) : 0) : balance > 0 ? balance : 0,
             };
         });
         const totalDebit = trialBalanceRows.reduce((sum, row) => sum + row.debitBalance, 0);

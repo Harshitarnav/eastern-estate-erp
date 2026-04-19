@@ -130,7 +130,7 @@ export default function ProjectDetailPage() {
   };
 
   const fmt = (d: string) =>
-    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
   const fmtCur = (n: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
 
@@ -294,7 +294,7 @@ export default function ProjectDetailPage() {
           <div>
             <p className="text-white/60 text-xs mb-1">Days Remaining</p>
             <p className={`text-lg font-bold ${isDelayed ? 'text-red-300' : daysLeft !== null && daysLeft < 30 ? 'text-yellow-300' : 'text-white'}`}>
-              {daysLeft === null ? '—' : isDelayed ? `${Math.abs(daysLeft)}d OVER` : `${daysLeft} days`}
+              {daysLeft === null ? '-' : isDelayed ? `${Math.abs(daysLeft)}d OVER` : `${daysLeft} days`}
             </p>
           </div>
         </div>
@@ -340,9 +340,9 @@ export default function ProjectDetailPage() {
                   { label: 'Expected Completion', value: fmt(project.expectedCompletionDate) },
                   { label: 'Actual Completion',   value: project.actualCompletionDate ? fmt(project.actualCompletionDate) : 'Ongoing' },
                   { label: 'Project Manager',     value: project.projectManager?.fullName || 'Not assigned' },
-                  { label: 'Property',            value: project.property?.name || '—' },
-                  { label: 'Tower',               value: project.tower?.name || '—' },
-                  { label: 'Flat',                value: project.flat?.flatNumber ? `Flat ${project.flat.flatNumber}` : '—' },
+                  { label: 'Property',            value: project.property?.name || '-' },
+                  { label: 'Tower',               value: project.tower?.name || '-' },
+                  { label: 'Flat',                value: project.flat?.flatNumber ? `Flat ${project.flat.flatNumber}` : '-' },
                 ].map(item => (
                   <div key={item.label} className="flex justify-between items-center py-2.5 border-b border-gray-50 last:border-0">
                     <span className="text-sm text-gray-500">{item.label}</span>
@@ -617,8 +617,8 @@ export default function ProjectDetailPage() {
                             {m.material?.materialName || m.materialId}
                           </td>
                           <td className="px-5 py-3">{m.quantity} {m.material?.unitOfMeasurement}</td>
-                          <td className="px-5 py-3 text-gray-500">{m.purpose || '—'}</td>
-                          <td className="px-5 py-3 text-gray-500">{m.issuedTo || '—'}</td>
+                          <td className="px-5 py-3 text-gray-500">{m.purpose || '-'}</td>
+                          <td className="px-5 py-3 text-gray-500">{m.issuedTo || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -668,7 +668,7 @@ export default function ProjectDetailPage() {
                                 className="hover:underline font-medium"
                                 style={{ color: '#A8211B' }}
                               >{po.vendor.vendorName}</button>
-                            ) : (po.vendor?.vendorName || '—')} · {fmt(po.poDate)}
+                            ) : (po.vendor?.vendorName || '-')} · {fmt(po.poDate)}
                           </p>
                         </div>
                         <div className="text-right">

@@ -4,6 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { JournalEntry, JournalEntryStatus } from './entities/journal-entry.entity';
 import { JournalEntryLine } from './entities/journal-entry-line.entity';
 import { Account } from './entities/account.entity';
+import { Property } from '../properties/entities/property.entity';
 import { CreateJournalEntryDto, UpdateJournalEntryDto, VoidJournalEntryDto } from './dto/create-journal-entry.dto';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class JournalEntriesService {
     private journalEntryLinesRepository: Repository<JournalEntryLine>,
     @InjectRepository(Account)
     private accountsRepository: Repository<Account>,
+    @InjectRepository(Property)
+    private propertyRepository: Repository<Property>,
     private dataSource: DataSource,
   ) {}
 
@@ -25,7 +28,23 @@ export class JournalEntriesService {
     return `JE${dateStr}${random}`;
   }
 
-  async create(createJournalEntryDto: CreateJournalEntryDto, userId: string): Promise<JournalEntry> {
+  async create(
+    createJournalEntryDto: CreateJournalEntryDto,
+    userId: string,
+    opts?: { allowOrgWideWithoutProperty?: boolean },
+  ): Promise<JournalEntry> {
+    const propertyCount = await this.propertyRepository.count();
+    let effectivePropertyId = createJournalEntryDto.propertyId ?? null;
+    if (propertyCount === 1 && !effectivePropertyId) {
+      const only = await this.propertyRepository.find({ take: 1 });
+      effectivePropertyId = only[0]?.id ?? null;
+    }
+    if (propertyCount > 1 && !effectivePropertyId && !opts?.allowOrgWideWithoutProperty) {
+      throw new BadRequestException(
+        'propertyId is required when the organization has more than one project. Choose the project this entry relates to.',
+      );
+    }
+
     // Validate that debits equal credits
     const totalDebit = createJournalEntryDto.lines.reduce((sum, line) => sum + line.debitAmount, 0);
     const totalCredit = createJournalEntryDto.lines.reduce((sum, line) => sum + line.creditAmount, 0);
@@ -64,20 +83,22 @@ export class JournalEntriesService {
 
     try {
       const entryNumber = createJournalEntryDto.entryNumber || this.generateEntryNumber();
+      const { lines: lineDtos, ...entryRest } = createJournalEntryDto;
 
-      // Create journal entry
+      // Create journal entry (do not spread `lines` onto the entity)
       const journalEntry = this.journalEntriesRepository.create({
-        ...createJournalEntryDto,
+        ...entryRest,
         entryNumber,
         createdBy: userId,
         totalDebit,
         totalCredit,
+        propertyId: effectivePropertyId,
       });
 
       const savedEntry = await queryRunner.manager.save(journalEntry);
 
       // Create journal entry lines
-      const lines = createJournalEntryDto.lines.map(line =>
+      const lines = lineDtos.map((line) =>
         this.journalEntryLinesRepository.create({
           ...line,
           journalEntryId: savedEntry.id,
@@ -102,11 +123,13 @@ export class JournalEntriesService {
     startDate?: Date;
     endDate?: Date;
     referenceType?: string;
+    propertyId?: string;
     accessiblePropertyIds?: string[] | null;
   }): Promise<JournalEntry[]> {
     const query = this.journalEntriesRepository.createQueryBuilder('je')
       .leftJoinAndSelect('je.lines', 'lines')
-      .leftJoinAndSelect('lines.account', 'account');
+      .leftJoinAndSelect('lines.account', 'account')
+      .leftJoinAndSelect('je.property', 'property');
 
     if (filters?.status) {
       query.andWhere('je.status = :status', { status: filters.status });
@@ -130,6 +153,23 @@ export class JournalEntriesService {
       });
     }
 
+    // Top-bar property selection. A JE may have its own propertyId, but
+    // can also be implicitly scoped via its lines' account.property_id -
+    // cover both so filtering is stable regardless of how the JE was
+    // created. We intersect with accessiblePropertyIds in the controller.
+    if (filters?.propertyId) {
+      query.andWhere(
+        `(je.propertyId = :filterPropertyId
+          OR EXISTS (
+            SELECT 1 FROM journal_entry_lines jel3
+            INNER JOIN accounts acc3 ON acc3.id = jel3.account_id
+            WHERE jel3.journal_entry_id = je.id
+            AND acc3.property_id = :filterPropertyId
+          ))`,
+        { filterPropertyId: filters.propertyId },
+      );
+    }
+
     if (filters?.accessiblePropertyIds?.length) {
       query.andWhere(
         `NOT EXISTS (
@@ -151,7 +191,7 @@ export class JournalEntriesService {
   async findOne(id: string): Promise<JournalEntry> {
     const journalEntry = await this.journalEntriesRepository.findOne({
       where: { id },
-      relations: ['lines', 'lines.account', 'creator', 'voider'],
+      relations: ['lines', 'lines.account', 'creator', 'voider', 'property'],
     });
 
     if (!journalEntry) {

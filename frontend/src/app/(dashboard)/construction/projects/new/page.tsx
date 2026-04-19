@@ -41,7 +41,7 @@ export default function NewConstructionProjectPage() {
     }
   }, [formData.towerId]);
 
-  // api.get() returns response.data directly — extract array from either format
+  // api.get() returns response.data directly - extract array from either format
   const extractArray = (data: any): any[] => {
     if (Array.isArray(data)) return data;
     if (data?.data && Array.isArray(data.data)) return data.data;

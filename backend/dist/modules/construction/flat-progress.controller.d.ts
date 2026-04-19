@@ -2,9 +2,13 @@ import { FlatProgressService } from './flat-progress.service';
 import { CreateFlatProgressDto } from './dto/create-flat-progress.dto';
 import { UpdateFlatProgressDto } from './dto/update-flat-progress.dto';
 import { ConstructionPhase } from './entities/construction-tower-progress.entity';
+import { ConstructionWorkflowService } from './services/construction-workflow.service';
+import { ConstructionProjectsService } from './construction-projects.service';
 export declare class FlatProgressController {
     private readonly flatProgressService;
-    constructor(flatProgressService: FlatProgressService);
+    private readonly workflowService;
+    private readonly projectsService;
+    constructor(flatProgressService: FlatProgressService, workflowService: ConstructionWorkflowService, projectsService: ConstructionProjectsService);
     createFlatProgress(projectId: string, flatId: string, createDto: CreateFlatProgressDto): Promise<import("./entities/construction-flat-progress.entity").ConstructionFlatProgress>;
     updateFlatProgress(id: string, updateDto: UpdateFlatProgressDto): Promise<import("./entities/construction-flat-progress.entity").ConstructionFlatProgress>;
     getFlatProgress(projectId: string, flatId: string, phase?: ConstructionPhase): Promise<import("./entities/construction-flat-progress.entity").ConstructionFlatProgress | import("./entities/construction-flat-progress.entity").ConstructionFlatProgress[]>;

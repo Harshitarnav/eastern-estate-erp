@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { DemandDraftTemplateService } from './services/demand-draft-template.service';
 
 /**
  * Ensures that the payment_plan_templates, flat_payment_plans, and
@@ -10,7 +11,10 @@ import { DataSource } from 'typeorm';
 export class PaymentPlansSchemaSyncService implements OnModuleInit {
   private readonly logger = new Logger(PaymentPlansSchemaSyncService.name);
 
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly templateService: DemandDraftTemplateService,
+  ) {}
 
   async onModuleInit(): Promise<void> {
     const qr = this.dataSource.createQueryRunner();
@@ -94,6 +98,20 @@ export class PaymentPlansSchemaSyncService implements OnModuleInit {
       await qr.query(`ALTER TABLE demand_drafts ADD COLUMN IF NOT EXISTS template_id UUID NULL;`);
       await qr.query(`ALTER TABLE demand_drafts ADD COLUMN IF NOT EXISTS template_data JSONB NULL;`);
 
+      // ── Legacy / collections columns on flat_payment_plans ──────────────
+      await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS is_legacy_import BOOLEAN NOT NULL DEFAULT FALSE;`);
+      await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS imported_at TIMESTAMP NULL;`);
+      await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS initial_escalation_level INT NOT NULL DEFAULT 0;`);
+      await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS reminders_enabled BOOLEAN NOT NULL DEFAULT TRUE;`);
+      await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS pause_reminders_until TIMESTAMP NULL;`);
+      await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS import_batch_id VARCHAR(64) NULL;`);
+      await qr.query(`CREATE INDEX IF NOT EXISTS idx_fpp_is_legacy_import ON flat_payment_plans(is_legacy_import);`);
+      await qr.query(`CREATE INDEX IF NOT EXISTS idx_fpp_import_batch_id ON flat_payment_plans(import_batch_id);`);
+
+      // ── Tone column on demand_draft_templates ───────────────────────────
+      await qr.query(`ALTER TABLE demand_draft_templates ADD COLUMN IF NOT EXISTS tone VARCHAR(40) NOT NULL DEFAULT 'ON_TIME';`);
+      await qr.query(`CREATE INDEX IF NOT EXISTS idx_ddt_tone ON demand_draft_templates(tone);`);
+
       // ── Add columns to construction_flat_progress ───────────────────────
       await qr.query(`ALTER TABLE construction_flat_progress ADD COLUMN IF NOT EXISTS is_payment_milestone BOOLEAN DEFAULT FALSE;`);
       await qr.query(`ALTER TABLE construction_flat_progress ADD COLUMN IF NOT EXISTS milestone_triggered BOOLEAN DEFAULT FALSE;`);
@@ -106,6 +124,18 @@ export class PaymentPlansSchemaSyncService implements OnModuleInit {
 
       await qr.commitTransaction();
       this.logger.log('Payment plans schema sync completed successfully');
+
+      // Seed the 7 default DD templates (one per tone) if missing. We do
+      // this after the commit so the new `tone` column definitely exists
+      // before the service tries to read/write it.
+      try {
+        await this.templateService.seedDefaultTones();
+        this.logger.log('Default DD tone templates ensured');
+      } catch (err: any) {
+        this.logger.warn(
+          `Could not seed default DD tone templates (non-fatal): ${err?.message}`,
+        );
+      }
     } catch (error) {
       await qr.rollbackTransaction();
       this.logger.error('Failed to synchronize payment plans schema', error as Error);

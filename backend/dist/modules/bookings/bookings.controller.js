@@ -27,20 +27,20 @@ let BookingsController = class BookingsController {
     async findAll(query, req) {
         return this.bookingsService.findAll(query, req.accessiblePropertyIds);
     }
-    async getStatistics(req) {
-        return this.bookingsService.getStatistics(req.accessiblePropertyIds);
+    async getStatistics(propertyId, req) {
+        return this.bookingsService.getStatistics(req.accessiblePropertyIds, propertyId);
     }
-    async findOne(id) {
-        return this.bookingsService.findOne(id);
+    async findOne(id, req) {
+        return this.bookingsService.findOne(id, req?.accessiblePropertyIds);
     }
-    async update(id, updateBookingDto) {
-        return this.bookingsService.update(id, updateBookingDto);
+    async update(id, updateBookingDto, req) {
+        return this.bookingsService.update(id, updateBookingDto, req?.accessiblePropertyIds);
     }
-    async remove(id) {
-        return this.bookingsService.remove(id);
+    async remove(id, req) {
+        return this.bookingsService.remove(id, req?.accessiblePropertyIds);
     }
-    async cancel(id, body) {
-        return this.bookingsService.cancelBooking(id, body.reason, body.refundAmount);
+    async cancel(id, body, req) {
+        return this.bookingsService.cancelBooking(id, body.reason, body.refundAmount, req?.accessiblePropertyIds);
     }
 };
 exports.BookingsController = BookingsController;
@@ -63,32 +63,36 @@ __decorate([
 ], BookingsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('statistics'),
-    __param(0, (0, common_1.Request)()),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "getStatistics", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, dto_1.UpdateBookingDto]),
+    __metadata("design:paramtypes", [String, dto_1.UpdateBookingDto, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "remove", null);
 __decorate([
@@ -96,8 +100,9 @@ __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], BookingsController.prototype, "cancel", null);
 exports.BookingsController = BookingsController = __decorate([

@@ -74,7 +74,7 @@ export default function EmployeesPage() {
   };
 
   const formatStatus = (status: string | null | undefined) => {
-    return status ? status.replace(/_/g, ' ') : '—';
+    return status ? status.replace(/_/g, ' ') : '-';
   };
 
   const formatCurrency = (value: number | string | null | undefined) => {
@@ -179,7 +179,7 @@ export default function EmployeesPage() {
         </div>
       )}
 
-      {/* Loading — skeleton cards */}
+      {/* Loading - skeleton cards */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -335,7 +335,7 @@ export default function EmployeesPage() {
                       <div>
                         <p className="text-gray-500">Joining Date</p>
                         <p className="font-semibold text-gray-800">
-                          {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : '—'}
+                          {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : '-'}
                         </p>
                       </div>
                     </div>

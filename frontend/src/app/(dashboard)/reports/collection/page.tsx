@@ -24,7 +24,7 @@ const fmtINR = (n: number) =>
   '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 const fmtDate = (s: string) => {
-  if (!s || s === '—') return '—';
+  if (!s || s === '-') return '-';
   try { return new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
   catch { return s; }
 };
@@ -41,7 +41,7 @@ function exportPdf(report: CollectionReport, filters: { propertyLabel?: string; 
   doc.setFillColor(brandRed);
   doc.rect(0, 0, PW, 22, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor('#fff');
-  doc.text('EASTERN ESTATE — COLLECTION REPORT', ML, 10);
+  doc.text('EASTERN ESTATE - COLLECTION REPORT', ML, 10);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
   const parts = [
     filters.propertyLabel && `Property: ${filters.propertyLabel}`,
@@ -278,11 +278,11 @@ export default function CollectionReportPage() {
                     <TableCell className="text-xs whitespace-nowrap">{fmtDate(row.paymentDate)}</TableCell>
                     <TableCell>
                       <p className="font-medium text-sm">{row.flatNumber}</p>
-                      <p className="text-xs text-gray-400">{[row.property, row.tower].filter(b => b && b !== '—').join(' › ')}</p>
+                      <p className="text-xs text-gray-400">{[row.property, row.tower].filter(b => b && b !== '-').join(' › ')}</p>
                     </TableCell>
                     <TableCell>
                       <p className="text-sm">{row.customerName}</p>
-                      {row.customerPhone !== '—' && (
+                      {row.customerPhone !== '-' && (
                         <p className="text-xs text-gray-400">{row.customerPhone}</p>
                       )}
                     </TableCell>
@@ -304,8 +304,8 @@ export default function CollectionReportPage() {
                         {row.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-gray-500">{row.receiptNumber !== '—' ? row.receiptNumber : '—'}</TableCell>
-                    <TableCell className="text-xs text-gray-400">{row.reference !== '—' ? row.reference : '—'}</TableCell>
+                    <TableCell className="text-xs text-gray-500">{row.receiptNumber !== '-' ? row.receiptNumber : '-'}</TableCell>
+                    <TableCell className="text-xs text-gray-400">{row.reference !== '-' ? row.reference : '-'}</TableCell>
                     <TableCell>
                       <button onClick={() => router.push(`/payments/${row.paymentId}`)}
                         className="text-xs text-blue-600 hover:underline">

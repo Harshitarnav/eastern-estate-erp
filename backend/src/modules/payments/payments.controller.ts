@@ -38,6 +38,7 @@ export class PaymentsController {
     @Query('minAmount') minAmount?: string,
     @Query('maxAmount') maxAmount?: string,
     @Query('isVerified') isVerified?: string,
+    @Query('propertyId') propertyId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Request() req?: any,
@@ -54,27 +55,27 @@ export class PaymentsController {
     if (endDate) filters.endDate = new Date(endDate);
     if (minAmount) filters.minAmount = parseFloat(minAmount);
     if (maxAmount) filters.maxAmount = parseFloat(maxAmount);
+    if (propertyId) filters.propertyId = propertyId;
     filters.accessiblePropertyIds = req?.accessiblePropertyIds;
 
-    const payments = await this.paymentsService.findAll(filters);
-    
-    // Paginate results
-    const pageNum = page ? parseInt(page) : 1;
-    const limitNum = limit ? parseInt(limit) : 10;
-    const startIndex = (pageNum - 1) * limitNum;
-    const endIndex = startIndex + limitNum;
-    
-    const paginatedPayments = payments.slice(startIndex, endIndex);
-    const total = payments.length;
-    const totalPages = Math.ceil(total / limitNum);
-    
+    const pageNum = page ? Math.max(1, parseInt(page, 10) || 1) : 1;
+    const limitNum = limit
+      ? Math.min(200, Math.max(1, parseInt(limit, 10) || 10))
+      : 10;
+
+    const { data, total } = await this.paymentsService.findAllPaginated(
+      filters,
+      pageNum,
+      limitNum,
+    );
+
     return {
-      data: paginatedPayments,
+      data,
       meta: {
         total,
         page: pageNum,
         limit: limitNum,
-        totalPages,
+        totalPages: Math.ceil(total / limitNum),
       },
     };
   }
@@ -84,6 +85,7 @@ export class PaymentsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('paymentType') paymentType?: string,
+    @Query('propertyId') propertyId?: string,
     @Request() req?: any,
   ) {
     const filters: any = {};
@@ -91,19 +93,26 @@ export class PaymentsController {
     if (startDate) filters.startDate = new Date(startDate);
     if (endDate) filters.endDate = new Date(endDate);
     if (paymentType) filters.paymentType = paymentType;
+    if (propertyId) filters.propertyId = propertyId;
     filters.accessiblePropertyIds = req?.accessiblePropertyIds;
 
     return this.paymentsService.getStatistics(filters);
   }
 
   @Get('booking/:bookingId')
-  findByBooking(@Param('bookingId') bookingId: string) {
-    return this.paymentsService.findAll({ bookingId });
+  findByBooking(@Param('bookingId') bookingId: string, @Request() req: any) {
+    return this.paymentsService.findAll({
+      bookingId,
+      accessiblePropertyIds: req?.accessiblePropertyIds,
+    });
   }
 
   @Get('customer/:customerId')
-  findByCustomer(@Param('customerId') customerId: string) {
-    return this.paymentsService.findAll({ customerId });
+  findByCustomer(@Param('customerId') customerId: string, @Request() req: any) {
+    return this.paymentsService.findAll({
+      customerId,
+      accessiblePropertyIds: req?.accessiblePropertyIds,
+    });
   }
 
   @Get('code/:paymentCode')

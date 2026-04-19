@@ -81,6 +81,9 @@ export class ConstructionFlatProgress {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  @Column({ name: 'photos', type: 'text', array: true, nullable: true })
+  photos: string[] | null;
+
   // Payment Milestone Integration Fields
   @Column({ name: 'is_payment_milestone', default: false })
   isPaymentMilestone: boolean;

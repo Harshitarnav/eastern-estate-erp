@@ -168,6 +168,11 @@ __decorate([
     __metadata("design:type", Boolean)
 ], CreateCustomerDto.prototype, "isVIP", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], CreateCustomerDto.prototype, "autoSendMilestoneDemandDrafts", void 0);
+__decorate([
     (0, class_validator_1.IsEnum)(customer_entity_1.KYCStatus),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Transform)(CreateCustomerDto.toOptionalString),

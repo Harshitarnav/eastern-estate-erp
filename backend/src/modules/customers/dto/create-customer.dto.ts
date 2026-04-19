@@ -145,6 +145,16 @@ export class CreateCustomerDto {
   @IsOptional()
   isVIP?: boolean;
 
+  // Tri-state per-customer override for milestone-DD auto-send.
+  //   null  → inherit (remove the override, follow property / company)
+  //   true  → always auto-send
+  //   false → always require human review
+  // The route accepts explicit `null` from the frontend to clear the
+  // override, which is why this isn't just @IsBoolean().
+  @IsOptional()
+  @IsBoolean()
+  autoSendMilestoneDemandDrafts?: boolean | null;
+
   @IsEnum(KYCStatus)
   @IsOptional()
   @Transform(CreateCustomerDto.toOptionalString)

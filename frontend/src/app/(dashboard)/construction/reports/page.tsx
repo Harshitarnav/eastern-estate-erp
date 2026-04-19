@@ -32,7 +32,7 @@ const fmtCur = (n: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 const fmt = (d: string) =>
-  d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
 // ── Bar component ─────────────────────────────────────────────────────────────
 function ProgressBar({ pct, color = '#A8211B' }: { pct: number; color?: string }) {
@@ -131,7 +131,7 @@ export default function ConstructionReportsPage() {
       <BrandHero
         eyebrow="Construction Reports"
         title={<>Data-driven decisions, <span style={{ color: brandPalette.accent }}>every project</span></>}
-        description="Budget vs actual, cost-to-complete projections, vendor spend analysis, labour productivity, and QC pass rates — all in one place."
+        description="Budget vs actual, cost-to-complete projections, vendor spend analysis, labour productivity, and QC pass rates - all in one place."
         actions={
           <>
             <BrandPrimaryButton onClick={() => router.push('/construction')}>
@@ -174,7 +174,7 @@ export default function ConstructionReportsPage() {
           />
           <BrandStatCard
             title="At-Risk Projects"
-            primary={String(summary.costToComplete?.atRiskCount ?? '—')}
+            primary={String(summary.costToComplete?.atRiskCount ?? '-')}
             subLabel={`${summary.costToComplete?.onTrackCount || 0} on track`}
             icon={<AlertTriangle className="w-7 h-7 text-white" />}
             accentColor={summary.costToComplete?.atRiskCount > 0 ? '#D97706' : '#16A34A'}
@@ -240,7 +240,7 @@ export default function ConstructionReportsPage() {
               {activeTab === 'budget' && budgetData && (
                 <div>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="font-bold text-lg" style={{ color: brandPalette.primary }}>Budget vs Actual — All Projects</h2>
+                    <h2 className="font-bold text-lg" style={{ color: brandPalette.primary }}>Budget vs Actual - All Projects</h2>
                   </div>
 
                   {/* Totals strip */}
@@ -366,7 +366,7 @@ export default function ConstructionReportsPage() {
                             <div className="text-right shrink-0">
                               <p className="text-xs text-gray-400">Days left</p>
                               <p className={`font-bold text-lg ${row.daysLeft !== null && row.daysLeft < 0 ? 'text-red-600' : row.daysLeft !== null && row.daysLeft < 30 ? 'text-yellow-600' : 'text-gray-700'}`}>
-                                {row.daysLeft === null ? '—' : row.daysLeft < 0 ? `${Math.abs(row.daysLeft)}d OVER` : `${row.daysLeft}d`}
+                                {row.daysLeft === null ? '-' : row.daysLeft < 0 ? `${Math.abs(row.daysLeft)}d OVER` : `${row.daysLeft}d`}
                               </p>
                             </div>
                           </div>
@@ -473,7 +473,7 @@ export default function ConstructionReportsPage() {
                                 <td className="px-4 py-3 font-semibold text-green-600">{fmtCur(row.totalPaid)}</td>
                                 <td className="px-4 py-3 text-orange-600">{fmtCur(row.totalRetention)} <span className="text-xs text-gray-400">({row.retentionPct}%)</span></td>
                                 <td className="px-4 py-3 text-xs text-gray-500 max-w-[150px]">
-                                  {row.projectNames?.join(', ') || '—'}
+                                  {row.projectNames?.join(', ') || '-'}
                                 </td>
                               </tr>
                             ))}
@@ -551,8 +551,8 @@ export default function ConstructionReportsPage() {
                                 {labourData.logHistory.map((log: any) => (
                                   <tr key={log.id} className={log.hasIssues ? 'bg-orange-50/40' : 'hover:bg-gray-50'}>
                                     <td className="px-4 py-3 text-gray-500">{fmt(log.logDate)}</td>
-                                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[160px] truncate">{log.projectName || '—'}</td>
-                                    <td className="px-4 py-3">{log.shift === 'DAY' ? '☀️ Day' : log.shift === 'NIGHT' ? '🌙 Night' : '—'}</td>
+                                    <td className="px-4 py-3 font-medium text-gray-900 max-w-[160px] truncate">{log.projectName || '-'}</td>
+                                    <td className="px-4 py-3">{log.shift === 'DAY' ? '☀️ Day' : log.shift === 'NIGHT' ? '🌙 Night' : '-'}</td>
                                     <td className="px-4 py-3 font-semibold text-blue-600">{log.workersPresent}</td>
                                     <td className="px-4 py-3 text-gray-500">{log.workersAbsent}</td>
                                     <td className="px-4 py-3">
@@ -564,7 +564,7 @@ export default function ConstructionReportsPage() {
                                     <td className="px-4 py-3">
                                       {log.hasIssues
                                         ? <span className="text-xs text-orange-600 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Yes</span>
-                                        : <span className="text-xs text-green-600">—</span>}
+                                        : <span className="text-xs text-green-600">-</span>}
                                     </td>
                                   </tr>
                                 ))}
@@ -582,7 +582,7 @@ export default function ConstructionReportsPage() {
               {activeTab === 'qc' && qcData && (
                 <div>
                   <div className="mb-6">
-                    <h2 className="font-bold text-lg" style={{ color: brandPalette.primary }}>Quality Control — Pass Rate Analysis</h2>
+                    <h2 className="font-bold text-lg" style={{ color: brandPalette.primary }}>Quality Control - Pass Rate Analysis</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Phase-wise inspection results and defect tracking across all projects.</p>
                   </div>
 

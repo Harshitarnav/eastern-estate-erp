@@ -21,6 +21,8 @@ const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payme
 const demand_draft_entity_1 = require("../demand-drafts/entities/demand-draft.entity");
 const construction_progress_log_entity_1 = require("../construction/entities/construction-progress-log.entity");
 const construction_project_entity_1 = require("../construction/entities/construction-project.entity");
+const construction_flat_progress_entity_1 = require("../construction/entities/construction-flat-progress.entity");
+const construction_development_update_entity_1 = require("../construction/entities/construction-development-update.entity");
 let CustomerPortalModule = class CustomerPortalModule {
 };
 exports.CustomerPortalModule = CustomerPortalModule;
@@ -37,6 +39,8 @@ exports.CustomerPortalModule = CustomerPortalModule = __decorate([
                 demand_draft_entity_1.DemandDraft,
                 construction_progress_log_entity_1.ConstructionProgressLog,
                 construction_project_entity_1.ConstructionProject,
+                construction_flat_progress_entity_1.ConstructionFlatProgress,
+                construction_development_update_entity_1.ConstructionDevelopmentUpdate,
             ]),
         ],
         controllers: [customer_portal_controller_1.CustomerPortalController],

@@ -108,7 +108,7 @@ export class ConstructionProgressLogsController {
   ) {
     if (!photoUrl) throw new BadRequestException('photoUrl is required');
 
-    // Delete physical file (best-effort — don't fail if already gone)
+    // Delete physical file (best-effort - don't fail if already gone)
     try {
       const filePath = join(process.cwd(), 'uploads', photoUrl.replace(/^\/uploads\//, ''));
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

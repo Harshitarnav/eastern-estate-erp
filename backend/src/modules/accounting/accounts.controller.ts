@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { AccountsService } from './accounts.service';
@@ -20,6 +21,7 @@ import {
   accessiblePropertyIdsOrThrow,
   assertAccountReadable,
   resolveAccountingPropertyScope,
+  resolveAccountingReportScope,
 } from './utils/accounting-scope.util';
 
 @Controller('accounting/accounts')
@@ -40,12 +42,43 @@ export class AccountsController {
     return this.accountingService.seedCoaForProject(propertyId);
   }
 
+  /**
+   * Bulk-import Chart of Accounts rows produced by the Excel import modal.
+   * The frontend parses the workbook and POSTs JSON rows here so we can validate centrally.
+   */
+  @Post('bulk-import')
+  bulkImport(
+    @Body()
+    body: {
+      propertyId?: string | null;
+      rows: Array<{
+        accountCode: string;
+        accountName: string;
+        accountType: string;
+        accountCategory: string;
+        description?: string;
+        openingBalance?: number;
+      }>;
+    },
+    @Req() req: Request,
+  ) {
+    const targetPid = body.propertyId || null;
+    if (targetPid && !(req as any).isGlobalAdmin) {
+      const ids = (req as any).accessiblePropertyIds || [];
+      if (!ids.includes(targetPid)) {
+        throw new ForbiddenException('You do not have access to this project');
+      }
+    }
+    return this.accountsService.bulkImport(body.rows, targetPid);
+  }
+
   @Get()
   findAll(
     @Req() req: Request,
     @Query('accountType') accountType?: AccountType,
     @Query('isActive') isActive?: string,
     @Query('propertyId') propertyId?: string,
+    @Query('projectOnlyCoa') projectOnlyCoa?: string,
   ) {
     const scopeIds = accessiblePropertyIdsOrThrow(req as any);
     return this.accountsService.findAll(
@@ -53,6 +86,7 @@ export class AccountsController {
         accountType,
         isActive: isActive ? isActive === 'true' : undefined,
         propertyId,
+        projectOnlyCoa: projectOnlyCoa === 'true',
       },
       scopeIds,
     );
@@ -66,7 +100,7 @@ export class AccountsController {
 
   @Get('balance-sheet')
   getBalanceSheet(@Query('propertyId') propertyId: string | undefined, @Req() req: Request) {
-    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    const resolved = resolveAccountingReportScope(req as any, propertyId);
     return this.accountsService.getBalanceSheet(resolved);
   }
 
@@ -77,7 +111,7 @@ export class AccountsController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    const resolved = resolveAccountingReportScope(req as any, propertyId);
     return this.accountsService.getProfitAndLoss(
       startDate ? new Date(startDate) : undefined,
       endDate ? new Date(endDate) : undefined,
@@ -87,7 +121,7 @@ export class AccountsController {
 
   @Get('trial-balance')
   getTrialBalance(@Query('propertyId') propertyId: string | undefined, @Req() req: Request) {
-    const resolved = resolveAccountingPropertyScope(req as any, propertyId);
+    const resolved = resolveAccountingReportScope(req as any, propertyId);
     return this.accountsService.getTrialBalance(resolved);
   }
 
@@ -105,8 +139,18 @@ export class AccountsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req: Request) {
-    const acc = await this.accountsService.findOne(id);
+  async findOne(
+    @Param('id') id: string,
+    @Query('propertyId') propertyId: string | undefined,
+    @Req() req: Request,
+  ) {
+    if (propertyId && !(req as any).isGlobalAdmin) {
+      const ids = (req as any).accessiblePropertyIds || [];
+      if (!ids.includes(propertyId)) {
+        throw new ForbiddenException('You do not have access to this project');
+      }
+    }
+    const acc = await this.accountsService.findOne(id, propertyId);
     assertAccountReadable(acc, req as any);
     return acc;
   }

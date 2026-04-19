@@ -29,6 +29,7 @@ import { ReportsModule } from './modules/reports/reports.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { MailModule } from './common/mail/mail.module';
+import { SmsModule } from './common/sms/sms.module';
 import { CustomerPortalModule } from './modules/customer-portal/customer-portal.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UploadModule } from './common/upload/upload.module';
@@ -115,6 +116,7 @@ import { PropertyAccessGuard } from './common/guards/property-access.guard';
     DocumentsModule,
     SettingsModule,
     MailModule,
+    SmsModule,
     CustomerPortalModule,
     UploadModule,
     HealthModule,

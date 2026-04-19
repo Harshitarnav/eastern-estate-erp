@@ -74,6 +74,45 @@ export class CompanySettings {
   @Column({ name: 'smtp_from', nullable: true })
   smtpFrom: string;
 
+  // ── Collections / overdue-reminder settings ─────────────────────────────
+  // Days between automated reminders (default 7).
+  @Column({ name: 'overdue_reminder_interval_days', type: 'int', default: 7 })
+  overdueReminderIntervalDays: number;
+
+  // Days overdue after which the cancellation-warning letter is prepared
+  // (default 30). Prepared in DRAFT status and requires human send.
+  @Column({ name: 'cancellation_warning_threshold_days', type: 'int', default: 30 })
+  cancellationWarningThresholdDays: number;
+
+  // Legacy plans with unpaid milestones older than this (days) will NOT
+  // be auto-reminded until a human manually enables remindersEnabled on
+  // the plan. Default 180 (6 months).
+  @Column({ name: 'legacy_auto_remind_max_age_days', type: 'int', default: 180 })
+  legacyAutoRemindMaxAgeDays: number;
+
+  // Max number of reminder emails/SMS sent per cron tick - prevents a
+  // single sweep from blowing through provider rate limits.
+  @Column({ name: 'overdue_reminder_daily_cap', type: 'int', default: 50 })
+  overdueReminderDailyCap: number;
+
+  // Feature flag: when false, SmsService stays Noop regardless of provider.
+  @Column({ name: 'enable_sms_reminders', type: 'boolean', default: false })
+  enableSmsReminders: boolean;
+
+  // Company-wide default for milestone-triggered demand drafts.
+  //   false (default): every newly-generated DD is created as DRAFT and
+  //     needs a human to click Send Now.
+  //   true: DD is created as SENT, email (+ SMS if enabled) fires
+  //     immediately, no review step.
+  // Can be overridden per-property (nullable) and per-customer (nullable).
+  // Precedence at send time is: customer > property > company.
+  @Column({
+    name: 'auto_send_milestone_demand_drafts',
+    type: 'boolean',
+    default: false,
+  })
+  autoSendMilestoneDemandDrafts: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

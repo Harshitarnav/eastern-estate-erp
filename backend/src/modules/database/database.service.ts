@@ -238,7 +238,7 @@ export class DatabaseService {
 
   /**
    * Fast table overview: column counts in one aggregation, row counts from pg_stat
-   * (approximate n_live_tup — same source as EXPLAIN row estimates; avoids COUNT(*) per table).
+   * (approximate n_live_tup - same source as EXPLAIN row estimates; avoids COUNT(*) per table).
    */
   async getAllTablesInfo(): Promise<Array<{ name: string; rowCount: number; columnCount: number }>> {
     const query = `
@@ -330,7 +330,17 @@ export class DatabaseService {
   }
 
   /**
-   * Get table relationships (foreign keys visualization)
+   * Get table relationships for the Database Relationships viewer.
+   *
+   * Returns two kinds of edges:
+   *  1. `foreign_key` – hard FK constraints read from information_schema.
+   *  2. `inferred`    – best-effort edges derived from column naming
+   *                     convention (`<singular>_id` → `<plural>.id`). These
+   *                     are surfaced so the viewer is useful even when some
+   *                     FK constraints couldn't be added (e.g. due to
+   *                     orphaned rows in legacy tables).
+   *
+   * Inferred edges never shadow a real FK on the same (fromTable, fromColumn).
    */
   async getTableRelationships(): Promise<Array<{
     fromTable: string;
@@ -338,12 +348,13 @@ export class DatabaseService {
     toTable: string;
     toColumn: string;
     constraintName: string;
+    kind: 'foreign_key' | 'inferred';
   }>> {
-    const query = `
+    const fkQuery = `
       SELECT
-        tc.table_name as "fromTable",
+        tc.table_name   as "fromTable",
         kcu.column_name as "fromColumn",
-        ccu.table_name as "toTable",
+        ccu.table_name  as "toTable",
         ccu.column_name as "toColumn",
         tc.constraint_name as "constraintName"
       FROM information_schema.table_constraints AS tc
@@ -358,7 +369,119 @@ export class DatabaseService {
       ORDER BY tc.table_name, kcu.column_name;
     `;
 
-    return await this.dataSource.query(query);
+    const fks: Array<{
+      fromTable: string; fromColumn: string;
+      toTable: string;   toColumn: string;
+      constraintName: string;
+    }> = await this.dataSource.query(fkQuery);
+
+    const seen = new Set(
+      fks.map((f) => `${f.fromTable}.${f.fromColumn}`),
+    );
+
+    // Inferred: find *_id columns in public tables, then try a few naming
+    // heuristics to locate their target table. We use a single round-trip
+    // to fetch both sides to keep the page snappy.
+    const [colRows, tableRows] = await Promise.all([
+      this.dataSource.query(`
+        SELECT table_name, column_name
+        FROM   information_schema.columns
+        WHERE  table_schema = 'public'
+          AND  column_name LIKE '%\\_id' ESCAPE '\\'
+          AND  column_name <> 'id'
+      `),
+      this.dataSource.query(`
+        SELECT table_name
+        FROM   information_schema.tables
+        WHERE  table_schema = 'public'
+          AND  table_type = 'BASE TABLE'
+      `),
+    ]);
+
+    const allTables: Set<string> = new Set(
+      tableRows.map((r: any) => r.table_name),
+    );
+
+    // Manual overrides for columns whose names don't map cleanly.
+    const overrides: Record<string, string> = {
+      assigned_to: 'users',
+      created_by: 'users',
+      updated_by: 'users',
+      approved_by: 'users',
+      voided_by: 'users',
+      uploaded_by: 'users',
+      manager_id: 'employees',
+      parent_account_id: 'accounts',
+      construction_project_id: 'construction_projects',
+      journal_entry_id: 'journal_entries',
+      customer_id: 'customers',
+      property_id: 'properties',
+      tower_id: 'towers',
+      flat_id: 'flats',
+      booking_id: 'bookings',
+      vendor_id: 'vendors',
+      purchase_order_id: 'purchase_orders',
+      material_id: 'materials',
+      user_id: 'users',
+      account_id: 'accounts',
+      role_id: 'roles',
+      permission_id: 'permissions',
+      employee_id: 'employees',
+      lead_id: 'leads',
+      milestone_id: 'payment_schedules',
+      bank_account_id: 'bank_accounts',
+      document_id: 'documents',
+      campaign_id: 'marketing_campaigns',
+    };
+
+    const pluralize = (base: string): string[] => {
+      // Return several plausible table names in preference order.
+      const cands: string[] = [];
+      if (base.endsWith('y')) cands.push(base.slice(0, -1) + 'ies');
+      if (base.endsWith('s')) cands.push(base + 'es');
+      cands.push(base + 's');
+      cands.push(base);
+      return cands;
+    };
+
+    const inferred: Array<{
+      fromTable: string; fromColumn: string;
+      toTable: string;   toColumn: string;
+      constraintName: string;
+    }> = [];
+
+    for (const row of colRows as Array<{ table_name: string; column_name: string }>) {
+      const key = `${row.table_name}.${row.column_name}`;
+      if (seen.has(key)) continue;
+
+      let target: string | null = null;
+      if (overrides[row.column_name]) {
+        if (allTables.has(overrides[row.column_name])) {
+          target = overrides[row.column_name];
+        }
+      } else if (row.column_name.endsWith('_id')) {
+        const base = row.column_name.slice(0, -3);
+        for (const c of pluralize(base)) {
+          if (allTables.has(c)) { target = c; break; }
+        }
+      }
+
+      if (target && target !== row.table_name) {
+        inferred.push({
+          fromTable: row.table_name,
+          fromColumn: row.column_name,
+          toTable: target,
+          toColumn: 'id',
+          constraintName: `inferred_${row.table_name}_${row.column_name}`,
+        });
+        seen.add(key);
+      }
+    }
+
+    return [
+      ...fks.map((f) => ({ ...f, kind: 'foreign_key' as const })),
+      ...inferred.map((f) => ({ ...f, kind: 'inferred' as const })),
+    ];
   }
 
   /**

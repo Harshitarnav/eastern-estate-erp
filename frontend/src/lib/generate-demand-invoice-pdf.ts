@@ -90,7 +90,7 @@ const fmt = (n: number) =>
   '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 const fmtDate = (s: string) => {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   } catch { return s; }
@@ -128,7 +128,7 @@ export function generateDemandInvoicePdf(data: DemandInvoiceData): void {
     img.src = '/logo-white.png';
     doc.addImage(img, 'PNG', ML, 4, 30, 20, '', 'FAST');
   } catch {
-    // Logo unavailable — just show company name
+    // Logo unavailable - just show company name
   }
 
   doc.setFont('helvetica', 'bold');
@@ -169,7 +169,7 @@ export function generateDemandInvoicePdf(data: DemandInvoiceData): void {
     doc.text(label + ':', xBase, yPos);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor('#111111');
-    doc.text(value || '—', xBase + 26, yPos);
+    doc.text(value || '-', xBase + 26, yPos);
   };
 
   metaRow('Invoice No',   data.invoiceNumber,            col1, y);
@@ -202,9 +202,9 @@ export function generateDemandInvoicePdf(data: DemandInvoiceData): void {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#111111');
-  doc.text(data.customerName || '—', col1, y);
+  doc.text(data.customerName || '-', col1, y);
   const unitLabel = [data.propertyName, data.towerName, data.flatNumber].filter(Boolean).join(' › ');
-  doc.text(unitLabel || '—', col2, y);
+  doc.text(unitLabel || '-', col2, y);
   y += 4;
 
   doc.setFont('helvetica', 'normal');

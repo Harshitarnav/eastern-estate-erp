@@ -65,18 +65,18 @@ let AccountingController = class AccountingController {
         const allowed = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
         return this.accountingService.getProjectFundFlow(start, end, propertyId || null, allowed);
     }
-    getARAgingReport(asOf) {
+    getARAgingReport(asOf, propertyId) {
         const date = asOf ? new Date(asOf) : new Date();
-        return this.accountingService.getARAgingReport(date);
+        return this.accountingService.getARAgingReport(date, propertyId);
     }
     getAPAgingReport(asOf) {
         const date = asOf ? new Date(asOf) : new Date();
         return this.accountingService.getAPAgingReport(date);
     }
-    getCashFlowStatement(startDate, endDate) {
+    getCashFlowStatement(startDate, endDate, propertyId) {
         const start = startDate ? new Date(startDate) : new Date(new Date().getFullYear(), 0, 1);
         const end = endDate ? new Date(endDate) : new Date();
-        return this.accountingService.getCashFlowStatement(start, end);
+        return this.accountingService.getCashFlowStatement(start, end, propertyId);
     }
     exportForITR(financialYear) {
         return this.accountingService.exportForITR(financialYear);
@@ -166,8 +166,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)('reports/ar-aging'),
     __param(0, (0, common_1.Query)('asOf')),
+    __param(1, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], AccountingController.prototype, "getARAgingReport", null);
 __decorate([
@@ -181,8 +182,9 @@ __decorate([
     (0, common_1.Get)('reports/cash-flow'),
     __param(0, (0, common_1.Query)('startDate')),
     __param(1, (0, common_1.Query)('endDate')),
+    __param(2, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", void 0)
 ], AccountingController.prototype, "getCashFlowStatement", null);
 __decorate([

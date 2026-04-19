@@ -15,7 +15,6 @@ export declare class MilestoneDetectionService {
     private readonly flatRepository;
     private readonly logger;
     constructor(progressRepository: Repository<ConstructionFlatProgress>, paymentPlanRepository: Repository<FlatPaymentPlan>, flatRepository: Repository<Flat>);
-    checkMilestones(): Promise<void>;
     detectMilestones(): Promise<MilestoneMatch[]>;
     detectMilestonesForFlat(flatId: string): Promise<MilestoneMatch[]>;
     canTriggerMilestone(paymentPlanId: string, milestoneSequence: number): Promise<boolean>;

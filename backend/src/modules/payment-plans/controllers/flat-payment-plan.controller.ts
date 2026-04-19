@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Patch, Body, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { FlatPaymentPlanService } from '../services/flat-payment-plan.service';
 import { CreateFlatPaymentPlanDto } from '../dto/create-flat-payment-plan.dto';
@@ -15,8 +15,14 @@ export class FlatPaymentPlanController {
   }
 
   @Get()
-  async findAll() {
-    return await this.flatPaymentPlanService.findAll();
+  async findAll(
+    @Query('propertyId') propertyId: string | undefined,
+    @Req() req: any,
+  ) {
+    return await this.flatPaymentPlanService.findAll(
+      propertyId,
+      req?.accessiblePropertyIds,
+    );
   }
 
   @Get('flat/:flatId')

@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
   Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import type { Request as ExpressRequest } from 'express';
 import { ExpensesService } from './expenses.service';
@@ -29,6 +30,33 @@ export class ExpensesController {
   @Post()
   create(@Body() createExpenseDto: CreateExpenseDto, @Request() req) {
     return this.expensesService.create(createExpenseDto, req.user.userId);
+  }
+
+  /**
+   * Bulk import expenses parsed from Excel (frontend sends JSON rows).
+   * All imported rows land in PENDING status so the normal approval flow still applies.
+   */
+  @Post('bulk-import')
+  bulkImport(
+    @Body()
+    body: {
+      propertyId?: string | null;
+      rows: Array<Record<string, unknown>>;
+    },
+    @Req() req: ExpressRequest,
+  ) {
+    const targetPid = body.propertyId || null;
+    if (targetPid && !(req as any).isGlobalAdmin) {
+      const ids = (req as any).accessiblePropertyIds || [];
+      if (!ids.includes(targetPid)) {
+        throw new ForbiddenException('You do not have access to this project');
+      }
+    }
+    return this.expensesService.bulkImport(
+      body.rows as any,
+      (req as any).user?.userId,
+      { propertyId: targetPid },
+    );
   }
 
   @Get()
@@ -56,12 +84,17 @@ export class ExpensesController {
     @Req() req: ExpressRequest,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('propertyId') propertyId?: string,
   ) {
     const scopeIds = accessiblePropertyIdsOrThrow(req as any);
+    if (propertyId && scopeIds?.length && !scopeIds.includes(propertyId)) {
+      throw new ForbiddenException('You do not have access to this project');
+    }
     return this.expensesService.getExpensesSummary({
       startDate: startDate ? new Date(startDate) : undefined,
       endDate: endDate ? new Date(endDate) : undefined,
       accessiblePropertyIds: scopeIds || undefined,
+      propertyId,
     });
   }
 

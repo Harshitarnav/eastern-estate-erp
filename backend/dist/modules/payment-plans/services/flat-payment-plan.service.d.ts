@@ -62,7 +62,24 @@ export declare class FlatPaymentPlanService {
     private readonly templateService;
     constructor(flatPaymentPlanRepository: Repository<FlatPaymentPlan>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>, customerRepository: Repository<Customer>, paymentRepository: Repository<Payment>, templateService: PaymentPlanTemplateService);
     create(createDto: CreateFlatPaymentPlanDto, userId: string): Promise<FlatPaymentPlan>;
-    findAll(): Promise<FlatPaymentPlan[]>;
+    createForBooking(input: {
+        flatId: string;
+        bookingId: string;
+        customerId: string;
+        totalAmount: number;
+        mode: 'template' | 'template-edit' | 'custom';
+        templateId?: string;
+        milestones?: Array<{
+            sequence: number;
+            name: string;
+            constructionPhase?: 'FOUNDATION' | 'STRUCTURE' | 'MEP' | 'FINISHING' | 'HANDOVER' | null;
+            phasePercentage?: number | null;
+            paymentPercentage?: number;
+            amount?: number;
+            description?: string;
+        }>;
+    }, userId: string): Promise<FlatPaymentPlan>;
+    findAll(propertyId?: string, accessiblePropertyIds?: string[] | null): Promise<FlatPaymentPlan[]>;
     findOne(id: string): Promise<FlatPaymentPlan>;
     findByFlatId(flatId: string): Promise<FlatPaymentPlan | null>;
     findByBookingId(bookingId: string): Promise<FlatPaymentPlan | null>;

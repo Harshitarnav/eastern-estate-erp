@@ -7,6 +7,27 @@ import { Booking } from '../bookings/entities/booking.entity';
 import { User } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationCategory, NotificationType } from '../notifications/entities/notification.entity';
+import { FlatPaymentPlan, FlatPaymentPlanStatus } from '../payment-plans/entities/flat-payment-plan.entity';
+import {
+  ConstructionWorkflowService,
+  GeneratedDemandDraftSummary,
+} from './services/construction-workflow.service';
+
+export interface ProgressLogWorkflowResult {
+  flatsProcessed: number;
+  milestonesTriggered: number;
+  generatedDemandDrafts: GeneratedDemandDraftSummary[];
+  errors: Array<{ flatId: string; message: string }>;
+}
+
+/**
+ * Shape returned by `create()`. The saved log fields are spread at the top
+ * level so existing frontend code (e.g. `const log = await api.post(...); log.id`)
+ * keeps working. The new `workflow` field is additive.
+ */
+export type CreateProgressLogResult = ConstructionProgressLog & {
+  workflow?: ProgressLogWorkflowResult;
+};
 
 @Injectable()
 export class ConstructionProgressLogsService {
@@ -21,10 +42,13 @@ export class ConstructionProgressLogsService {
     private readonly bookingRepository: Repository<Booking>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(FlatPaymentPlan)
+    private readonly flatPaymentPlanRepository: Repository<FlatPaymentPlan>,
     private readonly notificationsService: NotificationsService,
+    private readonly workflowService: ConstructionWorkflowService,
   ) {}
 
-  async create(createDto: any) {
+  async create(createDto: any): Promise<CreateProgressLogResult> {
     let propertyId = createDto.propertyId || null;
 
     // Auto-derive propertyId from the linked construction project
@@ -45,7 +69,7 @@ export class ConstructionProgressLogsService {
       towerId: createDto.towerId || null,
       logDate: createDto.logDate ? new Date(createDto.logDate) : new Date(),
       progressType: createDto.progressType || null,
-      // Map workCompleted → description (new modal field name)
+      // Map workCompleted -> description (new modal field name)
       description: createDto.description || createDto.workCompleted || null,
       progressPercentage: createDto.progressPercentage ?? null,
       weatherCondition: createDto.weatherCondition || null,
@@ -72,7 +96,91 @@ export class ConstructionProgressLogsService {
       );
     }
 
-    return saved;
+    // Optionally run the DD workflow for a single flat or all sold flats in the project.
+    // This is what bridges the "Daily Log" UI to demand draft generation.
+    const workflow = await this.maybeRunWorkflow(createDto, propertyId);
+
+    // Spread saved fields at top level so existing callers relying on `response.id`
+    // keep working. `workflow` is an additive field.
+    const result = Object.assign({}, saved) as CreateProgressLogResult;
+    if (workflow) {
+      result.workflow = workflow;
+    }
+    return result;
+  }
+
+  /**
+   * Returns workflow result ONLY when the caller explicitly asked for it by
+   * providing a `phase` + `phaseProgress` along with either a `flatId` or
+   * `applyToAllSoldFlats: true` + `propertyId`. Returns undefined otherwise so
+   * existing callers that don't opt in get the same behaviour as before.
+   */
+  private async maybeRunWorkflow(
+    createDto: any,
+    propertyId: string | null,
+  ): Promise<ProgressLogWorkflowResult | undefined> {
+    const phase: string | undefined = createDto.phase;
+    const phaseProgress: number | undefined =
+      createDto.phaseProgress != null ? Number(createDto.phaseProgress) : undefined;
+    const overallProgress: number = Number(
+      createDto.overallProgress ?? createDto.progressPercentage ?? 0,
+    ) || 0;
+
+    // Workflow requires both a phase and a phase-level progress value.
+    if (!phase || !Number.isFinite(phaseProgress)) {
+      return undefined;
+    }
+
+    const flatId: string | undefined = createDto.flatId || undefined;
+    const applyToAllSoldFlats: boolean = Boolean(createDto.applyToAllSoldFlats);
+
+    // Resolve the list of flats to run the workflow on.
+    let flatIds: string[] = [];
+
+    if (flatId) {
+      flatIds = [flatId];
+    } else if (applyToAllSoldFlats && propertyId) {
+      const plans = await this.flatPaymentPlanRepository
+        .createQueryBuilder('plan')
+        .innerJoin('plan.flat', 'flat')
+        .where('plan.status = :status', { status: FlatPaymentPlanStatus.ACTIVE })
+        .andWhere('flat.propertyId = :propertyId', { propertyId })
+        .select(['plan.id', 'plan.flatId'])
+        .getMany();
+      flatIds = plans.map(p => p.flatId).filter(Boolean);
+    }
+
+    if (flatIds.length === 0) {
+      return undefined;
+    }
+
+    const result: ProgressLogWorkflowResult = {
+      flatsProcessed: 0,
+      milestonesTriggered: 0,
+      generatedDemandDrafts: [],
+      errors: [],
+    };
+
+    for (const id of flatIds) {
+      try {
+        const r = await this.workflowService.processConstructionUpdate(
+          id,
+          phase,
+          phaseProgress!,
+          overallProgress,
+        );
+        result.flatsProcessed += 1;
+        result.milestonesTriggered += r.milestonesTriggered;
+        result.generatedDemandDrafts.push(...r.generatedDemandDrafts);
+      } catch (err: any) {
+        this.logger.error(
+          `Workflow failed for flat ${id} during daily log save: ${err?.message}`,
+        );
+        result.errors.push({ flatId: id, message: err?.message ?? 'Unknown error' });
+      }
+    }
+
+    return result;
   }
 
   private async notifyCustomersOnProgressLog(
@@ -112,7 +220,7 @@ export class ConstructionProgressLogsService {
       await this.notificationsService.create({
         userId: user.id,
         title: 'Construction Update',
-        message: `New site update logged on ${logDate}${workType ? ` for ${workType.replace(/_/g, ' ')}` : ''}${pct != null ? ` — ${Math.round(Number(pct))}% progress` : ''}.`,
+        message: `New site update logged on ${logDate}${workType ? ` for ${workType.replace(/_/g, ' ')}` : ''}${pct != null ? ` - ${Math.round(Number(pct))}% progress` : ''}.`,
         type: NotificationType.INFO,
         category: NotificationCategory.CONSTRUCTION,
         actionUrl: '/portal/construction',

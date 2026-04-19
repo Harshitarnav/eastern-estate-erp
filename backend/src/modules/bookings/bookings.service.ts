@@ -28,6 +28,8 @@ import {
   Payment,
 } from '../payments/entities/payment.entity';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { FlatPaymentPlanService } from '../payment-plans/services/flat-payment-plan.service';
+import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 
 /**
  * BookingsService
@@ -59,6 +61,9 @@ export class BookingsService {
     private emailService: EmailService,
     private dataSource: DataSource,
     private readonly accountingIntegrationService: AccountingIntegrationService,
+    private readonly flatPaymentPlanService: FlatPaymentPlanService,
+    @InjectRepository(FlatPaymentPlan)
+    private readonly flatPaymentPlansRepository: Repository<FlatPaymentPlan>,
   ) {}
 
   /**
@@ -127,14 +132,20 @@ export class BookingsService {
 
       // === BOOKING CREATION ===
 
-      // Calculate balance amount
-      const balanceAmount = createBookingDto.totalAmount - (createBookingDto.tokenAmount || 0);
-
-      // Create booking
+      // Create booking (strip non-column fields before spreading).
+      //
+      // IMPORTANT: we intentionally start paidAmount = 0 and
+      // balanceAmount = totalAmount here. The token Payment row saved
+      // a few lines down is the canonical record of money received,
+      // and `PaymentsService.runPostCompletionHooks` (called post-
+      // commit) is what bumps booking.paidAmount. Pre-populating it
+      // here would double-count the token once the completion hook
+      // runs.
+      const { paymentPlanPayload: _planPayload, ...bookingFields } = createBookingDto;
       const booking = queryRunner.manager.create(Booking, {
-        ...createBookingDto,
-        balanceAmount,
-        paidAmount: createBookingDto.tokenAmount || 0, // Token is considered as paid
+        ...bookingFields,
+        balanceAmount: createBookingDto.totalAmount,
+        paidAmount: 0,
         status: BookingStatus.TOKEN_PAID,
       });
 
@@ -187,8 +198,11 @@ export class BookingsService {
       }
 
       // === GENERATE PAYMENT SCHEDULE ===
-      // Note: Payment schedule generation removed - service doesn't exist yet
-      // Will be added when PaymentScheduleService is implemented
+      // Payment schedules are generated on-demand by
+      // AutoDemandDraftService when a milestone triggers - there is
+      // no longer a separate PaymentScheduleService. The old orphan
+      // service file was deleted as part of the progress/payment
+      // pipeline consolidation.
 
       // === UPDATE PROPERTY & TOWER INVENTORY COUNTS ===
 
@@ -222,19 +236,60 @@ export class BookingsService {
       this.logger.log(`Transaction committed for booking ${savedBooking.bookingNumber}`);
 
       // === POST-TRANSACTION OPERATIONS ===
+      //
+      // Token payments now route through the same post-completion
+      // pipeline as regular verified payments (schedule match, booking
+      // totals bump, journal entry, customer notification). This used
+      // to be a direct call to AccountingIntegrationService.onPayment-
+      // Completed only - which meant token payments silently skipped
+      // PaymentCompletionService (so booking.paidAmount had to be
+      // pre-set above to stay consistent) and any future side-effect
+      // added to the completion pipeline would have missed tokens.
+      // See PaymentsService.runPostCompletionHooks for the exact steps.
+      //
+      // Deferred to just below the payment-plan creation block so the
+      // FlatPaymentPlan exists when milestone matching runs. Kept
+      // best-effort (fire-and-forget) - the booking is already
+      // committed and returning it to the UI must not wait on email.
 
-      // Auto-create Journal Entry for token payment (best-effort, non-blocking)
+      // === CREATE PAYMENT PLAN (if provided) ===
+      // Runs post-commit, best-effort. If it fails, the booking is still created
+      // and the user can attach a plan later via the booking detail page.
+      if (createBookingDto.paymentPlanPayload) {
+        try {
+          await this.flatPaymentPlanService.createForBooking(
+            {
+              flatId: savedBooking.flatId,
+              bookingId: savedBooking.id,
+              customerId: savedBooking.customerId,
+              totalAmount: Number(savedBooking.totalAmount),
+              mode: createBookingDto.paymentPlanPayload.mode,
+              templateId: createBookingDto.paymentPlanPayload.templateId,
+              milestones: createBookingDto.paymentPlanPayload.milestones,
+            },
+            userId ?? savedBooking.customerId,
+          );
+          this.logger.log(`Payment plan created for booking ${savedBooking.bookingNumber}`);
+        } catch (planError: any) {
+          // Non-fatal: flag it so the UI can show the "plan missing" chip
+          this.logger.error(
+            `Payment plan creation failed for booking ${savedBooking.bookingNumber}: ${planError.message}`,
+          );
+        }
+      }
+
+      // Fire the unified completion hooks for the token payment now
+      // that the FlatPaymentPlan (if any) exists. Intentionally not
+      // awaited: all three downstream steps are best-effort and the
+      // booking is already committed.
       if (savedTokenPayment) {
-        this.accountingIntegrationService.onPaymentCompleted({
-          id: savedTokenPayment.id,
-          paymentCode: savedTokenPayment.paymentCode,
-          amount: Number(savedTokenPayment.amount),
-          paymentDate: savedTokenPayment.paymentDate,
-          paymentMethod: savedTokenPayment.paymentMethod,
-          createdBy: userId,
-        }).catch(err => {
-          this.logger.error(`Auto JE failed for token payment ${savedTokenPayment!.paymentCode}: ${err.message}`);
-        });
+        this.paymentsService
+          .runPostCompletionHooks(savedTokenPayment.id, userId)
+          .catch((err) =>
+            this.logger.error(
+              `Token post-completion hooks failed for ${savedTokenPayment!.paymentCode}: ${err.message}`,
+            ),
+          );
       }
 
       // Send email notifications (async, non-blocking)
@@ -345,7 +400,15 @@ export class BookingsService {
     }
 
     if (propertyId) {
-      queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+      if (
+        accessiblePropertyIds &&
+        accessiblePropertyIds.length > 0 &&
+        !accessiblePropertyIds.includes(propertyId)
+      ) {
+        queryBuilder.andWhere('1 = 0');
+      } else {
+        queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+      }
     } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
       queryBuilder.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
     }
@@ -385,8 +448,24 @@ export class BookingsService {
       .take(limit)
       .getMany();
 
+    const dtos = BookingResponseDto.fromEntities(bookings);
+
+    // Bulk-check which bookings have a payment plan (single query, no N+1)
+    if (dtos.length > 0) {
+      const bookingIds = dtos.map((b) => b.id);
+      const plans = await this.flatPaymentPlansRepository
+        .createQueryBuilder('plan')
+        .select('plan.bookingId', 'bookingId')
+        .where('plan.bookingId IN (:...ids)', { ids: bookingIds })
+        .getRawMany<{ bookingId: string }>();
+      const withPlan = new Set(plans.map((p) => p.bookingId));
+      for (const dto of dtos) {
+        dto.hasPaymentPlan = withPlan.has(dto.id);
+      }
+    }
+
     return {
-      data: BookingResponseDto.fromEntities(bookings),
+      data: dtos,
       meta: {
         total,
         page,
@@ -396,7 +475,21 @@ export class BookingsService {
     };
   }
 
-  async findOne(id: string): Promise<BookingResponseDto> {
+  /** Enforce property-scope on any single-booking operation. */
+  private assertBookingAccessible(
+    booking: { propertyId: string },
+    accessiblePropertyIds?: string[] | null,
+  ): void {
+    if (!accessiblePropertyIds || accessiblePropertyIds.length === 0) return;
+    if (!accessiblePropertyIds.includes(booking.propertyId)) {
+      throw new NotFoundException('Booking not found');
+    }
+  }
+
+  async findOne(
+    id: string,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<BookingResponseDto> {
     const booking = await this.bookingsRepository.findOne({
       where: { id },
       relations: ['customer', 'flat', 'property'],
@@ -406,15 +499,28 @@ export class BookingsService {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
 
-    return BookingResponseDto.fromEntity(booking);
+    this.assertBookingAccessible(booking, accessiblePropertyIds);
+
+    const dto = BookingResponseDto.fromEntity(booking);
+    const planCount = await this.flatPaymentPlansRepository.count({
+      where: { bookingId: id },
+    });
+    dto.hasPaymentPlan = planCount > 0;
+    return dto;
   }
 
-  async update(id: string, updateBookingDto: UpdateBookingDto): Promise<BookingResponseDto> {
+  async update(
+    id: string,
+    updateBookingDto: UpdateBookingDto,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<BookingResponseDto> {
     const booking = await this.bookingsRepository.findOne({ where: { id } });
 
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
+
+    this.assertBookingAccessible(booking, accessiblePropertyIds);
 
     // Check for duplicate booking number if being updated
     if (updateBookingDto.bookingNumber && updateBookingDto.bookingNumber !== booking.bookingNumber) {
@@ -442,24 +548,36 @@ export class BookingsService {
     return BookingResponseDto.fromEntity(updatedBooking);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<void> {
     const booking = await this.bookingsRepository.findOne({ where: { id } });
 
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
+
+    this.assertBookingAccessible(booking, accessiblePropertyIds);
 
     // Soft delete by setting isActive to false
     booking.isActive = false;
     await this.bookingsRepository.save(booking);
   }
 
-  async cancelBooking(id: string, reason: string, refundAmount?: number): Promise<BookingResponseDto> {
+  async cancelBooking(
+    id: string,
+    reason: string,
+    refundAmount?: number,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<BookingResponseDto> {
     const booking = await this.bookingsRepository.findOne({ where: { id } });
 
     if (!booking) {
       throw new NotFoundException(`Booking with ID ${id} not found`);
     }
+
+    this.assertBookingAccessible(booking, accessiblePropertyIds);
 
     if (booking.status === 'CANCELLED') {
       throw new BadRequestException('Booking is already cancelled');
@@ -475,12 +593,47 @@ export class BookingsService {
     return BookingResponseDto.fromEntity(cancelledBooking);
   }
 
-  async getStatistics(accessiblePropertyIds?: string[] | null) {
+  async getStatistics(
+    accessiblePropertyIds?: string[] | null,
+    propertyId?: string,
+  ) {
+    // Build the effective property-ID filter: intersect the selected
+    // property (from top bar) with the caller's accessible set, so a
+    // user cannot widen scope by passing a propertyId they don't own.
+    let effectiveIds: string[] | null = null;
+    if (propertyId) {
+      if (
+        accessiblePropertyIds &&
+        accessiblePropertyIds.length > 0 &&
+        !accessiblePropertyIds.includes(propertyId)
+      ) {
+        // User selected a property they don't have access to - return empty.
+        return {
+          total: 0,
+          tokenPaid: 0,
+          agreementPending: 0,
+          agreementSigned: 0,
+          confirmed: 0,
+          completed: 0,
+          cancelled: 0,
+          totalRevenue: 0,
+          totalPaid: 0,
+          totalBalance: 0,
+          withHomeLoan: 0,
+          totalLoanAmount: 0,
+          collectionRate: 0,
+        };
+      }
+      effectiveIds = [propertyId];
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      effectiveIds = accessiblePropertyIds;
+    }
+
     const where: any = { isActive: true };
-    const bookings = accessiblePropertyIds && accessiblePropertyIds.length > 0
+    const bookings = effectiveIds
       ? await this.bookingsRepository.createQueryBuilder('b')
           .where('b.isActive = true')
-          .andWhere('b.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+          .andWhere('b.propertyId IN (:...ids)', { ids: effectiveIds })
           .getMany()
       : await this.bookingsRepository.find({ where });
 

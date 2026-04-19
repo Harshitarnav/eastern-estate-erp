@@ -71,6 +71,13 @@ export class BookingResponseDto {
   flat?: any;
   property?: any;
 
+  /**
+   * True when a FlatPaymentPlan exists for this booking. Used by the UI to
+   * show a "Plan missing" chip on the bookings list.
+   * Populated by BookingsService.findAll / findOne, left undefined elsewhere.
+   */
+  hasPaymentPlan?: boolean;
+
   static fromEntity(booking: Booking): BookingResponseDto {
     const dto = new BookingResponseDto();
     dto.id = booking.id;

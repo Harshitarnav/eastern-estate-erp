@@ -327,7 +327,7 @@ export default function PropertiesPage() {
             border: `1px solid ${brandPalette.secondary}20`,
           }}
         >
-          {value || '—'}
+          {value || '-'}
         </span>
       ),
     },
@@ -338,7 +338,7 @@ export default function PropertiesPage() {
       render: (value: string, row: PropertyRow) => (
         <div>
           <div className="font-semibold text-gray-900">{value}</div>
-          <div className="text-xs text-gray-500">{row.type || '—'}</div>
+          <div className="text-xs text-gray-500">{row.type || '-'}</div>
         </div>
       ),
     },
@@ -348,9 +348,9 @@ export default function PropertiesPage() {
       width: '200px',
       render: (value: string | undefined, row: PropertyRow) => (
         <div>
-          <div className="text-sm text-gray-900">{value || '—'}</div>
+          <div className="text-sm text-gray-900">{value || '-'}</div>
           <div className="text-xs text-gray-500">
-            {[row.city, row.state].filter(Boolean).join(', ') || '—'}
+            {[row.city, row.state].filter(Boolean).join(', ') || '-'}
           </div>
         </div>
       ),
@@ -391,7 +391,7 @@ export default function PropertiesPage() {
       render: (value: number | undefined, row: PropertyRow) => (
         <div>
           <div className="font-semibold text-gray-900">{formatIndianNumber(value ?? 0)}</div>
-          <div className="text-xs text-gray-500">{row.bhkTypes || '—'}</div>
+          <div className="text-xs text-gray-500">{row.bhkTypes || '-'}</div>
         </div>
       ),
     },
@@ -431,7 +431,7 @@ export default function PropertiesPage() {
       width: '150px',
       render: (value: number | undefined) => (
         <div className="font-semibold" style={{ color: brandPalette.secondary }}>
-          {value ? `${formatToCrore(value)}` : '—'}
+          {value ? `${formatToCrore(value)}` : '-'}
         </div>
       ),
     },
@@ -468,7 +468,7 @@ export default function PropertiesPage() {
       style={{ backgroundColor: 'rgba(242, 201, 76, 0.18)', color: brandPalette.accent }}
     >
       <Sparkles className="w-4 h-4" />
-      No projects yet — add your first property
+      No projects yet - add your first property
     </span>
   ) : undefined;
 
@@ -484,7 +484,7 @@ export default function PropertiesPage() {
             Properties crafted for <span style={{ color: brandPalette.accent }}>life-long bonding</span>
           </>
         }
-        description="Track every project with precision—from launch readiness and sales velocity to revenue realization—all wrapped in Eastern Estate’s signature warmth."
+        description="Track every project with precision-from launch readiness and sales velocity to revenue realization-all wrapped in Eastern Estate’s signature warmth."
         badge={heroBadge}
         actions={
           <>
@@ -665,28 +665,28 @@ export default function PropertiesPage() {
 
 function propertyDetails(property: PropertyRow) {
   const detailPairs = [
-    { label: 'Project', value: property.projectName || '—' },
-    { label: 'Property Code', value: property.code || '—' },
-    { label: 'Project Type', value: property.type || '—' },
+    { label: 'Project', value: property.projectName || '-' },
+    { label: 'Property Code', value: property.code || '-' },
+    { label: 'Project Type', value: property.type || '-' },
     {
       label: 'Location',
-      value: property.location || [property.city, property.state].filter(Boolean).join(', ') || '—',
+      value: property.location || [property.city, property.state].filter(Boolean).join(', ') || '-',
     },
-    { label: 'Total Area', value: property.totalArea ? `${property.totalArea} ${property.areaUnit}` : '—' },
-    { label: 'Towers', value: property.towers ?? '—' },
-    { label: 'Total Units', value: property.totalUnits ?? '—' },
-    { label: 'Units Sold', value: property.soldUnits ?? '—' },
-    { label: 'Units Available', value: property.availableUnits ?? '—' },
-    { label: 'BHK Mix', value: property.bhkTypes || '—' },
-    { label: 'Price Range', value: property.priceRange || '—' },
-    { label: 'RERA Number', value: property.reraNumber || '—' },
-    { label: 'Launch Date', value: property.launchDate || '—' },
-    { label: 'Possession Date', value: property.possessionDate || '—' },
-    { label: 'Status', value: property.status || '—' },
-    { label: 'Portfolio Revenue', value: property.revenue ? formatCurrency(property.revenue) : '—' },
-    { label: 'Funds Realised', value: property.fundsRealized !== undefined ? formatCurrency(property.fundsRealized) : '—' },
-    { label: 'Funds Outstanding', value: property.fundsOutstanding !== undefined ? formatCurrency(property.fundsOutstanding) : '—' },
-    { label: 'Projected Collections', value: property.fundsTarget !== undefined ? formatCurrency(property.fundsTarget) : '—' },
+    { label: 'Total Area', value: property.totalArea ? `${property.totalArea} ${property.areaUnit}` : '-' },
+    { label: 'Towers', value: property.towers ?? '-' },
+    { label: 'Total Units', value: property.totalUnits ?? '-' },
+    { label: 'Units Sold', value: property.soldUnits ?? '-' },
+    { label: 'Units Available', value: property.availableUnits ?? '-' },
+    { label: 'BHK Mix', value: property.bhkTypes || '-' },
+    { label: 'Price Range', value: property.priceRange || '-' },
+    { label: 'RERA Number', value: property.reraNumber || '-' },
+    { label: 'Launch Date', value: property.launchDate || '-' },
+    { label: 'Possession Date', value: property.possessionDate || '-' },
+    { label: 'Status', value: property.status || '-' },
+    { label: 'Portfolio Revenue', value: property.revenue ? formatCurrency(property.revenue) : '-' },
+    { label: 'Funds Realised', value: property.fundsRealized !== undefined ? formatCurrency(property.fundsRealized) : '-' },
+    { label: 'Funds Outstanding', value: property.fundsOutstanding !== undefined ? formatCurrency(property.fundsOutstanding) : '-' },
+    { label: 'Projected Collections', value: property.fundsTarget !== undefined ? formatCurrency(property.fundsTarget) : '-' },
   ];
 
   return detailPairs;
@@ -706,7 +706,7 @@ function FinancialSnapshot({
   }
 
   const displayValue = (value?: number | null) =>
-    value !== undefined && value !== null ? formatCurrency(value) : '—';
+    value !== undefined && value !== null ? formatCurrency(value) : '-';
 
   const items = [
     {

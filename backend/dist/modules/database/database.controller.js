@@ -30,6 +30,10 @@ let DatabaseController = class DatabaseController {
         const tables = await this.databaseService.getAllTablesInfo();
         return { data: tables };
     }
+    async getExplorerSummary() {
+        const payload = await this.databaseService.getExplorerSummary();
+        return { data: payload };
+    }
     async getStats() {
         const stats = await this.databaseService.getDatabaseStats();
         return { data: stats };
@@ -134,6 +138,13 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], DatabaseController.prototype, "getTablesOverview", null);
+__decorate([
+    (0, common_1.Get)('explorer-summary'),
+    (0, roles_decorator_1.Roles)('super_admin', 'admin'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], DatabaseController.prototype, "getExplorerSummary", null);
 __decorate([
     (0, common_1.Get)('stats'),
     (0, roles_decorator_1.Roles)('super_admin', 'admin'),

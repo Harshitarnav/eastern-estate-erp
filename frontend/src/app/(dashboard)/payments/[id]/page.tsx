@@ -119,10 +119,10 @@ export default function ViewPaymentPage() {
         chequeNumber: payment.chequeNumber,
         chequeDate: payment.chequeDate,
         transactionRef: payment.transactionId || payment.transactionReference || payment.upiId,
-        bookingNumber: booking.bookingNumber || '—',
-        paymentNumber: payment.paymentNumber || payment.paymentCode || '—',
+        bookingNumber: booking.bookingNumber || '-',
+        paymentNumber: payment.paymentNumber || payment.paymentCode || '-',
 
-        customerName: customer.fullName || customer.name || '—',
+        customerName: customer.fullName || customer.name || '-',
         customerAddress: customer.address || customer.currentAddress || '',
         customerPan: customer.panNumber || '',
         customerPhone: customer.phone || customer.mobile || '',
@@ -235,7 +235,7 @@ export default function ViewPaymentPage() {
             <p className="text-lg font-semibold">
               {payment.paymentDate
                 ? new Date(payment.paymentDate).toLocaleDateString('en-IN')
-                : '—'}
+                : '-'}
             </p>
           </div>
 

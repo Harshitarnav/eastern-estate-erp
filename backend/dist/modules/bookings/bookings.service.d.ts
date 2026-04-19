@@ -8,6 +8,8 @@ import { Customer } from '../customers/entities/customer.entity';
 import { PaymentsService } from '../payments/payments.service';
 import { EmailService } from '../notifications/email.service';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
+import { FlatPaymentPlanService } from '../payment-plans/services/flat-payment-plan.service';
+import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 export declare class BookingsService {
     private bookingsRepository;
     private flatsRepository;
@@ -18,16 +20,19 @@ export declare class BookingsService {
     private emailService;
     private dataSource;
     private readonly accountingIntegrationService;
+    private readonly flatPaymentPlanService;
+    private readonly flatPaymentPlansRepository;
     private readonly logger;
-    constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, emailService: EmailService, dataSource: DataSource, accountingIntegrationService: AccountingIntegrationService);
+    constructor(bookingsRepository: Repository<Booking>, flatsRepository: Repository<Flat>, propertiesRepository: Repository<Property>, towersRepository: Repository<Tower>, customersRepository: Repository<Customer>, paymentsService: PaymentsService, emailService: EmailService, dataSource: DataSource, accountingIntegrationService: AccountingIntegrationService, flatPaymentPlanService: FlatPaymentPlanService, flatPaymentPlansRepository: Repository<FlatPaymentPlan>);
     create(createBookingDto: CreateBookingDto, userId?: string): Promise<BookingResponseDto>;
     private sendBookingNotifications;
     findAll(query: QueryBookingDto, accessiblePropertyIds?: string[] | null): Promise<PaginatedBookingsResponse>;
-    findOne(id: string): Promise<BookingResponseDto>;
-    update(id: string, updateBookingDto: UpdateBookingDto): Promise<BookingResponseDto>;
-    remove(id: string): Promise<void>;
-    cancelBooking(id: string, reason: string, refundAmount?: number): Promise<BookingResponseDto>;
-    getStatistics(accessiblePropertyIds?: string[] | null): Promise<{
+    private assertBookingAccessible;
+    findOne(id: string, accessiblePropertyIds?: string[] | null): Promise<BookingResponseDto>;
+    update(id: string, updateBookingDto: UpdateBookingDto, accessiblePropertyIds?: string[] | null): Promise<BookingResponseDto>;
+    remove(id: string, accessiblePropertyIds?: string[] | null): Promise<void>;
+    cancelBooking(id: string, reason: string, refundAmount?: number, accessiblePropertyIds?: string[] | null): Promise<BookingResponseDto>;
+    getStatistics(accessiblePropertyIds?: string[] | null, propertyId?: string): Promise<{
         total: number;
         tokenPaid: number;
         agreementPending: number;

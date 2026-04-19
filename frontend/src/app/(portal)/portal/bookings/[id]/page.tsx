@@ -6,8 +6,20 @@ import Link from 'next/link';
 import { apiService } from '@/services/api';
 import {
   ArrowLeft, Building2, CreditCard, CheckCircle2, Clock,
-  AlertCircle, FileText, Calendar,
+  AlertCircle, FileText, Calendar, HardHat, Camera,
 } from 'lucide-react';
+
+const PHASE_LABEL: Record<string, string> = {
+  FOUNDATION: 'Foundation',
+  STRUCTURE: 'Structure',
+  FINISHING: 'Finishing',
+  HANDOVER: 'Handover',
+  SUPERSTRUCTURE: 'Super-structure',
+  INTERIOR: 'Interior',
+  EXTERIOR: 'Exterior',
+  MEP: 'MEP',
+  PLANNING: 'Planning',
+};
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n || 0);
@@ -78,10 +90,15 @@ export default function BookingDetailPage() {
     );
   }
 
-  const { booking, paymentPlan, payments, demandDrafts } = data;
+  const { booking, paymentPlan, payments, demandDrafts, flatProgress = [] } = data;
   const milestones: any[] = paymentPlan?.milestones || [];
   const paid = milestones.filter(m => m.status === 'PAID').length;
   const pct = milestones.length ? Math.round((paid / milestones.length) * 100) : 0;
+
+  const latestProgress = Array.isArray(flatProgress) && flatProgress.length > 0 ? flatProgress[0] : null;
+  const latestPhotos: string[] = Array.isArray(latestProgress?.photos)
+    ? latestProgress.photos.filter(Boolean)
+    : [];
 
   return (
     <div className="space-y-5">
@@ -144,21 +161,99 @@ export default function BookingDetailPage() {
 
       {/* Tab: Overview */}
       {tab === 'overview' && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-          {[
-            ['Booking #', booking.bookingNumber],
-            ['Booking Date', fmtDate(booking.bookingDate)],
-            ['Status', booking.status?.replace(/_/g, ' ')],
-            ['Token Amount', fmt(booking.tokenAmount)],
-            ['Expected Possession', fmtDate(booking.expectedPossessionDate)],
-            ['Agreement #', booking.agreementNumber || '–'],
-            ['Agreement Date', fmtDate(booking.agreementDate)],
-          ].map(([k, v]) => (
-            <div key={k} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-              <span className="text-xs text-gray-500 font-medium">{k}</span>
-              <span className="text-sm font-semibold text-gray-800">{v}</span>
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+            {[
+              ['Booking #', booking.bookingNumber],
+              ['Booking Date', fmtDate(booking.bookingDate)],
+              ['Status', booking.status?.replace(/_/g, ' ')],
+              ['Token Amount', fmt(booking.tokenAmount)],
+              ['Expected Possession', fmtDate(booking.expectedPossessionDate)],
+              ['Agreement #', booking.agreementNumber || '–'],
+              ['Agreement Date', fmtDate(booking.agreementDate)],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                <span className="text-xs text-gray-500 font-medium">{k}</span>
+                <span className="text-sm font-semibold text-gray-800">{v}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Construction snapshot for this flat */}
+          {latestProgress && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-xl bg-[#A8211B]/10 flex items-center justify-center">
+                    <HardHat className="w-4 h-4 text-[#A8211B]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">Construction snapshot</p>
+                    <p className="text-xs text-gray-400">
+                      Updated {fmtDate(latestProgress.updatedAt || latestProgress.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/portal/construction"
+                  className="text-xs font-semibold text-[#A8211B] hover:underline whitespace-nowrap"
+                >
+                  See all updates
+                </Link>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 font-medium">
+                  Current phase:{' '}
+                  <span className="text-gray-800 font-semibold">
+                    {PHASE_LABEL[latestProgress.phase] ||
+                      latestProgress.phase?.replace(/_/g, ' ') ||
+                      '–'}
+                  </span>
+                </span>
+                <span className="text-xs font-bold bg-[#A8211B]/10 text-[#A8211B] px-2 py-1 rounded-lg">
+                  {Number(latestProgress.overallProgress || latestProgress.phaseProgress || 0).toFixed(0)}% overall
+                </span>
+              </div>
+
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-[#A8211B] to-[#e05a53] rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, Number(latestProgress.overallProgress || latestProgress.phaseProgress || 0)))}%`,
+                  }}
+                />
+              </div>
+
+              {latestProgress.notes && (
+                <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-600 leading-relaxed">
+                  {latestProgress.notes}
+                </div>
+              )}
+
+              {latestPhotos.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-1 text-xs text-gray-400 mb-2">
+                    <Camera className="w-3 h-3" /> {latestPhotos.length} photo
+                    {latestPhotos.length > 1 ? 's' : ''} from site
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {latestPhotos.slice(0, 3).map((url: string, i: number) =>
+                      url ? (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={url}
+                            alt={`Site photo ${i + 1}`}
+                            className="w-full h-20 object-cover rounded-lg border border-gray-100 hover:opacity-90 transition"
+                          />
+                        </a>
+                      ) : null,
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
       )}
 

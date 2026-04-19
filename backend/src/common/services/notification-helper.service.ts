@@ -201,7 +201,7 @@ export class NotificationHelperService {
       message: `${progress.phase} - ${progress.phaseProgress}% complete`,
       type: NotificationType.INFO,
       category: NotificationCategory.CONSTRUCTION,
-      actionUrl: '/construction-progress-simple',
+      actionUrl: '/construction/log',
       actionLabel: 'View Progress',
     }, createdBy);
   }

@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * AlertDialog — built on top of the existing Dialog primitives so no new
+ * AlertDialog - built on top of the existing Dialog primitives so no new
  * Radix package is required. API mirrors shadcn/ui's alert-dialog.
  */
 
@@ -47,7 +47,7 @@ function AlertDialogContent({
   )
 }
 
-// ── Header / Title / Description — thin wrappers ─────────────────────────────
+// ── Header / Title / Description - thin wrappers ─────────────────────────────
 function AlertDialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return <DialogHeader className={cn(className)} {...props} />
 }

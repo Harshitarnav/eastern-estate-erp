@@ -180,7 +180,7 @@ function MaterialsPageContent() {
       <BrandHero
         eyebrow="Materials Management"
         title={<>Every material, <span style={{ color: brandPalette.accent }}>always accounted for</span></>}
-        description="Track your full materials catalogue, monitor stock levels, record deliveries and site issues — prevent shortages before they delay your project."
+        description="Track your full materials catalogue, monitor stock levels, record deliveries and site issues - prevent shortages before they delay your project."
         actions={
           <>
             <BrandPrimaryButton onClick={openCreate}>

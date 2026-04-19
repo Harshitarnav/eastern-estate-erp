@@ -39,26 +39,33 @@ export class CustomersController {
   }
 
   @Get('statistics')
-  async getStatistics() {
-    return this.customersService.getStatistics();
+  async getStatistics(
+    @Query('propertyId') propertyId: string | undefined,
+    @Req() req: any,
+  ) {
+    return this.customersService.getStatistics(
+      propertyId,
+      req?.accessiblePropertyIds,
+    );
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<CustomerResponseDto> {
-    return this.customersService.findOne(id);
+  async findOne(@Param('id') id: string, @Req() req: any): Promise<CustomerResponseDto> {
+    return this.customersService.findOne(id, req?.accessiblePropertyIds);
   }
 
   @Put(':id')
   async update(
     @Param('id') id: string,
     @Body() updateCustomerDto: UpdateCustomerDto,
+    @Req() req: any,
   ): Promise<CustomerResponseDto> {
-    return this.customersService.update(id, updateCustomerDto);
+    return this.customersService.update(id, updateCustomerDto, req?.accessiblePropertyIds);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string): Promise<void> {
-    return this.customersService.remove(id);
+  async remove(@Param('id') id: string, @Req() req: any): Promise<void> {
+    return this.customersService.remove(id, req?.accessiblePropertyIds);
   }
 }

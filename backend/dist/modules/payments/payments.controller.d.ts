@@ -6,7 +6,7 @@ export declare class PaymentsController {
     private readonly paymentsService;
     constructor(paymentsService: PaymentsService);
     create(createPaymentDto: CreatePaymentDto, req: any): Promise<import("./entities/payment.entity").Payment>;
-    findAll(bookingId?: string, customerId?: string, paymentType?: string, paymentMethod?: string, status?: PaymentStatus, startDate?: string, endDate?: string, minAmount?: string, maxAmount?: string, isVerified?: string, page?: string, limit?: string, req?: any): Promise<{
+    findAll(bookingId?: string, customerId?: string, paymentType?: string, paymentMethod?: string, status?: PaymentStatus, startDate?: string, endDate?: string, minAmount?: string, maxAmount?: string, isVerified?: string, propertyId?: string, page?: string, limit?: string, req?: any): Promise<{
         data: import("./entities/payment.entity").Payment[];
         meta: {
             total: number;
@@ -15,7 +15,7 @@ export declare class PaymentsController {
             totalPages: number;
         };
     }>;
-    getStatistics(startDate?: string, endDate?: string, paymentType?: string, req?: any): Promise<{
+    getStatistics(startDate?: string, endDate?: string, paymentType?: string, propertyId?: string, req?: any): Promise<{
         totalPayments: number;
         totalAmount: number;
         completedPayments: number;
@@ -33,8 +33,8 @@ export declare class PaymentsController {
             amount: number;
         }>;
     }>;
-    findByBooking(bookingId: string): Promise<import("./entities/payment.entity").Payment[]>;
-    findByCustomer(customerId: string): Promise<import("./entities/payment.entity").Payment[]>;
+    findByBooking(bookingId: string, req: any): Promise<import("./entities/payment.entity").Payment[]>;
+    findByCustomer(customerId: string, req: any): Promise<import("./entities/payment.entity").Payment[]>;
     findByCode(paymentCode: string): Promise<import("./entities/payment.entity").Payment>;
     findOne(id: string): Promise<import("./entities/payment.entity").Payment>;
     update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<import("./entities/payment.entity").Payment>;

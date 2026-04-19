@@ -12,10 +12,21 @@ import { FlatProgressService } from './flat-progress.service';
 import { CreateFlatProgressDto } from './dto/create-flat-progress.dto';
 import { UpdateFlatProgressDto } from './dto/update-flat-progress.dto';
 import { ConstructionPhase } from './entities/construction-tower-progress.entity';
+import { ConstructionWorkflowService } from './services/construction-workflow.service';
+import { ConstructionProjectsService } from './construction-projects.service';
 
 @Controller('construction-projects')
 export class FlatProgressController {
-  constructor(private readonly flatProgressService: FlatProgressService) {}
+  constructor(
+    private readonly flatProgressService: FlatProgressService,
+    // Workflow service is the single place where construction-progress
+    // changes propagate to flats + payment-plan milestones + auto-DDs.
+    // Calling it here ensures direct API writes to the flat progress
+    // table (bypassing ConstructionProgressLogsService) still trigger
+    // milestone detection instead of silently sitting in the table.
+    private readonly workflowService: ConstructionWorkflowService,
+    private readonly projectsService: ConstructionProjectsService,
+  ) {}
 
   // Create or update flat progress for a phase
   @Post(':projectId/flats/:flatId/progress')
@@ -24,11 +35,25 @@ export class FlatProgressController {
     @Param('flatId') flatId: string,
     @Body() createDto: CreateFlatProgressDto,
   ) {
-    return this.flatProgressService.create({
+    const saved = await this.flatProgressService.create({
       ...createDto,
       constructionProjectId: projectId,
       flatId,
     });
+
+    // Fire the unified workflow best-effort. Failure here must not
+    // break the direct progress-record write the user just performed.
+    this.workflowService
+      .processConstructionUpdate(
+        flatId,
+        saved.phase as string,
+        Number(saved.phaseProgress ?? 0),
+        Number(saved.overallProgress ?? saved.phaseProgress ?? 0),
+      )
+      .catch(() => {});
+    this.projectsService.recomputeOverallProgress(projectId).catch(() => {});
+
+    return saved;
   }
 
   // Update specific flat progress record
@@ -37,7 +62,21 @@ export class FlatProgressController {
     @Param('id') id: string,
     @Body() updateDto: UpdateFlatProgressDto,
   ) {
-    return this.flatProgressService.update(id, updateDto);
+    const saved = await this.flatProgressService.update(id, updateDto);
+    this.workflowService
+      .processConstructionUpdate(
+        saved.flatId,
+        saved.phase as string,
+        Number(saved.phaseProgress ?? 0),
+        Number(saved.overallProgress ?? saved.phaseProgress ?? 0),
+      )
+      .catch(() => {});
+    if (saved?.constructionProjectId) {
+      this.projectsService
+        .recomputeOverallProgress(saved.constructionProjectId)
+        .catch(() => {});
+    }
+    return saved;
   }
 
   // Get all progress records for a specific flat

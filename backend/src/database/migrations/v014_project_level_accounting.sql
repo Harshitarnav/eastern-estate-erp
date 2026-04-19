@@ -1,4 +1,4 @@
--- v014: Project-level accounting — add property_id to accounting tables
+-- v014: Project-level accounting - add property_id to accounting tables
 -- Each project gets its own CoA, bank accounts, and journal entries.
 -- NULL property_id = company-wide (shared) record.
 -- Safe to re-run (all statements are idempotent).

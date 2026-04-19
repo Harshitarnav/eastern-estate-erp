@@ -18,6 +18,7 @@ export declare class ConstructionFlatProgress {
     actualEndDate: Date | null;
     status: PhaseStatus;
     notes: string | null;
+    photos: string[] | null;
     isPaymentMilestone: boolean;
     milestoneTriggered: boolean;
     milestoneTriggeredAt: Date | null;

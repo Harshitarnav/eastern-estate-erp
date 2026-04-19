@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { ConstructionFlatProgress } from '../entities/construction-flat-progress.entity';
 import { FlatPaymentPlan, FlatPaymentPlanStatus } from '../../payment-plans/entities/flat-payment-plan.entity';
 import { Flat } from '../../flats/entities/flat.entity';
@@ -33,30 +32,6 @@ export class MilestoneDetectionService {
     @InjectRepository(Flat)
     private readonly flatRepository: Repository<Flat>,
   ) {}
-
-  /**
-   * Scheduled job to check for milestone triggers every hour.
-   * Logs detected milestones — actual demand draft generation is done via AutoDemandDraftService.
-   */
-  @Cron(CronExpression.EVERY_HOUR)
-  async checkMilestones(): Promise<void> {
-    this.logger.log('Starting scheduled milestone detection check...');
-    try {
-      const matches = await this.detectMilestones();
-      if (matches.length > 0) {
-        this.logger.log(`Milestone detection: found ${matches.length} milestone(s) ready to trigger`);
-        matches.forEach(m => {
-          this.logger.log(
-            `  ↳ Flat ${m.flatPaymentPlan.flatId} · "${m.milestoneName}" (seq ${m.milestoneSequence}) · ₹${m.amount}`,
-          );
-        });
-      } else {
-        this.logger.debug('Milestone detection: no new milestones triggered');
-      }
-    } catch (error) {
-      this.logger.error('Error during scheduled milestone detection:', error);
-    }
-  }
 
   /**
    * Detect construction milestones that match payment plan milestones
@@ -211,7 +186,14 @@ export class MilestoneDetectionService {
   }
 
   /**
-   * Get construction phase summary for a flat
+   * Get construction phase summary for a flat.
+   *
+   * Overall-progress formula matches FlatProgressService.calculateFlat-
+   * OverallProgress: each of the 5 canonical phases contributes 20% of
+   * the total, and un-started phases (no row in construction_flat_
+   * progress) count as 0%. Previously this method divided by the
+   * row count, so a flat with only FOUNDATION at 100% showed 100%
+   * overall instead of 20%.
    */
   async getConstructionSummary(flatId: string): Promise<{
     phases: Record<string, { progress: number; status: string }>;
@@ -226,15 +208,13 @@ export class MilestoneDetectionService {
 
     for (const record of progressRecords) {
       phases[record.phase] = {
-        progress: record.phaseProgress,
+        progress: Number(record.phaseProgress) || 0,
         status: record.status,
       };
-      totalProgress += record.phaseProgress;
+      totalProgress += Number(record.phaseProgress) || 0;
     }
 
-    const overallProgress = progressRecords.length > 0 
-      ? totalProgress / progressRecords.length 
-      : 0;
+    const overallProgress = Math.round((totalProgress / 5) * 100) / 100;
 
     return { phases, overallProgress };
   }

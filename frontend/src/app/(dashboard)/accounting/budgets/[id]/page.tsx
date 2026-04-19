@@ -73,8 +73,10 @@ export default function ViewBudgetPage() {
     );
   }
 
-  const utilizationPercentage = budget.spentAmount 
-    ? (budget.spentAmount / budget.allocatedAmount) * 100 
+  const spent = Number(budget.spentAmount) || 0;
+  const allocated = Number(budget.allocatedAmount) || 0;
+  const utilizationPercentage = allocated > 0
+    ? (spent / allocated) * 100
     : 0;
 
   return (
@@ -134,7 +136,7 @@ export default function ViewBudgetPage() {
               Allocated Amount
             </label>
             <p className="text-lg font-semibold text-green-600">
-              ₹{Number(budget.allocatedAmount || 0).toLocaleString('en-IN')}
+              ₹{allocated.toLocaleString('en-IN')}
             </p>
           </div>
 
@@ -143,7 +145,7 @@ export default function ViewBudgetPage() {
               Spent Amount
             </label>
             <p className="text-lg font-semibold text-red-600">
-              ₹{Number(budget.spentAmount || 0).toLocaleString('en-IN')}
+              ₹{spent.toLocaleString('en-IN')}
             </p>
           </div>
 
@@ -152,7 +154,7 @@ export default function ViewBudgetPage() {
               Remaining Amount
             </label>
             <p className="text-lg font-semibold text-blue-600">
-              ₹{Number((budget.allocatedAmount - (budget.spentAmount || 0))).toLocaleString('en-IN')}
+              ₹{Math.max(0, allocated - spent).toLocaleString('en-IN')}
             </p>
           </div>
 

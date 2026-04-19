@@ -9,73 +9,73 @@
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| Phase 1 | Backend wiring — Trial Balance API, Property-wise P&L | ✅ Complete |
-| Phase 2 | Core UI — Journal Entries, Account Ledger | ✅ Complete |
+| Phase 1 | Backend wiring - Trial Balance API, Property-wise P&L | ✅ Complete |
+| Phase 2 | Core UI - Journal Entries, Account Ledger | ✅ Complete |
 | Phase 3 | Bank Reconciliation UI | ✅ Complete |
 | Phase 4 | Property-wise & Project-wise Reporting | ✅ Complete |
 | Phase 5 | Module Integrations (Payments → JE, Expenses → JE, HR → JE) | ✅ Complete |
 | Phase 6 | Real PDF/Excel Exports + Tabbed Reports | ✅ Complete |
-| Phase 7 | Roles — Head Accountant, Project Accountant | ✅ Complete |
+| Phase 7 | Roles - Head Accountant, Project Accountant | ✅ Complete |
 | Phase 8 | Cash & Bank Book UI, Property-wise P&L tab, Dashboard polish | ✅ Complete |
 
 ---
 
-## Phase 1 — Backend Wiring
+## Phase 1 - Backend Wiring
 **Goal:** Ensure all API endpoints the frontend needs actually exist and work.
 
 ### What was already working (pre-build)
-- ✅ `GET /accounting/accounts/balance-sheet` — AccountsService.getBalanceSheet()
-- ✅ `GET /accounting/accounts/profit-loss` — AccountsService.getProfitAndLoss()
-- ✅ `GET /accounting/accounts` — list all accounts with type filter
-- ✅ `POST /accounting/accounts` — create account
-- ✅ `GET /accounting/accounts/hierarchy` — tree structure
-- ✅ `GET /journal-entries` — list with filters (status, date, referenceType)
-- ✅ `POST /journal-entries` — create with debit=credit validation
-- ✅ `POST /journal-entries/:id/post` — post draft entry & update balances
-- ✅ `POST /journal-entries/:id/void` — void & reverse balances
-- ✅ `GET /accounting/expenses` — list with filters
-- ✅ `POST /accounting/expenses/:id/approve` — approve flow
-- ✅ `POST /accounting/expenses/:id/paid` — mark paid
-- ✅ `GET /accounting/budgets` — list
-- ✅ `GET /accounting/ledgers/account/:id` — per-account ledger
-- ✅ `GET /accounting/ledgers/cash-book` — cash book
-- ✅ `GET /accounting/ledgers/bank-book/:bankAccountId` — bank book
-- ✅ `GET /accounting/exports/trial-balance` — Excel export
-- ✅ `GET /accounting/exports/itr` — ITR JSON
+- ✅ `GET /accounting/accounts/balance-sheet` - AccountsService.getBalanceSheet()
+- ✅ `GET /accounting/accounts/profit-loss` - AccountsService.getProfitAndLoss()
+- ✅ `GET /accounting/accounts` - list all accounts with type filter
+- ✅ `POST /accounting/accounts` - create account
+- ✅ `GET /accounting/accounts/hierarchy` - tree structure
+- ✅ `GET /journal-entries` - list with filters (status, date, referenceType)
+- ✅ `POST /journal-entries` - create with debit=credit validation
+- ✅ `POST /journal-entries/:id/post` - post draft entry & update balances
+- ✅ `POST /journal-entries/:id/void` - void & reverse balances
+- ✅ `GET /accounting/expenses` - list with filters
+- ✅ `POST /accounting/expenses/:id/approve` - approve flow
+- ✅ `POST /accounting/expenses/:id/paid` - mark paid
+- ✅ `GET /accounting/budgets` - list
+- ✅ `GET /accounting/ledgers/account/:id` - per-account ledger
+- ✅ `GET /accounting/ledgers/cash-book` - cash book
+- ✅ `GET /accounting/ledgers/bank-book/:bankAccountId` - bank book
+- ✅ `GET /accounting/exports/trial-balance` - Excel export
+- ✅ `GET /accounting/exports/itr` - ITR JSON
 
 ### Phase 1 Tasks
 
-#### 1.1 — Trial Balance JSON API
+#### 1.1 - Trial Balance JSON API
 - **File:** `backend/src/modules/accounting/accounts.service.ts`
 - **File:** `backend/src/modules/accounting/accounts.controller.ts`
 - **Route:** `GET /accounting/accounts/trial-balance`
 - **Returns:** All active accounts with debit/credit columns + totals
 - **Status:** ✅ Done
 
-#### 1.2 — Property-wise P&L API
+#### 1.2 - Property-wise P&L API
 - **File:** `backend/src/modules/accounting/accounts.service.ts`
 - **File:** `backend/src/modules/accounting/accounts.controller.ts`
 - **Route:** `GET /accounting/accounts/property-pl?propertyId=xxx`
 - **Returns:** P&L filtered by propertyId on journal entry lines
 - **Status:** ✅ Done
 
-#### 1.3 — Frontend accounting.service.ts additions
+#### 1.3 - Frontend accounting.service.ts additions
 - **File:** `frontend/src/services/accounting.service.ts`
 - **Added:** `getTrialBalance()`, `getPropertyWisePL()`, `getLedger()`, `getCashBook()`, `getBankBook()`
 - **Status:** ✅ Done
 
-### Phase 1 Hotfix — Missing DB Columns (journal_entries)
+### Phase 1 Hotfix - Missing DB Columns (journal_entries)
 
 **Error:** `column "createdBy" of relation "journal_entries" does not exist`
 
 **Root Cause:** `synchronize: false` is set in app.module.ts. The columns `createdBy`, `approvedBy`, `approvedAt`, `voidedBy`, `voidedAt`, `voidReason` were added to the entity after synchronize was disabled, so they were never created in the DB.
 
 **Fix applied:**
-- `journal-entries.service.ts` — removed `createdBy: userId` from create, removed `voidedBy/voidedAt/voidReason` from void (commented, safe to re-enable after migration)
-- `journal-entries.service.ts` — removed `'creator', 'poster', 'voider'` from relations in findOne
+- `journal-entries.service.ts` - removed `createdBy: userId` from create, removed `voidedBy/voidedAt/voidReason` from void (commented, safe to re-enable after migration)
+- `journal-entries.service.ts` - removed `'creator', 'poster', 'voider'` from relations in findOne
 - Created migration: `backend/src/database/migrations/006_add_journal_entry_audit_columns.sql`
 
-**✅ MIGRATION COMPLETE** — Run on 25 Mar 2026. Audit columns now live in DB.
+**✅ MIGRATION COMPLETE** - Run on 25 Mar 2026. Audit columns now live in DB.
 
 ~~**⚠️ ACTION REQUIRED:** Run the migration on your DB:~~
 ```sql
@@ -95,12 +95,12 @@ See bottom of this file → **[Phase 1 Test Guide]**
 
 ---
 
-## Phase 2 — Core UI Pages
+## Phase 2 - Core UI Pages
 **Goal:** Build the pages that accountants use daily.
 
 ### Phase 2 Tasks
 
-#### 2.1 — Journal Entries Page
+#### 2.1 - Journal Entries Page
 - **Route:** `/accounting/journal-entries`
 - **File:** `frontend/src/app/(dashboard)/accounting/journal-entries/page.tsx`
 - **Features:**
@@ -111,7 +111,7 @@ See bottom of this file → **[Phase 1 Test Guide]**
   - Debit = Credit validation before submit
 - **Status:** ✅ Done
 
-#### 2.2 — Account Ledger Page
+#### 2.2 - Account Ledger Page
 - **Route:** `/accounting/accounts/[id]/ledger`
 - **File:** `frontend/src/app/(dashboard)/accounting/accounts/[id]/ledger/page.tsx`
 - **Features:**
@@ -122,7 +122,7 @@ See bottom of this file → **[Phase 1 Test Guide]**
   - Export to Excel button
 - **Status:** ✅ Done
 
-#### 2.3 — Sidebar Expansion
+#### 2.3 - Sidebar Expansion
 - **File:** `frontend/src/components/layout/Sidebar.tsx`
 - **Added:** Journal Entries, Ledger (via accounts page link)
 - **Status:** ✅ Done
@@ -132,23 +132,23 @@ See bottom of this file → **[Phase 2 Test Guide]**
 
 ---
 
-## Phase 3 — Bank Reconciliation UI
+## Phase 3 - Bank Reconciliation UI
 **Goal:** Let accountants upload bank statements and match them.
 
 ### Phase 3 Tasks
-#### 3.1 — Bank Accounts page `/accounting/bank-accounts`
-#### 3.2 — Reconciliation page `/accounting/bank-accounts/[id]/reconcile`
+#### 3.1 - Bank Accounts page `/accounting/bank-accounts`
+#### 3.2 - Reconciliation page `/accounting/bank-accounts/[id]/reconcile`
 - **Status:** ⏳ Pending
 
 ---
 
-## Phase 4 — Property-wise Reporting
+## Phase 4 - Property-wise Reporting
 **Goal:** Per-property P&L for multi-project firms.
 - **Status:** ⏳ Pending
 
 ---
 
-## Phase 5 — Module Integrations
+## Phase 5 - Module Integrations
 **Goal:** Auto-generate journal entries from other modules.
 
 | Trigger | Journal Entry |
@@ -162,7 +162,7 @@ See bottom of this file → **[Phase 2 Test Guide]**
 
 ---
 
-## Phase 6 — Real PDF/Excel Exports
+## Phase 6 - Real PDF/Excel Exports
 **Goal:** Replace all `alert()` placeholders with real downloads.
 - Balance Sheet PDF
 - P&L Statement PDF  
@@ -173,7 +173,7 @@ See bottom of this file → **[Phase 2 Test Guide]**
 
 ---
 
-## Phase 7 — Roles & Head Accountant Dashboard
+## Phase 7 - Roles & Head Accountant Dashboard
 **Goal:** Role-based access with head accountant cross-project view.
 - Add `accountant` and `head_accountant` roles
 - Head accountant dashboard: cross-project summary
@@ -182,7 +182,7 @@ See bottom of this file → **[Phase 2 Test Guide]**
 
 ---
 
-## Phase 8 — Sidebar & Polish
+## Phase 8 - Sidebar & Polish
 **Goal:** Final polish before prod deployment.
 - Expanded sidebar with all new accounting sub-items
 - Date range pickers everywhere
@@ -265,7 +265,7 @@ GET http://localhost:3001/api/journal-entries?status=DRAFT
 GET http://localhost:3001/api/journal-entries?startDate=2026-01-01&endDate=2026-12-31
 ```
 
-### 5. In the UI — Open `/accounting` dashboard
+### 5. In the UI - Open `/accounting` dashboard
 - Should show 4 summary cards (Total Assets, Total Liabilities, Total Equity, Net Profit)
 - Balance Sheet and P&L summary panels should populate
 - Quick links to Chart of Accounts, Expenses, Budgets should work
@@ -281,10 +281,10 @@ GET http://localhost:3001/api/journal-entries?startDate=2026-01-01&endDate=2026-
 4. Fill in: Date, Description
 5. Add line 1: pick an ASSET account, enter ₹10,000 in Debit
 6. Add line 2: pick an INCOME account, enter ₹10,000 in Credit
-7. Try to submit with mismatched totals — should show validation error
-8. Submit with balanced lines — entry created as DRAFT
-9. Click **"Post"** on the draft — status changes to POSTED, account balances update
-10. Click **"Void"** on a POSTED entry — enter reason — status changes to VOID
+7. Try to submit with mismatched totals - should show validation error
+8. Submit with balanced lines - entry created as DRAFT
+9. Click **"Post"** on the draft - status changes to POSTED, account balances update
+10. Click **"Void"** on a POSTED entry - enter reason - status changes to VOID
 11. Verify account balances reverted after void
 
 ### Account Ledger `/accounting/accounts/[id]/ledger`
@@ -292,11 +292,11 @@ GET http://localhost:3001/api/journal-entries?startDate=2026-01-01&endDate=2026-
 2. Click **"View Ledger"** button
 3. Set date range (e.g. Jan 2026 – Dec 2026)
 4. Should show: Opening Balance → transactions → Closing Balance with running total
-5. Click **"Export Excel"** — file downloads
+5. Click **"Export Excel"** - file downloads
 
 ---
 
-## 🧪 Phase 3 Test Guide — Bank Reconciliation
+## 🧪 Phase 3 Test Guide - Bank Reconciliation
 
 ### Step 1 – Add a Bank Account
 1. Go to **Accounting → Bank Accounts** in the sidebar (new item)
@@ -334,18 +334,18 @@ POST http://localhost:3001/api/v1/accounting/bank-statements/:id/reconcile  { jo
 
 ---
 
-## 🧪 Phase 6 Test Guide — Reports & Exports
+## 🧪 Phase 6 Test Guide - Reports & Exports
 
 ### Reports page `/accounting/reports`
 1. Navigate to **Accounting → Reports**
-2. **Balance Sheet tab** — All accounts listed under Assets, Liabilities, Equity. Bottom row shows equation check (✓ Balanced / ⚠ Not balanced)
+2. **Balance Sheet tab** - All accounts listed under Assets, Liabilities, Equity. Bottom row shows equation check (✓ Balanced / ⚠ Not balanced)
 3. Click **"Print / PDF"** → Browser print dialog opens with clean layout. Save as PDF from here.
-4. **Profit & Loss tab** — Income & Expense accounts listed, Net Profit / Loss card at bottom
+4. **Profit & Loss tab** - Income & Expense accounts listed, Net Profit / Loss card at bottom
 5. Click **"Print / PDF"** → same browser print dialog
-6. **Trial Balance tab** — All accounts in one table with Debit / Credit columns. Bottom row shows TOTALS and balanced status.
+6. **Trial Balance tab** - All accounts in one table with Debit / Credit columns. Bottom row shows TOTALS and balanced status.
 7. Change the date and click **"Excel"** → `.xlsx` file downloads (ensure backend export route is working)
-8. **Budget Variance tab** — shows all budgets with budgeted vs actual spend and variance %
-9. **ITR Export tab** — Select financial year (e.g. 2025-2026), click "Fetch Data" → summary cards appear with income/expense heads. Click "Download JSON".
+8. **Budget Variance tab** - shows all budgets with budgeted vs actual spend and variance %
+9. **ITR Export tab** - Select financial year (e.g. 2025-2026), click "Fetch Data" → summary cards appear with income/expense heads. Click "Download JSON".
 
 ### Common issues to watch for
 - **NaN values** → all `Number()` coercions are in place; if NaN appears check console for API shape
@@ -368,24 +368,24 @@ POST http://localhost:3001/api/v1/accounting/bank-statements/:id/reconcile  { jo
 
 ---
 
-## ✳️ POST-LAUNCH PHASE PLAN — Tally Parity Gaps
+## ✳️ POST-LAUNCH PHASE PLAN - Tally Parity Gaps
 
 ### Current Gap Assessment (vs Tally)
 | Category | Score | Key Missing |
 |---|---|---|
-| Core engine (JE, COA, Ledger) | 80% | — |
+| Core engine (JE, COA, Ledger) | 80% | - |
 | Financial reports | 65% | Cash Flow, Fund Flow |
 | Bank reconciliation | 50% | Auto-match |
 | GST compliance | 5% | GSTR-1, GSTR-3B, ITC |
 | TDS management | 0% | 194C, 194I, Form 26Q |
 | AR/AP aging | 10% | Aging buckets, SOA |
 | Voucher types / UX | 35% | Specific voucher UI |
-| **Overall vs Tally** | **~50%** | — |
+| **Overall vs Tally** | **~50%** | - |
 
 ---
 
-## Phase 9 — Voucher Types UI
-**Goal:** Make daily accounting as fast as Tally — split "New Journal Entry" into business-friendly voucher buttons.
+## Phase 9 - Voucher Types UI
+**Goal:** Make daily accounting as fast as Tally - split "New Journal Entry" into business-friendly voucher buttons.
 **Status:** ✅ Complete
 
 ### What to Build
@@ -395,19 +395,19 @@ POST http://localhost:3001/api/v1/accounting/bank-statements/:id/reconcile  { jo
 - **Journal Voucher**: Existing JE form for advanced adjustments.
 
 ### Files to Change
-- `frontend/src/app/(dashboard)/accounting/journal-entries/page.tsx` — Add 4 big buttons at top, each opens a pre-configured modal
-- **NO backend changes** — same JE API, just smarter frontend
+- `frontend/src/app/(dashboard)/accounting/journal-entries/page.tsx` - Add 4 big buttons at top, each opens a pre-configured modal
+- **NO backend changes** - same JE API, just smarter frontend
 
 ### Test Guide
 1. Go to `/accounting/journal-entries`
-2. Click **Payment Voucher** — form should pre-fill Dr side to Expenses, Cr side to Bank accounts
-3. Enter vendor name, amount, bank — submit
+2. Click **Payment Voucher** - form should pre-fill Dr side to Expenses, Cr side to Bank accounts
+3. Enter vendor name, amount, bank - submit
 4. JE created with correct double-entry, status DRAFT
-5. Post it — account balances update
+5. Post it - account balances update
 
 ---
 
-## Phase 10 — AR/AP Aging Reports
+## Phase 10 - AR/AP Aging Reports
 **Goal:** Show who owes you money and who you owe, bucketed by age.
 
 **Status:** ✅ Complete
@@ -441,7 +441,7 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 
 ---
 
-## Phase 11 — TDS Tracking
+## Phase 11 - TDS Tracking
 **Goal:** Track Tax Deducted at Source on contractor/vendor payments (Section 194C, 194I, 194J).
 
 **Status:** ⏳ Pending
@@ -449,12 +449,12 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 ### What to Build
 #### Backend
 - Add `tdsSection`, `tdsRate`, `tdsAmount` columns to `vendor_payments` table (migration)
-- New route: `GET /accounting/tds-summary?fy=2025-26` — returns vendor-wise TDS deducted
-- New route: `GET /accounting/tds/form-26q` — exports Form 26Q compatible data
+- New route: `GET /accounting/tds-summary?fy=2025-26` - returns vendor-wise TDS deducted
+- New route: `GET /accounting/tds/form-26q` - exports Form 26Q compatible data
 
 #### Frontend
 - Add TDS fields to Vendor Payment modal (section dropdown: 194C/194I/194J, auto-calculate rate)
-- New tab on Reports page: **TDS Summary** — vendor-wise with section and amounts
+- New tab on Reports page: **TDS Summary** - vendor-wise with section and amounts
 - Download Form 26Q data as Excel
 
 ### TDS Rates Reference
@@ -472,7 +472,7 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 
 ---
 
-## Phase 12 — Cash Flow Statement
+## Phase 12 - Cash Flow Statement
 **Goal:** Auto-generate Cash Flow from journal entries (the third of the "Big 3" financial reports).
 
 **Status:** ✅ Complete
@@ -487,7 +487,7 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 - Returns: Opening balance, net from each activity, closing balance
 
 #### Frontend
-- New tab on `/accounting/reports` — **Cash Flow**
+- New tab on `/accounting/reports` - **Cash Flow**
 - Three sections: Operating / Investing / Financing
 - Net change in cash, opening + closing balance
 - Print/PDF support
@@ -499,25 +499,25 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 
 ---
 
-## Phase 13 — GST Module (Indian Compliance)
+## Phase 13 - GST Module (Indian Compliance)
 **Goal:** Basic GST tracking for real estate transactions.
 
 **Status:** ⏳ Pending
-**Complexity:** HIGH — ~1 week
+**Complexity:** HIGH - ~1 week
 
 ### What to Build
-#### Phase 13a — GST on Transactions
+#### Phase 13a - GST on Transactions
 - Add `gstPercentage`, `gstAmount`, `hsnSacCode` to `expenses` table
 - Add `gstPercentage`, `gstAmount` to `payments` table (flat sales)
 - Show GST breakdown in expense and payment forms
 
-#### Phase 13b — Input Tax Credit (ITC)
+#### Phase 13b - Input Tax Credit (ITC)
 - Track GST paid on purchases (vendor invoices) = ITC available
 - Track GST collected on sales (flat sales) = GST payable
 - ITC Set-off: GST Payable − ITC = Net Payable
 
-#### Phase 13c — GSTR Reports
-- **GSTR-1**: Outward supplies (flat sales with GST) — monthly summary
+#### Phase 13c - GSTR Reports
+- **GSTR-1**: Outward supplies (flat sales with GST) - monthly summary
 - **GSTR-3B**: Net GST payable after ITC set-off
 
 ### Key Real Estate GST Rules
@@ -530,9 +530,9 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 | Construction services to builder | 18% (ITC available) |
 
 ### Test Guide
-1. Create an expense (cement purchase) — add GST 18%, HSN 2523
-2. Record a flat sale payment — add GST 5%
-3. Go to Reports → GSTR-3B preview — should show ITC offset against liability
+1. Create an expense (cement purchase) - add GST 18%, HSN 2523
+2. Record a flat sale payment - add GST 5%
+3. Go to Reports → GSTR-3B preview - should show ITC offset against liability
 
 ---
 
@@ -540,8 +540,8 @@ GET /accounting/reports/ap-aging?asOf=YYYY-MM-DD
 
 | Phase | Key Test |
 |---|---|
-| 9 — Voucher Types | Click "Payment Voucher" → fills debit side automatically |
-| 10 — AR Aging | `/accounting/reports` AR tab → color-coded aging buckets |
-| 11 — TDS | Vendor payment with TDS → appears in TDS Summary report |
-| 12 — Cash Flow | `/accounting/reports` Cash Flow tab → 3 sections, balanced |
-| 13 — GST | Expense with GST 18% → GSTR-3B shows ITC credit |
+| 9 - Voucher Types | Click "Payment Voucher" → fills debit side automatically |
+| 10 - AR Aging | `/accounting/reports` AR tab → color-coded aging buckets |
+| 11 - TDS | Vendor payment with TDS → appears in TDS Summary report |
+| 12 - Cash Flow | `/accounting/reports` Cash Flow tab → 3 sections, balanced |
+| 13 - GST | Expense with GST 18% → GSTR-3B shows ITC credit |

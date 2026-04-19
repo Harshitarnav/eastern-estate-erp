@@ -156,7 +156,7 @@ let SalaryPaymentsService = class SalaryPaymentsService {
         if (je) {
             return { success: true, journalEntryNumber: je.entryNumber, message: `Journal Entry ${je.entryNumber} created successfully.` };
         }
-        return { success: false, message: 'JE creation failed — ensure "Salary Expense" (EXPENSE type) and a Bank/Cash (ASSET type) account exist in Chart of Accounts.' };
+        return { success: false, message: 'JE creation failed - ensure "Salary Expense" (EXPENSE type) and a Bank/Cash (ASSET type) account exist in Chart of Accounts.' };
     }
     async cancel(id) {
         const sp = await this.findOne(id);
@@ -174,7 +174,7 @@ let SalaryPaymentsService = class SalaryPaymentsService {
         const rows = await this.dataSource.query(`SELECT id FROM journal_entries WHERE reference_type = $1 AND reference_id = $2 AND status = $3 ORDER BY created_at DESC LIMIT 1`, ['SALARY', sp.id, 'POSTED']);
         if (rows.length > 0) {
             await this.journalEntriesService.void(rows[0].id, userId, {
-                voidReason: `Salary payment reversed to pending — record ${sp.id}`,
+                voidReason: `Salary payment reversed to pending - record ${sp.id}`,
             });
         }
         sp.paymentStatus = salary_payment_entity_1.PaymentStatus.PENDING;

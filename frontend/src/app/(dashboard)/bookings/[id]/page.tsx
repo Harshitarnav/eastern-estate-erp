@@ -111,12 +111,13 @@ export default function BookingViewPage() {
     }
   };
 
-  const formatAmount = (amount: number) => {
+  const formatAmount = (amount: number | null | undefined) => {
+    const safe = Number(amount);
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(Number.isFinite(safe) ? safe : 0);
   };
 
   const formatDate = (dateString: string) => {
@@ -194,7 +195,7 @@ export default function BookingViewPage() {
             Download Summary
           </BrandSecondaryButton>
 
-          {/* Payment Plan — prominent button in header */}
+          {/* Payment Plan - prominent button in header */}
           {paymentPlan === undefined ? (
             <button
               disabled
@@ -291,28 +292,37 @@ export default function BookingViewPage() {
       </div>
 
       {/* Payment Progress */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
-        <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
-          Payment Progress
-        </h2>
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Progress</span>
-            <span className="font-semibold">
-              {((booking.paidAmount / booking.totalAmount) * 100).toFixed(1)}%
-            </span>
+      {(() => {
+        const paidAmt = Number(booking.paidAmount) || 0;
+        const totalAmt = Number(booking.totalAmount) || 0;
+        const progressPct = totalAmt > 0
+          ? Math.min(100, Math.max(0, (paidAmt / totalAmt) * 100))
+          : 0;
+        return (
+          <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: brandPalette.secondary }}>
+              Payment Progress
+            </h2>
+            <div className="space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Progress</span>
+                <span className="font-semibold">
+                  {progressPct.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-4">
+                <div
+                  className="h-4 rounded-full transition-all"
+                  style={{
+                    width: `${progressPct}%`,
+                    backgroundColor: brandPalette.success,
+                  }}
+                />
+              </div>
+            </div>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-4">
-            <div
-              className="h-4 rounded-full transition-all"
-              style={{
-                width: `${(booking.paidAmount / booking.totalAmount) * 100}%`,
-                backgroundColor: brandPalette.success,
-              }}
-            />
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -583,7 +593,7 @@ export default function BookingViewPage() {
                     <p className="font-medium">{booking.coApplicantName}</p>
                     <p className="text-xs text-gray-500">
                       {booking.coApplicantRelation ? `${booking.coApplicantRelation} • ` : ''}
-                      {booking.coApplicantPhone || booking.coApplicantEmail || '—'}
+                      {booking.coApplicantPhone || booking.coApplicantEmail || '-'}
                     </p>
                   </div>
                 )}
@@ -635,7 +645,7 @@ export default function BookingViewPage() {
                         ₹{Number(p.amount).toLocaleString('en-IN')}
                       </p>
                       <p className="text-xs text-gray-400">
-                        {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                        {p.paymentDate ? new Date(p.paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                         {p.paymentMethod ? ` · ${p.paymentMethod.replace(/_/g,' ')}` : ''}
                         {p.paymentCode ? ` · ${p.paymentCode}` : ''}
                       </p>
@@ -781,7 +791,7 @@ export default function BookingViewPage() {
                   Loading…
                 </button>
               )}
-              {/* Ledger shortcut — only shown when a payment plan exists */}
+              {/* Ledger shortcut - only shown when a payment plan exists */}
               {paymentPlan && (
                 <button
                   onClick={() => router.push(`/ledger/${bookingId}`)}

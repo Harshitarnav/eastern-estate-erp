@@ -402,7 +402,7 @@ function DataTable<T extends { id: string | number }>({
                       ? col.mobileRender(row)
                       : col.render
                         ? col.render(raw, row)
-                        : (raw !== null && raw !== undefined && raw !== '' ? String(raw) : '—');
+                        : (raw !== null && raw !== undefined && raw !== '' ? String(raw) : '-');
                     return (
                       <div key={col.key} className="text-sm">
                         <div className="text-[11px] font-medium uppercase tracking-wide text-gray-500">

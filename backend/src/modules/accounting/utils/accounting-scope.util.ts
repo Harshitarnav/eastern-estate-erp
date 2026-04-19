@@ -81,6 +81,38 @@ export function resolveAccountingPropertyScope(req: ReqScope, propertyId?: strin
   );
 }
 
+/** Balance sheet, P&L, trial balance: one project vs consolidated (all accessible / global). */
+export type AccountingReportScope =
+  | { kind: 'single'; propertyId: string }
+  | { kind: 'consolidated'; restrictJournalPropertyIds: string[] | null };
+
+/**
+ * When propertyId is omitted → consolidated across posted journals (all org for global admin,
+ * or accessible projects + company-wide JE rows with null property_id for others).
+ */
+export function resolveAccountingReportScope(req: ReqScope, propertyId?: string): AccountingReportScope {
+  if (propertyId) {
+    if (!req.isGlobalAdmin) {
+      const ids = req.accessiblePropertyIds || [];
+      if (!ids.length) {
+        throw new ForbiddenException('You have not been assigned to any projects yet.');
+      }
+      if (!ids.includes(propertyId)) {
+        throw new ForbiddenException('You do not have access to this project');
+      }
+    }
+    return { kind: 'single', propertyId };
+  }
+  if (req.isGlobalAdmin) {
+    return { kind: 'consolidated', restrictJournalPropertyIds: null };
+  }
+  const ids = req.accessiblePropertyIds || [];
+  if (!ids.length) {
+    throw new ForbiddenException('You have not been assigned to any projects yet.');
+  }
+  return { kind: 'consolidated', restrictJournalPropertyIds: ids };
+}
+
 /** For list endpoints: optional explicit propertyId, else restrict to accessible ids (and optional null rows). */
 export function accessiblePropertyIdsOrThrow(req: ReqScope): string[] | null {
   if (req.isGlobalAdmin) {

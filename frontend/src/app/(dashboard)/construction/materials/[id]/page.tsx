@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 const fmtDate = (d: string | Date) =>
-  d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
 const fmtNum = (n: number | string, unit = '') =>
   `${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 3 })}${unit ? ' ' + unit : ''}`;
@@ -252,7 +252,7 @@ function MaterialDetailContent() {
           <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: `${brandPalette.neutral}40` }}>
             <div className="flex items-center gap-2">
               <ArrowDownCircle className="w-4 h-4" style={{ color: brandPalette.success }} />
-              <h2 className="font-semibold text-gray-800">Stock In — Received Deliveries</h2>
+              <h2 className="font-semibold text-gray-800">Stock In - Received Deliveries</h2>
             </div>
             <button
               onClick={() => setShowEntryModal(true)}
@@ -289,9 +289,9 @@ function MaterialDetailContent() {
                       </td>
                       <td className="px-4 py-3 text-gray-700">{fmtCur(e.unitPrice)}</td>
                       <td className="px-4 py-3 font-semibold text-gray-900">{fmtCur(e.totalValue)}</td>
-                      <td className="px-4 py-3 text-gray-600">{e.vendor?.vendorName || '—'}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{e.invoiceNumber || '—'}</td>
-                      <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{e.remarks || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{e.vendor?.vendorName || '-'}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-500">{e.invoiceNumber || '-'}</td>
+                      <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{e.remarks || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -356,9 +356,9 @@ function MaterialDetailContent() {
                         <td className="px-4 py-3 font-semibold" style={{ color: '#EA580C' }}>
                           -{fmtNum(e.quantity)} <span className="text-xs font-normal text-gray-400">{material.unitOfMeasurement}</span>
                         </td>
-                        <td className="px-4 py-3 text-gray-700 max-w-[150px] truncate">{e.purpose || '—'}</td>
+                        <td className="px-4 py-3 text-gray-700 max-w-[150px] truncate">{e.purpose || '-'}</td>
                         <td className="px-4 py-3 text-gray-600">
-                          {e.issuedToEmployee?.fullName || '—'}
+                          {e.issuedToEmployee?.fullName || '-'}
                         </td>
                         <td className="px-4 py-3">
                           {e.returnExpected ? (
@@ -378,9 +378,9 @@ function MaterialDetailContent() {
                               <RotateCcw className="w-3 h-3" />
                               {fmtNum(returned)} {e.returnDate ? `(${fmtDate(e.returnDate)})` : ''}
                             </span>
-                          ) : '—'}
+                          ) : '-'}
                         </td>
-                        <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{e.remarks || '—'}</td>
+                        <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{e.remarks || '-'}</td>
                       </tr>
                     );
                   })}
@@ -400,7 +400,7 @@ function MaterialDetailContent() {
         </div>
       )}
 
-      {/* Modals — pre-filtered to this material */}
+      {/* Modals - pre-filtered to this material */}
       <MaterialEntryModal
         isOpen={showEntryModal}
         onClose={() => setShowEntryModal(false)}

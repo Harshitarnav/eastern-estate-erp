@@ -73,7 +73,7 @@ async function getSwRegistration(): Promise<ServiceWorkerRegistration> {
   const byScope = await navigator.serviceWorker.getRegistration('/');
   if (byScope?.active) return byScope;
 
-  // Strategy 2: scan ALL registrations — handles iOS where scope can differ
+  // Strategy 2: scan ALL registrations - handles iOS where scope can differ
   const allRegs = await navigator.serviceWorker.getRegistrations();
   const withActive = allRegs.find(r => r.active);
   if (withActive) return withActive;
@@ -96,7 +96,7 @@ async function getSwRegistration(): Promise<ServiceWorkerRegistration> {
 
 // ─── Push state machine ───────────────────────────────────────────────────────
 // unsupported : browser/OS can't do push at all (hide button)
-// denied      : user blocked — point to Settings
+// denied      : user blocked - point to Settings
 // unsubscribed: permission granted (or default) but no active subscription
 // subscribed  : active subscription saved in backend
 type PushState = 'unsupported' | 'denied' | 'unsubscribed' | 'subscribed';
@@ -157,7 +157,7 @@ export function NotificationBell() {
       const sub = await reg.pushManager.getSubscription();
       setPushState(sub ? 'subscribed' : 'unsubscribed');
     } catch {
-      // SW not ready — treat as unsubscribed (user can still try to enable)
+      // SW not ready - treat as unsubscribed (user can still try to enable)
       setPushState('unsubscribed');
     }
   }, []);
@@ -241,19 +241,19 @@ export function NotificationBell() {
 
       // ── Enable ────────────────────────────────────────────────────────────
 
-      // Step 1 — Request permission (must be called from user gesture)
+      // Step 1 - Request permission (must be called from user gesture)
       const permission = await Notification.requestPermission();
       if (permission === 'denied') {
         setPushState('denied');
         alert('Notifications blocked.\n\nGo to Settings → Notifications → Eastern Estate and enable Allow Notifications.');
         return;
       }
-      if (permission !== 'granted') return; // user dismissed — do nothing
+      if (permission !== 'granted') return; // user dismissed - do nothing
 
-      // Step 2 — Get (or wait for) an active SW registration
+      // Step 2 - Get (or wait for) an active SW registration
       const reg = await getSwRegistration();
 
-      // Step 3 — iOS requires navigator.serviceWorker.controller to be set before
+      // Step 3 - iOS requires navigator.serviceWorker.controller to be set before
       // pushManager.subscribe() will work. If it's not set yet (first launch after
       // SW install), wait up to 3 s for the SW to claim the page via clientsClaim().
       if (!navigator.serviceWorker.controller) {
@@ -267,20 +267,20 @@ export function NotificationBell() {
         });
       }
 
-      // Step 4 — Fetch VAPID public key from backend
+      // Step 4 - Fetch VAPID public key from backend
       const vapidData: any = await apiService.get('/notifications/push/vapid-public-key');
       if (!vapidData?.publicKey) {
         alert('Push notifications are not configured on the server yet. Please contact support.');
         return;
       }
 
-      // Step 5 — Subscribe via PushManager
+      // Step 5 - Subscribe via PushManager
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidData.publicKey),
       });
 
-      // Step 6 — Save subscription in backend
+      // Step 6 - Save subscription in backend
       const { endpoint, keys } = sub.toJSON() as any;
       await apiService.post('/notifications/push/subscribe', {
         endpoint,
@@ -432,7 +432,7 @@ export function NotificationBell() {
                 View all notifications <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
-            {/* Push notification toggle — hidden when unsupported */}
+            {/* Push notification toggle - hidden when unsupported */}
             {pushState !== 'unsupported' && (
               <button
                 onClick={handleTogglePush}

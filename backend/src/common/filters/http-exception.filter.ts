@@ -27,7 +27,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
-    // Log error for debugging — for validation errors (400) include the field details
+    // Log error for debugging - for validation errors (400) include the field details
     if (status === HttpStatus.BAD_REQUEST && exception instanceof HttpException) {
       const responseBody = exception.getResponse();
       const details =

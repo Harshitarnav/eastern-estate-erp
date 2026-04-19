@@ -107,7 +107,7 @@ function ProgressLogsContent() {
   };
 
   const formatDate = (d: string) =>
-    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
   const filteredLogs = logs.filter(l => {
     if (!searchDate) return true;

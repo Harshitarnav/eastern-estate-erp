@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * migrate-uploads-to-minio.js  — plain CommonJS, no TypeScript
+ * migrate-uploads-to-minio.js  - plain CommonJS, no TypeScript
  * Run from inside the backend container:
  *   node scripts/migrate-uploads-to-minio.js
  */
@@ -17,7 +17,7 @@ const { Pool } = require('pg');
 try {
   require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 } catch {
-  // dotenv may not be installed in prod container — that's fine,
+  // dotenv may not be installed in prod container - that's fine,
   // Docker Compose injects all env vars directly.
 }
 
@@ -110,7 +110,7 @@ async function migrateTable(spec) {
     `SELECT 1 FROM information_schema.tables WHERE table_name = $1`, [spec.table]
   );
   if (check.rowCount === 0) {
-    console.log(`  ⏭️  Table '${spec.table}' not found — skipping.\n`);
+    console.log(`  ⏭️  Table '${spec.table}' not found - skipping.\n`);
     return { migrated: 0, skipped: 0, failed: 0 };
   }
 

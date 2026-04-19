@@ -18,6 +18,7 @@ import { User } from '../../users/entities/user.entity';
  */
 @Entity('demand_draft_templates')
 @Index(['isActive'])
+@Index(['tone'])
 export class DemandDraftTemplate {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -33,6 +34,11 @@ export class DemandDraftTemplate {
 
   @Column({ name: 'html_content', type: 'text' })
   htmlContent: string;
+
+  // Tone keys used by the overdue scanner to pick the right template.
+  // Valid values: ON_TIME, REMINDER_1..REMINDER_4, CANCELLATION_WARNING, POST_WARNING.
+  @Column({ name: 'tone', type: 'varchar', length: 40, default: 'ON_TIME' })
+  tone: string;
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;

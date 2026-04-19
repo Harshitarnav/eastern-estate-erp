@@ -27,17 +27,17 @@ let CustomersController = class CustomersController {
     async findAll(query, req) {
         return this.customersService.findAll(query, req.accessiblePropertyIds);
     }
-    async getStatistics() {
-        return this.customersService.getStatistics();
+    async getStatistics(propertyId, req) {
+        return this.customersService.getStatistics(propertyId, req?.accessiblePropertyIds);
     }
-    async findOne(id) {
-        return this.customersService.findOne(id);
+    async findOne(id, req) {
+        return this.customersService.findOne(id, req?.accessiblePropertyIds);
     }
-    async update(id, updateCustomerDto) {
-        return this.customersService.update(id, updateCustomerDto);
+    async update(id, updateCustomerDto, req) {
+        return this.customersService.update(id, updateCustomerDto, req?.accessiblePropertyIds);
     }
-    async remove(id) {
-        return this.customersService.remove(id);
+    async remove(id, req) {
+        return this.customersService.remove(id, req?.accessiblePropertyIds);
     }
 };
 exports.CustomersController = CustomersController;
@@ -59,31 +59,36 @@ __decorate([
 ], CustomersController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)('statistics'),
+    __param(0, (0, common_1.Query)('propertyId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "getStatistics", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, dto_1.UpdateCustomerDto]),
+    __metadata("design:paramtypes", [String, dto_1.UpdateCustomerDto, Object]),
     __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "update", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CustomersController.prototype, "remove", null);
 exports.CustomersController = CustomersController = __decorate([

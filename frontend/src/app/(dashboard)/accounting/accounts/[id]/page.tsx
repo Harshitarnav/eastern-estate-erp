@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, BookOpen, Edit, Trash2 } from 'lucide-react';
 import { accountsService } from '@/services/accounting.service';
 import { useAuthStore } from '@/store/authStore';
+import { usePropertyStore } from '@/store/propertyStore';
 
 export default function ViewAccountPage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function ViewAccountPage() {
   const id = params?.id as string;
 
   const { user } = useAuthStore();
+  const { selectedProperties } = usePropertyStore();
+  const coaContextPropertyId = selectedProperties[0];
   const canAdminEdit = user?.roles?.some((r: any) =>
     ['super_admin', 'admin'].includes(typeof r === 'string' ? r : r.name)
   );
@@ -24,12 +27,14 @@ export default function ViewAccountPage() {
     if (id) {
       fetchAccount();
     }
-  }, [id]);
+  }, [id, coaContextPropertyId]);
 
   const fetchAccount = async () => {
     try {
       setLoading(true);
-      const data = await accountsService.getById(id);
+      const data = await accountsService.getById(id, {
+        ...(coaContextPropertyId ? { propertyId: coaContextPropertyId } : {}),
+      });
       setAccount(data);
       setError('');
     } catch (err: any) {
@@ -164,6 +169,11 @@ export default function ViewAccountPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Current Balance
+              {coaContextPropertyId ? (
+                <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                  For the project selected in the header - from posted journals only
+                </span>
+              ) : null}
             </label>
             <p className="text-lg font-semibold">
               ₹{Number(account.currentBalance || 0).toLocaleString('en-IN')}

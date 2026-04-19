@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DemandDraft = exports.DemandDraftStatus = void 0;
+exports.DemandDraft = exports.DemandDraftTone = exports.DemandDraftStatus = void 0;
 const typeorm_1 = require("typeorm");
 var DemandDraftStatus;
 (function (DemandDraftStatus) {
@@ -17,7 +17,18 @@ var DemandDraftStatus;
     DemandDraftStatus["READY"] = "READY";
     DemandDraftStatus["SENT"] = "SENT";
     DemandDraftStatus["FAILED"] = "FAILED";
+    DemandDraftStatus["PAID"] = "PAID";
 })(DemandDraftStatus || (exports.DemandDraftStatus = DemandDraftStatus = {}));
+var DemandDraftTone;
+(function (DemandDraftTone) {
+    DemandDraftTone["ON_TIME"] = "ON_TIME";
+    DemandDraftTone["REMINDER_1"] = "REMINDER_1";
+    DemandDraftTone["REMINDER_2"] = "REMINDER_2";
+    DemandDraftTone["REMINDER_3"] = "REMINDER_3";
+    DemandDraftTone["REMINDER_4"] = "REMINDER_4";
+    DemandDraftTone["CANCELLATION_WARNING"] = "CANCELLATION_WARNING";
+    DemandDraftTone["POST_WARNING"] = "POST_WARNING";
+})(DemandDraftTone || (exports.DemandDraftTone = DemandDraftTone = {}));
 let DemandDraft = class DemandDraft {
 };
 exports.DemandDraft = DemandDraft;
@@ -78,6 +89,14 @@ __decorate([
     __metadata("design:type", Date)
 ], DemandDraft.prototype, "sentAt", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'paid_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], DemandDraft.prototype, "paidAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'paid_payment_id', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "paidPaymentId", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'payment_schedule_id', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], DemandDraft.prototype, "paymentScheduleId", void 0);
@@ -125,6 +144,59 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'updated_by', type: 'uuid', nullable: true }),
     __metadata("design:type", String)
 ], DemandDraft.prototype, "updatedBy", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'tone', type: 'varchar', length: 40, default: DemandDraftTone.ON_TIME }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "tone", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'reminder_count', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], DemandDraft.prototype, "reminderCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'last_reminder_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], DemandDraft.prototype, "lastReminderAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'next_reminder_due_at', type: 'timestamp', nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", Date)
+], DemandDraft.prototype, "nextReminderDueAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'escalation_level', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], DemandDraft.prototype, "escalationLevel", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'days_overdue', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], DemandDraft.prototype, "daysOverdue", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'cancellation_warning_issued_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], DemandDraft.prototype, "cancellationWarningIssuedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'parent_demand_draft_id', type: 'uuid', nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "parentDemandDraftId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'import_batch_id', type: 'varchar', length: 64, nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "importBatchId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'collector_user_id', type: 'uuid', nullable: true }),
+    (0, typeorm_1.Index)(),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "collectorUserId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'assigned_at', type: 'timestamp', nullable: true }),
+    __metadata("design:type", Date)
+], DemandDraft.prototype, "assignedAt", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'assigned_by', type: 'uuid', nullable: true }),
+    __metadata("design:type", String)
+], DemandDraft.prototype, "assignedBy", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

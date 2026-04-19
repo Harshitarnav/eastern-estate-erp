@@ -41,6 +41,13 @@ export interface Property {
   nearbyLandmarks?: string;
   isActive: boolean;
   isFeatured?: boolean;
+  /**
+   * Tri-state per-project override for milestone-DD auto-send.
+   *   null  → inherit from company default
+   *   true  → auto-send for every DD on this project
+   *   false → force review for every DD on this project
+   */
+  autoSendMilestoneDemandDrafts?: boolean | null;
   createdBy?: string;
   updatedBy?: string;
   createdAt: string;

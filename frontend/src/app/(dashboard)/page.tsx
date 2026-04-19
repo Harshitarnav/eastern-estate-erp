@@ -87,11 +87,14 @@ export default function DashboardPage() {
     }
   };
 
-  const fmt = (n: number) =>
-    n >= 10_000_000 ? `₹${(n / 10_000_000).toFixed(1)}Cr`
-    : n >= 100_000  ? `₹${(n / 100_000).toFixed(1)}L`
-    : n >= 1_000    ? `₹${(n / 1_000).toFixed(0)}K`
-    : `₹${n}`;
+  const fmt = (n: number | null | undefined) => {
+    const safe = Number(n);
+    const v = Number.isFinite(safe) ? safe : 0;
+    return v >= 10_000_000 ? `₹${(v / 10_000_000).toFixed(1)}Cr`
+      : v >= 100_000  ? `₹${(v / 100_000).toFixed(1)}L`
+      : v >= 1_000    ? `₹${(v / 1_000).toFixed(0)}K`
+      : `₹${v}`;
+  };
 
   const Skeleton = ({ className = '' }: { className?: string }) => (
     <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
@@ -189,10 +192,10 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-blue-600 font-medium flex items-center gap-1">
                   <CheckCircle className="h-4 w-4" />
-                  {loading ? '—' : stats.flats.available} Available
+                  {loading ? '-' : stats.flats.available} Available
                 </span>
                 <span className="text-gray-500">•</span>
-                <span className="text-gray-600">{loading ? '—' : stats.flats.sold} Sold</span>
+                <span className="text-gray-600">{loading ? '-' : stats.flats.sold} Sold</span>
               </div>
             </div>
           </Link>
@@ -212,7 +215,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-green-600 font-medium flex items-center gap-1">
                   <TrendingUp className="h-4 w-4" />
-                  {loading ? '—' : stats.bookings.confirmed} Confirmed
+                  {loading ? '-' : stats.bookings.confirmed} Confirmed
                 </span>
               </div>
             </div>
@@ -254,7 +257,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-purple-600 font-medium flex items-center gap-1">
                   <BarChart3 className="h-4 w-4" />
-                  {loading ? '—' : fmt(stats.payments.pendingAmount)} Pending
+                  {loading ? '-' : fmt(stats.payments.pendingAmount)} Pending
                 </span>
               </div>
             </div>
@@ -299,7 +302,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
                 <div>
                   <p className="text-sm font-medium text-gray-900">Revenue</p>
-                  <p className="text-xs text-gray-600">{loading ? '—' : fmt(stats.bookings.totalPaid)} collected</p>
+                  <p className="text-xs text-gray-600">{loading ? '-' : fmt(stats.bookings.totalPaid)} collected</p>
                 </div>
                 {loading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold text-purple-600">{fmt(stats.bookings.totalRevenue)}</div>}
               </div>
@@ -448,7 +451,7 @@ export default function DashboardPage() {
         >
           <p className="text-gray-500 text-sm flex items-center justify-center gap-2">
             <Heart className="h-3.5 w-3.5 text-red-400" />
-            Eastern Estate — <span className="italic">Life Long Bonding...</span>
+            Eastern Estate - <span className="italic">Life Long Bonding...</span>
           </p>
         </div>
       </div>

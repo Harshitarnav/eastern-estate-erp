@@ -27,8 +27,10 @@ const payments_service_1 = require("../payments/payments.service");
 const email_service_1 = require("../notifications/email.service");
 const payment_entity_1 = require("../payments/entities/payment.entity");
 const accounting_integration_service_1 = require("../accounting/accounting-integration.service");
+const flat_payment_plan_service_1 = require("../payment-plans/services/flat-payment-plan.service");
+const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
 let BookingsService = BookingsService_1 = class BookingsService {
-    constructor(bookingsRepository, flatsRepository, propertiesRepository, towersRepository, customersRepository, paymentsService, emailService, dataSource, accountingIntegrationService) {
+    constructor(bookingsRepository, flatsRepository, propertiesRepository, towersRepository, customersRepository, paymentsService, emailService, dataSource, accountingIntegrationService, flatPaymentPlanService, flatPaymentPlansRepository) {
         this.bookingsRepository = bookingsRepository;
         this.flatsRepository = flatsRepository;
         this.propertiesRepository = propertiesRepository;
@@ -38,6 +40,8 @@ let BookingsService = BookingsService_1 = class BookingsService {
         this.emailService = emailService;
         this.dataSource = dataSource;
         this.accountingIntegrationService = accountingIntegrationService;
+        this.flatPaymentPlanService = flatPaymentPlanService;
+        this.flatPaymentPlansRepository = flatPaymentPlansRepository;
         this.logger = new common_1.Logger(BookingsService_1.name);
     }
     async create(createBookingDto, userId) {
@@ -73,11 +77,11 @@ let BookingsService = BookingsService_1 = class BookingsService {
             if (!customer) {
                 throw new common_1.NotFoundException(`Customer with ID ${createBookingDto.customerId} not found`);
             }
-            const balanceAmount = createBookingDto.totalAmount - (createBookingDto.tokenAmount || 0);
+            const { paymentPlanPayload: _planPayload, ...bookingFields } = createBookingDto;
             const booking = queryRunner.manager.create(booking_entity_1.Booking, {
-                ...createBookingDto,
-                balanceAmount,
-                paidAmount: createBookingDto.tokenAmount || 0,
+                ...bookingFields,
+                balanceAmount: createBookingDto.totalAmount,
+                paidAmount: 0,
                 status: booking_entity_1.BookingStatus.TOKEN_PAID,
             });
             const savedBooking = await queryRunner.manager.save(booking_entity_1.Booking, booking);
@@ -133,17 +137,27 @@ let BookingsService = BookingsService_1 = class BookingsService {
             this.logger.log(`Customer ${customer.id} last booking date updated`);
             await queryRunner.commitTransaction();
             this.logger.log(`Transaction committed for booking ${savedBooking.bookingNumber}`);
+            if (createBookingDto.paymentPlanPayload) {
+                try {
+                    await this.flatPaymentPlanService.createForBooking({
+                        flatId: savedBooking.flatId,
+                        bookingId: savedBooking.id,
+                        customerId: savedBooking.customerId,
+                        totalAmount: Number(savedBooking.totalAmount),
+                        mode: createBookingDto.paymentPlanPayload.mode,
+                        templateId: createBookingDto.paymentPlanPayload.templateId,
+                        milestones: createBookingDto.paymentPlanPayload.milestones,
+                    }, userId ?? savedBooking.customerId);
+                    this.logger.log(`Payment plan created for booking ${savedBooking.bookingNumber}`);
+                }
+                catch (planError) {
+                    this.logger.error(`Payment plan creation failed for booking ${savedBooking.bookingNumber}: ${planError.message}`);
+                }
+            }
             if (savedTokenPayment) {
-                this.accountingIntegrationService.onPaymentCompleted({
-                    id: savedTokenPayment.id,
-                    paymentCode: savedTokenPayment.paymentCode,
-                    amount: Number(savedTokenPayment.amount),
-                    paymentDate: savedTokenPayment.paymentDate,
-                    paymentMethod: savedTokenPayment.paymentMethod,
-                    createdBy: userId,
-                }).catch(err => {
-                    this.logger.error(`Auto JE failed for token payment ${savedTokenPayment.paymentCode}: ${err.message}`);
-                });
+                this.paymentsService
+                    .runPostCompletionHooks(savedTokenPayment.id, userId)
+                    .catch((err) => this.logger.error(`Token post-completion hooks failed for ${savedTokenPayment.paymentCode}: ${err.message}`));
             }
             this.sendBookingNotifications(savedBooking, customer, flat, property)
                 .catch(error => {
@@ -198,7 +212,14 @@ let BookingsService = BookingsService_1 = class BookingsService {
             queryBuilder.andWhere('booking.flatId = :flatId', { flatId });
         }
         if (propertyId) {
-            queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+            if (accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0 &&
+                !accessiblePropertyIds.includes(propertyId)) {
+                queryBuilder.andWhere('1 = 0');
+            }
+            else {
+                queryBuilder.andWhere('booking.propertyId = :propertyId', { propertyId });
+            }
         }
         else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
             queryBuilder.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', { accessiblePropertyIds });
@@ -231,8 +252,21 @@ let BookingsService = BookingsService_1 = class BookingsService {
             .skip((page - 1) * limit)
             .take(limit)
             .getMany();
+        const dtos = dto_1.BookingResponseDto.fromEntities(bookings);
+        if (dtos.length > 0) {
+            const bookingIds = dtos.map((b) => b.id);
+            const plans = await this.flatPaymentPlansRepository
+                .createQueryBuilder('plan')
+                .select('plan.bookingId', 'bookingId')
+                .where('plan.bookingId IN (:...ids)', { ids: bookingIds })
+                .getRawMany();
+            const withPlan = new Set(plans.map((p) => p.bookingId));
+            for (const dto of dtos) {
+                dto.hasPaymentPlan = withPlan.has(dto.id);
+            }
+        }
         return {
-            data: dto_1.BookingResponseDto.fromEntities(bookings),
+            data: dtos,
             meta: {
                 total,
                 page,
@@ -241,7 +275,14 @@ let BookingsService = BookingsService_1 = class BookingsService {
             },
         };
     }
-    async findOne(id) {
+    assertBookingAccessible(booking, accessiblePropertyIds) {
+        if (!accessiblePropertyIds || accessiblePropertyIds.length === 0)
+            return;
+        if (!accessiblePropertyIds.includes(booking.propertyId)) {
+            throw new common_1.NotFoundException('Booking not found');
+        }
+    }
+    async findOne(id, accessiblePropertyIds) {
         const booking = await this.bookingsRepository.findOne({
             where: { id },
             relations: ['customer', 'flat', 'property'],
@@ -249,13 +290,20 @@ let BookingsService = BookingsService_1 = class BookingsService {
         if (!booking) {
             throw new common_1.NotFoundException(`Booking with ID ${id} not found`);
         }
-        return dto_1.BookingResponseDto.fromEntity(booking);
+        this.assertBookingAccessible(booking, accessiblePropertyIds);
+        const dto = dto_1.BookingResponseDto.fromEntity(booking);
+        const planCount = await this.flatPaymentPlansRepository.count({
+            where: { bookingId: id },
+        });
+        dto.hasPaymentPlan = planCount > 0;
+        return dto;
     }
-    async update(id, updateBookingDto) {
+    async update(id, updateBookingDto, accessiblePropertyIds) {
         const booking = await this.bookingsRepository.findOne({ where: { id } });
         if (!booking) {
             throw new common_1.NotFoundException(`Booking with ID ${id} not found`);
         }
+        this.assertBookingAccessible(booking, accessiblePropertyIds);
         if (updateBookingDto.bookingNumber && updateBookingDto.bookingNumber !== booking.bookingNumber) {
             const existing = await this.bookingsRepository.findOne({
                 where: { bookingNumber: updateBookingDto.bookingNumber },
@@ -274,19 +322,21 @@ let BookingsService = BookingsService_1 = class BookingsService {
         const updatedBooking = await this.bookingsRepository.save(booking);
         return dto_1.BookingResponseDto.fromEntity(updatedBooking);
     }
-    async remove(id) {
+    async remove(id, accessiblePropertyIds) {
         const booking = await this.bookingsRepository.findOne({ where: { id } });
         if (!booking) {
             throw new common_1.NotFoundException(`Booking with ID ${id} not found`);
         }
+        this.assertBookingAccessible(booking, accessiblePropertyIds);
         booking.isActive = false;
         await this.bookingsRepository.save(booking);
     }
-    async cancelBooking(id, reason, refundAmount) {
+    async cancelBooking(id, reason, refundAmount, accessiblePropertyIds) {
         const booking = await this.bookingsRepository.findOne({ where: { id } });
         if (!booking) {
             throw new common_1.NotFoundException(`Booking with ID ${id} not found`);
         }
+        this.assertBookingAccessible(booking, accessiblePropertyIds);
         if (booking.status === 'CANCELLED') {
             throw new common_1.BadRequestException('Booking is already cancelled');
         }
@@ -297,12 +347,38 @@ let BookingsService = BookingsService_1 = class BookingsService {
         const cancelledBooking = await this.bookingsRepository.save(booking);
         return dto_1.BookingResponseDto.fromEntity(cancelledBooking);
     }
-    async getStatistics(accessiblePropertyIds) {
+    async getStatistics(accessiblePropertyIds, propertyId) {
+        let effectiveIds = null;
+        if (propertyId) {
+            if (accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0 &&
+                !accessiblePropertyIds.includes(propertyId)) {
+                return {
+                    total: 0,
+                    tokenPaid: 0,
+                    agreementPending: 0,
+                    agreementSigned: 0,
+                    confirmed: 0,
+                    completed: 0,
+                    cancelled: 0,
+                    totalRevenue: 0,
+                    totalPaid: 0,
+                    totalBalance: 0,
+                    withHomeLoan: 0,
+                    totalLoanAmount: 0,
+                    collectionRate: 0,
+                };
+            }
+            effectiveIds = [propertyId];
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            effectiveIds = accessiblePropertyIds;
+        }
         const where = { isActive: true };
-        const bookings = accessiblePropertyIds && accessiblePropertyIds.length > 0
+        const bookings = effectiveIds
             ? await this.bookingsRepository.createQueryBuilder('b')
                 .where('b.isActive = true')
-                .andWhere('b.propertyId IN (:...ids)', { ids: accessiblePropertyIds })
+                .andWhere('b.propertyId IN (:...ids)', { ids: effectiveIds })
                 .getMany()
             : await this.bookingsRepository.find({ where });
         const total = bookings.length;
@@ -344,6 +420,7 @@ exports.BookingsService = BookingsService = BookingsService_1 = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(property_entity_1.Property)),
     __param(3, (0, typeorm_1.InjectRepository)(tower_entity_1.Tower)),
     __param(4, (0, typeorm_1.InjectRepository)(customer_entity_1.Customer)),
+    __param(10, (0, typeorm_1.InjectRepository)(flat_payment_plan_entity_1.FlatPaymentPlan)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
@@ -352,6 +429,8 @@ exports.BookingsService = BookingsService = BookingsService_1 = __decorate([
         payments_service_1.PaymentsService,
         email_service_1.EmailService,
         typeorm_2.DataSource,
-        accounting_integration_service_1.AccountingIntegrationService])
+        accounting_integration_service_1.AccountingIntegrationService,
+        flat_payment_plan_service_1.FlatPaymentPlanService,
+        typeorm_2.Repository])
 ], BookingsService);
 //# sourceMappingURL=bookings.service.js.map

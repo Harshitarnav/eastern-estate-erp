@@ -12,6 +12,8 @@ import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.ent
 import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 import { ConstructionProgressLog } from '../construction/entities/construction-progress-log.entity';
 import { ConstructionProject } from '../construction/entities/construction-project.entity';
+import { ConstructionFlatProgress } from '../construction/entities/construction-flat-progress.entity';
+import { ConstructionDevelopmentUpdate } from '../construction/entities/construction-development-update.entity';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { ConstructionProject } from '../construction/entities/construction-proje
       DemandDraft,
       ConstructionProgressLog,
       ConstructionProject,
+      ConstructionFlatProgress,
+      ConstructionDevelopmentUpdate,
     ]),
   ],
   controllers: [CustomerPortalController],

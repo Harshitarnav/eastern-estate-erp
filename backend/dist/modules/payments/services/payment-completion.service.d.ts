@@ -5,24 +5,27 @@ import { FlatPaymentPlan } from '../../payment-plans/entities/flat-payment-plan.
 import { FlatPaymentPlanService } from '../../payment-plans/services/flat-payment-plan.service';
 import { Flat } from '../../flats/entities/flat.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
+import { DemandDraft } from '../../demand-drafts/entities/demand-draft.entity';
 export declare class PaymentCompletionService {
     private readonly paymentRepository;
     private readonly paymentScheduleRepository;
     private readonly flatPaymentPlanRepository;
     private readonly flatRepository;
     private readonly bookingRepository;
+    private readonly demandDraftRepository;
     private readonly flatPaymentPlanService;
     private readonly logger;
-    constructor(paymentRepository: Repository<Payment>, paymentScheduleRepository: Repository<PaymentSchedule>, flatPaymentPlanRepository: Repository<FlatPaymentPlan>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>, flatPaymentPlanService: FlatPaymentPlanService);
+    constructor(paymentRepository: Repository<Payment>, paymentScheduleRepository: Repository<PaymentSchedule>, flatPaymentPlanRepository: Repository<FlatPaymentPlan>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>, demandDraftRepository: Repository<DemandDraft>, flatPaymentPlanService: FlatPaymentPlanService);
     processPaymentCompletion(paymentId: string): Promise<{
         payment: Payment;
-        paymentSchedule: PaymentSchedule;
+        paymentSchedule: PaymentSchedule | null;
         flatPaymentPlan: FlatPaymentPlan | null;
         flat: Flat | null;
         booking: Booking | null;
     }>;
     private updatePaymentSchedule;
     private updateFlatPaymentPlanMilestone;
+    private closeDemandDraftsForPayment;
     private updateFlatPaymentStatus;
     private updateBookingPaymentStatus;
     getFlatPaymentSummary(flatId: string): Promise<{

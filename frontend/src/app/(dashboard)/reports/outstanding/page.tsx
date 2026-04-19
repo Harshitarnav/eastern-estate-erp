@@ -40,7 +40,7 @@ function exportPdf(report: OutstandingReport, filters: { propertyLabel?: string;
   doc.setFillColor(brandRed);
   doc.rect(0, 0, PW, 22, 'F');
   doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor('#fff');
-  doc.text('EASTERN ESTATE — OUTSTANDING REPORT', ML, 10);
+  doc.text('EASTERN ESTATE - OUTSTANDING REPORT', ML, 10);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
   const sub = [
     filters.propertyLabel && `Property: ${filters.propertyLabel}`,
@@ -78,7 +78,7 @@ function exportPdf(report: OutstandingReport, filters: { propertyLabel?: string;
       fmtINR(r.totalDemanded),
       fmtINR(r.totalPaid),
       fmtINR(r.outstanding),
-      r.overdueMilestones > 0 ? `${r.overdueMilestones} (${r.oldestOverdueDays ?? '?'}d)` : '—',
+      r.overdueMilestones > 0 ? `${r.overdueMilestones} (${r.oldestOverdueDays ?? '?'}d)` : '-',
       r.planStatus,
     ]),
     foot: [['', '', '', '', '', '', 'TOTAL',
@@ -274,11 +274,11 @@ export default function OutstandingReportPage() {
                     <TableCell>
                       <p className="font-medium text-sm">{row.flatNumber}</p>
                       <p className="text-xs text-gray-400">{[row.property, row.tower].filter(Boolean).join(' › ')}</p>
-                      {row.flatType !== '—' && <p className="text-xs text-gray-400">{row.flatType}</p>}
+                      {row.flatType !== '-' && <p className="text-xs text-gray-400">{row.flatType}</p>}
                     </TableCell>
                     <TableCell>
                       <p className="text-sm">{row.customerName}</p>
-                      {row.customerPhone !== '—' && (
+                      {row.customerPhone !== '-' && (
                         <p className="text-xs text-gray-400">{row.customerPhone}</p>
                       )}
                     </TableCell>
@@ -299,7 +299,7 @@ export default function OutstandingReportPage() {
                             <span className="text-xs text-red-400">{row.oldestOverdueDays}d ago</span>
                           )}
                         </span>
-                      ) : <span className="text-gray-300 text-xs">—</span>}
+                      ) : <span className="text-gray-300 text-xs">-</span>}
                     </TableCell>
                     <TableCell>
                       <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${

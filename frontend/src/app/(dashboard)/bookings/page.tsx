@@ -99,7 +99,10 @@ function BookingsPageContent() {
 
   const fetchStatistics = async () => {
     try {
-      const response = await bookingsService.getStatistics();
+      const response = await bookingsService.getStatistics({
+        propertyId:
+          selectedProperties.length > 0 ? selectedProperties[0] : undefined,
+      });
       setStats(response);
     } catch (err) {
       console.error('Error fetching statistics:', err);
@@ -121,10 +124,12 @@ function BookingsPageContent() {
     }
   };
 
-  const formatAmount = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
-    return `₹${(amount / 1000).toFixed(0)}K`;
+  const formatAmount = (amount: number | null | undefined) => {
+    const safe = Number(amount);
+    const v = Number.isFinite(safe) ? safe : 0;
+    if (v >= 10000000) return `₹${(v / 10000000).toFixed(2)}Cr`;
+    if (v >= 100000) return `₹${(v / 100000).toFixed(2)}L`;
+    return `₹${(v / 1000).toFixed(0)}K`;
   };
 
   const formatDate = (dateString: string) => {
@@ -149,7 +154,7 @@ function BookingsPageContent() {
             <span style={{ color: brandPalette.accent }}>token to possession</span>
           </>
         }
-        description="Track every property booking from token to final possession — payment milestones, agreement status, home loans, and possession handover in one place."
+        description="Track every property booking from token to final possession - payment milestones, agreement status, home loans, and possession handover in one place."
         actions={
           <>
             <BrandPrimaryButton onClick={() => router.push('/bookings/new')}>
@@ -364,6 +369,14 @@ function BookingsPageContent() {
                             Home Loan
                           </span>
                         )}
+                        {booking.hasPaymentPlan === false && (
+                          <span
+                            className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-800"
+                            title="No payment plan attached to this booking yet"
+                          >
+                            Plan missing
+                          </span>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -392,35 +405,41 @@ function BookingsPageContent() {
                     </div>
 
                     {/* Right Section - Payment Progress */}
-                    <div className="md:w-72 shrink-0">
-                      <div className="bg-gray-50 rounded-xl p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs text-gray-600">Payment Progress</span>
-                          <span className="text-xs font-semibold">
-                            {((booking.paidAmount / booking.totalAmount) * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                          <div
-                            className="h-2 rounded-full transition-all"
-                            style={{
-                              width: `${(booking.paidAmount / booking.totalAmount) * 100}%`,
-                              backgroundColor: brandPalette.success,
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <div>
-                            <p className="text-gray-600">Paid</p>
-                            <p className="font-semibold text-green-600">{formatAmount(booking.paidAmount)}</p>
+                    {(() => {
+                      const total = Number(booking.totalAmount) || 0;
+                      const paid = Number(booking.paidAmount) || 0;
+                      const balance = Number(booking.balanceAmount ?? total - paid) || 0;
+                      const pct = total > 0 ? Math.min(100, Math.max(0, (paid / total) * 100)) : 0;
+                      return (
+                        <div className="md:w-72 shrink-0">
+                          <div className="bg-gray-50 rounded-xl p-4">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs text-gray-600">Payment Progress</span>
+                              <span className="text-xs font-semibold">{pct.toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                              <div
+                                className="h-2 rounded-full transition-all"
+                                style={{
+                                  width: `${pct}%`,
+                                  backgroundColor: brandPalette.success,
+                                }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs">
+                              <div>
+                                <p className="text-gray-600">Paid</p>
+                                <p className="font-semibold text-green-600">{formatAmount(paid)}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-gray-600">Balance</p>
+                                <p className="font-semibold text-orange-600">{formatAmount(balance)}</p>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-gray-600">Balance</p>
-                            <p className="font-semibold text-orange-600">{formatAmount(booking.balanceAmount)}</p>
-                          </div>
                         </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Action Buttons */}

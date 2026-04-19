@@ -116,7 +116,7 @@ export class CustomerPortalController {
     });
     if (!customerRole)
       throw new BadRequestException(
-        'Customer role not found — run the v009 migration first',
+        'Customer role not found - run the v009 migration first',
       );
 
     const password = await bcrypt.hash(
@@ -149,10 +149,16 @@ export class CustomerPortalController {
     };
   }
 
-  // Check if a customer already has a portal account
+  // Check if a customer already has a portal account (admin-only —
+  // previously this leaked "does customer X have an account" to any
+  // logged-in user, including other customers).
   @UseGuards(JwtAuthGuard)
   @Get('check/:customerId')
-  async checkPortalAccount(@Param('customerId') customerId: string) {
+  async checkPortalAccount(
+    @Param('customerId') customerId: string,
+    @Req() req: any,
+  ) {
+    this.assertAdmin(req);
     const user = await this.usersRepo.findOne({
       where: { customerId },
       select: ['id', 'email', 'isActive', 'lastLoginAt'],

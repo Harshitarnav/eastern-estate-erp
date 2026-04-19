@@ -12,6 +12,25 @@ export enum DemandDraftStatus {
   READY = 'READY', // Finalized and exported
   SENT = 'SENT', // Delivered to customer
   FAILED = 'FAILED', // Export or send failed
+  // Customer has paid the milestone this DD demanded. Set automatically
+  // when the linked payment is verified (PaymentCompletionService), so
+  // the row drops out of the Collections inbox and the overdue scanner
+  // stops escalating reminders.
+  PAID = 'PAID',
+}
+
+/**
+ * Escalation tone used when choosing a DD template and framing language.
+ * The overdue scanner advances a DD through these tones as time passes.
+ */
+export enum DemandDraftTone {
+  ON_TIME = 'ON_TIME',
+  REMINDER_1 = 'REMINDER_1',              // day 7 after initial send - gentle
+  REMINDER_2 = 'REMINDER_2',              // day 14 - firm
+  REMINDER_3 = 'REMINDER_3',              // day 21 - final
+  REMINDER_4 = 'REMINDER_4',              // day 28 - last chance
+  CANCELLATION_WARNING = 'CANCELLATION_WARNING', // day 30+ - prepared in DRAFT, manually sent
+  POST_WARNING = 'POST_WARNING',          // weekly reminders after warning letter
 }
 
 @Entity('demand_drafts')
@@ -67,6 +86,16 @@ export class DemandDraft {
   @Column({ name: 'sent_at', type: 'timestamp', nullable: true })
   sentAt: Date | null;
 
+  // When the linked milestone was paid and this DD was closed. NULL for
+  // DDs that are still open. Used by the timeline + collections filters.
+  @Column({ name: 'paid_at', type: 'timestamp', nullable: true })
+  paidAt: Date | null;
+
+  // The payment row that closed this DD (if any). Lets the UI deep-link
+  // from the DD timeline into the payment ledger.
+  @Column({ name: 'paid_payment_id', type: 'uuid', nullable: true })
+  paidPaymentId: string | null;
+
   // Payment Integration Fields
   @Column({ name: 'payment_schedule_id', type: 'uuid', nullable: true })
   paymentScheduleId: string | null;
@@ -103,6 +132,71 @@ export class DemandDraft {
 
   @Column({ name: 'updated_by', type: 'uuid', nullable: true })
   updatedBy: string | null;
+
+  // ── Escalation / collections fields ─────────────────────────────────────
+  // Tone drives which template + language this DD uses. The overdue scanner
+  // advances a DD through tones over time. ON_TIME for fresh DDs.
+  @Column({ name: 'tone', type: 'varchar', length: 40, default: DemandDraftTone.ON_TIME })
+  @Index()
+  tone: DemandDraftTone;
+
+  // How many automated reminders have been sent for this DD (0 = original).
+  @Column({ name: 'reminder_count', type: 'int', default: 0 })
+  reminderCount: number;
+
+  // Last time a reminder was sent (any channel). Used as the baseline for
+  // the next-reminder cadence, so legacy imports do not trigger a flood.
+  @Column({ name: 'last_reminder_at', type: 'timestamp', nullable: true })
+  lastReminderAt: Date | null;
+
+  // When the next reminder should go out. Computed from lastReminderAt +
+  // company_settings.overdue_reminder_interval_days.
+  @Column({ name: 'next_reminder_due_at', type: 'timestamp', nullable: true })
+  @Index()
+  nextReminderDueAt: Date | null;
+
+  // 0 = on-time / gentle, 1-4 = REMINDER_1..REMINDER_4, 5 = cancellation-warning territory.
+  @Column({ name: 'escalation_level', type: 'int', default: 0 })
+  escalationLevel: number;
+
+  // Cached days-overdue (relative to dueDate) - refreshed by the scanner
+  // for fast Collections inbox sorting without recomputation.
+  @Column({ name: 'days_overdue', type: 'int', default: 0 })
+  daysOverdue: number;
+
+  // Timestamp when the cancellation warning letter was prepared (DRAFT) or
+  // sent. Once set, the booking is also flipped to AT_RISK and the
+  // POST_WARNING cadence kicks in.
+  @Column({ name: 'cancellation_warning_issued_at', type: 'timestamp', nullable: true })
+  cancellationWarningIssuedAt: Date | null;
+
+  // For reminder DDs that are spawned from an original, this links back so
+  // the UI can show the full thread per milestone in one place.
+  @Column({ name: 'parent_demand_draft_id', type: 'uuid', nullable: true })
+  @Index()
+  parentDemandDraftId: string | null;
+
+  // Identifies which bulk import batch created this DD (for idempotent
+  // re-imports and easy rollback). NULL for organically-created DDs.
+  @Column({ name: 'import_batch_id', type: 'varchar', length: 64, nullable: true })
+  @Index()
+  importBatchId: string | null;
+
+  // Optional owner/collector responsible for working this DD. NULL means
+  // unassigned (shows up in the "Unassigned" queue). We intentionally do
+  // NOT define a TypeORM relation here: the collector is a User (auth
+  // module) that isn't reachable from the DD module without a circular
+  // dependency. The FK is enforced at the DB level by the schema-sync
+  // DDL instead.
+  @Column({ name: 'collector_user_id', type: 'uuid', nullable: true })
+  @Index()
+  collectorUserId: string | null;
+
+  @Column({ name: 'assigned_at', type: 'timestamp', nullable: true })
+  assignedAt: Date | null;
+
+  @Column({ name: 'assigned_by', type: 'uuid', nullable: true })
+  assignedBy: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

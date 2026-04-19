@@ -74,7 +74,7 @@ let CustomerPortalController = class CustomerPortalController {
             where: { name: 'customer' },
         });
         if (!customerRole)
-            throw new common_1.BadRequestException('Customer role not found — run the v009 migration first');
+            throw new common_1.BadRequestException('Customer role not found - run the v009 migration first');
         const password = await bcrypt.hash(body.password || Math.random().toString(36).slice(-10), 12);
         const nameParts = (customer.fullName || '').trim().split(' ');
         const firstName = nameParts[0] || 'Customer';
@@ -97,7 +97,8 @@ let CustomerPortalController = class CustomerPortalController {
             email: saved.email,
         };
     }
-    async checkPortalAccount(customerId) {
+    async checkPortalAccount(customerId, req) {
+        this.assertAdmin(req);
         const user = await this.usersRepo.findOne({
             where: { customerId },
             select: ['id', 'email', 'isActive', 'lastLoginAt'],
@@ -239,8 +240,9 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('check/:customerId'),
     __param(0, (0, common_1.Param)('customerId')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], CustomerPortalController.prototype, "checkPortalAccount", null);
 __decorate([

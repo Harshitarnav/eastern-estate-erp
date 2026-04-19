@@ -30,7 +30,7 @@ let PushService = PushService_1 = class PushService {
             this.enabled = true;
         }
         else {
-            this.logger.warn('VAPID keys not set — push notifications disabled');
+            this.logger.warn('VAPID keys not set - push notifications disabled');
             this.enabled = false;
         }
     }

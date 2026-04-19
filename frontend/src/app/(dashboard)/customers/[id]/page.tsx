@@ -26,6 +26,8 @@ import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
+import { CustomerCollectionsPanel } from '@/components/collections/CustomerCollectionsPanel';
+import { AutoSendOverrideCard } from '@/components/collections/AutoSendOverrideCard';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
 
@@ -104,10 +106,12 @@ export default function CustomerViewPage() {
     }
   };
 
-  const formatAmount = (amount: number) => {
-    if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(2)}Cr`;
-    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
-    return `₹${(amount / 1000).toFixed(0)}K`;
+  const formatAmount = (amount: number | null | undefined) => {
+    const safe = Number(amount);
+    const v = Number.isFinite(safe) ? safe : 0;
+    if (v >= 10000000) return `₹${(v / 10000000).toFixed(2)}Cr`;
+    if (v >= 100000) return `₹${(v / 100000).toFixed(2)}L`;
+    return `₹${(v / 1000).toFixed(0)}K`;
   };
 
   const safeKycStatus =
@@ -472,6 +476,36 @@ export default function CustomerViewPage() {
                 ))}
               </div>
             </div>
+          )}
+
+          {/* Collections (per-customer aging + open DDs) */}
+          <CustomerCollectionsPanel
+            customerId={customerId}
+            brandPrimary={brandPalette.primary}
+            brandSecondary={brandPalette.secondary}
+            brandNeutral={brandPalette.neutral}
+          />
+
+          {/* Per-customer auto-send override (highest precedence layer) */}
+          {customer && (
+            <AutoSendOverrideCard
+              subject="customer"
+              recordId={customerId}
+              value={(customer as any).autoSendMilestoneDemandDrafts ?? null}
+              brandPrimary={brandPalette.primary}
+              brandSecondary={brandPalette.secondary}
+              brandNeutral={brandPalette.neutral}
+              onSaved={(next) =>
+                setCustomer((prev) =>
+                  prev
+                    ? ({
+                        ...prev,
+                        autoSendMilestoneDemandDrafts: next,
+                      } as any)
+                    : prev,
+                )
+              }
+            />
           )}
 
           {/* Quick Actions */}

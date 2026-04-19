@@ -24,15 +24,27 @@ let JournalEntriesController = class JournalEntriesController {
         this.journalEntriesService = journalEntriesService;
     }
     create(createJournalEntryDto, req) {
-        return this.journalEntriesService.create(createJournalEntryDto, req.user.userId);
+        if (createJournalEntryDto.propertyId && !req.isGlobalAdmin) {
+            const ids = req.accessiblePropertyIds || [];
+            if (!ids.includes(createJournalEntryDto.propertyId)) {
+                throw new common_1.ForbiddenException('You do not have access to this project');
+            }
+        }
+        return this.journalEntriesService.create(createJournalEntryDto, req.user.userId, {
+            allowOrgWideWithoutProperty: !!req.isGlobalAdmin,
+        });
     }
-    findAll(req, status, startDate, endDate, referenceType) {
+    findAll(req, status, startDate, endDate, referenceType, propertyId) {
         const scopeIds = (0, accounting_scope_util_1.accessiblePropertyIdsOrThrow)(req);
+        if (propertyId && scopeIds && scopeIds.length > 0 && !scopeIds.includes(propertyId)) {
+            return [];
+        }
         return this.journalEntriesService.findAll({
             status,
             startDate: startDate ? new Date(startDate) : undefined,
             endDate: endDate ? new Date(endDate) : undefined,
             referenceType,
+            propertyId,
             accessiblePropertyIds: scopeIds || undefined,
         });
     }
@@ -71,7 +83,7 @@ exports.JournalEntriesController = JournalEntriesController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
-    __param(1, (0, common_1.Request)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_journal_entry_dto_1.CreateJournalEntryDto, Object]),
     __metadata("design:returntype", void 0)
@@ -83,8 +95,9 @@ __decorate([
     __param(2, (0, common_1.Query)('startDate')),
     __param(3, (0, common_1.Query)('endDate')),
     __param(4, (0, common_1.Query)('referenceType')),
+    __param(5, (0, common_1.Query)('propertyId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String, String, String]),
     __metadata("design:returntype", void 0)
 ], JournalEntriesController.prototype, "findAll", null);
 __decorate([

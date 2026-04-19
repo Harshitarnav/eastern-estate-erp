@@ -233,7 +233,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
 
 ### Database Migrations
 
-This project uses `SchemaSyncService` — the schema is **automatically created/updated** when the backend starts. No manual migration step is needed on a fresh install.
+This project uses `SchemaSyncService` - the schema is **automatically created/updated** when the backend starts. No manual migration step is needed on a fresh install.
 
 To seed initial users and data after the backend is running:
 

@@ -126,7 +126,7 @@ export class ExpensesService {
       );
     }
 
-    // Strip empty-string UUID fields — DB requires valid UUID or NULL
+    // Strip empty-string UUID fields - DB requires valid UUID or NULL
     const uuidFields = ['accountId', 'vendorId', 'employeeId', 'propertyId', 'constructionProjectId'] as const;
     const sanitized = { ...updateExpenseDto } as any;
     for (const field of uuidFields) {
@@ -191,6 +191,7 @@ export class ExpensesService {
       description: saved.description,
       accountId: saved.accountId,
       createdBy: userId,
+      propertyId: saved.propertyId ?? null,
     });
 
     // Link JE to the expense if created
@@ -200,6 +201,100 @@ export class ExpensesService {
     }
 
     return saved;
+  }
+
+  /**
+   * Bulk import expenses parsed from an Excel file.
+   *
+   * Each row is minimally { expenseCategory, amount, expenseDate }.
+   * All rows are created in PENDING status so the usual approval flow still applies.
+   * Any row with missing required fields is returned in `errors` so the UI can show what to fix.
+   */
+  async bulkImport(
+    rows: Array<{
+      expenseCategory?: string;
+      amount?: number | string;
+      expenseDate?: string;
+      description?: string;
+      expenseType?: string;
+      paymentMethod?: string;
+      paymentReference?: string;
+      invoiceNumber?: string;
+      invoiceDate?: string;
+      propertyId?: string;
+      vendorId?: string;
+      employeeId?: string;
+      accountId?: string;
+    }>,
+    userId: string,
+    defaults?: { propertyId?: string | null },
+  ): Promise<{
+    created: number;
+    skipped: number;
+    errors: Array<{ row: number; message: string }>;
+    createdIds: string[];
+  }> {
+    if (!Array.isArray(rows) || !rows.length) {
+      throw new BadRequestException('Provide at least one expense row to import.');
+    }
+    const errors: Array<{ row: number; message: string }> = [];
+    const toCreate: Expense[] = [];
+
+    rows.forEach((row, idx) => {
+      const humanRow = idx + 2; // header row + 1-based
+      const category = (row.expenseCategory || '').toString().trim();
+      const amt = Number(row.amount);
+      const dateStr = (row.expenseDate || '').toString().trim();
+      if (!category) {
+        errors.push({ row: humanRow, message: 'Missing expenseCategory' });
+        return;
+      }
+      if (!amt || amt <= 0 || Number.isNaN(amt)) {
+        errors.push({ row: humanRow, message: 'Invalid amount (must be > 0)' });
+        return;
+      }
+      if (!dateStr) {
+        errors.push({ row: humanRow, message: 'Missing expenseDate' });
+        return;
+      }
+      const date = new Date(dateStr);
+      if (Number.isNaN(date.getTime())) {
+        errors.push({ row: humanRow, message: `Invalid expenseDate "${dateStr}"` });
+        return;
+      }
+
+      toCreate.push(
+        this.expensesRepository.create({
+          expenseCode: this.generateExpenseCode(),
+          expenseCategory: category,
+          amount: amt,
+          expenseDate: date,
+          description: row.description?.toString().trim() || undefined,
+          expenseType: row.expenseType?.toString().trim() || undefined,
+          paymentMethod: row.paymentMethod?.toString().trim() || undefined,
+          paymentReference: row.paymentReference?.toString().trim() || undefined,
+          invoiceNumber: row.invoiceNumber?.toString().trim() || undefined,
+          invoiceDate: row.invoiceDate ? new Date(row.invoiceDate) : undefined,
+          propertyId: row.propertyId || defaults?.propertyId || undefined,
+          vendorId: row.vendorId || undefined,
+          employeeId: row.employeeId || undefined,
+          accountId: row.accountId || undefined,
+          status: ExpenseStatus.PENDING,
+          createdBy: userId,
+        } as Partial<Expense>),
+      );
+    });
+
+    if (!toCreate.length) {
+      return { created: 0, skipped: rows.length, errors, createdIds: [] };
+    }
+    const saved = await this.expensesRepository.save(toCreate);
+    return {
+      created: saved.length,
+      skipped: rows.length - saved.length,
+      errors,
+      createdIds: saved.map((s) => s.id),
+    };
   }
 
   async remove(id: string): Promise<void> {
@@ -216,6 +311,8 @@ export class ExpensesService {
     startDate?: Date;
     endDate?: Date;
     accessiblePropertyIds?: string[] | null;
+    /** When set, restrict summary to this project (must be allowed by accessiblePropertyIds when that applies). */
+    propertyId?: string;
   }): Promise<{
     totalExpenses: number;
     byCategory: { category: string; total: number }[];
@@ -240,6 +337,10 @@ export class ExpensesService {
         '(expense.propertyId IS NULL OR expense.propertyId IN (:...sumAccIds))',
         { sumAccIds: filters.accessiblePropertyIds },
       );
+    }
+
+    if (filters?.propertyId) {
+      query.andWhere('expense.propertyId = :sumPropId', { sumPropId: filters.propertyId });
     }
 
     const expenses = await query.getMany();

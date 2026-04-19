@@ -1,7 +1,7 @@
 -- ============================================================
 -- v004: Fix flats.images JSONB → TEXT (simple-array format)
 -- Run on production after v003.
--- IDEMPOTENT — safe to run multiple times.
+-- IDEMPOTENT - safe to run multiple times.
 --
 -- On the server:
 --   docker exec -i $(docker ps -q --filter name=postgres) \
@@ -47,7 +47,7 @@ BEGIN
     RAISE NOTICE '[v004] flats.images: migrated JSONB → TEXT (simple-array)';
 
   ELSE
-    RAISE WARNING '[v004] flats.images: unexpected type "%" — manual review needed', col_type;
+    RAISE WARNING '[v004] flats.images: unexpected type "%" - manual review needed', col_type;
   END IF;
 END $$;
 

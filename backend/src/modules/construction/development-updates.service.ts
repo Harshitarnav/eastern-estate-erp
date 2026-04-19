@@ -1,20 +1,59 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ConstructionDevelopmentUpdate } from './entities/construction-development-update.entity';
+import { In, Repository } from 'typeorm';
+import {
+  ConstructionDevelopmentUpdate,
+  DevelopmentUpdateCategory,
+  DevelopmentUpdateScope,
+} from './entities/construction-development-update.entity';
 import { CreateDevelopmentUpdateDto } from './dto/create-development-update.dto';
 import { UpdateDevelopmentUpdateDto } from './dto/update-development-update.dto';
+import { ConstructionProject } from './entities/construction-project.entity';
+
+export interface ScopedUpdateFilters {
+  propertyId?: string;
+  towerId?: string;
+  scopeType?: DevelopmentUpdateScope;
+  category?: DevelopmentUpdateCategory;
+  limit?: number;
+  offset?: number;
+}
 
 @Injectable()
 export class DevelopmentUpdatesService {
   constructor(
     @InjectRepository(ConstructionDevelopmentUpdate)
     private readonly updatesRepo: Repository<ConstructionDevelopmentUpdate>,
+    @InjectRepository(ConstructionProject)
+    private readonly projectRepo: Repository<ConstructionProject>,
   ) {}
 
   async create(createDto: CreateDevelopmentUpdateDto, createdBy: string) {
+    // Require either a project anchor, or a property (new path).
+    if (!createDto.constructionProjectId && !createDto.propertyId) {
+      throw new BadRequestException(
+        'Either propertyId or constructionProjectId is required',
+      );
+    }
+
+    // If propertyId missing but project present, derive property from project so
+    // listing by property works uniformly.
+    let propertyId = createDto.propertyId ?? null;
+    if (!propertyId && createDto.constructionProjectId) {
+      const project = await this.projectRepo.findOne({
+        where: { id: createDto.constructionProjectId },
+      });
+      propertyId = project?.propertyId ?? null;
+    }
+
     const update = this.updatesRepo.create({
       ...createDto,
+      propertyId,
+      scopeType: createDto.scopeType ?? null,
+      category: createDto.category ?? null,
+      towerId: createDto.towerId ?? null,
+      commonAreaLabel: createDto.commonAreaLabel ?? null,
+      constructionProjectId: createDto.constructionProjectId ?? null,
       updateDate: createDto.updateDate || new Date().toISOString().split('T')[0],
       createdBy,
     });
@@ -24,9 +63,47 @@ export class DevelopmentUpdatesService {
 
   async findAll() {
     return this.updatesRepo.find({
-      relations: ['constructionProject', 'creator'],
+      relations: ['constructionProject', 'creator', 'property', 'tower'],
       order: { updateDate: 'DESC' },
     });
+  }
+
+  // New scoped listing for property/tower/common-area feeds.
+  async findScoped(
+    filters: ScopedUpdateFilters,
+    accessiblePropertyIds?: string[] | null,
+  ) {
+    const qb = this.updatesRepo
+      .createQueryBuilder('u')
+      .leftJoinAndSelect('u.creator', 'creator')
+      .leftJoinAndSelect('u.property', 'property')
+      .leftJoinAndSelect('u.tower', 'tower')
+      .leftJoinAndSelect('u.constructionProject', 'cp')
+      .orderBy('u.updateDate', 'DESC')
+      .addOrderBy('u.createdAt', 'DESC');
+
+    if (filters.propertyId) {
+      qb.andWhere('u.property_id = :propertyId', { propertyId: filters.propertyId });
+    } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      qb.andWhere('(u.property_id IS NULL OR u.property_id IN (:...accIds))', {
+        accIds: accessiblePropertyIds,
+      });
+    }
+
+    if (filters.towerId) {
+      qb.andWhere('u.tower_id = :towerId', { towerId: filters.towerId });
+    }
+    if (filters.scopeType) {
+      qb.andWhere('u.scope_type = :scopeType', { scopeType: filters.scopeType });
+    }
+    if (filters.category) {
+      qb.andWhere('u.category = :category', { category: filters.category });
+    }
+
+    if (typeof filters.limit === 'number') qb.take(filters.limit);
+    if (typeof filters.offset === 'number') qb.skip(filters.offset);
+
+    return qb.getMany();
   }
 
   async findByProject(projectId: string) {

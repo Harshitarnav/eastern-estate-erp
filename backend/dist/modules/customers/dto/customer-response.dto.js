@@ -45,6 +45,8 @@ class CustomerResponseDto {
         dto.isActive = customer.isActive;
         dto.isVIP = customer.isVIP;
         dto.isBlacklisted = customer.isBlacklisted || false;
+        dto.autoSendMilestoneDemandDrafts =
+            customer.autoSendMilestoneDemandDrafts ?? null;
         dto.createdAt = customer.createdAt;
         dto.updatedAt = customer.updatedAt;
         dto.propertyId = customer.metadata?.propertyId;

@@ -146,12 +146,71 @@ let ExpensesService = class ExpensesService {
             description: saved.description,
             accountId: saved.accountId,
             createdBy: userId,
+            propertyId: saved.propertyId ?? null,
         });
         if (je) {
             await this.expensesRepository.update(saved.id, { journalEntryId: je.id });
             saved.journalEntryId = je.id;
         }
         return saved;
+    }
+    async bulkImport(rows, userId, defaults) {
+        if (!Array.isArray(rows) || !rows.length) {
+            throw new common_1.BadRequestException('Provide at least one expense row to import.');
+        }
+        const errors = [];
+        const toCreate = [];
+        rows.forEach((row, idx) => {
+            const humanRow = idx + 2;
+            const category = (row.expenseCategory || '').toString().trim();
+            const amt = Number(row.amount);
+            const dateStr = (row.expenseDate || '').toString().trim();
+            if (!category) {
+                errors.push({ row: humanRow, message: 'Missing expenseCategory' });
+                return;
+            }
+            if (!amt || amt <= 0 || Number.isNaN(amt)) {
+                errors.push({ row: humanRow, message: 'Invalid amount (must be > 0)' });
+                return;
+            }
+            if (!dateStr) {
+                errors.push({ row: humanRow, message: 'Missing expenseDate' });
+                return;
+            }
+            const date = new Date(dateStr);
+            if (Number.isNaN(date.getTime())) {
+                errors.push({ row: humanRow, message: `Invalid expenseDate "${dateStr}"` });
+                return;
+            }
+            toCreate.push(this.expensesRepository.create({
+                expenseCode: this.generateExpenseCode(),
+                expenseCategory: category,
+                amount: amt,
+                expenseDate: date,
+                description: row.description?.toString().trim() || undefined,
+                expenseType: row.expenseType?.toString().trim() || undefined,
+                paymentMethod: row.paymentMethod?.toString().trim() || undefined,
+                paymentReference: row.paymentReference?.toString().trim() || undefined,
+                invoiceNumber: row.invoiceNumber?.toString().trim() || undefined,
+                invoiceDate: row.invoiceDate ? new Date(row.invoiceDate) : undefined,
+                propertyId: row.propertyId || defaults?.propertyId || undefined,
+                vendorId: row.vendorId || undefined,
+                employeeId: row.employeeId || undefined,
+                accountId: row.accountId || undefined,
+                status: expense_entity_1.ExpenseStatus.PENDING,
+                createdBy: userId,
+            }));
+        });
+        if (!toCreate.length) {
+            return { created: 0, skipped: rows.length, errors, createdIds: [] };
+        }
+        const saved = await this.expensesRepository.save(toCreate);
+        return {
+            created: saved.length,
+            skipped: rows.length - saved.length,
+            errors,
+            createdIds: saved.map((s) => s.id),
+        };
     }
     async remove(id) {
         const expense = await this.findOne(id);
@@ -174,6 +233,9 @@ let ExpensesService = class ExpensesService {
         }
         if (filters?.accessiblePropertyIds?.length) {
             query.andWhere('(expense.propertyId IS NULL OR expense.propertyId IN (:...sumAccIds))', { sumAccIds: filters.accessiblePropertyIds });
+        }
+        if (filters?.propertyId) {
+            query.andWhere('expense.propertyId = :sumPropId', { sumPropId: filters.propertyId });
         }
         const expenses = await query.getMany();
         const totalExpenses = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);

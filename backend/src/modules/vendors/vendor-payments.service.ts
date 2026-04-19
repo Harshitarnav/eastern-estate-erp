@@ -123,7 +123,7 @@ export class VendorPaymentsService {
         );
       }
       await this.journalEntriesService.void(payment.journalEntryId, userId, {
-        voidReason: `Vendor payment deleted — payment ${id}`,
+        voidReason: `Vendor payment deleted - payment ${id}`,
       });
     }
 

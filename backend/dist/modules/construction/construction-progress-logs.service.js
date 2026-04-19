@@ -23,13 +23,17 @@ const booking_entity_1 = require("../bookings/entities/booking.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 const notifications_service_1 = require("../notifications/notifications.service");
 const notification_entity_1 = require("../notifications/entities/notification.entity");
+const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payment-plan.entity");
+const construction_workflow_service_1 = require("./services/construction-workflow.service");
 let ConstructionProgressLogsService = ConstructionProgressLogsService_1 = class ConstructionProgressLogsService {
-    constructor(constructionProgressLogRepository, constructionProjectRepository, bookingRepository, userRepository, notificationsService) {
+    constructor(constructionProgressLogRepository, constructionProjectRepository, bookingRepository, userRepository, flatPaymentPlanRepository, notificationsService, workflowService) {
         this.constructionProgressLogRepository = constructionProgressLogRepository;
         this.constructionProjectRepository = constructionProjectRepository;
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
+        this.flatPaymentPlanRepository = flatPaymentPlanRepository;
         this.notificationsService = notificationsService;
+        this.workflowService = workflowService;
         this.logger = new common_1.Logger(ConstructionProgressLogsService_1.name);
     }
     async create(createDto) {
@@ -68,7 +72,58 @@ let ConstructionProgressLogsService = ConstructionProgressLogsService_1 = class 
         if (propertyId) {
             this.notifyCustomersOnProgressLog(saved, propertyId).catch(e => this.logger.warn(`Failed to send construction notification: ${e.message}`));
         }
-        return saved;
+        const workflow = await this.maybeRunWorkflow(createDto, propertyId);
+        const result = Object.assign({}, saved);
+        if (workflow) {
+            result.workflow = workflow;
+        }
+        return result;
+    }
+    async maybeRunWorkflow(createDto, propertyId) {
+        const phase = createDto.phase;
+        const phaseProgress = createDto.phaseProgress != null ? Number(createDto.phaseProgress) : undefined;
+        const overallProgress = Number(createDto.overallProgress ?? createDto.progressPercentage ?? 0) || 0;
+        if (!phase || !Number.isFinite(phaseProgress)) {
+            return undefined;
+        }
+        const flatId = createDto.flatId || undefined;
+        const applyToAllSoldFlats = Boolean(createDto.applyToAllSoldFlats);
+        let flatIds = [];
+        if (flatId) {
+            flatIds = [flatId];
+        }
+        else if (applyToAllSoldFlats && propertyId) {
+            const plans = await this.flatPaymentPlanRepository
+                .createQueryBuilder('plan')
+                .innerJoin('plan.flat', 'flat')
+                .where('plan.status = :status', { status: flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE })
+                .andWhere('flat.propertyId = :propertyId', { propertyId })
+                .select(['plan.id', 'plan.flatId'])
+                .getMany();
+            flatIds = plans.map(p => p.flatId).filter(Boolean);
+        }
+        if (flatIds.length === 0) {
+            return undefined;
+        }
+        const result = {
+            flatsProcessed: 0,
+            milestonesTriggered: 0,
+            generatedDemandDrafts: [],
+            errors: [],
+        };
+        for (const id of flatIds) {
+            try {
+                const r = await this.workflowService.processConstructionUpdate(id, phase, phaseProgress, overallProgress);
+                result.flatsProcessed += 1;
+                result.milestonesTriggered += r.milestonesTriggered;
+                result.generatedDemandDrafts.push(...r.generatedDemandDrafts);
+            }
+            catch (err) {
+                this.logger.error(`Workflow failed for flat ${id} during daily log save: ${err?.message}`);
+                result.errors.push({ flatId: id, message: err?.message ?? 'Unknown error' });
+            }
+        }
+        return result;
     }
     async notifyCustomersOnProgressLog(log, propertyId) {
         const bookings = await this.bookingRepository
@@ -98,7 +153,7 @@ let ConstructionProgressLogsService = ConstructionProgressLogsService_1 = class 
             await this.notificationsService.create({
                 userId: user.id,
                 title: 'Construction Update',
-                message: `New site update logged on ${logDate}${workType ? ` for ${workType.replace(/_/g, ' ')}` : ''}${pct != null ? ` — ${Math.round(Number(pct))}% progress` : ''}.`,
+                message: `New site update logged on ${logDate}${workType ? ` for ${workType.replace(/_/g, ' ')}` : ''}${pct != null ? ` - ${Math.round(Number(pct))}% progress` : ''}.`,
                 type: notification_entity_1.NotificationType.INFO,
                 category: notification_entity_1.NotificationCategory.CONSTRUCTION,
                 actionUrl: '/portal/construction',
@@ -174,10 +229,13 @@ exports.ConstructionProgressLogsService = ConstructionProgressLogsService = Cons
     __param(1, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
     __param(2, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
     __param(3, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(4, (0, typeorm_1.InjectRepository)(flat_payment_plan_entity_1.FlatPaymentPlan)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        notifications_service_1.NotificationsService])
+        typeorm_2.Repository,
+        notifications_service_1.NotificationsService,
+        construction_workflow_service_1.ConstructionWorkflowService])
 ], ConstructionProgressLogsService);
 //# sourceMappingURL=construction-progress-logs.service.js.map

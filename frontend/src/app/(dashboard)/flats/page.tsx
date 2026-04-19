@@ -27,6 +27,7 @@ import {
   FlatSalesBreakdown,
 } from '@/services/properties.service';
 import { towersService, Tower } from '@/services/towers.service';
+import { usePropertyStore } from '@/store/propertyStore';
 import { BrandHero, BrandPrimaryButton, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { formatCurrency } from '@/utils/formatters';
@@ -89,10 +90,15 @@ function FlatsInventoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedPropertyId = searchParams.get('propertyId') || '';
+  const { selectedProperties } = usePropertyStore();
+  const topBarPropertyId =
+    selectedProperties.length > 0 ? selectedProperties[0] : '';
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [towers, setTowers] = useState<Tower[]>([]);
-  const [selectedProperty, setSelectedProperty] = useState<string>(preselectedPropertyId);
+  const [selectedProperty, setSelectedProperty] = useState<string>(
+    preselectedPropertyId || topBarPropertyId,
+  );
   const [selectedTower, setSelectedTower] = useState<string>('');
   const [summary, setSummary] = useState<FlatInventorySummary | null>(null);
   const [loadingSummary, setLoadingSummary] = useState(false);
@@ -106,7 +112,8 @@ function FlatsInventoryContent() {
       try {
         const response = await propertiesService.getProperties({ limit: 50, isActive: true, sortBy: 'name', sortOrder: 'ASC' });
         setProperties(response.data ?? []);
-        if ((response.data?.length ?? 0) > 0 && !preselectedPropertyId) {
+        // Priority: URL query > top-bar selection > first property.
+        if ((response.data?.length ?? 0) > 0 && !preselectedPropertyId && !topBarPropertyId) {
           setSelectedProperty(response.data![0].id);
         }
       } catch (err: any) {
@@ -116,7 +123,16 @@ function FlatsInventoryContent() {
     };
 
     loadProperties();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Top-bar property selection should follow into this page's dropdown,
+  // so switching projects in the header actually narrows the inventory.
+  useEffect(() => {
+    if (topBarPropertyId && topBarPropertyId !== selectedProperty) {
+      setSelectedProperty(topBarPropertyId);
+    }
+  }, [topBarPropertyId]);
 
   useEffect(() => {
     const loadTowers = async () => {
@@ -266,10 +282,10 @@ function FlatsInventoryContent() {
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-gray-500">
             <div className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1">
-              <Layers className="h-3.5 w-3.5" /> Units planned: {summary?.unitsPlanned ?? '—'}
+              <Layers className="h-3.5 w-3.5" /> Units planned: {summary?.unitsPlanned ?? '-'}
             </div>
             <div className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1">
-              <Target className="h-3.5 w-3.5 text-orange-500" /> Issues: {summary?.issuesCount ?? '—'}
+              <Target className="h-3.5 w-3.5 text-orange-500" /> Issues: {summary?.issuesCount ?? '-'}
             </div>
           </div>
         </div>
@@ -543,12 +559,12 @@ function UnitRow({ unit, onOpen }: { unit: FlatInventoryUnit; onOpen: () => void
   return (
     <tr className="hover:bg-gray-50/70">
       <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{unit.flatNumber}</td>
-      <td className="px-4 py-3 text-gray-700">{unit.floor ?? '—'}</td>
+      <td className="px-4 py-3 text-gray-700">{unit.floor ?? '-'}</td>
       <td className="px-4 py-3 text-gray-700">{unit.type}</td>
       <td className="px-4 py-3 text-gray-700">
         {formatIndianNumber(unit.carpetArea)} / {formatIndianNumber(unit.superBuiltUpArea)} sq.ft
       </td>
-      <td className="px-4 py-3 text-gray-700">{unit.facing ?? '—'}</td>
+      <td className="px-4 py-3 text-gray-700">{unit.facing ?? '-'}</td>
       <td className="px-4 py-3 text-gray-700">₹{formatIndianNumber(unit.basePrice)}</td>
       <td className="px-4 py-3 text-gray-700">
         <div className="text-sm font-semibold text-gray-900">{formatCurrency(unit.fundsRealized ?? 0)}</div>

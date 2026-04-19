@@ -10,12 +10,12 @@ const ML = 14;
 const MR = 14;
 
 const fmt = (n: number | undefined | null) => {
-  if (n == null || isNaN(Number(n))) return '—';
+  if (n == null || isNaN(Number(n))) return '-';
   return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
 };
 
 const fmtDate = (s: string | null | undefined): string => {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString('en-IN', {
       day: '2-digit', month: 'short', year: 'numeric',
@@ -39,7 +39,7 @@ const labelValue = (
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor('#1a1a1a');
-  const lines = doc.splitTextToSize(value || '—', maxW);
+  const lines = doc.splitTextToSize(value || '-', maxW);
   doc.text(lines, x, y + 4);
   return y + 4 + lines.length * 4.5;
 };
@@ -90,7 +90,7 @@ export function generateBookingSummaryPdf(data: BookingSummaryData): void {
   doc.text('BOOKING SUMMARY', ML, 11);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(`Booking No: ${booking.bookingNumber ?? '—'}`, ML, 17);
+  doc.text(`Booking No: ${booking.bookingNumber ?? '-'}`, ML, 17);
   doc.text(`Date: ${fmtDate(booking.bookingDate)}`, ML, 22);
 
   // Status badge
@@ -123,10 +123,10 @@ export function generateBookingSummaryPdf(data: BookingSummaryData): void {
   // ── PROPERTY & UNIT ───────────────────────────────────────────────────────
   y = section(doc, 'PROPERTY & UNIT DETAILS', y);
 
-  const property = booking.property?.name ?? (booking as any).propertyName ?? '—';
-  const tower    = (booking.flat as any)?.tower?.name ?? (booking as any).towerName ?? '—';
-  const flatNo   = booking.flat?.flatNumber ?? booking.flat?.name ?? '—';
-  const flatType = (booking.flat as any)?.flatType ?? (booking.flat as any)?.bhkType ?? '—';
+  const property = booking.property?.name ?? (booking as any).propertyName ?? '-';
+  const tower    = (booking.flat as any)?.tower?.name ?? (booking as any).towerName ?? '-';
+  const flatNo   = booking.flat?.flatNumber ?? booking.flat?.name ?? '-';
+  const flatType = (booking.flat as any)?.flatType ?? (booking.flat as any)?.bhkType ?? '-';
   const area     = (booking.flat as any)?.carpetArea ?? (booking.flat as any)?.builtUpArea;
 
   labelValue(doc, 'Project / Property', property, col1, y);
@@ -156,7 +156,7 @@ export function generateBookingSummaryPdf(data: BookingSummaryData): void {
     ['Parking Charges',              fmt(booking.parkingCharges)],
     ['Maintenance Deposit',          fmt(booking.maintenanceDeposit)],
     ['Other Charges',                fmt(booking.otherCharges)],
-  ].filter(([, v]) => v !== '—' && v !== '₹0') as [string, string][];
+  ].filter(([, v]) => v !== '-' && v !== '₹0') as [string, string][];
 
   // Summary band
   const bandW = PW - ML - MR;

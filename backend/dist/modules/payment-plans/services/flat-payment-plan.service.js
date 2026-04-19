@@ -82,11 +82,116 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         const saved = await this.flatPaymentPlanRepository.save(flatPaymentPlan);
         return saved;
     }
-    async findAll() {
-        return await this.flatPaymentPlanRepository.find({
-            relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'booking.customer', 'customer', 'paymentPlanTemplate'],
-            order: { createdAt: 'DESC' },
+    async createForBooking(input, userId) {
+        const existing = await this.flatPaymentPlanRepository.findOne({
+            where: { flatId: input.flatId, bookingId: input.bookingId },
         });
+        if (existing) {
+            throw new common_1.BadRequestException('This booking already has a payment plan');
+        }
+        let templateId = null;
+        let milestones = [];
+        if (input.mode === 'template' || input.mode === 'template-edit') {
+            if (!input.templateId) {
+                throw new common_1.BadRequestException('templateId is required for template modes');
+            }
+            const template = await this.templateService.findOne(input.templateId);
+            templateId = template.id;
+            if (input.mode === 'template') {
+                milestones = template.milestones.map((tm) => ({
+                    sequence: tm.sequence,
+                    name: tm.name,
+                    constructionPhase: tm.constructionPhase,
+                    phasePercentage: tm.phasePercentage,
+                    amount: (input.totalAmount * tm.paymentPercentage) / 100,
+                    dueDate: null,
+                    status: 'PENDING',
+                    paymentScheduleId: null,
+                    constructionCheckpointId: null,
+                    demandDraftId: null,
+                    paymentId: null,
+                    completedAt: null,
+                    description: tm.description,
+                }));
+            }
+        }
+        if (input.mode === 'custom' || input.mode === 'template-edit') {
+            if (!input.milestones || input.milestones.length === 0) {
+                throw new common_1.BadRequestException('At least one milestone is required');
+            }
+            milestones = input.milestones
+                .map((m) => {
+                const resolvedAmount = m.amount !== undefined && m.amount !== null
+                    ? Number(m.amount)
+                    : m.paymentPercentage !== undefined && m.paymentPercentage !== null
+                        ? (input.totalAmount * Number(m.paymentPercentage)) / 100
+                        : NaN;
+                if (!Number.isFinite(resolvedAmount))
+                    return null;
+                return {
+                    sequence: m.sequence,
+                    name: m.name,
+                    constructionPhase: m.constructionPhase ?? null,
+                    phasePercentage: m.phasePercentage ?? null,
+                    amount: resolvedAmount,
+                    dueDate: null,
+                    status: 'PENDING',
+                    paymentScheduleId: null,
+                    constructionCheckpointId: null,
+                    demandDraftId: null,
+                    paymentId: null,
+                    completedAt: null,
+                    description: m.description ?? '',
+                };
+            })
+                .filter((m) => m !== null);
+        }
+        const sum = milestones.reduce((s, m) => s + Number(m.amount || 0), 0);
+        if (Math.abs(sum - Number(input.totalAmount)) > 1) {
+            throw new common_1.BadRequestException(`Milestone amounts (${sum.toFixed(2)}) don't match total amount (${Number(input.totalAmount).toFixed(2)})`);
+        }
+        const plan = this.flatPaymentPlanRepository.create({
+            flatId: input.flatId,
+            bookingId: input.bookingId,
+            customerId: input.customerId,
+            paymentPlanTemplateId: templateId,
+            totalAmount: input.totalAmount,
+            paidAmount: 0,
+            balanceAmount: input.totalAmount,
+            milestones,
+            status: flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE,
+            createdBy: userId,
+            updatedBy: userId,
+        });
+        return await this.flatPaymentPlanRepository.save(plan);
+    }
+    async findAll(propertyId, accessiblePropertyIds) {
+        const qb = this.flatPaymentPlanRepository
+            .createQueryBuilder('plan')
+            .leftJoinAndSelect('plan.flat', 'flat')
+            .leftJoinAndSelect('flat.property', 'flatProperty')
+            .leftJoinAndSelect('flat.tower', 'flatTower')
+            .leftJoinAndSelect('plan.booking', 'booking')
+            .leftJoinAndSelect('booking.customer', 'bookingCustomer')
+            .leftJoinAndSelect('plan.customer', 'customer')
+            .leftJoinAndSelect('plan.paymentPlanTemplate', 'template')
+            .orderBy('plan.createdAt', 'DESC');
+        if (propertyId) {
+            if (accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0 &&
+                !accessiblePropertyIds.includes(propertyId)) {
+                qb.andWhere('1 = 0');
+            }
+            else {
+                qb.andWhere('flat.propertyId = :propertyId', { propertyId });
+            }
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            qb.andWhere('flat.propertyId IN (:...accessiblePropertyIds)', {
+                accessiblePropertyIds,
+            });
+        }
+        return qb.getMany();
     }
     async findOne(id) {
         const plan = await this.flatPaymentPlanRepository.findOne({
@@ -231,7 +336,7 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
                     date: p.paymentDate
                         ? new Date(p.paymentDate).toISOString().split('T')[0]
                         : null,
-                    description: `Payment received — ${p.paymentMethod?.replace(/_/g, ' ') ?? ''}`,
+                    description: `Payment received - ${p.paymentMethod?.replace(/_/g, ' ') ?? ''}`,
                     type: 'PAYMENT',
                     debit: 0,
                     credit,

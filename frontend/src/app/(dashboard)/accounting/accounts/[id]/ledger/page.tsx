@@ -248,8 +248,8 @@ export default function AccountLedgerPage() {
                   <tr className="bg-blue-50 border-b font-semibold text-blue-800">
                     <td className="p-3">{format(new Date(startDate), 'dd MMM yyyy')}</td>
                     <td className="p-3" colSpan={2}>Opening Balance</td>
-                    <td className="p-3 text-right">—</td>
-                    <td className="p-3 text-right">—</td>
+                    <td className="p-3 text-right">-</td>
+                    <td className="p-3 text-right">-</td>
                     <td className="p-3 text-right">{fmt(ledger.openingBalance)}</td>
                   </tr>
 
@@ -260,12 +260,12 @@ export default function AccountLedgerPage() {
                         {format(new Date(entry.date), 'dd MMM yyyy')}
                       </td>
                       <td className="p-3 font-mono text-xs text-gray-500">{entry.entryNumber}</td>
-                      <td className="p-3 text-gray-800">{entry.narration || '—'}</td>
+                      <td className="p-3 text-gray-800">{entry.narration || '-'}</td>
                       <td className="p-3 text-right font-medium text-blue-700">
-                        {Number(entry.debit) > 0 ? fmt(entry.debit) : '—'}
+                        {Number(entry.debit) > 0 ? fmt(entry.debit) : '-'}
                       </td>
                       <td className="p-3 text-right font-medium text-green-700">
-                        {Number(entry.credit) > 0 ? fmt(entry.credit) : '—'}
+                        {Number(entry.credit) > 0 ? fmt(entry.credit) : '-'}
                       </td>
                       <td className={`p-3 text-right font-semibold ${Number(entry.balance) < 0 ? 'text-red-600' : 'text-gray-800'}`}>
                         {fmt(entry.balance)}

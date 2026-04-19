@@ -545,6 +545,7 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
             nearbyLandmarks: property.nearbyLandmarks,
             isActive: property.isActive,
             isFeatured: property.isFeatured,
+            autoSendMilestoneDemandDrafts: property.autoSendMilestoneDemandDrafts ?? null,
             createdBy: property.createdBy,
             updatedBy: property.updatedBy,
             createdAt: property.createdAt,

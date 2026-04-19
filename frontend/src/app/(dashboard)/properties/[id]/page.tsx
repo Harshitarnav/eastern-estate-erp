@@ -12,20 +12,21 @@ import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
+import { AutoSendOverrideCard } from '@/components/collections/AutoSendOverrideCard';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 const fmt = (v?: number | null) =>
-  v ? `₹${formatIndianNumber(v)}` : '—';
+  v ? `₹${formatIndianNumber(v)}` : '-';
 
 const fmtDate = (d?: string | Date | null) => {
-  if (!d) return '—';
+  if (!d) return '-';
   try { return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
   catch { return String(d); }
 };
 
 const fmtArea = (v?: number | null, unit = 'sqft') =>
-  v ? `${Number(v).toLocaleString('en-IN')} ${unit}` : '—';
+  v ? `${Number(v).toLocaleString('en-IN')} ${unit}` : '-';
 
 const statusColor: Record<string, string> = {
   ACTIVE:       'bg-green-100 text-green-700',
@@ -170,21 +171,21 @@ export default function PropertyDetailPage() {
         <StatCard
           icon={<Layers className="w-5 h-5" />}
           label="Towers"
-          value={String(property.numberOfTowers ?? summary?.towersDefined ?? '—')}
+          value={String(property.numberOfTowers ?? summary?.towersDefined ?? '-')}
           sub={summary ? `${summary.towersDefined} defined` : undefined}
           color={brandPalette.secondary}
         />
         <StatCard
           icon={<Home className="w-5 h-5" />}
           label="Total Units"
-          value={String(sales?.total ?? property.numberOfUnits ?? '—')}
+          value={String(sales?.total ?? property.numberOfUnits ?? '-')}
           sub={sales ? `${sales.available} available` : undefined}
           color="#2563EB"
         />
         <StatCard
           icon={<CheckCircle className="w-5 h-5" />}
           label="Sold / Booked"
-          value={sales ? `${(sales.sold + sales.booked).toLocaleString('en-IN')}` : '—'}
+          value={sales ? `${(sales.sold + sales.booked).toLocaleString('en-IN')}` : '-'}
           sub={sales ? `${pctSold}% sold` : undefined}
           color="#16A34A"
         />
@@ -200,7 +201,7 @@ export default function PropertyDetailPage() {
       {/* ── Main Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Left — main details */}
+        {/* Left - main details */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Description */}
@@ -313,12 +314,12 @@ export default function PropertyDetailPage() {
                             t.constructionStatus === 'COMPLETED' ? 'bg-green-100 text-green-700' :
                             t.constructionStatus === 'UNDER_CONSTRUCTION' ? 'bg-blue-100 text-blue-700' :
                             'bg-gray-100 text-gray-600'}`}>
-                            {t.constructionStatus?.replace(/_/g,' ') ?? '—'}
+                            {t.constructionStatus?.replace(/_/g,' ') ?? '-'}
                           </span>
                         </td>
                         <td className="py-2.5 text-right">{t.totalUnits}</td>
-                        <td className="py-2.5 text-right text-green-600 font-medium">{t.salesBreakdown?.sold ?? '—'}</td>
-                        <td className="py-2.5 text-right text-blue-600 font-medium">{t.salesBreakdown?.available ?? '—'}</td>
+                        <td className="py-2.5 text-right text-green-600 font-medium">{t.salesBreakdown?.sold ?? '-'}</td>
+                        <td className="py-2.5 text-right text-blue-600 font-medium">{t.salesBreakdown?.available ?? '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -340,6 +341,26 @@ export default function PropertyDetailPage() {
               title="Project Documents"
             />
           </div>
+
+          {/* Per-project auto-send override */}
+          <AutoSendOverrideCard
+            subject="property"
+            recordId={propertyId}
+            value={(property as any)?.autoSendMilestoneDemandDrafts ?? null}
+            brandPrimary={brandPalette.primary}
+            brandSecondary={brandPalette.secondary}
+            brandNeutral={brandPalette.neutral}
+            onSaved={(next) =>
+              setProperty((prev) =>
+                prev
+                  ? ({
+                      ...prev,
+                      autoSendMilestoneDemandDrafts: next,
+                    } as any)
+                  : prev,
+              )
+            }
+          />
 
           {/* Sales Progress */}
           {sales && (

@@ -38,6 +38,12 @@ export declare class FlatPaymentPlan {
     balanceAmount: number;
     milestones: FlatPaymentMilestone[];
     status: FlatPaymentPlanStatus;
+    isLegacyImport: boolean;
+    importedAt: Date | null;
+    initialEscalationLevel: number;
+    remindersEnabled: boolean;
+    pauseRemindersUntil: Date | null;
+    importBatchId: string | null;
     createdAt: Date;
     updatedAt: Date;
     createdBy: string;

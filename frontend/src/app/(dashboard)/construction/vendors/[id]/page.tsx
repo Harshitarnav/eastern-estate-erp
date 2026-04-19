@@ -38,7 +38,7 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
 const fmtCur = (n: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
 
-const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+const fmtDate = (d: string) => d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
 function VendorDetailContent() {
   const { id } = useParams<{ id: string }>();
@@ -345,9 +345,9 @@ function VendorDetailContent() {
                       <td className="py-3 pr-4">
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">{p.paymentMode}</span>
                       </td>
-                      <td className="py-3 pr-4 text-gray-500 font-mono text-xs">{p.transactionReference || '—'}</td>
-                      <td className="py-3 pr-4 text-gray-600 text-xs">{p.property?.name ?? (p.propertyId ? '…' : <span className="text-gray-300">—</span>)}</td>
-                      <td className="py-3 pr-4 text-gray-500 max-w-xs truncate">{p.notes || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-500 font-mono text-xs">{p.transactionReference || '-'}</td>
+                      <td className="py-3 pr-4 text-gray-600 text-xs">{p.property?.name ?? (p.propertyId ? '…' : <span className="text-gray-300">-</span>)}</td>
+                      <td className="py-3 pr-4 text-gray-500 max-w-xs truncate">{p.notes || '-'}</td>
                       {canAdminEdit && (
                         <td className="py-3 text-right">
                           <button

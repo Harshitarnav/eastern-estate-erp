@@ -18,6 +18,6 @@ export const formatIndianNumber = (value: number) =>
   new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value);
 
 export const formatToCrore = (value?: number) => {
-  if (!value || Number.isNaN(value)) return '—';
+  if (!value || Number.isNaN(value)) return '-';
   return `${(value / 10000000).toFixed(1)} Cr`;
 };

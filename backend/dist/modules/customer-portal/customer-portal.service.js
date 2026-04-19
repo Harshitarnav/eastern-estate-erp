@@ -23,8 +23,10 @@ const flat_payment_plan_entity_1 = require("../payment-plans/entities/flat-payme
 const demand_draft_entity_1 = require("../demand-drafts/entities/demand-draft.entity");
 const construction_progress_log_entity_1 = require("../construction/entities/construction-progress-log.entity");
 const construction_project_entity_1 = require("../construction/entities/construction-project.entity");
+const construction_flat_progress_entity_1 = require("../construction/entities/construction-flat-progress.entity");
+const construction_development_update_entity_1 = require("../construction/entities/construction-development-update.entity");
 let CustomerPortalService = class CustomerPortalService {
-    constructor(customersRepo, bookingsRepo, paymentsRepo, paymentPlansRepo, demandDraftsRepo, progressLogsRepo, constructionProjectsRepo) {
+    constructor(customersRepo, bookingsRepo, paymentsRepo, paymentPlansRepo, demandDraftsRepo, progressLogsRepo, constructionProjectsRepo, flatProgressRepo, developmentUpdatesRepo) {
         this.customersRepo = customersRepo;
         this.bookingsRepo = bookingsRepo;
         this.paymentsRepo = paymentsRepo;
@@ -32,6 +34,8 @@ let CustomerPortalService = class CustomerPortalService {
         this.demandDraftsRepo = demandDraftsRepo;
         this.progressLogsRepo = progressLogsRepo;
         this.constructionProjectsRepo = constructionProjectsRepo;
+        this.flatProgressRepo = flatProgressRepo;
+        this.developmentUpdatesRepo = developmentUpdatesRepo;
     }
     async getProfile(customerId) {
         const customer = await this.customersRepo.findOne({
@@ -81,7 +85,13 @@ let CustomerPortalService = class CustomerPortalService {
             where: { bookingId, customerId },
             order: { createdAt: 'DESC' },
         });
-        return { booking, paymentPlan, payments, demandDrafts };
+        const flatProgress = booking.flatId
+            ? await this.flatProgressRepo.find({
+                where: { flatId: booking.flatId },
+                order: { updatedAt: 'DESC' },
+            })
+            : [];
+        return { booking, paymentPlan, payments, demandDrafts, flatProgress };
     }
     async getPayments(customerId) {
         const payments = await this.paymentsRepo.find({
@@ -107,14 +117,29 @@ let CustomerPortalService = class CustomerPortalService {
             where: { customerId, isActive: true },
             relations: ['flat', 'flat.tower', 'property'],
         });
-        if (!bookings.length)
-            return { bookings: [], updates: [], projects: [] };
-        const propertyIds = [...new Set(bookings.map((b) => b.propertyId))];
-        const projects = await this.constructionProjectsRepo
-            .createQueryBuilder('project')
-            .where('project.propertyId IN (:...propertyIds)', { propertyIds })
-            .orderBy('project.createdAt', 'DESC')
-            .getMany();
+        if (!bookings.length) {
+            return {
+                bookings: [],
+                projects: [],
+                updates: [],
+                flatProgress: [],
+                developmentUpdates: [],
+            };
+        }
+        const propertyIds = [...new Set(bookings.map((b) => b.propertyId).filter(Boolean))];
+        const towerIds = [
+            ...new Set(bookings.map((b) => b.flat?.tower?.id).filter(Boolean)),
+        ];
+        const flatIds = [
+            ...new Set(bookings.map((b) => b.flatId).filter(Boolean)),
+        ];
+        const projects = propertyIds.length
+            ? await this.constructionProjectsRepo
+                .createQueryBuilder('project')
+                .where('project.propertyId IN (:...propertyIds)', { propertyIds })
+                .orderBy('project.createdAt', 'DESC')
+                .getMany()
+            : [];
         const projectIds = projects.map((p) => p.id);
         let updates = [];
         if (projectIds.length) {
@@ -125,7 +150,45 @@ let CustomerPortalService = class CustomerPortalService {
                 .limit(20)
                 .getMany();
         }
-        return { bookings, updates, projects };
+        const flatProgress = flatIds.length
+            ? await this.flatProgressRepo.find({
+                where: { flatId: (0, typeorm_2.In)(flatIds) },
+                order: { updatedAt: 'DESC' },
+            })
+            : [];
+        const developmentUpdatesQb = this.developmentUpdatesRepo
+            .createQueryBuilder('du')
+            .where('du.visibility = :visibility', { visibility: construction_development_update_entity_1.UpdateVisibility.ALL })
+            .orderBy('du.updateDate', 'DESC')
+            .addOrderBy('du.createdAt', 'DESC')
+            .limit(30);
+        const scopeClauses = [];
+        const scopeParams = {};
+        if (propertyIds.length) {
+            scopeClauses.push('du.propertyId IN (:...devPropertyIds)');
+            scopeParams.devPropertyIds = propertyIds;
+        }
+        if (projectIds.length) {
+            scopeClauses.push('du.constructionProjectId IN (:...devProjectIds)');
+            scopeParams.devProjectIds = projectIds;
+        }
+        if (towerIds.length) {
+            scopeClauses.push('du.towerId IN (:...devTowerIds)');
+            scopeParams.devTowerIds = towerIds;
+        }
+        let developmentUpdates = [];
+        if (scopeClauses.length) {
+            developmentUpdates = await developmentUpdatesQb
+                .andWhere(`(${scopeClauses.join(' OR ')})`, scopeParams)
+                .getMany();
+        }
+        return {
+            bookings,
+            projects,
+            updates,
+            flatProgress,
+            developmentUpdates,
+        };
     }
     async getDemandDrafts(customerId) {
         return this.demandDraftsRepo.find({
@@ -144,7 +207,11 @@ exports.CustomerPortalService = CustomerPortalService = __decorate([
     __param(4, (0, typeorm_1.InjectRepository)(demand_draft_entity_1.DemandDraft)),
     __param(5, (0, typeorm_1.InjectRepository)(construction_progress_log_entity_1.ConstructionProgressLog)),
     __param(6, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
+    __param(7, (0, typeorm_1.InjectRepository)(construction_flat_progress_entity_1.ConstructionFlatProgress)),
+    __param(8, (0, typeorm_1.InjectRepository)(construction_development_update_entity_1.ConstructionDevelopmentUpdate)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

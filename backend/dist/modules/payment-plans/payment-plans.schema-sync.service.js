@@ -13,9 +13,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentPlansSchemaSyncService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("typeorm");
+const demand_draft_template_service_1 = require("./services/demand-draft-template.service");
 let PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService_1 = class PaymentPlansSchemaSyncService {
-    constructor(dataSource) {
+    constructor(dataSource, templateService) {
         this.dataSource = dataSource;
+        this.templateService = templateService;
         this.logger = new common_1.Logger(PaymentPlansSchemaSyncService_1.name);
     }
     async onModuleInit() {
@@ -89,6 +91,16 @@ let PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService_1 = class Paym
             await qr.query(`ALTER TABLE demand_drafts ADD COLUMN IF NOT EXISTS review_notes TEXT NULL;`);
             await qr.query(`ALTER TABLE demand_drafts ADD COLUMN IF NOT EXISTS template_id UUID NULL;`);
             await qr.query(`ALTER TABLE demand_drafts ADD COLUMN IF NOT EXISTS template_data JSONB NULL;`);
+            await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS is_legacy_import BOOLEAN NOT NULL DEFAULT FALSE;`);
+            await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS imported_at TIMESTAMP NULL;`);
+            await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS initial_escalation_level INT NOT NULL DEFAULT 0;`);
+            await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS reminders_enabled BOOLEAN NOT NULL DEFAULT TRUE;`);
+            await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS pause_reminders_until TIMESTAMP NULL;`);
+            await qr.query(`ALTER TABLE flat_payment_plans ADD COLUMN IF NOT EXISTS import_batch_id VARCHAR(64) NULL;`);
+            await qr.query(`CREATE INDEX IF NOT EXISTS idx_fpp_is_legacy_import ON flat_payment_plans(is_legacy_import);`);
+            await qr.query(`CREATE INDEX IF NOT EXISTS idx_fpp_import_batch_id ON flat_payment_plans(import_batch_id);`);
+            await qr.query(`ALTER TABLE demand_draft_templates ADD COLUMN IF NOT EXISTS tone VARCHAR(40) NOT NULL DEFAULT 'ON_TIME';`);
+            await qr.query(`CREATE INDEX IF NOT EXISTS idx_ddt_tone ON demand_draft_templates(tone);`);
             await qr.query(`ALTER TABLE construction_flat_progress ADD COLUMN IF NOT EXISTS is_payment_milestone BOOLEAN DEFAULT FALSE;`);
             await qr.query(`ALTER TABLE construction_flat_progress ADD COLUMN IF NOT EXISTS milestone_triggered BOOLEAN DEFAULT FALSE;`);
             await qr.query(`ALTER TABLE construction_flat_progress ADD COLUMN IF NOT EXISTS milestone_triggered_at TIMESTAMP NULL;`);
@@ -99,6 +111,13 @@ let PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService_1 = class Paym
             await qr.query(`ALTER TABLE construction_flat_progress ADD COLUMN IF NOT EXISTS requires_approval BOOLEAN DEFAULT TRUE;`);
             await qr.commitTransaction();
             this.logger.log('Payment plans schema sync completed successfully');
+            try {
+                await this.templateService.seedDefaultTones();
+                this.logger.log('Default DD tone templates ensured');
+            }
+            catch (err) {
+                this.logger.warn(`Could not seed default DD tone templates (non-fatal): ${err?.message}`);
+            }
         }
         catch (error) {
             await qr.rollbackTransaction();
@@ -112,6 +131,7 @@ let PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService_1 = class Paym
 exports.PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService;
 exports.PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService = PaymentPlansSchemaSyncService_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [typeorm_1.DataSource])
+    __metadata("design:paramtypes", [typeorm_1.DataSource,
+        demand_draft_template_service_1.DemandDraftTemplateService])
 ], PaymentPlansSchemaSyncService);
 //# sourceMappingURL=payment-plans.schema-sync.service.js.map

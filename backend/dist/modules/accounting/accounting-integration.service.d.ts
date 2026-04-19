@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Account } from './entities/account.entity';
 import { JournalEntry } from './entities/journal-entry.entity';
 import { JournalEntryLine } from './entities/journal-entry-line.entity';
@@ -17,8 +17,9 @@ export declare class AccountingIntegrationService {
     private readonly accountsRepo;
     private readonly jeRepo;
     private readonly jelRepo;
+    private readonly dataSource;
     private readonly logger;
-    constructor(accountsRepo: Repository<Account>, jeRepo: Repository<JournalEntry>, jelRepo: Repository<JournalEntryLine>);
+    constructor(accountsRepo: Repository<Account>, jeRepo: Repository<JournalEntry>, jelRepo: Repository<JournalEntryLine>, dataSource: DataSource);
     findCashOrBankAccount(propertyId?: string | null): Promise<Account | null>;
     findSalesRevenueAccount(propertyId?: string | null): Promise<Account | null>;
     findSalaryExpenseAccount(propertyId?: string | null): Promise<Account | null>;
@@ -26,7 +27,7 @@ export declare class AccountingIntegrationService {
     private buildScopeFilters;
     private generateEntryNumber;
     createAutoJE(opts: AutoJEOptions): Promise<JournalEntry | null>;
-    private updateBalance;
+    private updateBalanceTx;
     onPaymentCompleted(payment: {
         id: string;
         paymentCode: string;

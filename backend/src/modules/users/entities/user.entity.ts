@@ -79,7 +79,7 @@ export class User {
   @OneToMany(() => UserPropertyAccess, (access) => access.user)
   propertyAccess: UserPropertyAccess[];
 
-  // Customer portal link — set when this user is a customer account
+  // Customer portal link - set when this user is a customer account
   @Column({ name: 'customer_id', type: 'uuid', nullable: true })
   customerId: string | null;
 

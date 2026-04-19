@@ -5,7 +5,7 @@ export declare class CustomersController {
     constructor(customersService: CustomersService);
     create(createCustomerDto: CreateCustomerDto): Promise<CustomerResponseDto>;
     findAll(query: QueryCustomerDto, req: any): Promise<PaginatedCustomersResponse>;
-    getStatistics(): Promise<{
+    getStatistics(propertyId: string | undefined, req: any): Promise<{
         total: number;
         individual: number;
         corporate: number;
@@ -14,7 +14,7 @@ export declare class CustomersController {
         kycVerified: number;
         totalRevenue: number;
     }>;
-    findOne(id: string): Promise<CustomerResponseDto>;
-    update(id: string, updateCustomerDto: UpdateCustomerDto): Promise<CustomerResponseDto>;
-    remove(id: string): Promise<void>;
+    findOne(id: string, req: any): Promise<CustomerResponseDto>;
+    update(id: string, updateCustomerDto: UpdateCustomerDto, req: any): Promise<CustomerResponseDto>;
+    remove(id: string, req: any): Promise<void>;
 }

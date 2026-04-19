@@ -170,6 +170,16 @@ export class CreatePropertyDto {
   @IsOptional()
   isFeatured?: boolean;
 
+  // Tri-state per-project override for milestone-DD auto-send.
+  //   null / undefined  → inherit from company_settings default
+  //   true              → auto-send every DD for this project
+  //   false             → force review for every DD on this project
+  // @IsOptional() lets `null` through so the frontend can clear the
+  // override without needing a separate endpoint.
+  @IsOptional()
+  @IsBoolean()
+  autoSendMilestoneDemandDrafts?: boolean | null;
+
   @IsString()
   @IsOptional()
   nearbyLandmarks?: string;

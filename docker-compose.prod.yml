@@ -120,7 +120,7 @@ services:
     volumes:
       - minio_data:/data
     ports:
-      - "127.0.0.1:9001:9001"   # Console — only on localhost (access via SSH tunnel)
+      - "127.0.0.1:9001:9001"   # Console - only on localhost (access via SSH tunnel)
     command: server /data --console-address ":9001"
     networks:
       - eastern-estate-network

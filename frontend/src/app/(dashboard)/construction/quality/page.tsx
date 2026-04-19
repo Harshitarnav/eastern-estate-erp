@@ -143,7 +143,7 @@ function QualityContent() {
   };
 
   const fmt = (d: string) =>
-    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
   const totalPassed = checklists.filter(c => c.overallResult === 'PASS').length;
   const totalFailed = checklists.filter(c => c.overallResult === 'FAIL').length;
@@ -257,8 +257,8 @@ function QualityContent() {
                         {rc.label}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500">{fmt(c.inspectionDate)} · {c.inspectorName || '—'}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{c.constructionProject?.projectName || '—'}</p>
+                    <p className="text-sm text-gray-500">{fmt(c.inspectionDate)} · {c.inspectorName || '-'}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{c.constructionProject?.projectName || '-'}</p>
                   </div>
                   <div className="text-right text-sm shrink-0 ml-4">
                     <p className="font-semibold text-gray-800">{passCount}/{total} <span className="text-green-600">pass</span></p>
@@ -286,7 +286,7 @@ function QualityContent() {
               style={{ borderColor: `${brandPalette.neutral}60`, backgroundColor: `${brandPalette.primary}08` }}>
               <div>
                 <h3 className="font-bold text-gray-900">{PHASE_LABELS[selectedChecklist.phase] || selectedChecklist.phase} Inspection</h3>
-                <p className="text-sm text-gray-500">{fmt(selectedChecklist.inspectionDate)} · {selectedChecklist.inspectorName || '—'}</p>
+                <p className="text-sm text-gray-500">{fmt(selectedChecklist.inspectionDate)} · {selectedChecklist.inspectorName || '-'}</p>
               </div>
               <button onClick={() => setSelectedChecklist(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
                 <X className="w-4 h-4" />

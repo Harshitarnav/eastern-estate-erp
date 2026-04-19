@@ -32,6 +32,7 @@ const journal_entries_controller_1 = require("./journal-entries.controller");
 const bank_accounts_controller_1 = require("./bank-accounts.controller");
 const bank_statements_controller_1 = require("./bank-statements.controller");
 const accounting_integration_service_1 = require("./accounting-integration.service");
+const property_entity_1 = require("../properties/entities/property.entity");
 let AccountingModule = class AccountingModule {
 };
 exports.AccountingModule = AccountingModule;
@@ -47,6 +48,7 @@ exports.AccountingModule = AccountingModule = __decorate([
                 fiscal_year_entity_1.FiscalYear,
                 bank_account_entity_1.BankAccount,
                 bank_statement_entity_1.BankStatement,
+                property_entity_1.Property,
             ]),
         ],
         controllers: [

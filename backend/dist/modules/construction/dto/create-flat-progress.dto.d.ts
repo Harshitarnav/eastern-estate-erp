@@ -10,4 +10,5 @@ export declare class CreateFlatProgressDto {
     actualEndDate?: string;
     status?: PhaseStatus;
     notes?: string;
+    photos?: string[] | null;
 }

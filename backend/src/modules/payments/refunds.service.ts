@@ -142,9 +142,11 @@ export class RefundsService {
       .reduce((sum, r) => sum + Number(r.refundAmount), 0);
 
     if (totalRefunded >= payment.amount) {
-      await this.paymentsService.update(payment.id, {
-        status: PaymentStatus.REFUNDED,
-      });
+      // Use the dedicated transition helper - paymentsService.update()
+      // rejects mutations on COMPLETED rows by design, which silently
+      // failed here before and left the payment stuck as COMPLETED
+      // despite a processed refund.
+      await this.paymentsService.markRefunded(payment.id, userId);
     }
 
     return this.refundRepository.save(refund);

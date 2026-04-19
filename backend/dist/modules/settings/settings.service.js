@@ -32,7 +32,7 @@ let SettingsService = SettingsService_1 = class SettingsService {
             }
         }
         catch {
-            this.logger.warn('company_settings table not ready yet — will be created by SchemaSyncService');
+            this.logger.warn('company_settings table not ready yet - will be created by SchemaSyncService');
         }
     }
     async get() {
@@ -74,12 +74,12 @@ let SettingsService = SettingsService_1 = class SettingsService {
             const info = await transporter.sendMail({
                 from: `"${fromName}" <${fromAddress}>`,
                 to,
-                subject: subject || `✅ SMTP Test — ${fromName} ERP`,
+                subject: subject || `✅ SMTP Test - ${fromName} ERP`,
                 html: `
           <div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
             <div style="background:#A8211B;color:white;padding:16px 20px;border-radius:8px 8px 0 0;margin:-24px -24px 24px;">
               <h2 style="margin:0;font-size:18px;">${fromName}</h2>
-              <p style="margin:4px 0 0;font-size:13px;opacity:0.85;">Eastern Estate ERP — SMTP Test</p>
+              <p style="margin:4px 0 0;font-size:13px;opacity:0.85;">Eastern Estate ERP - SMTP Test</p>
             </div>
             <p style="font-size:15px;color:#111;">✅ <strong>SMTP is working correctly!</strong></p>
             <p style="color:#555;font-size:14px;">
@@ -95,7 +95,7 @@ let SettingsService = SettingsService_1 = class SettingsService {
         `,
                 text: `SMTP Test from Eastern Estate ERP\n\n✅ Your email settings are working correctly!\n\nFrom: ${fromAddress}\nSMTP: ${settings.smtpHost}:${settings.smtpPort ?? 587}`,
             });
-            this.logger.log(`Test email sent to ${to} — messageId: ${info.messageId}`);
+            this.logger.log(`Test email sent to ${to} - messageId: ${info.messageId}`);
             return {
                 success: true,
                 message: `Test email delivered to ${to}`,
@@ -106,13 +106,13 @@ let SettingsService = SettingsService_1 = class SettingsService {
             this.logger.error(`SMTP test failed: ${err?.message}`);
             let detail = err?.message ?? 'Unknown error';
             if (err?.code === 'EAUTH')
-                detail = 'Authentication failed — wrong username or password / App Password. Make sure 2-Step Verification is enabled on Gmail.';
+                detail = 'Authentication failed - wrong username or password / App Password. Make sure 2-Step Verification is enabled on Gmail.';
             else if (err?.code === 'ECONNREFUSED')
                 detail = `Connection refused to ${settings.smtpHost}:${settings.smtpPort}. Check the host and port.`;
             else if (err?.code === 'ETIMEDOUT')
                 detail = `Connection timed out. The SMTP host may be blocked by your firewall.`;
             else if (err?.code === 'ESOCKET')
-                detail = `Socket error — try changing port from ${settings.smtpPort} to 587 (TLS) or 465 (SSL).`;
+                detail = `Socket error - try changing port from ${settings.smtpPort} to 587 (TLS) or 465 (SSL).`;
             return {
                 success: false,
                 message: 'Test email failed',

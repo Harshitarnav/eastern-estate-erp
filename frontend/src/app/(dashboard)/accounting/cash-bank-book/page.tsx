@@ -31,7 +31,7 @@ function printLedger(title: string) {
       .sub{color:#6b7280;font-size:13px;margin-bottom:24px}
     </style></head><body>
     <h1>${title}</h1>
-    <p class="sub">Eastern Estate ERP — ${new Date().toLocaleDateString('en-IN')}</p>
+    <p class="sub">Eastern Estate ERP - ${new Date().toLocaleDateString('en-IN')}</p>
     ${el.innerHTML}
     </body></html>
   `);
@@ -158,8 +158,8 @@ function CashBook() {
         <>
           {/* Hint: show which COA account is linked */}
           <div className="text-xs bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-800">
-            <strong>ℹ️ Linked account:</strong> <span className="font-mono">{data.account.accountCode} — {data.account.accountName}</span>
-            {' '}— make sure you select this account when recording cash transactions in Journal Entries.
+            <strong>ℹ️ Linked account:</strong> <span className="font-mono">{data.account.accountCode} - {data.account.accountName}</span>
+            {' '}- make sure you select this account when recording cash transactions in Journal Entries.
           </div>
 
           {/* Summary cards */}
@@ -209,10 +209,10 @@ function CashBook() {
                     <td className="px-4 py-2 font-mono text-xs">{e.entryNumber}</td>
                     <td className="px-4 py-2 text-gray-700">{e.narration}</td>
                     <td className="px-4 py-2 text-right text-green-700 font-mono">
-                      {e.debit > 0 ? fmt(e.debit) : '—'}
+                      {e.debit > 0 ? fmt(e.debit) : '-'}
                     </td>
                     <td className="px-4 py-2 text-right text-red-600 font-mono">
-                      {e.credit > 0 ? fmt(e.credit) : '—'}
+                      {e.credit > 0 ? fmt(e.credit) : '-'}
                     </td>
                     <td className={`px-4 py-2 text-right font-mono font-medium ${e.balance >= 0 ? 'text-gray-800' : 'text-red-700'}`}>
                       {fmt(e.balance)}
@@ -294,7 +294,7 @@ function BankBook() {
           >
             {bankAccounts.map(b => (
               <option key={b.id} value={b.id}>
-                {b.accountName} — {b.bankName}
+                {b.accountName} - {b.bankName}
               </option>
             ))}
           </select>
@@ -311,7 +311,7 @@ function BankBook() {
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Show'}
         </Button>
         {data && (
-          <Button size="sm" variant="outline" onClick={() => printLedger(`Bank Book — ${selectedBankData?.accountName}`)}>
+          <Button size="sm" variant="outline" onClick={() => printLedger(`Bank Book - ${selectedBankData?.accountName}`)}>
             <Printer className="h-4 w-4 mr-1" /> Print
           </Button>
         )}
@@ -330,8 +330,8 @@ function BankBook() {
         <>
           {/* Hint: show which COA account is linked */}
           <div className="text-xs bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 text-blue-800">
-            <strong>ℹ️ Linked COA account:</strong> <span className="font-mono">{data.account.accountCode} — {data.account.accountName}</span>
-            {' '}— select this account in Journal Entries for transactions to appear here.
+            <strong>ℹ️ Linked COA account:</strong> <span className="font-mono">{data.account.accountCode} - {data.account.accountName}</span>
+            {' '}- select this account in Journal Entries for transactions to appear here.
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -377,10 +377,10 @@ function BankBook() {
                     <td className="px-4 py-2 font-mono text-xs">{e.entryNumber}</td>
                     <td className="px-4 py-2 text-gray-700">{e.narration}</td>
                     <td className="px-4 py-2 text-right text-green-700 font-mono">
-                      {e.debit > 0 ? fmt(e.debit) : '—'}
+                      {e.debit > 0 ? fmt(e.debit) : '-'}
                     </td>
                     <td className="px-4 py-2 text-right text-red-600 font-mono">
-                      {e.credit > 0 ? fmt(e.credit) : '—'}
+                      {e.credit > 0 ? fmt(e.credit) : '-'}
                     </td>
                     <td className={`px-4 py-2 text-right font-mono font-medium ${e.balance >= 0 ? 'text-gray-800' : 'text-red-700'}`}>
                       {fmt(e.balance)}
@@ -455,9 +455,9 @@ export default function CashBankBookPage() {
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 space-y-1">
         <p><strong>📌 How this works:</strong></p>
         <ul className="list-disc ml-4 space-y-1">
-          <li><strong>Cash Book</strong> — shows all JE lines posted to the "Cash on Hand" account (code 1110 or similar ASSET account with "cash" in the name).</li>
-          <li><strong>Bank Book</strong> — each bank you add in <em>Bank Accounts</em> automatically gets its own Chart of Accounts drawer. When you load the Bank Book, it shows the exact COA account name in a blue info box — <strong>always use that account</strong> when recording JEs for that bank.</li>
-          <li>Example: For "HDFC Bank", if the COA says "1200 — HDFC Bank", then in a Contra/Payment entry always select <em>1200 — HDFC Bank</em> as the bank side.</li>
+          <li><strong>Cash Book</strong> - shows all JE lines posted to the "Cash on Hand" account (code 1110 or similar ASSET account with "cash" in the name).</li>
+          <li><strong>Bank Book</strong> - each bank you add in <em>Bank Accounts</em> automatically gets its own Chart of Accounts drawer. When you load the Bank Book, it shows the exact COA account name in a blue info box - <strong>always use that account</strong> when recording JEs for that bank.</li>
+          <li>Example: For "HDFC Bank", if the COA says "1200 - HDFC Bank", then in a Contra/Payment entry always select <em>1200 - HDFC Bank</em> as the bank side.</li>
         </ul>
       </div>
     </div>

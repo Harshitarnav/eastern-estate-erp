@@ -22,7 +22,7 @@ let MailService = MailService_1 = class MailService {
     async sendMail(options) {
         const settings = await this.settingsService.get();
         if (!settings.smtpHost || !settings.smtpUser) {
-            this.logger.warn(`SMTP not configured — email to ${options.to} was NOT sent. ` +
+            this.logger.warn(`SMTP not configured - email to ${options.to} was NOT sent. ` +
                 `Go to Settings → Company to configure SMTP.`);
             return { accepted: [], skipped: true };
         }
@@ -45,7 +45,7 @@ let MailService = MailService_1 = class MailService {
                 html: options.html,
                 text: options.text,
             });
-            this.logger.log(`Email sent to ${options.to} — messageId: ${info.messageId}`);
+            this.logger.log(`Email sent to ${options.to} - messageId: ${info.messageId}`);
             return { accepted: info.accepted };
         }
         catch (err) {

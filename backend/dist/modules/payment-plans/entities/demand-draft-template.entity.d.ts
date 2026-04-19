@@ -5,6 +5,7 @@ export declare class DemandDraftTemplate {
     description: string;
     subject: string;
     htmlContent: string;
+    tone: string;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;

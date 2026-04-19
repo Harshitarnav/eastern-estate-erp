@@ -36,6 +36,9 @@ export class CustomerResponseDto {
   isActive: boolean;
   isVIP: boolean;
   isBlacklisted: boolean;
+  // Tri-state override for milestone-DD auto-send
+  // (null = inherit, true = always auto-send, false = always review).
+  autoSendMilestoneDemandDrafts?: boolean | null;
   createdAt: string | Date;
   updatedAt: string | Date;
   fullName?: string;
@@ -87,6 +90,8 @@ export class CustomerResponseDto {
     dto.isActive = customer.isActive;
     dto.isVIP = customer.isVIP;
     dto.isBlacklisted = (customer as any).isBlacklisted || false;
+    dto.autoSendMilestoneDemandDrafts =
+      customer.autoSendMilestoneDemandDrafts ?? null;
     dto.createdAt = customer.createdAt;
     dto.updatedAt = customer.updatedAt;
     dto.propertyId = customer.metadata?.propertyId;

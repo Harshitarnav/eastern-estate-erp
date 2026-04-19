@@ -61,6 +61,8 @@ export declare class Customer {
     isActive: boolean;
     notes: string;
     metadata: any;
+    pauseRemindersUntil: Date | null;
+    autoSendMilestoneDemandDrafts: boolean | null;
     createdAt: Date;
     updatedAt: Date;
     requirementType: string;

@@ -29,7 +29,7 @@ BEGIN
      AND c.column_name  = 'amenities';
 
   IF col_type IS NULL THEN
-    -- Column missing entirely (pre-sync schema) — add it
+    -- Column missing entirely (pre-sync schema) - add it
     ALTER TABLE flats ADD COLUMN amenities text[];
     RAISE NOTICE '[v002] flats.amenities: did not exist → added as text[]';
 
@@ -38,7 +38,7 @@ BEGIN
     RAISE NOTICE '[v002] flats.amenities: already text[], skipping';
 
   ELSIF col_type = 'jsonb' THEN
-    -- Original schema had JSONB — convert JSON arrays to text[]
+    -- Original schema had JSONB - convert JSON arrays to text[]
     ALTER TABLE flats ADD COLUMN amenities_new text[];
     UPDATE flats
        SET amenities_new = (
@@ -52,7 +52,7 @@ BEGIN
     RAISE NOTICE '[v002] flats.amenities: migrated JSONB → text[]';
 
   ELSIF col_type = 'text' THEN
-    -- TypeORM simple-array stored comma-delimited text — split into array
+    -- TypeORM simple-array stored comma-delimited text - split into array
     ALTER TABLE flats
       ALTER COLUMN amenities TYPE text[]
       USING CASE
@@ -62,7 +62,7 @@ BEGIN
     RAISE NOTICE '[v002] flats.amenities: migrated TEXT (simple-array) → text[]';
 
   ELSE
-    RAISE WARNING '[v002] flats.amenities: unexpected type "%" — manual review needed', col_type;
+    RAISE WARNING '[v002] flats.amenities: unexpected type "%" - manual review needed', col_type;
   END IF;
 END $$;
 
@@ -81,7 +81,7 @@ BEGIN
      AND column_name  = 'images';
 
   IF col_type IS NULL THEN
-    -- Column missing — add as TEXT (simple-array stores as comma-delimited text)
+    -- Column missing - add as TEXT (simple-array stores as comma-delimited text)
     ALTER TABLE flats ADD COLUMN images text;
     RAISE NOTICE '[v002] flats.images: did not exist → added as TEXT';
 
@@ -89,7 +89,7 @@ BEGIN
     RAISE NOTICE '[v002] flats.images: already TEXT, skipping';
 
   ELSIF col_type = 'jsonb' THEN
-    -- Original schema had JSONB — flatten JSON array to comma-delimited text
+    -- Original schema had JSONB - flatten JSON array to comma-delimited text
     ALTER TABLE flats
       ALTER COLUMN images TYPE text
       USING CASE
@@ -103,7 +103,7 @@ BEGIN
     RAISE NOTICE '[v002] flats.images: migrated JSONB → TEXT';
 
   ELSE
-    RAISE WARNING '[v002] flats.images: unexpected type "%" — manual review needed', col_type;
+    RAISE WARNING '[v002] flats.images: unexpected type "%" - manual review needed', col_type;
   END IF;
 END $$;
 

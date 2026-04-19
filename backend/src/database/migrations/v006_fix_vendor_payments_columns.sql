@@ -1,6 +1,6 @@
 -- ============================================================
--- v006: Fix vendor_payments table — missing columns in prod
--- IDEMPOTENT — safe to run multiple times.
+-- v006: Fix vendor_payments table - missing columns in prod
+-- IDEMPOTENT - safe to run multiple times.
 -- ============================================================
 
 -- 1. Add purchase_order_id if missing

@@ -9,6 +9,8 @@ export declare class DemandDraftTemplateService {
     findAll(activeOnly?: boolean): Promise<DemandDraftTemplate[]>;
     findOne(id: string): Promise<DemandDraftTemplate>;
     findFirstActive(): Promise<DemandDraftTemplate | null>;
+    findByTone(tone: string): Promise<DemandDraftTemplate | null>;
+    seedDefaultTones(): Promise<void>;
     update(id: string, updateDto: UpdateDemandDraftTemplateDto, userId: string): Promise<DemandDraftTemplate>;
     remove(id: string, userId: string): Promise<void>;
     renderTemplate(template: DemandDraftTemplate, data: Record<string, any>): {

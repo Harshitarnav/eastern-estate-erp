@@ -130,7 +130,7 @@ export declare class ReportsService {
     private readonly paymentRepo;
     private readonly flatRepo;
     constructor(planRepo: Repository<FlatPaymentPlan>, paymentRepo: Repository<Payment>, flatRepo: Repository<Flat>);
-    getDashboard(): Promise<DashboardSummary>;
+    getDashboard(propertyId?: string): Promise<DashboardSummary>;
     getOutstandingReport(filters: {
         propertyId?: string;
         towerId?: string;

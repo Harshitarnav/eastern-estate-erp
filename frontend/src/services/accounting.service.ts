@@ -105,6 +105,9 @@ export interface JournalEntry {
   status: 'DRAFT' | 'POSTED' | 'VOIDED' | 'VOID';
   referenceType?: string;
   referenceId?: string;
+  /** When set, entry is included in that project’s dashboards and project-scoped JE totals. */
+  propertyId?: string | null;
+  property?: { id: string; name: string };
   createdBy?: string;
   lines: JournalEntryLine[];
   createdAt: string;
@@ -121,16 +124,28 @@ export interface JournalEntryLine {
 
 // Accounts Service
 export const accountsService = {
-  getAll: async (params?: { accountType?: string; isActive?: boolean; propertyId?: string }) => {
-    return await api.get('/accounting/accounts', { params });
+  getAll: async (params?: {
+    accountType?: string;
+    isActive?: boolean;
+    propertyId?: string;
+    /** Only accounts with this property_id (excludes company-wide GL). */
+    projectOnlyCoa?: boolean;
+  }) => {
+    const { projectOnlyCoa, ...rest } = params || {};
+    return await api.get('/accounting/accounts', {
+      params: {
+        ...rest,
+        ...(projectOnlyCoa ? { projectOnlyCoa: 'true' } : {}),
+      },
+    });
   },
 
-  getById: async (id: string) => {
-    return await api.get(`/accounting/accounts/${id}`);
+  getById: async (id: string, params?: { propertyId?: string }) => {
+    return await api.get(`/accounting/accounts/${id}`, { params });
   },
 
-  getOne: async (id: string) => {
-    return await api.get(`/accounting/accounts/${id}`);
+  getOne: async (id: string, params?: { propertyId?: string }) => {
+    return await api.get(`/accounting/accounts/${id}`, { params });
   },
 
   getByCode: async (code: string) => {
@@ -157,6 +172,29 @@ export const accountsService = {
 
   seedCoaForProject: async (propertyId: string) => {
     return await api.post(`/accounting/accounts/seed-for-project/${propertyId}`);
+  },
+
+  /**
+   * Create many chart-of-account rows at once. The UI parses the Excel file,
+   * shows a preview, and posts validated rows here.
+   */
+  bulkImport: async (payload: {
+    propertyId?: string | null;
+    rows: Array<{
+      accountCode: string;
+      accountName: string;
+      accountType: string;
+      accountCategory: string;
+      description?: string;
+      openingBalance?: number;
+    }>;
+  }): Promise<{
+    created: number;
+    skipped: number;
+    errors: Array<{ row: number; code: string; message: string }>;
+    createdIds: string[];
+  }> => {
+    return await api.post('/accounting/accounts/bulk-import', payload);
   },
 
   getPropertyWisePL: async (propertyId: string) => {
@@ -218,7 +256,7 @@ export const expensesService = {
     return await api.get(`/accounting/expenses/${id}`);
   },
 
-  getSummary: async (params?: { startDate?: string; endDate?: string }) => {
+  getSummary: async (params?: { startDate?: string; endDate?: string; propertyId?: string }) => {
     return await api.get('/accounting/expenses/summary', { params });
   },
 
@@ -244,6 +282,19 @@ export const expensesService = {
 
   delete: async (id: string) => {
     return await api.delete(`/accounting/expenses/${id}`);
+  },
+
+  /** Create many expenses at once from parsed Excel rows. */
+  bulkImport: async (payload: {
+    propertyId?: string | null;
+    rows: Array<Record<string, unknown>>;
+  }): Promise<{
+    created: number;
+    skipped: number;
+    errors: Array<{ row: number; message: string }>;
+    createdIds: string[];
+  }> => {
+    return await api.post('/accounting/expenses/bulk-import', payload);
   },
 };
 
@@ -282,7 +333,13 @@ export const budgetsService = {
 
 // Journal Entries Service
 export const journalEntriesService = {
-  getAll: async (params?: { status?: string; startDate?: string; endDate?: string; referenceType?: string }) => {
+  getAll: async (params?: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    referenceType?: string;
+    propertyId?: string;
+  }) => {
     return await api.get('/accounting/journal-entries', { params });
   },
 
@@ -295,6 +352,7 @@ export const journalEntriesService = {
     description: string;
     referenceType?: string;
     referenceId?: string;
+    propertyId?: string;
     lines: Partial<JournalEntryLine>[];
   }) => {
     return await api.post('/accounting/journal-entries', data);

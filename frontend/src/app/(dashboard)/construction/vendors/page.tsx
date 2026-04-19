@@ -95,7 +95,7 @@ function VendorsPageContent() {
       <BrandHero
         eyebrow="Vendor Management"
         title={<>Your supply chain, <span style={{ color: brandPalette.accent }}>always in control</span></>}
-        description="Manage all material suppliers, track outstanding payments, monitor credit limits, and maintain vendor ratings — everything in one place."
+        description="Manage all material suppliers, track outstanding payments, monitor credit limits, and maintain vendor ratings - everything in one place."
         actions={
           <>
             <BrandPrimaryButton onClick={() => setShowAddModal(true)}>

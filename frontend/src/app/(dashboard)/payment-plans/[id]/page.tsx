@@ -120,7 +120,7 @@ export default function PaymentPlanDetailPage() {
       });
       setDraftStatusMap(map);
     } catch {
-      // Non-critical — just skip
+      // Non-critical - just skip
     }
   };
 
@@ -729,7 +729,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
             <CardTitle>Payment Milestones</CardTitle>
             <CardDescription>
               {editMode
-                ? 'Edit milestones inline — add, remove or reorder rows, then Save Changes.'
+                ? 'Edit milestones inline - add, remove or reorder rows, then Save Changes.'
                 : 'Construction-linked payment milestones'}
             </CardDescription>
           </div>
@@ -786,7 +786,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                         )}
                       </TableCell>
 
-                      {/* Generate / View Invoice — 3rd column so it's always visible */}
+                      {/* Generate / View Invoice - 3rd column so it's always visible */}
                       {!editMode && (
                         <TableCell>
                           {milestone.demandDraftId ? (
@@ -974,7 +974,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                 {displayMilestones.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={editMode ? 8 : 9} className="text-center text-muted-foreground py-8">
-                      {editMode ? 'No milestones yet — click "Add Milestone" to start.' : 'No milestones found.'}
+                      {editMode ? 'No milestones yet - click "Add Milestone" to start.' : 'No milestones found.'}
                     </TableCell>
                   </TableRow>
                 )}
@@ -990,7 +990,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
           <Button variant="outline" onClick={() => router.push('/construction-milestones')}>
             View Construction Milestones
           </Button>
-          <Button variant="outline" onClick={() => router.push('/construction-progress-simple')}>
+          <Button variant="outline" onClick={() => router.push('/construction/log')}>
             Log Construction Progress
           </Button>
         </div>
@@ -1012,18 +1012,18 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
               {/* Key details grid */}
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  ['Customer',   plan.customer?.fullName ?? '—'],
-                  ['Property',   plan.flat?.property?.name ?? '—'],
-                  ['Tower',      plan.flat?.tower?.name ?? '—'],
-                  ['Flat / Unit', plan.flat?.flatNumber ?? '—'],
-                  ['Booking No', plan.booking?.bookingNumber ?? '—'],
+                  ['Customer',   plan.customer?.fullName ?? '-'],
+                  ['Property',   plan.flat?.property?.name ?? '-'],
+                  ['Tower',      plan.flat?.tower?.name ?? '-'],
+                  ['Flat / Unit', plan.flat?.flatNumber ?? '-'],
+                  ['Booking No', plan.booking?.bookingNumber ?? '-'],
                   ['Milestone',  previewMilestone.name],
                   previewMilestone.constructionPhase
                     ? ['Phase', `${previewMilestone.constructionPhase}${previewMilestone.phasePercentage != null ? ` (${previewMilestone.phasePercentage}%)` : ''}`]
                     : null,
                   ['Due Date', previewMilestone.dueDate
                     ? new Date(previewMilestone.dueDate).toLocaleDateString('en-IN')
-                    : '—'],
+                    : '-'],
                 ].filter(Boolean).map(([label, value]: any) => (
                   <div key={label as string} className="border-b pb-2">
                     <p className="text-[11px] uppercase text-gray-400 tracking-wide">{label}</p>

@@ -113,7 +113,7 @@ export default function DatabaseRelationshipsPage() {
 
       {/* Stats */}
       {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-6 border-l-4 border-l-blue-500">
             <div className="flex items-center gap-3">
               <div className="bg-blue-100 p-3 rounded-lg">
@@ -132,8 +132,24 @@ export default function DatabaseRelationshipsPage() {
                 <Network className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Total Foreign Keys</p>
-                <p className="text-3xl font-bold text-green-600">{relationships.length}</p>
+                <p className="text-sm text-gray-600">Foreign Key Constraints</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {relationships.filter(r => (r.kind ?? 'foreign_key') === 'foreign_key').length}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 border-l-4 border-l-amber-500">
+            <div className="flex items-center gap-3">
+              <div className="bg-amber-100 p-3 rounded-lg">
+                <Network className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Inferred (by column name)</p>
+                <p className="text-3xl font-bold text-amber-600">
+                  {relationships.filter(r => r.kind === 'inferred').length}
+                </p>
               </div>
             </div>
           </Card>
@@ -240,26 +256,42 @@ export default function DatabaseRelationshipsPage() {
                             References to other tables:
                           </p>
                           <div className="space-y-2">
-                            {outgoing.map((rel, index) => (
+                            {outgoing.map((rel, index) => {
+                              const isInferred = rel.kind === 'inferred';
+                              return (
                             <div
                                 key={`${tableName}-out-${rel.constraintName}-${index}`}
-                                className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                                className={`flex items-center gap-3 p-3 rounded-lg border ${
+                                  isInferred
+                                    ? 'bg-amber-50 border-amber-200'
+                                    : 'bg-blue-50 border-blue-200'
+                                }`}
                             >
                                 <Badge variant="outline" className="bg-white">
                                 {rel.fromColumn}
                                 </Badge>
-                                <ArrowRight className="w-4 h-4 text-blue-600" />
-                                <Badge 
-                                className="bg-blue-600 text-white cursor-pointer hover:bg-blue-700"
+                                <ArrowRight className={`w-4 h-4 ${isInferred ? 'text-amber-600' : 'text-blue-600'}`} />
+                                <Badge
+                                className={`text-white cursor-pointer ${
+                                  isInferred
+                                    ? 'bg-amber-600 hover:bg-amber-700'
+                                    : 'bg-blue-600 hover:bg-blue-700'
+                                }`}
                                 onClick={() => router.push(`/database/tables/${rel.toTable}`)}
                                 >
                                 {rel.toTable}.{rel.toColumn}
                                 </Badge>
+                                {isInferred && (
+                                  <Badge variant="outline" className="border-amber-400 text-amber-700 text-[10px]">
+                                    inferred
+                                  </Badge>
+                                )}
                                 <span className="text-xs text-gray-500 ml-auto">
                                 {rel.constraintName}
                                 </span>
                             </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}

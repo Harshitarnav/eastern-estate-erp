@@ -22,7 +22,7 @@ const fmt = (n: number | string) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Number(n) || 0);
 
 function safeFmtDate(d: string | undefined) {
-  if (!d) return '—';
+  if (!d) return '-';
   try {
     return format(new Date(d), 'dd MMM yyyy');
   } catch {
@@ -52,7 +52,7 @@ function printReport(title: string) {
     </style>
     </head><body>
     <h1>${title}</h1>
-    <p class="subtitle">Eastern Estate ERP — Generated on ${new Date().toLocaleDateString('en-IN')}</p>
+    <p class="subtitle">Eastern Estate ERP - Generated on ${new Date().toLocaleDateString('en-IN')}</p>
     ${el.innerHTML}
     </body></html>
   `);
@@ -200,8 +200,8 @@ function TrialBalanceReport({ data }: { data: any }) {
                     EXPENSE: 'bg-orange-100 text-orange-800',
                   }[a.accountType as string] || ''}>{a.accountType}</Badge>
                 </td>
-                <td className="p-2 text-right">{Number(a.debitBalance) > 0 ? fmt(a.debitBalance) : '—'}</td>
-                <td className="p-2 text-right">{Number(a.creditBalance) > 0 ? fmt(a.creditBalance) : '—'}</td>
+                <td className="p-2 text-right">{Number(a.debitBalance) > 0 ? fmt(a.debitBalance) : '-'}</td>
+                <td className="p-2 text-right">{Number(a.creditBalance) > 0 ? fmt(a.creditBalance) : '-'}</td>
               </tr>
             ))}
           </tbody>
@@ -215,7 +215,7 @@ function TrialBalanceReport({ data }: { data: any }) {
               <td colSpan={5} className="p-2 text-center text-sm font-semibold">
                 {data.isBalanced
                   ? <span className="text-green-700 flex items-center justify-center gap-1"><CheckCircle className="h-4 w-4" /> Trial Balance is BALANCED</span>
-                  : <span className="text-red-700 flex items-center justify-center gap-1"><XCircle className="h-4 w-4" /> Trial Balance is NOT balanced — Difference: {fmt(Math.abs((Number(data.totalDebit) || 0) - (Number(data.totalCredit) || 0)))}</span>
+                  : <span className="text-red-700 flex items-center justify-center gap-1"><XCircle className="h-4 w-4" /> Trial Balance is NOT balanced - Difference: {fmt(Math.abs((Number(data.totalDebit) || 0) - (Number(data.totalCredit) || 0)))}</span>
                 }
               </td>
             </tr>
@@ -246,7 +246,7 @@ function BudgetVarianceReport({ data }: { data: any }) {
           </thead>
           <tbody>
             {data.budgets.map((b: any) => {
-              // varianceAmount/variancePercentage are not stored columns — compute them
+              // varianceAmount/variancePercentage are not stored columns - compute them
               const budgeted = Number(b.budgetedAmount) || 0;
               const actual = Number(b.actualAmount) || 0;
               const v = actual - budgeted;           // positive = over budget (bad)
@@ -449,7 +449,7 @@ function ProjectFundFlowReport() {
             <Card>
               <CardContent className="pt-4">
                 <p className="text-xs text-gray-500">Projects with tagged spend</p>
-                <p className="text-xl font-bold text-gray-900">{data.projectsWithOutflows ?? '—'}</p>
+                <p className="text-xl font-bold text-gray-900">{data.projectsWithOutflows ?? '-'}</p>
               </CardContent>
             </Card>
             <Card>
@@ -521,7 +521,7 @@ function ProjectFundFlowReport() {
           {data.focusProperty && (
             <div className="space-y-4 border-t pt-6">
               <h3 className="text-lg font-semibold text-gray-900">
-                Line items — {data.focusProperty.name}
+                Line items - {data.focusProperty.name}
               </h3>
 
               <div>
@@ -544,7 +544,7 @@ function ProjectFundFlowReport() {
                           <tr key={x.id} className="border-b">
                             <td className="p-2 text-gray-600">{safeFmtDate(x.paymentDate)}</td>
                             <td className="p-2 font-mono text-xs">{x.paymentNumber || x.id}</td>
-                            <td className="p-2 hidden sm:table-cell">{x.paymentMode || '—'}</td>
+                            <td className="p-2 hidden sm:table-cell">{x.paymentMode || '-'}</td>
                             <td className="p-2 text-right font-mono text-green-700">{fmt(x.amount)}</td>
                           </tr>
                         ))}
@@ -576,7 +576,7 @@ function ProjectFundFlowReport() {
                             <td className="p-2 text-gray-600">{safeFmtDate(x.expenseDate)}</td>
                             <td className="p-2 font-mono text-xs">{x.expenseCode}</td>
                             <td className="p-2">{x.expenseCategory}</td>
-                            <td className="p-2 hidden md:table-cell text-gray-600 max-w-xs truncate">{x.description || '—'}</td>
+                            <td className="p-2 hidden md:table-cell text-gray-600 max-w-xs truncate">{x.description || '-'}</td>
                             <td className="p-2 text-right font-mono">{fmt(x.amount)}</td>
                           </tr>
                         ))}
@@ -605,8 +605,8 @@ function ProjectFundFlowReport() {
                         {(data.outflows.vendorPayments || []).map((x: any) => (
                           <tr key={x.id} className="border-b">
                             <td className="p-2 text-gray-600">{safeFmtDate(x.paymentDate)}</td>
-                            <td className="p-2">{x.vendorName || '—'}</td>
-                            <td className="p-2 hidden sm:table-cell font-mono text-xs">{x.transactionReference || '—'}</td>
+                            <td className="p-2">{x.vendorName || '-'}</td>
+                            <td className="p-2 hidden sm:table-cell font-mono text-xs">{x.transactionReference || '-'}</td>
                             <td className="p-2 text-right font-mono">{fmt(x.amount)}</td>
                           </tr>
                         ))}
@@ -635,8 +635,8 @@ function ProjectFundFlowReport() {
                         {(data.outflows.salaries || []).map((x: any) => (
                           <tr key={x.id} className="border-b">
                             <td className="p-2 text-gray-600">{safeFmtDate(x.paymentDate)}</td>
-                            <td className="p-2">{x.employeeName || '—'}</td>
-                            <td className="p-2 hidden sm:table-cell">{x.paymentMode || '—'}</td>
+                            <td className="p-2">{x.employeeName || '-'}</td>
+                            <td className="p-2 hidden sm:table-cell">{x.paymentMode || '-'}</td>
                             <td className="p-2 text-right font-mono">{fmt(x.netSalary)}</td>
                           </tr>
                         ))}
@@ -825,10 +825,10 @@ function ARAgingReport({ data }: { data: any }) {
                   <p className="text-xs text-gray-400">{c.customerPhone}</p>
                 </td>
                 <td className="p-3 hidden md:table-cell text-xs text-gray-500">{(c.bookings || []).join(', ')}</td>
-                <td className="p-3 text-right font-mono text-sm">{c.bucket0_30 > 0 ? fmt(c.bucket0_30) : '—'}</td>
-                <td className="p-3 text-right font-mono text-sm">{c.bucket31_60 > 0 ? fmt(c.bucket31_60) : '—'}</td>
-                <td className="p-3 text-right font-mono text-sm">{c.bucket61_90 > 0 ? fmt(c.bucket61_90) : '—'}</td>
-                <td className="p-3 text-right font-mono text-sm font-semibold text-red-700">{c.bucket90plus > 0 ? fmt(c.bucket90plus) : '—'}</td>
+                <td className="p-3 text-right font-mono text-sm">{c.bucket0_30 > 0 ? fmt(c.bucket0_30) : '-'}</td>
+                <td className="p-3 text-right font-mono text-sm">{c.bucket31_60 > 0 ? fmt(c.bucket31_60) : '-'}</td>
+                <td className="p-3 text-right font-mono text-sm">{c.bucket61_90 > 0 ? fmt(c.bucket61_90) : '-'}</td>
+                <td className="p-3 text-right font-mono text-sm font-semibold text-red-700">{c.bucket90plus > 0 ? fmt(c.bucket90plus) : '-'}</td>
                 <td className="p-3 text-right font-bold font-mono">{fmt(c.total)}</td>
               </tr>
             ))}
@@ -895,11 +895,11 @@ function APAgingReport({ data }: { data: any }) {
                   <p className="font-medium">{v.vendorName}</p>
                   <p className="text-xs text-gray-400 font-mono">{v.vendorCode}</p>
                 </td>
-                <td className="p-3 hidden md:table-cell text-xs text-gray-500">{v.vendorCategory || '—'}</td>
-                <td className="p-3 text-right font-mono text-sm">{v.current > 0 ? fmt(v.current) : '—'}</td>
-                <td className="p-3 text-right font-mono text-sm">{v.bucket0_30 > 0 ? fmt(v.bucket0_30) : '—'}</td>
-                <td className="p-3 text-right font-mono text-sm">{v.bucket31_60 > 0 ? fmt(v.bucket31_60) : '—'}</td>
-                <td className="p-3 text-right font-mono text-sm font-semibold text-red-700">{v.bucket90plus > 0 ? fmt(v.bucket90plus) : '—'}</td>
+                <td className="p-3 hidden md:table-cell text-xs text-gray-500">{v.vendorCategory || '-'}</td>
+                <td className="p-3 text-right font-mono text-sm">{v.current > 0 ? fmt(v.current) : '-'}</td>
+                <td className="p-3 text-right font-mono text-sm">{v.bucket0_30 > 0 ? fmt(v.bucket0_30) : '-'}</td>
+                <td className="p-3 text-right font-mono text-sm">{v.bucket31_60 > 0 ? fmt(v.bucket31_60) : '-'}</td>
+                <td className="p-3 text-right font-mono text-sm font-semibold text-red-700">{v.bucket90plus > 0 ? fmt(v.bucket90plus) : '-'}</td>
                 <td className="p-3 text-right font-bold font-mono">{fmt(v.outstandingAmount)}</td>
               </tr>
             ))}
@@ -978,12 +978,12 @@ function CashFlowReport({ data }: { data: any }) {
                 {(s.data?.items || []).slice(0, 20).map((item: any, i: number) => (
                   <tr key={i} className="border-b hover:bg-gray-50">
                     <td className="p-2 text-xs text-gray-500 whitespace-nowrap">
-                      {item.date ? format(new Date(item.date), 'dd MMM') : '—'}
+                      {item.date ? format(new Date(item.date), 'dd MMM') : '-'}
                     </td>
-                    <td className="p-2 text-xs max-w-xs truncate">{item.description || '—'}</td>
+                    <td className="p-2 text-xs max-w-xs truncate">{item.description || '-'}</td>
                     <td className="p-2 text-xs text-gray-500 hidden md:table-cell">{item.accountName}</td>
-                    <td className="p-2 text-right font-mono text-xs text-blue-700">{item.debit > 0 ? fmt(item.debit) : '—'}</td>
-                    <td className="p-2 text-right font-mono text-xs text-green-700">{item.credit > 0 ? fmt(item.credit) : '—'}</td>
+                    <td className="p-2 text-right font-mono text-xs text-blue-700">{item.debit > 0 ? fmt(item.debit) : '-'}</td>
+                    <td className="p-2 text-right font-mono text-xs text-green-700">{item.credit > 0 ? fmt(item.credit) : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1001,11 +1001,10 @@ function CashFlowReport({ data }: { data: any }) {
 export default function ReportsPage() {
   const searchParams = useSearchParams();
   const { selectedProperties, properties } = usePropertyStore();
-  /** Backend requires propertyId when the user can access more than one project. */
-  const reportPropertyId =
-    selectedProperties[0] ?? (properties.length > 0 ? properties[0].id : undefined);
-  const reportsUsedFallbackProject =
-    !selectedProperties[0] && properties.length > 1 && !!reportPropertyId;
+  const allSelected =
+    properties.length > 0 && selectedProperties.length === properties.length;
+  const isAllPropertiesView = selectedProperties.length === 0 || allSelected;
+  const reportPropertyId = isAllPropertiesView ? undefined : selectedProperties[0];
 
   const [tab, setTab] = useState<Tab>('balance-sheet');
   const [balanceSheet, setBalanceSheet] = useState<any>(null);
@@ -1031,6 +1030,10 @@ export default function ReportsPage() {
     setBalanceSheet(null); setProfitLoss(null); setTrialBalance(null);
     (async () => {
     try {
+        if (!properties.length) {
+          setVariance(null);
+          return;
+        }
         const [bs, pl, tb, vr] = await Promise.all([
         accountsService.getBalanceSheet(reportPropertyId),
         accountsService.getProfitLoss(reportPropertyId),
@@ -1044,38 +1047,51 @@ export default function ReportsPage() {
       } catch (e) { console.error(e); }
       finally { setLoading(false); }
     })();
-  }, [reportPropertyId]);
+  }, [reportPropertyId, properties.length, isAllPropertiesView, selectedProperties.length, allSelected]);
 
   // Lazy-load AR/AP aging and Cash Flow when those tabs are first opened
   useEffect(() => {
+    const propertyParam = reportPropertyId
+      ? { params: { propertyId: reportPropertyId } }
+      : undefined;
     if (tab === 'ar-aging' && !arAging) {
       setLazyLoading(true);
-      api.get('/accounting/reports/ar-aging')
+      api.get('/accounting/reports/ar-aging', propertyParam)
         .then((d: any) => setArAging(d))
         .catch(console.error)
         .finally(() => setLazyLoading(false));
     }
     if (tab === 'ap-aging' && !apAging) {
       setLazyLoading(true);
-      api.get('/accounting/reports/ap-aging')
+      api.get('/accounting/reports/ap-aging', propertyParam)
         .then((d: any) => setApAging(d))
         .catch(console.error)
         .finally(() => setLazyLoading(false));
     }
     if (tab === 'cash-flow' && !cashFlow) {
-      // India FY: April 1 — roll back a year if we're in Jan/Feb/Mar
+      // India FY: April 1 - roll back a year if we're in Jan/Feb/Mar
       const now = new Date();
       const fyYear = now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
       const fyStart = `${fyYear}-04-01`;
       const today = format(new Date(), 'yyyy-MM-dd');
       setLazyLoading(true);
-      api.get('/accounting/reports/cash-flow', { params: { startDate: fyStart, endDate: today } })
+      const cfParams: any = { startDate: fyStart, endDate: today };
+      if (reportPropertyId) cfParams.propertyId = reportPropertyId;
+      api.get('/accounting/reports/cash-flow', { params: cfParams })
         .then((d: any) => setCashFlow(d))
         .catch(console.error)
         .finally(() => setLazyLoading(false));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, reportPropertyId]);
+
+  // Invalidate lazy-loaded reports when the top-bar property scope changes,
+  // so switching projects refetches instead of showing stale numbers.
+  useEffect(() => {
+    setArAging(null);
+    setApAging(null);
+    setCashFlow(null);
+  }, [reportPropertyId]);
 
   const handleExportTrialBalance = async () => {
     setExporting(true);
@@ -1126,17 +1142,26 @@ export default function ReportsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Financial Reports</h1>
           <p className="text-sm text-gray-500 mt-1">As of {format(new Date(), 'dd MMM yyyy')}</p>
-          {reportsUsedFallbackProject && (
-            <p className="text-xs text-amber-700 mt-2 max-w-xl">
-              No project was selected in the header. Showing reports for{' '}
-              <span className="font-medium">{properties.find((p) => p.id === reportPropertyId)?.name ?? 'the first project'}</span>
-              . Use the project dropdown above to switch.
+          {properties.length > 0 && (
+            <p className="text-xs text-gray-600 mt-2">
+              {isAllPropertiesView ? (
+                <>
+                  Scope: <span className="font-medium text-gray-900">All projects</span>
+                </>
+              ) : reportPropertyId ? (
+                <>
+                  Project:{' '}
+                  <span className="font-medium text-gray-900">
+                    {properties.find((p) => p.id === reportPropertyId)?.name ?? reportPropertyId}
+                  </span>
+                </>
+              ) : null}
             </p>
           )}
         </div>
       </div>
 
-      {/* Tabs — scrollable on mobile */}
+      {/* Tabs - scrollable on mobile */}
       <div className="overflow-x-auto no-scrollbar">
       <div className="flex gap-1 border-b min-w-max">
         {tabConfig.map(t => (

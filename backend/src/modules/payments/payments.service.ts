@@ -9,6 +9,8 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { AccountingIntegrationService } from '../accounting/accounting-integration.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationCategory, NotificationType } from '../notifications/entities/notification.entity';
+import { ModuleRef } from '@nestjs/core';
+import { PaymentCompletionService } from './services/payment-completion.service';
 
 @Injectable()
 export class PaymentsService {
@@ -23,10 +25,17 @@ export class PaymentsService {
     private userRepository: Repository<User>,
     private readonly accountingIntegrationService: AccountingIntegrationService,
     private readonly notificationsService: NotificationsService,
+    // Lazy-resolved to avoid any circularity with modules that also import PaymentCompletionService.
+    private readonly moduleRef: ModuleRef,
   ) {}
 
+  /** Lazily resolve PaymentCompletionService (same module, so no provider magic needed). */
+  private getCompletionService(): PaymentCompletionService {
+    return this.moduleRef.get(PaymentCompletionService, { strict: false });
+  }
+
   async create(createPaymentDto: CreatePaymentDto, userId: string): Promise<Payment> {
-    // Direct COMPLETED payments are not allowed — all payments must go through verify()
+    // Direct COMPLETED payments are not allowed - all payments must go through verify()
     if ((createPaymentDto as any).status === PaymentStatus.COMPLETED) {
       throw new BadRequestException(
         'Payments cannot be created in COMPLETED status directly. Create the payment as PENDING and use the verify action to complete it.',
@@ -42,6 +51,32 @@ export class PaymentsService {
     return this.paymentRepository.save(payment);
   }
 
+  /**
+   * Build the shared filtered query used by findAll, findAllPaginated,
+   * and getStatistics. Keeps property-scope logic in one place.
+   */
+  private buildFilteredQuery(filters?: {
+    bookingId?: string;
+    customerId?: string;
+    paymentType?: string;
+    paymentMethod?: string;
+    status?: PaymentStatus;
+    isVerified?: boolean;
+    startDate?: Date;
+    endDate?: Date;
+    minAmount?: number;
+    maxAmount?: number;
+    propertyId?: string;
+    accessiblePropertyIds?: string[] | null;
+  }) {
+    const query = this.paymentRepository
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.booking', 'booking')
+      .leftJoinAndSelect('payment.customer', 'customer');
+    this.applyPaymentFilters(query, filters);
+    return query;
+  }
+
   async findAll(filters?: {
     bookingId?: string;
     customerId?: string;
@@ -53,11 +88,31 @@ export class PaymentsService {
     endDate?: Date;
     minAmount?: number;
     maxAmount?: number;
+    propertyId?: string;
     accessiblePropertyIds?: string[] | null;
   }): Promise<Payment[]> {
-    const query = this.paymentRepository.createQueryBuilder('payment')
-      .leftJoinAndSelect('payment.booking', 'booking')
-      .leftJoinAndSelect('payment.customer', 'customer');
+    const query = this.buildFilteredQuery(filters);
+    query.orderBy('payment.paymentDate', 'DESC');
+    return query.getMany();
+  }
+
+  /** SQL-level pagination (skip/take). Use for list endpoints. */
+  async findAllPaginated(
+    filters: Parameters<PaymentsService['findAll']>[0],
+    page: number,
+    limit: number,
+  ): Promise<{ data: Payment[]; total: number }> {
+    const query = this.buildFilteredQuery(filters);
+    query.orderBy('payment.paymentDate', 'DESC');
+    const total = await query.getCount();
+    const data = await query.skip((page - 1) * limit).take(limit).getMany();
+    return { data, total };
+  }
+
+  private applyPaymentFilters(
+    query: import('typeorm').SelectQueryBuilder<Payment>,
+    filters?: Parameters<PaymentsService['findAll']>[0],
+  ): void {
 
     if (filters?.bookingId) {
       query.andWhere('payment.bookingId = :bookingId', { bookingId: filters.bookingId });
@@ -102,15 +157,28 @@ export class PaymentsService {
       query.andWhere('payment.amount <= :maxAmount', { maxAmount: filters.maxAmount });
     }
 
-    if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+    // Property scope: honor the top-bar selection (propertyId) when
+    // present, but always intersect with the caller's accessible set.
+    if (filters?.propertyId) {
+      if (
+        filters.accessiblePropertyIds &&
+        filters.accessiblePropertyIds.length > 0 &&
+        !filters.accessiblePropertyIds.includes(filters.propertyId)
+      ) {
+        query.andWhere('1 = 0');
+      } else {
+        query.andWhere('booking.propertyId = :propertyId', {
+          propertyId: filters.propertyId,
+        });
+      }
+    } else if (
+      filters?.accessiblePropertyIds &&
+      filters.accessiblePropertyIds.length > 0
+    ) {
       query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
         accessiblePropertyIds: filters.accessiblePropertyIds,
       });
     }
-
-    query.orderBy('payment.paymentDate', 'DESC');
-
-    return query.getMany();
   }
 
   async findOne(id: string): Promise<Payment> {
@@ -151,6 +219,29 @@ export class PaymentsService {
     return this.paymentRepository.save(payment);
   }
 
+  /**
+   * Flip a payment's status to REFUNDED. Separate from {@link update}
+   * because `update` intentionally rejects transitions on COMPLETED /
+   * REFUNDED rows - but the refund processing flow needs exactly that
+   * transition once a refund has been fully processed. Previously the
+   * refunds service tried to go through update() and silently failed
+   * (payment stayed COMPLETED, collections / reports got misaligned).
+   */
+  async markRefunded(id: string, userId?: string | null): Promise<Payment> {
+    const payment = await this.findOne(id);
+    if (payment.status === PaymentStatus.REFUNDED) return payment;
+    if (payment.status !== PaymentStatus.COMPLETED) {
+      throw new BadRequestException(
+        `Only COMPLETED payments can be marked REFUNDED (current: ${payment.status})`,
+      );
+    }
+    payment.status = PaymentStatus.REFUNDED;
+    payment.notes = [payment.notes, userId ? `Refunded by ${userId}` : 'Refunded']
+      .filter(Boolean)
+      .join(' | ');
+    return this.paymentRepository.save(payment);
+  }
+
   async verify(id: string, userId: string): Promise<Payment> {
     const payment = await this.findOne(id);
 
@@ -163,22 +254,63 @@ export class PaymentsService {
     payment.verifiedAt = new Date();
     const saved = await this.paymentRepository.save(payment);
 
-    // Auto-create Journal Entry (best-effort, never blocks the payment)
-    await this.accountingIntegrationService.onPaymentCompleted({
-      id: saved.id,
-      paymentCode: saved.paymentCode,
-      amount: Number(saved.amount),
-      paymentDate: saved.paymentDate,
-      paymentMethod: saved.paymentMethod,
-      createdBy: userId,
-    });
-
-    // Notify the customer (best-effort)
-    this.notifyCustomerOnPaymentVerified(saved).catch(e =>
-      this.logger.warn(`Failed to send payment notification: ${e.message}`),
-    );
+    await this.runPostCompletionHooks(saved.id, userId);
 
     return saved;
+  }
+
+  /**
+   * Run the three post-completion side-effects that every freshly-
+   * COMPLETED payment needs, regardless of whether it originated from
+   * {@link verify} or a booking-creation token flow:
+   *
+   *   1. Match against a payment schedule / milestone and update the
+   *      parent booking totals via PaymentCompletionService.
+   *   2. Post the accounting journal entry.
+   *   3. Notify the customer.
+   *
+   * All three are best-effort - individual failures are logged but
+   * never thrown, so a transient SMTP error can't stop a payment from
+   * landing in the books. The token-payment path in BookingsService
+   * calls this post-commit so the same pipeline covers both entry
+   * points.
+   */
+  async runPostCompletionHooks(
+    paymentId: string,
+    userId?: string | null,
+  ): Promise<void> {
+    const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
+    if (!payment) {
+      this.logger.warn(`runPostCompletionHooks: payment ${paymentId} not found`);
+      return;
+    }
+
+    try {
+      await this.getCompletionService().processPaymentCompletion(payment.id);
+    } catch (err: any) {
+      this.logger.error(
+        `Payment completion workflow failed for payment ${payment.paymentCode}: ${err.message}`,
+      );
+    }
+
+    try {
+      await this.accountingIntegrationService.onPaymentCompleted({
+        id: payment.id,
+        paymentCode: payment.paymentCode,
+        amount: Number(payment.amount),
+        paymentDate: payment.paymentDate,
+        paymentMethod: payment.paymentMethod,
+        createdBy: userId ?? undefined,
+      });
+    } catch (err: any) {
+      this.logger.error(
+        `Auto JE failed for payment ${payment.paymentCode}: ${err.message}`,
+      );
+    }
+
+    this.notifyCustomerOnPaymentVerified(payment).catch((e) =>
+      this.logger.warn(`Failed to send payment notification: ${e.message}`),
+    );
   }
 
   private async notifyCustomerOnPaymentVerified(payment: Payment): Promise<void> {
@@ -237,6 +369,7 @@ export class PaymentsService {
     startDate?: Date;
     endDate?: Date;
     paymentType?: string;
+    propertyId?: string;
     accessiblePropertyIds?: string[] | null;
   }): Promise<{
     totalPayments: number;
@@ -262,7 +395,22 @@ export class PaymentsService {
       query.andWhere('payment.paymentType = :paymentType', { paymentType: filters.paymentType });
     }
 
-    if (filters?.accessiblePropertyIds && filters.accessiblePropertyIds.length > 0) {
+    if (filters?.propertyId) {
+      if (
+        filters.accessiblePropertyIds &&
+        filters.accessiblePropertyIds.length > 0 &&
+        !filters.accessiblePropertyIds.includes(filters.propertyId)
+      ) {
+        query.andWhere('1 = 0');
+      } else {
+        query.andWhere('booking.propertyId = :propertyId', {
+          propertyId: filters.propertyId,
+        });
+      }
+    } else if (
+      filters?.accessiblePropertyIds &&
+      filters.accessiblePropertyIds.length > 0
+    ) {
       query.andWhere('booking.propertyId IN (:...accessiblePropertyIds)', {
         accessiblePropertyIds: filters.accessiblePropertyIds,
       });

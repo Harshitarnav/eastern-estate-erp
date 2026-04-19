@@ -129,7 +129,7 @@ export default function CompanySettingsPage() {
       );
       setTestResult(result);
       if (result.success) toast.success('Test email sent! Check your inbox.');
-      else toast.error('Test failed — see details below.');
+      else toast.error('Test failed - see details below.');
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? 'Test failed';
       setTestResult({ success: false, message: 'Test failed', detail: msg });
@@ -230,7 +230,7 @@ export default function CompanySettingsPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-[#A8211B]" />
-            <CardTitle className="text-base">Tax &amp; Legal — Fallback Defaults</CardTitle>
+            <CardTitle className="text-base">Tax &amp; Legal - Fallback Defaults</CardTitle>
           </div>
           <CardDescription>
             Used on invoices and demand drafts <em>only</em> when the project has no project-specific GSTIN / RERA set.
@@ -264,7 +264,7 @@ export default function CompanySettingsPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-[#A8211B]" />
-            <CardTitle className="text-base">Bank Details — Fallback Defaults</CardTitle>
+            <CardTitle className="text-base">Bank Details - Fallback Defaults</CardTitle>
           </div>
           <CardDescription>
             Shown in demand drafts &amp; receipts <em>only</em> when the project has no project-specific bank account set.

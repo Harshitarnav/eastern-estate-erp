@@ -2,9 +2,11 @@ import { TowerProgressService } from './tower-progress.service';
 import { CreateTowerProgressDto } from './dto/create-tower-progress.dto';
 import { UpdateTowerProgressDto } from './dto/update-tower-progress.dto';
 import { ConstructionPhase } from './entities/construction-tower-progress.entity';
+import { ConstructionProjectsService } from './construction-projects.service';
 export declare class TowerProgressController {
     private readonly towerProgressService;
-    constructor(towerProgressService: TowerProgressService);
+    private readonly projectsService;
+    constructor(towerProgressService: TowerProgressService, projectsService: ConstructionProjectsService);
     createTowerProgress(projectId: string, towerId: string, createDto: CreateTowerProgressDto): Promise<import("./entities/construction-tower-progress.entity").ConstructionTowerProgress>;
     updateTowerProgress(id: string, updateDto: UpdateTowerProgressDto): Promise<import("./entities/construction-tower-progress.entity").ConstructionTowerProgress>;
     getTowerProgress(projectId: string, towerId: string, phase?: ConstructionPhase): Promise<import("./entities/construction-tower-progress.entity").ConstructionTowerProgress | import("./entities/construction-tower-progress.entity").ConstructionTowerProgress[]>;

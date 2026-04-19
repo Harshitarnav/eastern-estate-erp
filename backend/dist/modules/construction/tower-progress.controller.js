@@ -18,19 +18,29 @@ const tower_progress_service_1 = require("./tower-progress.service");
 const create_tower_progress_dto_1 = require("./dto/create-tower-progress.dto");
 const update_tower_progress_dto_1 = require("./dto/update-tower-progress.dto");
 const construction_tower_progress_entity_1 = require("./entities/construction-tower-progress.entity");
+const construction_projects_service_1 = require("./construction-projects.service");
 let TowerProgressController = class TowerProgressController {
-    constructor(towerProgressService) {
+    constructor(towerProgressService, projectsService) {
         this.towerProgressService = towerProgressService;
+        this.projectsService = projectsService;
     }
     async createTowerProgress(projectId, towerId, createDto) {
-        return this.towerProgressService.create({
+        const saved = await this.towerProgressService.create({
             ...createDto,
             constructionProjectId: projectId,
             towerId,
         });
+        this.projectsService.recomputeOverallProgress(projectId).catch(() => { });
+        return saved;
     }
     async updateTowerProgress(id, updateDto) {
-        return this.towerProgressService.update(id, updateDto);
+        const saved = await this.towerProgressService.update(id, updateDto);
+        if (saved?.constructionProjectId) {
+            this.projectsService
+                .recomputeOverallProgress(saved.constructionProjectId)
+                .catch(() => { });
+        }
+        return saved;
     }
     async getTowerProgress(projectId, towerId, phase) {
         if (phase) {
@@ -143,6 +153,7 @@ __decorate([
 ], TowerProgressController.prototype, "getAllTowerProgress", null);
 exports.TowerProgressController = TowerProgressController = __decorate([
     (0, common_1.Controller)('construction-projects'),
-    __metadata("design:paramtypes", [tower_progress_service_1.TowerProgressService])
+    __metadata("design:paramtypes", [tower_progress_service_1.TowerProgressService,
+        construction_projects_service_1.ConstructionProjectsService])
 ], TowerProgressController);
 //# sourceMappingURL=tower-progress.controller.js.map

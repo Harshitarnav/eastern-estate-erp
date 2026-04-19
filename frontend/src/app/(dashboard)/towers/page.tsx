@@ -339,7 +339,7 @@ export default function TowersInventoryPage() {
           </button>
         </div>
 
-        {/* Tower Documents — expanded inline */}
+        {/* Tower Documents - expanded inline */}
         {expandedDocsTower === tower.id && (
           <div className="mt-4 pt-4 border-t border-gray-100">
             <DocumentsPanel

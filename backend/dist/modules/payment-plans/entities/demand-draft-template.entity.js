@@ -36,6 +36,10 @@ __decorate([
     __metadata("design:type", String)
 ], DemandDraftTemplate.prototype, "htmlContent", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ name: 'tone', type: 'varchar', length: 40, default: 'ON_TIME' }),
+    __metadata("design:type", String)
+], DemandDraftTemplate.prototype, "tone", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'is_active', default: true }),
     __metadata("design:type", Boolean)
 ], DemandDraftTemplate.prototype, "isActive", void 0);
@@ -67,6 +71,7 @@ __decorate([
 ], DemandDraftTemplate.prototype, "updater", void 0);
 exports.DemandDraftTemplate = DemandDraftTemplate = __decorate([
     (0, typeorm_1.Entity)('demand_draft_templates'),
-    (0, typeorm_1.Index)(['isActive'])
+    (0, typeorm_1.Index)(['isActive']),
+    (0, typeorm_1.Index)(['tone'])
 ], DemandDraftTemplate);
 //# sourceMappingURL=demand-draft-template.entity.js.map

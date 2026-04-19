@@ -5,6 +5,9 @@ export declare class SchemaSyncService implements OnModuleInit {
     private readonly logger;
     constructor(dataSource: DataSource);
     onModuleInit(): Promise<void>;
+    private dropLegacyTables;
+    private ensureForeignKeys;
+    private ensureBookingsCollectionsSchema;
     private ensureCompanySettingsSchema;
     private ensureNotificationsSchema;
     private ensureAccountingSchema;

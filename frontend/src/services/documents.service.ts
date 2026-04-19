@@ -47,7 +47,7 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   [DocumentCategory.KYC_AADHAR]: 'Aadhar Card',
   [DocumentCategory.KYC_PAN]: 'PAN Card',
   [DocumentCategory.KYC_PHOTO]: 'Photograph',
-  [DocumentCategory.KYC_OTHER]: 'KYC — Other',
+  [DocumentCategory.KYC_OTHER]: 'KYC - Other',
   [DocumentCategory.BANK_DOCUMENT]: 'Bank Document',
   [DocumentCategory.LOAN_DOCUMENT]: 'Loan Document',
   [DocumentCategory.PAYMENT_PROOF]: 'Payment Proof',

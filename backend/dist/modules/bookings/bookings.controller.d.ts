@@ -5,7 +5,7 @@ export declare class BookingsController {
     constructor(bookingsService: BookingsService);
     create(createBookingDto: CreateBookingDto, req: any): Promise<BookingResponseDto>;
     findAll(query: QueryBookingDto, req: any): Promise<PaginatedBookingsResponse>;
-    getStatistics(req: any): Promise<{
+    getStatistics(propertyId: string | undefined, req: any): Promise<{
         total: number;
         tokenPaid: number;
         agreementPending: number;
@@ -20,11 +20,11 @@ export declare class BookingsController {
         totalLoanAmount: number;
         collectionRate: number;
     }>;
-    findOne(id: string): Promise<BookingResponseDto>;
-    update(id: string, updateBookingDto: UpdateBookingDto): Promise<BookingResponseDto>;
-    remove(id: string): Promise<void>;
+    findOne(id: string, req: any): Promise<BookingResponseDto>;
+    update(id: string, updateBookingDto: UpdateBookingDto, req: any): Promise<BookingResponseDto>;
+    remove(id: string, req: any): Promise<void>;
     cancel(id: string, body: {
         reason: string;
         refundAmount?: number;
-    }): Promise<BookingResponseDto>;
+    }, req: any): Promise<BookingResponseDto>;
 }

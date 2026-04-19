@@ -17,13 +17,31 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const construction_development_update_entity_1 = require("./entities/construction-development-update.entity");
+const construction_project_entity_1 = require("./entities/construction-project.entity");
 let DevelopmentUpdatesService = class DevelopmentUpdatesService {
-    constructor(updatesRepo) {
+    constructor(updatesRepo, projectRepo) {
         this.updatesRepo = updatesRepo;
+        this.projectRepo = projectRepo;
     }
     async create(createDto, createdBy) {
+        if (!createDto.constructionProjectId && !createDto.propertyId) {
+            throw new common_1.BadRequestException('Either propertyId or constructionProjectId is required');
+        }
+        let propertyId = createDto.propertyId ?? null;
+        if (!propertyId && createDto.constructionProjectId) {
+            const project = await this.projectRepo.findOne({
+                where: { id: createDto.constructionProjectId },
+            });
+            propertyId = project?.propertyId ?? null;
+        }
         const update = this.updatesRepo.create({
             ...createDto,
+            propertyId,
+            scopeType: createDto.scopeType ?? null,
+            category: createDto.category ?? null,
+            towerId: createDto.towerId ?? null,
+            commonAreaLabel: createDto.commonAreaLabel ?? null,
+            constructionProjectId: createDto.constructionProjectId ?? null,
             updateDate: createDto.updateDate || new Date().toISOString().split('T')[0],
             createdBy,
         });
@@ -31,9 +49,41 @@ let DevelopmentUpdatesService = class DevelopmentUpdatesService {
     }
     async findAll() {
         return this.updatesRepo.find({
-            relations: ['constructionProject', 'creator'],
+            relations: ['constructionProject', 'creator', 'property', 'tower'],
             order: { updateDate: 'DESC' },
         });
+    }
+    async findScoped(filters, accessiblePropertyIds) {
+        const qb = this.updatesRepo
+            .createQueryBuilder('u')
+            .leftJoinAndSelect('u.creator', 'creator')
+            .leftJoinAndSelect('u.property', 'property')
+            .leftJoinAndSelect('u.tower', 'tower')
+            .leftJoinAndSelect('u.constructionProject', 'cp')
+            .orderBy('u.updateDate', 'DESC')
+            .addOrderBy('u.createdAt', 'DESC');
+        if (filters.propertyId) {
+            qb.andWhere('u.property_id = :propertyId', { propertyId: filters.propertyId });
+        }
+        else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            qb.andWhere('(u.property_id IS NULL OR u.property_id IN (:...accIds))', {
+                accIds: accessiblePropertyIds,
+            });
+        }
+        if (filters.towerId) {
+            qb.andWhere('u.tower_id = :towerId', { towerId: filters.towerId });
+        }
+        if (filters.scopeType) {
+            qb.andWhere('u.scope_type = :scopeType', { scopeType: filters.scopeType });
+        }
+        if (filters.category) {
+            qb.andWhere('u.category = :category', { category: filters.category });
+        }
+        if (typeof filters.limit === 'number')
+            qb.take(filters.limit);
+        if (typeof filters.offset === 'number')
+            qb.skip(filters.offset);
+        return qb.getMany();
     }
     async findByProject(projectId) {
         return this.updatesRepo.find({
@@ -152,6 +202,8 @@ exports.DevelopmentUpdatesService = DevelopmentUpdatesService;
 exports.DevelopmentUpdatesService = DevelopmentUpdatesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(construction_development_update_entity_1.ConstructionDevelopmentUpdate)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, typeorm_1.InjectRepository)(construction_project_entity_1.ConstructionProject)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository])
 ], DevelopmentUpdatesService);
 //# sourceMappingURL=development-updates.service.js.map

@@ -113,9 +113,9 @@ export declare class AccountingController {
         inflowTotal: number;
         outflowTotal: number;
     }>;
-    getARAgingReport(asOf?: string): Promise<any>;
+    getARAgingReport(asOf?: string, propertyId?: string): Promise<any>;
     getAPAgingReport(asOf?: string): Promise<any>;
-    getCashFlowStatement(startDate: string, endDate: string): Promise<any>;
+    getCashFlowStatement(startDate: string, endDate: string, propertyId?: string): Promise<any>;
     exportForITR(financialYear: string): Promise<{
         financial_year: string;
         total_income: number;

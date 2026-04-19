@@ -399,7 +399,7 @@ export default function FollowUpsPage() {
                           <Calendar className="h-4 w-4 text-blue-600" />
                           <span className="text-sm text-blue-800">
                             Next follow-up: {formatDisplayDate(followUp.nextFollowUpDate)}
-                            {followUp.nextFollowUpPlan && ` — ${followUp.nextFollowUpPlan}`}
+                            {followUp.nextFollowUpPlan && ` - ${followUp.nextFollowUpPlan}`}
                           </span>
                         </div>
                       )}

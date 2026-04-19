@@ -12,10 +12,16 @@ import { TowerProgressService } from './tower-progress.service';
 import { CreateTowerProgressDto } from './dto/create-tower-progress.dto';
 import { UpdateTowerProgressDto } from './dto/update-tower-progress.dto';
 import { ConstructionPhase } from './entities/construction-tower-progress.entity';
+import { ConstructionProjectsService } from './construction-projects.service';
 
 @Controller('construction-projects')
 export class TowerProgressController {
-  constructor(private readonly towerProgressService: TowerProgressService) {}
+  constructor(
+    private readonly towerProgressService: TowerProgressService,
+    // Roll up tower phase changes to project.overallProgress so the
+    // project cards don't drift from the raw phase data.
+    private readonly projectsService: ConstructionProjectsService,
+  ) {}
 
   // Create or update tower progress for a phase
   @Post(':projectId/towers/:towerId/progress')
@@ -24,11 +30,13 @@ export class TowerProgressController {
     @Param('towerId') towerId: string,
     @Body() createDto: CreateTowerProgressDto,
   ) {
-    return this.towerProgressService.create({
+    const saved = await this.towerProgressService.create({
       ...createDto,
       constructionProjectId: projectId,
       towerId,
     });
+    this.projectsService.recomputeOverallProgress(projectId).catch(() => {});
+    return saved;
   }
 
   // Update specific tower progress record
@@ -37,7 +45,13 @@ export class TowerProgressController {
     @Param('id') id: string,
     @Body() updateDto: UpdateTowerProgressDto,
   ) {
-    return this.towerProgressService.update(id, updateDto);
+    const saved = await this.towerProgressService.update(id, updateDto);
+    if (saved?.constructionProjectId) {
+      this.projectsService
+        .recomputeOverallProgress(saved.constructionProjectId)
+        .catch(() => {});
+    }
+    return saved;
   }
 
   // Get all progress records for a specific tower

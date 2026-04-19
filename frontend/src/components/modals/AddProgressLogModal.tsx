@@ -4,7 +4,15 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Modal from './Modal';
 import { api } from '@/services/api';
-import { Camera, X, Upload, ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { Camera, X, Upload, ImageIcon, Zap, CheckCircle2, Loader2 } from 'lucide-react';
+import { towersService } from '@/services/towers.service';
+import { flatsService } from '@/services/flats.service';
+import {
+  paymentPlansService,
+  type FlatPaymentPlan,
+  type FlatPaymentMilestone,
+} from '@/services/payment-plans.service';
 
 interface AddProgressLogModalProps {
   isOpen: boolean;
@@ -15,6 +23,14 @@ interface AddProgressLogModalProps {
 
 const WEATHER_CONDITIONS = ['SUNNY', 'CLOUDY', 'RAINY', 'STORMY', 'FOGGY'];
 const SHIFTS = ['DAY', 'NIGHT'];
+
+const WORKFLOW_PHASES = [
+  { value: 'FOUNDATION', label: 'Foundation' },
+  { value: 'STRUCTURE', label: 'Structure' },
+  { value: 'MEP', label: 'MEP (Mechanical, Electrical, Plumbing)' },
+  { value: 'FINISHING', label: 'Finishing' },
+  { value: 'HANDOVER', label: 'Handover' },
+];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') ?? 'http://localhost:3001';
 
@@ -44,11 +60,126 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
     remarks: '',
   });
 
+  // ── Demand-draft workflow section (opt-in) ────────────────────────────────
+  const [wfEnabled, setWfEnabled] = useState(false);
+  const [wfScope, setWfScope] = useState<'all' | 'single'>('all');
+  const [wfPhase, setWfPhase] = useState('FOUNDATION');
+  const [wfPhaseProgress, setWfPhaseProgress] = useState<string>('');
+  const [wfTowerId, setWfTowerId] = useState('');
+  const [wfFlatId, setWfFlatId] = useState('');
+  const [wfTowers, setWfTowers] = useState<any[]>([]);
+  const [wfFlats, setWfFlats] = useState<any[]>([]);
+  const [wfLoadingTowers, setWfLoadingTowers] = useState(false);
+  const [wfLoadingFlats, setWfLoadingFlats] = useState(false);
+
+  // Payment plan shown when a specific flat is picked. Lets the user tick
+  // the actual milestone that was reached today instead of guessing phase +
+  // percentage. Selecting a milestone auto-fills wfPhase + wfPhaseProgress.
+  const [wfPlan, setWfPlan] = useState<FlatPaymentPlan | null>(null);
+  const [wfPlanLoading, setWfPlanLoading] = useState(false);
+  const [wfSelectedMilestoneSeq, setWfSelectedMilestoneSeq] = useState<number | null>(null);
+
+  const selectedProject = projects.find((p: any) => p.id === formData.projectId);
+  const selectedPropertyId: string | undefined =
+    selectedProject?.propertyId || selectedProject?.property?.id || (propertyId || undefined);
+
   useEffect(() => {
     if (isOpen) {
       loadProjects();
     }
   }, [isOpen]);
+
+  // When the user opens the workflow section (or changes project), load towers
+  // for the selected project's property.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!wfEnabled || !selectedPropertyId) {
+        setWfTowers([]);
+        return;
+      }
+      try {
+        setWfLoadingTowers(true);
+        const rows = await towersService.getTowersByProperty(selectedPropertyId);
+        if (!cancelled) setWfTowers(Array.isArray(rows) ? rows : []);
+      } catch (e) {
+        console.error('Failed to load towers', e);
+        if (!cancelled) setWfTowers([]);
+      } finally {
+        if (!cancelled) setWfLoadingTowers(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [wfEnabled, selectedPropertyId]);
+
+  // Reset tower/flat selection whenever the project changes or section is toggled.
+  useEffect(() => {
+    setWfTowerId('');
+    setWfFlatId('');
+    setWfFlats([]);
+  }, [formData.projectId, wfEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!wfEnabled || wfScope !== 'single' || !wfTowerId) {
+        setWfFlats([]);
+        return;
+      }
+      try {
+        setWfLoadingFlats(true);
+        const rows = await flatsService.getFlatsByTower(wfTowerId);
+        if (!cancelled) setWfFlats(Array.isArray(rows) ? rows : []);
+      } catch (e) {
+        console.error('Failed to load flats', e);
+        if (!cancelled) setWfFlats([]);
+      } finally {
+        if (!cancelled) setWfLoadingFlats(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [wfEnabled, wfScope, wfTowerId]);
+
+  // When a specific flat is chosen, fetch its payment plan so we can show
+  // the actual milestones the accountant needs to track. `getFlatPaymentPlanByFlatId`
+  // returns null for unsold flats - that's a valid state, we just don't
+  // render the milestone picker in that case.
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setWfPlan(null);
+      setWfSelectedMilestoneSeq(null);
+      if (!wfEnabled || wfScope !== 'single' || !wfFlatId) return;
+      try {
+        setWfPlanLoading(true);
+        const plan = await paymentPlansService.getFlatPaymentPlanByFlatId(wfFlatId);
+        if (!cancelled) setWfPlan(plan ?? null);
+      } catch (e) {
+        // Not found / no plan / unsold flat - all the same for the picker
+        if (!cancelled) setWfPlan(null);
+      } finally {
+        if (!cancelled) setWfPlanLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [wfEnabled, wfScope, wfFlatId]);
+
+  /** Select a milestone from the plan and auto-fill phase + phase% inputs. */
+  const pickMilestone = (m: FlatPaymentMilestone) => {
+    if (!m.constructionPhase || m.phasePercentage == null) return;
+    setWfSelectedMilestoneSeq(m.sequence);
+    setWfPhase(m.constructionPhase);
+    setWfPhaseProgress(String(m.phasePercentage));
+  };
 
   const loadProjects = async () => {
     try {
@@ -86,13 +217,30 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
     e.preventDefault();
     
     if (!formData.projectId || !formData.workCompleted || !formData.supervisorName) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
+    }
+
+    // Validate workflow fields only when the section is enabled.
+    if (wfEnabled) {
+      const phasePct = parseFloat(wfPhaseProgress);
+      if (!Number.isFinite(phasePct) || phasePct < 0 || phasePct > 100) {
+        toast.error('Please enter a valid phase progress (0-100%)');
+        return;
+      }
+      if (wfScope === 'single' && (!wfTowerId || !wfFlatId)) {
+        toast.error('Please pick a tower and flat for the workflow update');
+        return;
+      }
+      if (wfScope === 'all' && !selectedPropertyId) {
+        toast.error('Cannot determine the property for "all sold flats" - pick a project first');
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      const log = await api.post('/construction-progress-logs', {
+      const payload: Record<string, any> = {
         constructionProjectId: formData.projectId,
         logDate: formData.logDate,
         shift: formData.shift,
@@ -106,7 +254,21 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
         supervisorName: formData.supervisorName,
         nextDayPlan: formData.nextDayPlan || null,
         remarks: formData.remarks || null,
-      });
+      };
+
+      if (wfEnabled) {
+        payload.phase = wfPhase;
+        payload.phaseProgress = parseFloat(wfPhaseProgress);
+        payload.overallProgress = parseFloat(formData.progressPercentage) || 0;
+        if (wfScope === 'single') {
+          payload.flatId = wfFlatId;
+        } else {
+          payload.applyToAllSoldFlats = true;
+          if (selectedPropertyId) payload.propertyId = selectedPropertyId;
+        }
+      }
+
+      const log: any = await api.post('/construction-progress-logs', payload);
 
       // ── Upload photos if any ──────────────────────────────────────────────
       if (selectedFiles.length > 0 && log?.id) {
@@ -130,11 +292,68 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
         }
       }
 
+      toast.success('Daily progress log saved');
+
+      // ── Workflow feedback: show one toast per auto-raised DD ──────────────
+      const wf = log?.workflow as
+        | {
+            flatsProcessed: number;
+            milestonesTriggered: number;
+            generatedDemandDrafts: Array<{
+              id: string;
+              refNumber?: string;
+              milestoneName?: string;
+              amount?: number;
+              customerName?: string;
+              flatNumber?: string;
+              towerName?: string;
+            }>;
+            errors: Array<{ flatId: string; message: string }>;
+          }
+        | undefined;
+
+      if (wf) {
+        if (wf.generatedDemandDrafts.length === 0 && wf.flatsProcessed > 0) {
+          toast.info(
+            `Checked ${wf.flatsProcessed} sold flat(s) - no new milestones hit yet`,
+            { duration: 5000 },
+          );
+        }
+        wf.generatedDemandDrafts.forEach((dd) => {
+          const unit = [dd.flatNumber, dd.towerName].filter(Boolean).join(' · ');
+          const amt =
+            typeof dd.amount === 'number' && Number.isFinite(dd.amount)
+              ? `₹${dd.amount.toLocaleString('en-IN')}`
+              : '';
+          const description = [dd.milestoneName, dd.customerName, unit, amt]
+            .filter(Boolean)
+            .join(' · ');
+          toast.success(
+            `Demand draft raised${dd.refNumber ? ` (${dd.refNumber})` : ''}`,
+            {
+              description,
+              duration: 8000,
+              action: {
+                label: 'View',
+                onClick: () => {
+                  window.location.href = `/demand-drafts/${dd.id}`;
+                },
+              },
+            },
+          );
+        });
+        if (wf.errors.length > 0) {
+          toast.warning(
+            `${wf.errors.length} flat(s) could not be processed - check the server logs`,
+          );
+        }
+      }
+
       onSuccess();
       handleClose();
     } catch (error: any) {
       console.error('Failed to add progress log:', error);
-      alert(error.response?.data?.message || 'Failed to add progress log');
+      toast.error(error.response?.data?.message || 'Failed to add progress log');
     } finally {
       setLoading(false);
     }
@@ -159,6 +378,17 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
     previews.forEach(u => URL.revokeObjectURL(u));
     setSelectedFiles([]);
     setPreviews([]);
+    setWfEnabled(false);
+    setWfScope('all');
+    setWfPhase('FOUNDATION');
+    setWfPhaseProgress('');
+    setWfTowerId('');
+    setWfFlatId('');
+    setWfTowers([]);
+    setWfFlats([]);
+    setWfPlan(null);
+    setWfSelectedMilestoneSeq(null);
+    setWfPlanLoading(false);
     onClose();
   };
 
@@ -410,6 +640,211 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
           </div>
         </div>
 
+        {/* Demand-Draft Workflow (opt-in) */}
+        <div className="rounded-xl border border-dashed p-4" style={{ borderColor: '#A8211B40', background: '#FFF8F7' }}>
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 rounded border-gray-300 text-[#A8211B] focus:ring-[#A8211B]"
+              checked={wfEnabled}
+              onChange={(e) => setWfEnabled(e.target.checked)}
+            />
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: '#A8211B' }}>
+                <Zap className="w-4 h-4" />
+                Tick off a payment-plan milestone
+              </h3>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Pick a flat and the milestone you reached today. We update
+                construction progress and auto-raise the demand draft for
+                that milestone - no need to guess phase names or percentages.
+              </p>
+            </div>
+          </label>
+
+          {wfEnabled && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Apply to
+                </label>
+                <div className="flex gap-4 text-sm">
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="wf-scope"
+                      value="all"
+                      checked={wfScope === 'all'}
+                      onChange={() => setWfScope('all')}
+                    />
+                    <span>All sold flats in this project</span>
+                  </label>
+                  <label className="inline-flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="wf-scope"
+                      value="single"
+                      checked={wfScope === 'single'}
+                      onChange={() => setWfScope('single')}
+                    />
+                    <span>A specific flat</span>
+                  </label>
+                </div>
+              </div>
+
+              {wfScope === 'single' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Tower <span className="text-red-600">*</span>
+                    </label>
+                    <select
+                      value={wfTowerId}
+                      onChange={(e) => {
+                        setWfTowerId(e.target.value);
+                        setWfFlatId('');
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      disabled={!selectedPropertyId || wfLoadingTowers}
+                    >
+                      <option value="">
+                        {wfLoadingTowers ? 'Loading towers...' : 'Select tower'}
+                      </option>
+                      {wfTowers.map((t: any) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name || t.towerNumber || t.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Flat <span className="text-red-600">*</span>
+                    </label>
+                    <select
+                      value={wfFlatId}
+                      onChange={(e) => setWfFlatId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                      disabled={!wfTowerId || wfLoadingFlats}
+                    >
+                      <option value="">
+                        {wfLoadingFlats ? 'Loading flats...' : 'Select flat'}
+                      </option>
+                      {wfFlats.map((f: any) => (
+                        <option key={f.id} value={f.id}>
+                          {f.flatNumber || f.unitNumber || f.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Milestone picker - only shown when a specific flat is
+                  selected and that flat has an active payment plan.
+                  Tapping a milestone fills in the phase + % below, so the
+                  user never has to guess the right abstract values. */}
+              {wfScope === 'single' && wfFlatId && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      Payment plan milestones
+                    </label>
+                    {wfPlan?.milestones?.length ? (
+                      <span className="text-[11px] text-gray-400">
+                        Tap to auto-fill phase &amp; progress below
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {wfPlanLoading ? (
+                    <div className="flex items-center gap-2 text-xs text-gray-500 p-3 rounded-lg border border-dashed border-gray-200">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Loading payment plan…
+                    </div>
+                  ) : !wfPlan ? (
+                    <div className="text-xs text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200 p-3">
+                      No active payment plan on this flat. Enter the phase and
+                      progress manually below, or attach a plan from the
+                      Payment Plans module.
+                    </div>
+                  ) : !wfPlan.milestones?.length ? (
+                    <div className="text-xs text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200 p-3">
+                      This plan has no milestones defined yet.
+                    </div>
+                  ) : (
+                    <MilestoneList
+                      milestones={wfPlan.milestones}
+                      selectedSeq={wfSelectedMilestoneSeq}
+                      onSelect={pickMilestone}
+                    />
+                  )}
+                </div>
+              )}
+
+              {/* Phase + % inputs. Prefilled when a milestone is selected,
+                  but still editable for edge cases (e.g. a one-off log that
+                  does not match any milestone exactly). */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Construction phase <span className="text-red-600">*</span>
+                    {wfSelectedMilestoneSeq != null && (
+                      <span className="ml-1 text-[10px] text-emerald-600 normal-case font-normal">
+                        auto-filled
+                      </span>
+                    )}
+                  </label>
+                  <select
+                    value={wfPhase}
+                    onChange={(e) => {
+                      setWfPhase(e.target.value);
+                      // Manual edit clears the "linked to milestone" marker
+                      setWfSelectedMilestoneSeq(null);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  >
+                    {WORKFLOW_PHASES.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Phase progress % <span className="text-red-600">*</span>
+                    {wfSelectedMilestoneSeq != null && (
+                      <span className="ml-1 text-[10px] text-emerald-600 normal-case font-normal">
+                        auto-filled
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={wfPhaseProgress}
+                    onChange={(e) => {
+                      setWfPhaseProgress(e.target.value);
+                      setWfSelectedMilestoneSeq(null);
+                    }}
+                    placeholder="e.g. 100"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <p className="text-[11px] text-gray-500 italic">
+                Milestone payment-plans that link to this phase and whose
+                required % has been reached will raise a demand draft. Duplicate
+                drafts are skipped automatically.
+              </p>
+            </div>
+          )}
+        </div>
+
         {/* Site Photos */}
         <div>
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2" style={{ color: '#A8211B' }}>
@@ -436,7 +871,7 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
             <p className="text-sm text-gray-500">
               {selectedFiles.length >= 5
                 ? 'Maximum 5 photos selected'
-                : 'Click to select photos — JPEG, PNG, WebP'}
+                : 'Click to select photos - JPEG, PNG, WebP'}
             </p>
           </div>
 
@@ -498,5 +933,148 @@ export default function AddProgressLogModal({ isOpen, onClose, onSuccess, proper
         </div>
       </form>
     </Modal>
+  );
+}
+
+const PHASE_BADGE: Record<string, string> = {
+  FOUNDATION: 'bg-amber-100 text-amber-700',
+  STRUCTURE: 'bg-blue-100 text-blue-700',
+  MEP: 'bg-purple-100 text-purple-700',
+  FINISHING: 'bg-green-100 text-green-700',
+  HANDOVER: 'bg-indigo-100 text-indigo-700',
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  PAID: 'bg-emerald-100 text-emerald-700',
+  TRIGGERED: 'bg-amber-100 text-amber-700',
+  OVERDUE: 'bg-red-100 text-red-700',
+  PENDING: 'bg-gray-100 text-gray-600',
+};
+
+/**
+ * Scrollable, tappable list of milestones from a FlatPaymentPlan.
+ *
+ * UX rules:
+ *  - PAID milestones are shown (for context) but disabled.
+ *  - TRIGGERED / OVERDUE milestones are highlighted - those are the ones
+ *    we usually want to log against.
+ *  - Milestones with no construction phase (e.g. TIME_LINKED booking fee)
+ *    are shown as info-only, not tappable.
+ */
+function MilestoneList({
+  milestones,
+  selectedSeq,
+  onSelect,
+}: {
+  milestones: FlatPaymentMilestone[];
+  selectedSeq: number | null;
+  onSelect: (m: FlatPaymentMilestone) => void;
+}) {
+  const sorted = [...milestones].sort((a, b) => a.sequence - b.sequence);
+
+  return (
+    <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-200 bg-white divide-y divide-gray-100">
+      {sorted.map((m) => {
+        const isPaid = m.status === 'PAID';
+        const isTappable = !!m.constructionPhase && m.phasePercentage != null && !isPaid;
+        const isSelected = selectedSeq === m.sequence;
+
+        const base =
+          'w-full text-left px-3 py-2.5 flex items-start gap-3 transition-colors';
+        const interactive = isTappable
+          ? 'hover:bg-red-50/60 cursor-pointer'
+          : 'cursor-default';
+        const selected = isSelected
+          ? 'bg-red-50 ring-1 ring-inset ring-[#A8211B]'
+          : '';
+        const disabled = isPaid ? 'opacity-60' : '';
+
+        const body = (
+          <>
+            <div className="pt-0.5 shrink-0">
+              {isSelected ? (
+                <CheckCircle2 className="w-4 h-4 text-[#A8211B]" />
+              ) : (
+                <span
+                  className="inline-block w-4 h-4 rounded-full border border-gray-300"
+                  aria-hidden
+                />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-0.5">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {m.sequence}. {m.name}
+                </p>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                    STATUS_BADGE[m.status] || 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {m.status}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-gray-500">
+                {m.constructionPhase ? (
+                  <span
+                    className={`px-1.5 py-0.5 rounded-md font-medium ${
+                      PHASE_BADGE[m.constructionPhase] ||
+                      'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {m.constructionPhase}
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600 font-medium">
+                    TIME-LINKED
+                  </span>
+                )}
+                {m.phasePercentage != null && (
+                  <span>@ {m.phasePercentage}%</span>
+                )}
+                {Number(m.amount) > 0 && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span className="tabular-nums">
+                      ₹{Number(m.amount).toLocaleString('en-IN')}
+                    </span>
+                  </>
+                )}
+                {m.dueDate && (
+                  <>
+                    <span className="text-gray-300">·</span>
+                    <span>due {new Date(m.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</span>
+                  </>
+                )}
+              </div>
+              {m.description && (
+                <p className="text-[11px] text-gray-500 mt-1 line-clamp-2">
+                  {m.description}
+                </p>
+              )}
+            </div>
+          </>
+        );
+
+        if (!isTappable) {
+          return (
+            <div key={m.sequence} className={`${base} ${disabled}`}>
+              {body}
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={m.sequence}
+            type="button"
+            onClick={() => onSelect(m)}
+            className={`${base} ${interactive} ${selected}`}
+          >
+            {body}
+          </button>
+        );
+      })}
+    </div>
   );
 }

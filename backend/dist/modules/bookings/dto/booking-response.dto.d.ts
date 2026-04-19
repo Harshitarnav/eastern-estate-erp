@@ -63,6 +63,7 @@ export declare class BookingResponseDto {
     customer?: any;
     flat?: any;
     property?: any;
+    hasPaymentPlan?: boolean;
     static fromEntity(booking: Booking): BookingResponseDto;
     static fromEntities(bookings: Booking[]): BookingResponseDto[];
 }

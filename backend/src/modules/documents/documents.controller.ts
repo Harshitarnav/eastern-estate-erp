@@ -88,7 +88,7 @@ export class DocumentsController {
     return this.svc.findOne(id);
   }
 
-  /** PATCH /documents/:id  — update name / notes */
+  /** PATCH /documents/:id  - update name / notes */
   @Patch(':id')
   async update(
     @Param('id') id: string,

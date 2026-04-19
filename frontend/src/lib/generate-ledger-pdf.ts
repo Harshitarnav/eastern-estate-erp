@@ -14,7 +14,7 @@ const fmt = (n: number) =>
   });
 
 const fmtDate = (s: string | null | undefined): string => {
-  if (!s) return '—';
+  if (!s) return '-';
   try {
     return new Date(s).toLocaleDateString('en-IN', {
       day: '2-digit',
@@ -64,11 +64,11 @@ export function generateLedgerPdf(ledger: LedgerResponse): void {
   doc.setTextColor('#111111');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text(ledger.customer?.fullName ?? '—', col1, y);
+  doc.text(ledger.customer?.fullName ?? '-', col1, y);
   const unitLabel = [ledger.flat?.property, ledger.flat?.tower, ledger.flat?.flatNumber]
     .filter(Boolean)
     .join(' › ');
-  doc.text(unitLabel || '—', col2, y);
+  doc.text(unitLabel || '-', col2, y);
   y += 4;
 
   doc.setFont('helvetica', 'normal');

@@ -44,6 +44,7 @@ import { propertiesService } from '@/services/properties.service';
 import { towersService } from '@/services/towers.service';
 import { bookingsService } from '@/services/bookings.service';
 import { customersService } from '@/services/customers.service';
+import { usePropertyStore } from '@/store/propertyStore';
 import { toast } from 'sonner';
 import { showApiError } from '@/utils/error-handler';
 
@@ -86,9 +87,13 @@ function PaymentPlansContent() {
   const searchParams = useSearchParams();
   const constructionPhases = ['FOUNDATION', 'STRUCTURE', 'MEP', 'FINISHING', 'HANDOVER'];
 
+  const { selectedProperties } = usePropertyStore();
+  const selectedPropertyId =
+    selectedProperties.length > 0 ? selectedProperties[0] : undefined;
+
   useEffect(() => {
     loadData();
-  }, []);
+  }, [selectedPropertyId]);
 
   // Auto-open create dialog and pre-select booking when redirected from a booking page
   useEffect(() => {
@@ -136,10 +141,10 @@ function PaymentPlansContent() {
       setLoading(true);
       const [templatesData, plansData, propertiesData, bookingsData, customersData] = await Promise.all([
         paymentPlansService.getPaymentPlanTemplates().catch(() => []),
-        paymentPlansService.getFlatPaymentPlans().catch(() => []),
+        paymentPlansService.getFlatPaymentPlans({ propertyId: selectedPropertyId }).catch(() => []),
         propertiesService.getProperties().catch(() => []),
-        bookingsService.getBookings().catch(() => []),
-        customersService.getCustomers().catch(() => []),
+        bookingsService.getBookings({ propertyId: selectedPropertyId }).catch(() => []),
+        customersService.getCustomers({ propertyId: selectedPropertyId }).catch(() => []),
       ]);
       setTemplates(Array.isArray(templatesData) ? templatesData : []);
       setFlatPaymentPlans(Array.isArray(plansData) ? plansData : []);
@@ -861,10 +866,13 @@ function PaymentPlansContent() {
                 </TableHeader>
                 <TableBody>
                   {flatPaymentPlans.map((plan) => {
-                    const completedCount = plan.milestones.filter(
+                    const milestoneCount = plan.milestones?.length ?? 0;
+                    const completedCount = (plan.milestones ?? []).filter(
                       (m) => m.status === 'PAID'
                     ).length;
-                    const progress = (completedCount / plan.milestones.length) * 100;
+                    const progress = milestoneCount > 0
+                      ? (completedCount / milestoneCount) * 100
+                      : 0;
 
                     return (
                       <TableRow key={plan.id}>
@@ -881,13 +889,13 @@ function PaymentPlansContent() {
                           {plan.customer?.fullName || 'N/A'}
                         </TableCell>
                         <TableCell>
-                          ₹{plan.totalAmount.toLocaleString('en-IN')}
+                          ₹{(Number(plan.totalAmount) || 0).toLocaleString('en-IN')}
                         </TableCell>
                         <TableCell>
-                          ₹{plan.paidAmount.toLocaleString('en-IN')}
+                          ₹{(Number(plan.paidAmount) || 0).toLocaleString('en-IN')}
                         </TableCell>
                         <TableCell>
-                          ₹{plan.balanceAmount.toLocaleString('en-IN')}
+                          ₹{(Number(plan.balanceAmount) || 0).toLocaleString('en-IN')}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

@@ -26,6 +26,7 @@ export declare class CreateCustomerDto {
     notes?: string;
     isActive?: boolean;
     isVIP?: boolean;
+    autoSendMilestoneDemandDrafts?: boolean | null;
     kycStatus?: KYCStatus;
     propertyId?: string;
 }

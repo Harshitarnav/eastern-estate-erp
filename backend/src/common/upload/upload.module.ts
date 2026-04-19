@@ -12,7 +12,7 @@ import { multerConfig } from './multer.config';
  * Provide STORAGE_SERVICE as either MinioStorageService (when MINIO_ENDPOINT
  * is set in the environment) or LocalStorageService (local development).
  *
- * NOTE: useFactory (not useClass) is intentional — process.env is not yet
+ * NOTE: useFactory (not useClass) is intentional - process.env is not yet
  * populated with .env values at module-load time, so we must resolve this
  * lazily via ConfigService which is available after ConfigModule runs.
  */

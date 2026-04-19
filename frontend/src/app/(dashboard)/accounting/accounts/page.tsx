@@ -6,12 +6,13 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, BookOpen, Loader2, Sparkles, FolderInput, RotateCcw, EyeOff } from 'lucide-react';
+import { Plus, BookOpen, Loader2, Sparkles, FolderInput, RotateCcw, EyeOff, FileSpreadsheet } from 'lucide-react';
 import { accountsService, type Account } from '@/services/accounting.service';
 import { TableRowsSkeleton } from '@/components/Skeletons';
 import { usePropertyStore } from '@/store/propertyStore';
 import { propertiesService } from '@/services/properties.service';
 import { useAuthStore } from '@/store/authStore';
+import { ExcelImportModal, type RowValidationError, type ImportField } from '@/components/accounting/ExcelImportModal';
 
 export default function AccountsPage() {
   const { selectedProperties } = usePropertyStore();
@@ -29,6 +30,7 @@ export default function AccountsPage() {
   const [assigningId, setAssigningId] = useState<string | null>(null);
   const [showInactive, setShowInactive] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Load all properties for the "Assign project" dropdown
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function AccountsPage() {
     try {
       const res: any = await accountsService.seedCoaForProject(selectedPropertyId);
       const { created, skipped } = res?.data ?? res ?? {};
-      toast.success(`CoA initialised — ${created} accounts created, ${skipped} already existed`);
+      toast.success(`CoA initialised - ${created} accounts created, ${skipped} already existed`);
       fetchAccounts();
     } catch {
       toast.error('Failed to initialise Chart of Accounts');
@@ -154,6 +156,12 @@ export default function AccountsPage() {
             </Button>
           )}
           {!showInactive && (
+            <Button variant="outline" onClick={() => setImportOpen(true)} title="Import chart of accounts from Excel">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Import Excel
+            </Button>
+          )}
+          {!showInactive && (
             <Button onClick={() => (window.location.href = '/accounting/accounts/new')}>
               <Plus className="h-4 w-4 mr-2" />
               New Account
@@ -161,6 +169,14 @@ export default function AccountsPage() {
           )}
         </div>
       </div>
+
+      {selectedPropertyId && (
+        <p className="text-sm text-gray-600 max-w-3xl">
+          Balances use <strong>posted journals</strong> (same basis as the accounting dashboard): company-wide accounts
+          count only lines on journals tagged to this project; accounts <strong>assigned to this project</strong> include
+          all posted activity on that ledger row (including older org-wide journals).
+        </p>
+      )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -206,8 +222,8 @@ export default function AccountsPage() {
           <CardTitle>{showInactive ? 'Deleted Accounts' : 'All Accounts'}</CardTitle>
           <CardDescription>
             {(accounts || []).length} {showInactive ? 'deleted' : 'active'} accounts found
-            {!selectedPropertyId && ' — showing all projects (use the top bar to filter by project)'}
-            {showInactive && ' — click Restore to reactivate an account'}
+            {!selectedPropertyId && ' - showing all projects (use the top bar to filter by project)'}
+            {showInactive && ' - click Restore to reactivate an account'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -243,7 +259,7 @@ export default function AccountsPage() {
                     <td className="p-2 text-right font-medium text-sm">
                       {formatCurrency(Number(account.currentBalance) || 0)}
                     </td>
-                    {/* Project column — editable only for admin/super_admin */}
+                    {/* Project column - editable only for admin/super_admin */}
                     <td className="p-2" onClick={e => e.stopPropagation()}>
                       {canReassign ? (
                         <select
@@ -303,6 +319,78 @@ export default function AccountsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <ExcelImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="Import Chart of Accounts"
+        description={
+          <span>
+            Upload your existing CoA (from Tally or Excel). Each row becomes one account.
+            Existing codes are <strong>skipped</strong>, never overwritten.
+          </span>
+        }
+        scopeLabel={
+          selectedPropertyId
+            ? `Importing to project: ${allProperties.find((p) => p.id === selectedPropertyId)?.name || selectedPropertyId}`
+            : 'Importing to company-wide scope (no project selected)'
+        }
+        fields={coaImportFields}
+        sampleRows={coaSampleRows}
+        validate={(rows) => validateCoaRows(rows)}
+        onImport={async (rows) => {
+          const res = await accountsService.bulkImport({
+            propertyId: selectedPropertyId || null,
+            rows: rows as any,
+          });
+          if (res.created > 0) {
+            toast.success(`Imported ${res.created} account${res.created !== 1 ? 's' : ''}`);
+            fetchAccounts();
+          }
+          return {
+            created: res.created,
+            skipped: res.skipped,
+            errors: res.errors?.map((e) => ({ row: e.row, message: e.message })),
+          };
+        }}
+      />
     </div>
   );
+}
+
+// ─── CoA import spec ───────────────────────────────────────────────────────────
+const coaImportFields: ImportField[] = [
+  { key: 'accountCode', label: 'Account Code', required: true, hint: 'Unique within the scope, e.g. 1100' },
+  { key: 'accountName', label: 'Account Name', required: true },
+  { key: 'accountType', label: 'Account Type', required: true, hint: 'ASSET, LIABILITY, EQUITY, INCOME, EXPENSE' },
+  { key: 'accountCategory', label: 'Category', required: true, hint: 'Free text, e.g. Current Asset, Direct Expense' },
+  { key: 'openingBalance', label: 'Opening Balance', hint: 'Optional, in ₹' },
+  { key: 'description', label: 'Description', hint: 'Optional notes' },
+];
+
+const coaSampleRows: Record<string, string | number>[] = [
+  { accountCode: '1100', accountName: 'Cash in Hand', accountType: 'ASSET', accountCategory: 'Current Asset', openingBalance: 50000 },
+  { accountCode: '2100', accountName: 'HDFC Bank - Operational', accountType: 'ASSET', accountCategory: 'Bank', openingBalance: 1500000 },
+  { accountCode: '4100', accountName: 'Booking Revenue', accountType: 'INCOME', accountCategory: 'Sales', openingBalance: 0 },
+  { accountCode: '5100', accountName: 'Site Expenses', accountType: 'EXPENSE', accountCategory: 'Direct Expense', openingBalance: 0 },
+];
+
+function validateCoaRows(rows: Record<string, unknown>[]): RowValidationError[] {
+  const ALLOWED = new Set(['ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE']);
+  const errors: RowValidationError[] = [];
+  const seen = new Set<string>();
+  rows.forEach((r, i) => {
+    const row = i + 2;
+    const code = (r.accountCode ?? '').toString().trim();
+    const name = (r.accountName ?? '').toString().trim();
+    const type = (r.accountType ?? '').toString().trim().toUpperCase();
+    const category = (r.accountCategory ?? '').toString().trim();
+    if (!code) errors.push({ row, message: 'Account Code is required' });
+    if (!name) errors.push({ row, message: 'Account Name is required' });
+    if (!type || !ALLOWED.has(type)) errors.push({ row, message: 'Type must be one of ASSET, LIABILITY, EQUITY, INCOME, EXPENSE', value: type });
+    if (!category) errors.push({ row, message: 'Category is required' });
+    if (code && seen.has(code)) errors.push({ row, message: 'Duplicate Account Code in this file', value: code });
+    if (code) seen.add(code);
+  });
+  return errors;
 }

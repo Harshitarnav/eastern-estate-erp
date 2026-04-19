@@ -17,6 +17,9 @@ export enum BookingStatus {
   AGREEMENT_PENDING = 'AGREEMENT_PENDING',
   AGREEMENT_SIGNED = 'AGREEMENT_SIGNED',
   CONFIRMED = 'CONFIRMED',
+  // Flagged by the overdue scanner once a DD crosses the cancellation-warning
+  // threshold (default 30 days overdue). Reversible once payment is recovered.
+  AT_RISK = 'AT_RISK',
   CANCELLED = 'CANCELLED',
   TRANSFERRED = 'TRANSFERRED',
   COMPLETED = 'COMPLETED',

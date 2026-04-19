@@ -19,8 +19,22 @@ import { AutoDemandDraftService } from '../construction/services/auto-demand-dra
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType, NotificationCategory } from '../notifications/entities/notification.entity';
 
+/**
+ * Default role set for read/write on Demand Drafts. This is applied at the
+ * class level so any endpoint lacking its own @Roles() decorator still
+ * excludes customers / construction / HR / marketing staff by default.
+ */
+const DD_DEFAULT_ROLES = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.SALES_TEAM,
+  UserRole.ACCOUNTANT,
+  UserRole.HEAD_ACCOUNTANT,
+] as const;
+
 @Controller('demand-drafts')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...DD_DEFAULT_ROLES)
 export class DemandDraftsController {
   constructor(
     private readonly demandDraftsService: DemandDraftsService,
@@ -29,11 +43,16 @@ export class DemandDraftsController {
   ) {}
 
   @Get()
+  @Roles(...DD_DEFAULT_ROLES)
   async findAll(@Query() query: any, @Req() req: any) {
-    return await this.demandDraftsService.findAll(query);
+    return await this.demandDraftsService.findAll(
+      query,
+      req?.accessiblePropertyIds,
+    );
   }
 
   @Get(':id')
+  @Roles(...DD_DEFAULT_ROLES)
   async findOne(@Param('id') id: string) {
     return await this.demandDraftsService.findOne(id);
   }
@@ -65,6 +84,7 @@ export class DemandDraftsController {
   }
 
   @Put(':id')
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SALES_TEAM, UserRole.ACCOUNTANT, UserRole.HEAD_ACCOUNTANT)
   async update(
     @Param('id') id: string,
     @Body() updateDto: any,
@@ -133,9 +153,12 @@ export class DemandDraftsController {
   }
 
   /**
-   * Get HTML preview of demand draft
+   * Get HTML preview of demand draft.
+   * Exposed as both /preview (canonical) and /html (legacy alias for
+   * the frontend service which historically called /html).
    */
   @Get(':id/preview')
+  @Roles(...DD_DEFAULT_ROLES)
   async preview(@Param('id') id: string) {
     const draft = await this.demandDraftsService.findOne(id);
     return {
@@ -144,10 +167,17 @@ export class DemandDraftsController {
     };
   }
 
+  @Get(':id/html')
+  @Roles(...DD_DEFAULT_ROLES)
+  async previewHtml(@Param('id') id: string) {
+    return this.preview(id);
+  }
+
   /**
    * Export demand draft as formatted HTML/PDF-ready content
    */
   @Get(':id/export')
+  @Roles(...DD_DEFAULT_ROLES)
   async export(@Param('id') id: string) {
     const draft = await this.demandDraftsService.findOne(id);
     const title = draft.metadata?.title || 'Payment Demand';

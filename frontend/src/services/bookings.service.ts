@@ -62,6 +62,8 @@ export interface Booking {
   customer?: any;
   flat?: any;
   property?: any;
+  /** True when a FlatPaymentPlan exists for this booking. */
+  hasPaymentPlan?: boolean;
 }
 
 export interface BookingFilters {
@@ -114,8 +116,11 @@ class BookingsService {
     return response;
   }
 
-  async getStatistics(): Promise<any> {
-    const response = await api.get<any>(`${this.baseUrl}/statistics`);
+  async getStatistics(params?: { propertyId?: string }): Promise<any> {
+    const qs = new URLSearchParams();
+    if (params?.propertyId) qs.append('propertyId', params.propertyId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    const response = await api.get<any>(`${this.baseUrl}/statistics${suffix}`);
     return response;
   }
 

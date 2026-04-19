@@ -22,6 +22,13 @@ const demand_drafts_service_1 = require("./demand-drafts.service");
 const auto_demand_draft_service_1 = require("../construction/services/auto-demand-draft.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const notification_entity_1 = require("../notifications/entities/notification.entity");
+const DD_DEFAULT_ROLES = [
+    roles_constant_1.UserRole.ADMIN,
+    roles_constant_1.UserRole.SUPER_ADMIN,
+    roles_constant_1.UserRole.SALES_TEAM,
+    roles_constant_1.UserRole.ACCOUNTANT,
+    roles_constant_1.UserRole.HEAD_ACCOUNTANT,
+];
 let DemandDraftsController = class DemandDraftsController {
     constructor(demandDraftsService, autoDemandDraftService, notificationsService) {
         this.demandDraftsService = demandDraftsService;
@@ -29,7 +36,7 @@ let DemandDraftsController = class DemandDraftsController {
         this.notificationsService = notificationsService;
     }
     async findAll(query, req) {
-        return await this.demandDraftsService.findAll(query);
+        return await this.demandDraftsService.findAll(query, req?.accessiblePropertyIds);
     }
     async findOne(id) {
         return await this.demandDraftsService.findOne(id);
@@ -95,6 +102,9 @@ let DemandDraftsController = class DemandDraftsController {
             html: draft.content || '<p>No content available</p>',
             metadata: draft.metadata,
         };
+    }
+    async previewHtml(id) {
+        return this.preview(id);
     }
     async export(id) {
         const draft = await this.demandDraftsService.findOne(id);
@@ -186,6 +196,7 @@ let DemandDraftsController = class DemandDraftsController {
 exports.DemandDraftsController = DemandDraftsController;
 __decorate([
     (0, common_1.Get)(),
+    (0, roles_decorator_1.Roles)(...DD_DEFAULT_ROLES),
     __param(0, (0, common_1.Query)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -194,6 +205,7 @@ __decorate([
 ], DemandDraftsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, roles_decorator_1.Roles)(...DD_DEFAULT_ROLES),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -210,6 +222,7 @@ __decorate([
 ], DemandDraftsController.prototype, "create", null);
 __decorate([
     (0, common_1.Put)(':id'),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.SALES_TEAM, roles_constant_1.UserRole.ACCOUNTANT, roles_constant_1.UserRole.HEAD_ACCOUNTANT),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Req)()),
@@ -245,13 +258,23 @@ __decorate([
 ], DemandDraftsController.prototype, "send", null);
 __decorate([
     (0, common_1.Get)(':id/preview'),
+    (0, roles_decorator_1.Roles)(...DD_DEFAULT_ROLES),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], DemandDraftsController.prototype, "preview", null);
 __decorate([
+    (0, common_1.Get)(':id/html'),
+    (0, roles_decorator_1.Roles)(...DD_DEFAULT_ROLES),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], DemandDraftsController.prototype, "previewHtml", null);
+__decorate([
     (0, common_1.Get)(':id/export'),
+    (0, roles_decorator_1.Roles)(...DD_DEFAULT_ROLES),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
@@ -260,6 +283,7 @@ __decorate([
 exports.DemandDraftsController = DemandDraftsController = __decorate([
     (0, common_1.Controller)('demand-drafts'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, roles_decorator_1.Roles)(...DD_DEFAULT_ROLES),
     __metadata("design:paramtypes", [demand_drafts_service_1.DemandDraftsService,
         auto_demand_draft_service_1.AutoDemandDraftService,
         notifications_service_1.NotificationsService])

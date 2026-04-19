@@ -195,17 +195,17 @@ docker compose -f docker-compose.prod.yml logs frontend --tail 50
 
 ---
 
-## 🗄️ Database Migrations (CRITICAL — Run Before Every New Deploy)
+## 🗄️ Database Migrations (CRITICAL - Run Before Every New Deploy)
 
 ### When Do You Need Migrations?
 Any time the backend entity files (`.entity.ts`) change, or new modules are added, you must run the corresponding SQL migrations on the production database **before** restarting the backend.
 
-### Quick Check — What's Missing in Prod?
+### Quick Check - What's Missing in Prod?
 ```bash
 ssh root@143.244.135.165
 cd ~/eastern-estate-erp
 
-# Run the diagnostic — shows any tables/columns missing in prod
+# Run the diagnostic - shows any tables/columns missing in prod
 docker exec -i $(docker ps -q --filter name=postgres) \
   psql -U eastern_estate -d eastern_estate_erp \
   < backend/src/database/migrations/check-prod-schema.sql
@@ -220,7 +220,7 @@ cd ~/eastern-estate-erp
 bash backend/src/database/migrations/run-prod-migrations.sh
 ```
 
-This script runs all migrations in the correct order and is fully **idempotent** (safe to run multiple times — it won't break anything that already exists).
+This script runs all migrations in the correct order and is fully **idempotent** (safe to run multiple times - it won't break anything that already exists).
 
 ### Migration File Reference
 
@@ -566,11 +566,11 @@ docker stats --no-stream
 
 ---
 
-## 🗄️ MinIO — Accessing the Admin Console
+## 🗄️ MinIO - Accessing the Admin Console
 
 MinIO's console runs on port `9001` but is **bound to `127.0.0.1` only** (not exposed to the internet). Access it via an SSH tunnel from your Mac.
 
-### Step 1 — Open the SSH tunnel (on your Mac)
+### Step 1 - Open the SSH tunnel (on your Mac)
 
 Open a **new terminal** on your Mac (not on the server) and run:
 
@@ -580,7 +580,7 @@ ssh -L 9001:localhost:9001 root@143.244.135.165
 
 Keep this terminal open. It forwards `localhost:9001` on your Mac → port `9001` inside the server.
 
-### Step 2 — Open the console in your browser
+### Step 2 - Open the console in your browser
 
 While the tunnel terminal is open, go to:
 
@@ -588,7 +588,7 @@ While the tunnel terminal is open, go to:
 http://localhost:9001
 ```
 
-### Step 3 — Log in
+### Step 3 - Log in
 
 Use the credentials from the server's `.env` file:
 
@@ -602,7 +602,7 @@ To check your credentials on the server:
 grep MINIO ~/eastern-estate-erp/.env
 ```
 
-### Step 4 — Browse the bucket
+### Step 4 - Browse the bucket
 
 Once logged in → click **Object Browser** → select the **`eastern-estate`** bucket.  
 All uploaded documents and profile pictures are stored here.

@@ -88,7 +88,7 @@ export const mapFlatFormToPayload = (data: any): Partial<Flat> => {
   if (data.parkingType) payload.parkingType = data.parkingType;
   if (data.storageId) payload.storageId = data.storageId;
   if (data.furnishingPack) payload.furnishingPack = data.furnishingPack;
-  // appliancePack is a boolean — always include if present
+  // appliancePack is a boolean - always include if present
   if (data.appliancePack !== undefined) payload.appliancePack = data.appliancePack;
 
   if (Array.isArray(data.issues)) {

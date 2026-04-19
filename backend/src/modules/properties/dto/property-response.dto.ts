@@ -35,6 +35,8 @@ export class PropertyResponseDto {
   nearbyLandmarks?: string;
   isActive: boolean;
   isFeatured?: boolean;
+  // Tri-state auto-send override (null = inherit from company default).
+  autoSendMilestoneDemandDrafts?: boolean | null;
   createdBy?: string;
   updatedBy?: string;
   createdAt: string | Date;

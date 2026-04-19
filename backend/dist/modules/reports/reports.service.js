@@ -25,11 +25,27 @@ let ReportsService = class ReportsService {
         this.paymentRepo = paymentRepo;
         this.flatRepo = flatRepo;
     }
-    async getDashboard() {
+    async getDashboard(propertyId) {
         const em = this.flatRepo.manager;
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        const flatWhere = propertyId ? 'AND property_id = $1' : '';
+        const bookingWhere = propertyId ? 'AND property_id = $1' : '';
+        const paymentJoin = propertyId
+            ? 'INNER JOIN bookings pb ON pb.id = payments.booking_id AND pb.property_id = $1'
+            : '';
+        const paymentJoin2 = propertyId
+            ? 'INNER JOIN bookings pb ON pb.id = p.booking_id AND pb.property_id = $1'
+            : '';
+        const flatParams = propertyId ? [propertyId] : [];
+        const bookingParams = propertyId ? [propertyId] : [];
+        const paymentStatsParams = propertyId ? [propertyId] : [];
+        const monthParams = propertyId
+            ? [propertyId, monthStart, monthEnd]
+            : [monthStart, monthEnd];
+        const monthStartIdx = propertyId ? '$2' : '$1';
+        const monthEndIdx = propertyId ? '$3' : '$2';
         const [flatStats, crmCounts, paymentStats, thisMonthStats, recentPaymentsRaw, plans,] = await Promise.all([
             em.query(`
         SELECT
@@ -38,57 +54,75 @@ let ReportsService = class ReportsService {
           COALESCE(SUM(final_price), 0)::float AS value
         FROM flats
         WHERE is_active = true
+          ${flatWhere}
         GROUP BY status
-      `),
+      `, flatParams),
+            propertyId
+                ? em.query(`
+            SELECT
+              (SELECT COUNT(DISTINCT b.customer_id)::int FROM bookings b WHERE b.property_id = $1)              AS "totalCustomers",
+              (SELECT COUNT(*)::int FROM bookings WHERE status NOT IN ('CANCELLED') AND property_id = $1)        AS "activeBookings",
+              (SELECT COUNT(*)::int FROM leads WHERE status NOT IN ('LOST','CLOSED') AND property_id = $1 LIMIT 1) AS "activeLeads"
+          `, [propertyId])
+                : em.query(`
+            SELECT
+              (SELECT COUNT(*)::int FROM customers)                        AS "totalCustomers",
+              (SELECT COUNT(*)::int FROM bookings WHERE status NOT IN ('CANCELLED')) AS "activeBookings",
+              (SELECT COUNT(*)::int FROM leads    WHERE status NOT IN ('LOST','CLOSED') LIMIT 1) AS "activeLeads"
+          `),
             em.query(`
         SELECT
-          (SELECT COUNT(*)::int FROM customers)                        AS "totalCustomers",
-          (SELECT COUNT(*)::int FROM bookings WHERE status NOT IN ('CANCELLED')) AS "activeBookings",
-          (SELECT COUNT(*)::int FROM leads    WHERE status NOT IN ('LOST','CLOSED') LIMIT 1) AS "activeLeads"
-      `),
-            em.query(`
-        SELECT
-          COALESCE(SUM(amount), 0)::float  AS "totalCollected",
-          COUNT(*)::int                    AS "totalPayments"
+          COALESCE(SUM(payments.amount), 0)::float  AS "totalCollected",
+          COUNT(*)::int                              AS "totalPayments"
         FROM payments
-        WHERE status NOT IN ('CANCELLED','FAILED')
-      `),
+        ${paymentJoin}
+        WHERE payments.status NOT IN ('CANCELLED','FAILED')
+      `, paymentStatsParams),
             em.query(`
         SELECT
-          COALESCE(SUM(amount), 0)::float AS "thisMonthCollection",
-          COUNT(*)::int                   AS "thisMonthPaymentCount"
+          COALESCE(SUM(payments.amount), 0)::float AS "thisMonthCollection",
+          COUNT(*)::int                             AS "thisMonthPaymentCount"
         FROM payments
-        WHERE status NOT IN ('CANCELLED','FAILED')
-          AND payment_date >= $1
-          AND payment_date <= $2
-      `, [monthStart, monthEnd]),
+        ${paymentJoin}
+        WHERE payments.status NOT IN ('CANCELLED','FAILED')
+          AND payments.payment_date >= ${monthStartIdx}
+          AND payments.payment_date <= ${monthEndIdx}
+      `, monthParams),
             em.query(`
         SELECT
           p.id,
-          COALESCE(c.full_name, TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')), '—') AS "customerName",
+          COALESCE(c.full_name, TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')), '-') AS "customerName",
           p.amount::float                   AS amount,
           p.payment_date::text              AS "paymentDate",
-          COALESCE(f.flat_number, '—')      AS "flatNumber",
-          COALESCE(prop.name, '—')          AS property,
-          COALESCE(p.payment_method, '—')   AS "paymentMethod"
+          COALESCE(f.flat_number, '-')      AS "flatNumber",
+          COALESCE(prop.name, '-')          AS property,
+          COALESCE(p.payment_method, '-')   AS "paymentMethod"
         FROM payments p
         LEFT JOIN customers c   ON c.id  = p.customer_id
         LEFT JOIN bookings  bk  ON bk.id = p.booking_id
         LEFT JOIN flats     f   ON f.id  = bk.flat_id
         LEFT JOIN properties prop ON prop.id = f.property_id
+        ${paymentJoin2}
         WHERE p.status NOT IN ('CANCELLED','FAILED')
         ORDER BY p.payment_date DESC NULLS LAST, p.created_at DESC
         LIMIT 5
-      `),
-            this.planRepo
-                .createQueryBuilder('plan')
-                .leftJoinAndSelect('plan.flat', 'flat')
-                .leftJoinAndSelect('flat.property', 'property')
-                .leftJoinAndSelect('flat.tower', 'tower')
-                .leftJoinAndSelect('plan.customer', 'customer')
-                .leftJoinAndSelect('plan.booking', 'booking')
-                .where('plan.status != :cancelled', { cancelled: 'CANCELLED' })
-                .getMany(),
+      `, paymentStatsParams),
+            (() => {
+                const qb = this.planRepo
+                    .createQueryBuilder('plan')
+                    .leftJoinAndSelect('plan.flat', 'flat')
+                    .leftJoinAndSelect('flat.property', 'property')
+                    .leftJoinAndSelect('flat.tower', 'tower')
+                    .leftJoinAndSelect('plan.customer', 'customer')
+                    .leftJoinAndSelect('plan.booking', 'booking')
+                    .where('plan.status != :cancelled', { cancelled: 'CANCELLED' });
+                if (propertyId) {
+                    qb.andWhere('flat.propertyId = :dashPropertyId', {
+                        dashPropertyId: propertyId,
+                    });
+                }
+                return qb.getMany();
+            })(),
         ]);
         const statusBreakdown = {};
         let totalFlats = 0;
@@ -126,9 +160,9 @@ let ReportsService = class ReportsService {
                 }
                 overdueRows.push({
                     bookingId: plan.bookingId,
-                    customerName: plan.customer?.fullName ?? '—',
-                    flatNumber: plan.flat?.flatNumber ?? '—',
-                    property: plan.flat?.property?.name ?? '—',
+                    customerName: plan.customer?.fullName ?? '-',
+                    flatNumber: plan.flat?.flatNumber ?? '-',
+                    property: plan.flat?.property?.name ?? '-',
                     outstanding: Number(plan.balanceAmount ?? 0),
                     overdueDays: oldestDays,
                     overdueMilestones: overdueMilestones.length,
@@ -158,7 +192,7 @@ let ReportsService = class ReportsService {
                 id: r.id,
                 customerName: r.customerName,
                 amount: Number(r.amount),
-                paymentDate: r.paymentDate ? String(r.paymentDate).split('T')[0] : '—',
+                paymentDate: r.paymentDate ? String(r.paymentDate).split('T')[0] : '-',
                 flatNumber: r.flatNumber,
                 property: r.property,
                 paymentMethod: r.paymentMethod,
@@ -209,13 +243,13 @@ let ReportsService = class ReportsService {
             return {
                 planId: plan.id,
                 bookingId: plan.bookingId,
-                bookingNumber: plan.booking?.bookingNumber ?? '—',
-                property: plan.flat?.property?.name ?? '—',
-                tower: plan.flat?.tower?.name ?? '—',
-                flatNumber: plan.flat?.flatNumber ?? '—',
-                flatType: plan.flat?.flatType ?? '—',
-                customerName: plan.customer?.fullName ?? '—',
-                customerPhone: plan.customer?.phoneNumber ?? '—',
+                bookingNumber: plan.booking?.bookingNumber ?? '-',
+                property: plan.flat?.property?.name ?? '-',
+                tower: plan.flat?.tower?.name ?? '-',
+                flatNumber: plan.flat?.flatNumber ?? '-',
+                flatType: plan.flat?.flatType ?? '-',
+                customerName: plan.customer?.fullName ?? '-',
+                customerPhone: plan.customer?.phoneNumber ?? '-',
                 totalAmount: Number(plan.totalAmount),
                 totalDemanded,
                 totalPaid: Number(plan.paidAmount),
@@ -268,19 +302,19 @@ let ReportsService = class ReportsService {
             paymentCode: p.paymentCode,
             paymentDate: p.paymentDate
                 ? new Date(p.paymentDate).toISOString().split('T')[0]
-                : '—',
-            property: p.booking?.flat?.property?.name ?? '—',
-            tower: p.booking?.flat?.tower?.name ?? '—',
-            flatNumber: p.booking?.flat?.flatNumber ?? '—',
-            customerName: p.customer?.fullName ?? '—',
-            customerPhone: p.customer?.phoneNumber ?? '—',
-            bookingNumber: p.booking?.bookingNumber ?? '—',
+                : '-',
+            property: p.booking?.flat?.property?.name ?? '-',
+            tower: p.booking?.flat?.tower?.name ?? '-',
+            flatNumber: p.booking?.flat?.flatNumber ?? '-',
+            customerName: p.customer?.fullName ?? '-',
+            customerPhone: p.customer?.phoneNumber ?? '-',
+            bookingNumber: p.booking?.bookingNumber ?? '-',
             amount: Number(p.amount),
-            paymentMethod: p.paymentMethod ?? '—',
-            paymentType: p.paymentType ?? '—',
-            status: p.status ?? '—',
-            receiptNumber: p.receiptNumber ?? '—',
-            reference: p.transactionReference ?? p.chequeNumber ?? p.upiId ?? '—',
+            paymentMethod: p.paymentMethod ?? '-',
+            paymentType: p.paymentType ?? '-',
+            status: p.status ?? '-',
+            receiptNumber: p.receiptNumber ?? '-',
+            reference: p.transactionReference ?? p.chequeNumber ?? p.upiId ?? '-',
         }));
         const byMethod = {};
         const byStatus = {};
@@ -324,20 +358,20 @@ let ReportsService = class ReportsService {
         const sql = `
       SELECT
         flat.id                                   AS "flatId",
-        COALESCE(prop.name, '—')                  AS "property",
+        COALESCE(prop.name, '-')                  AS "property",
         COALESCE(prop.id::text, '')               AS "propertyId",
-        COALESCE(tower.name, '—')                 AS "tower",
+        COALESCE(tower.name, '-')                 AS "tower",
         COALESCE(tower.id::text, '')              AS "towerId",
         flat.flat_number                          AS "flatNumber",
-        COALESCE(flat.type, '—')                  AS "flatType",
+        COALESCE(flat.type, '-')                  AS "flatType",
         flat.floor                                AS "floor",
         flat.carpet_area                          AS "carpetArea",
         flat.built_up_area                        AS "builtUpArea",
         flat.base_price                           AS "basePrice",
         flat.final_price                          AS "finalPrice",
         flat.status                               AS "status",
-        COALESCE(cust.full_name, TRIM(COALESCE(cust.first_name,'') || ' ' || COALESCE(cust.last_name,''))) AS "customerName",
-        COALESCE(cust.phone_number, cust.phone)   AS "customerPhone",
+        cust.full_name                            AS "customerName",
+        cust.phone_number                         AS "customerPhone",
         bk.booking_number                         AS "bookingNumber",
         bk.booking_date::text                     AS "bookingDate"
       FROM   flats flat
@@ -358,12 +392,12 @@ let ReportsService = class ReportsService {
         const raw = await this.flatRepo.manager.query(sql, params);
         const rows = raw.map((r) => ({
             flatId: r.flatId,
-            property: r.property ?? '—',
+            property: r.property ?? '-',
             propertyId: r.propertyId ?? '',
-            tower: r.tower ?? '—',
+            tower: r.tower ?? '-',
             towerId: r.towerId ?? '',
             flatNumber: r.flatNumber,
-            flatType: r.flatType ?? '—',
+            flatType: r.flatType ?? '-',
             floor: r.floor != null ? Number(r.floor) : null,
             carpetArea: r.carpetArea != null ? Number(r.carpetArea) : null,
             builtUpArea: r.builtUpArea != null ? Number(r.builtUpArea) : null,

@@ -161,7 +161,7 @@ let NotificationHelperService = class NotificationHelperService {
             message: `${progress.phase} - ${progress.phaseProgress}% complete`,
             type: notification_entity_1.NotificationType.INFO,
             category: notification_entity_1.NotificationCategory.CONSTRUCTION,
-            actionUrl: '/construction-progress-simple',
+            actionUrl: '/construction/log',
             actionLabel: 'View Progress',
         }, createdBy);
     }

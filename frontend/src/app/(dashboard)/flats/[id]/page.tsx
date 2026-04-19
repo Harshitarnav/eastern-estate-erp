@@ -4,12 +4,33 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Building2, CheckCircle, ChevronRight, ExternalLink,
-  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload, Trash2,
+  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload, Trash2, Hammer, Camera,
 } from 'lucide-react';
 import { flatsService, Flat } from '@/services/flats.service';
 import { customersService, Customer } from '@/services/customers.service';
 import { demandDraftsService, DemandDraft } from '@/services/demand-drafts.service';
 import { paymentPlansService, FlatPaymentPlan } from '@/services/payment-plans.service';
+import { apiService } from '@/services/api';
+
+interface FlatProgressRow {
+  id: string;
+  phase: string;
+  phaseProgress: number;
+  overallProgress: number;
+  status: string;
+  notes?: string | null;
+  photos?: string[] | null;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+const CONSTRUCTION_PHASES: { value: string; label: string }[] = [
+  { value: 'FOUNDATION', label: 'Foundation' },
+  { value: 'STRUCTURE', label: 'Structure' },
+  { value: 'MEP', label: 'MEP' },
+  { value: 'FINISHING', label: 'Finishing' },
+  { value: 'HANDOVER', label: 'Handover' },
+];
 import { BrandHero, BrandSecondaryButton } from '@/components/layout/BrandHero';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { formatCurrency } from '@/utils/formatters';
@@ -60,6 +81,7 @@ export default function FlatDetailPage() {
   });
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+  const [flatProgressRows, setFlatProgressRows] = useState<FlatProgressRow[]>([]);
 
   useEffect(() => {
     if (!flatId) {
@@ -74,7 +96,7 @@ export default function FlatDetailPage() {
         const data = await flatsService.getFlat(flatId, { forceRefresh: true });
         setFlat(data);
         const inferredFlatLabel = buildFlatLabel(data);
-        const inferredBhk = (data?.type || '').replace('_', ' ') || '—';
+        const inferredBhk = (data?.type || '').replace('_', ' ') || '-';
         const inferredAmount = data?.finalPrice || 0;
         const inferredAmountWords = inferredAmount ? formatAmountInWords(inferredAmount) : '';
         const inferredPlace = data?.property?.city || data?.property?.state || '';
@@ -89,14 +111,16 @@ export default function FlatDetailPage() {
           place: prev.place || inferredPlace,
         }));
         await loadDrafts(data?.id);
-        // Load flat docs and payment plan in parallel
         try {
-          const [docs, plan] = await Promise.allSettled([
+          const [docs, plan, progress] = await Promise.allSettled([
             documentsService.getByEntity(DocumentEntityType.FLAT, data.id),
             paymentPlansService.getFlatPaymentPlanByFlatId(data.id),
+            apiService.get<FlatProgressRow[]>(`/construction/flat-progress/flat/${data.id}`),
           ]);
           if (docs.status === 'fulfilled') setFlatDocs(docs.value);
           if (plan.status === 'fulfilled') setPaymentPlan(plan.value);
+          if (progress.status === 'fulfilled')
+            setFlatProgressRows(Array.isArray(progress.value) ? progress.value : []);
         } catch { /* non-fatal */ }
       } catch (err: any) {
         const message =
@@ -363,6 +387,15 @@ export default function FlatDetailPage() {
           </BrandSecondaryButton>
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <button
+            onClick={() => router.push(`/construction/flats/${flatId}/log`)}
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold shadow-sm transition hover:bg-red-50"
+            style={{ borderColor: `${brandPalette.primary}40`, color: brandPalette.primary }}
+            title="Log construction progress for this flat"
+          >
+            <Hammer className="h-4 w-4" />
+            Log progress
+          </button>
           {flat && flat.status !== 'BOOKED' && flat.status !== 'SOLD' && (
             <button
               onClick={handleDeactivate}
@@ -399,7 +432,7 @@ export default function FlatDetailPage() {
         }
         description={
           flat
-            ? `Tracking readiness for a ${flat.type.replace('_', ' ')} on floor ${flat.floor ?? '—'}.`
+            ? `Tracking readiness for a ${flat.type.replace('_', ' ')} on floor ${flat.floor ?? '-'}.`
             : 'Fetching unit details to help your editors stay aligned.'
         }
       />
@@ -443,8 +476,8 @@ export default function FlatDetailPage() {
               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
                 <DetailItem label="Unit number" value={flat.flatNumber} />
                 <DetailItem label="Unit name" value={flat.name} />
-                <DetailItem label="Floor" value={flat.floor ?? '—'} />
-                <DetailItem label="Facing" value={flat.facing ?? '—'} />
+                <DetailItem label="Floor" value={flat.floor ?? '-'} />
+                <DetailItem label="Facing" value={flat.facing ?? '-'} />
                 <DetailItem label="Typology" value={flat.type.replace('_', ' ')} />
                 <DetailItem
                   label="Status"
@@ -459,42 +492,130 @@ export default function FlatDetailPage() {
 
           {/* Construction Progress Section */}
           <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
-            <header className="border-b border-gray-100 pb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Construction Progress</h2>
+            <header className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Construction Progress</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Phase-wise progress, photos and on-site notes.
+                </p>
+              </div>
+              <button
+                onClick={() => router.push(`/construction/flats/${flatId}/log`)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#A8211B] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#8B1B16] transition"
+                title="Log construction progress for this flat"
+              >
+                <Hammer className="h-3.5 w-3.5" /> Log / update
+              </button>
             </header>
             <div className="mt-4 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <DetailItem 
-                  label="Current Stage" 
-                  value={flat.constructionStage ? flat.constructionStage.replace('_', ' ') : 'Not Started'} 
+                <DetailItem
+                  label="Current Stage"
+                  value={flat.constructionStage ? flat.constructionStage.replace('_', ' ') : 'Not Started'}
                 />
-                <DetailItem 
-                  label="Overall Progress" 
+                <DetailItem
+                  label="Overall Progress"
                   value={
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-semibold">{flat.constructionProgress || 0}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="bg-blue-600 h-2.5 rounded-full transition-all" 
+                        <div
+                          className="bg-blue-600 h-2.5 rounded-full transition-all"
                           style={{ width: `${flat.constructionProgress || 0}%` }}
                         />
                       </div>
                     </div>
-                  } 
+                  }
                 />
               </div>
+
+              {/* Phase breakdown */}
+              {(() => {
+                const bestByPhase = new Map<string, FlatProgressRow>();
+                flatProgressRows.forEach((r) => {
+                  const prev = bestByPhase.get(r.phase);
+                  if (!prev || Number(r.phaseProgress || 0) > Number(prev.phaseProgress || 0)) {
+                    bestByPhase.set(r.phase, r);
+                  }
+                });
+                const hasAny = bestByPhase.size > 0;
+                return (
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Phase breakdown
+                    </p>
+                    {hasAny ? (
+                      <div className="space-y-2.5">
+                        {CONSTRUCTION_PHASES.map(({ value, label }) => {
+                          const row = bestByPhase.get(value);
+                          const pct = Number(row?.phaseProgress || 0);
+                          return (
+                            <div key={value}>
+                              <div className="mb-1 flex items-center justify-between text-xs">
+                                <span className="font-medium text-gray-700">{label}</span>
+                                <span className="font-semibold text-gray-500">{pct.toFixed(0)}%</span>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-white">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-[#A8211B] to-[#e05a53] transition-all"
+                                  style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-400">
+                        No phase logs yet. Use "Log / update" to record the first entry.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Latest photos */}
+              {(() => {
+                const photosFromLog = flatProgressRows
+                  .slice(0, 4)
+                  .flatMap((r) => (Array.isArray(r.photos) ? r.photos.filter(Boolean) : []));
+                const unique = Array.from(new Set(photosFromLog)).slice(0, 6);
+                if (!unique.length) return null;
+                return (
+                  <div>
+                    <div className="mb-2 flex items-center gap-1.5 text-xs text-gray-500">
+                      <Camera className="h-3 w-3" />
+                      {unique.length} recent photo{unique.length > 1 ? 's' : ''} from site
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+                      {unique.map((url, i) =>
+                        url ? (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={url}
+                              alt={`Site photo ${i + 1}`}
+                              className="h-20 w-full rounded-lg border border-gray-100 object-cover transition hover:opacity-90"
+                            />
+                          </a>
+                        ) : null,
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {flat.lastConstructionUpdate && (
-                <DetailItem 
-                  label="Last Updated" 
+                <DetailItem
+                  label="Last Updated"
                   value={new Date(flat.lastConstructionUpdate).toLocaleString('en-IN', {
                     day: '2-digit',
                     month: 'short',
                     year: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
-                  })} 
+                    minute: '2-digit',
+                  })}
                 />
               )}
             </div>
@@ -599,7 +720,7 @@ export default function FlatDetailPage() {
                 <DetailItem label="Carpet area" value={`${formatIndianNumber(flat.carpetArea)} sq.ft`} />
                 <DetailItem label="Super built-up" value={`${formatIndianNumber(flat.superBuiltUpArea)} sq.ft`} />
                 <DetailItem label="Built-up" value={`${formatIndianNumber(flat.builtUpArea)} sq.ft`} />
-                <DetailItem label="Balcony area" value={flat.balconyArea ? `${formatIndianNumber(flat.balconyArea)} sq.ft` : '—'} />
+                <DetailItem label="Balcony area" value={flat.balconyArea ? `${formatIndianNumber(flat.balconyArea)} sq.ft` : '-'} />
                 <DetailItem label="Base price" value={`₹${formatIndianNumber(flat.basePrice)}`} />
                 <DetailItem label="Final price" value={`₹${formatIndianNumber(flat.finalPrice)}`} />
               </dl>
@@ -772,7 +893,7 @@ export default function FlatDetailPage() {
                                     View
                                   </button>
                                 ) : (
-                                  <span className="text-xs text-gray-400">—</span>
+                                  <span className="text-xs text-gray-400">-</span>
                                 )}
                               </td>
                             </tr>
@@ -1102,7 +1223,7 @@ function DetailItem({ label, value, isLink }: { label: string; value: React.Reac
             {value}
           </a>
         ) : (
-          value ?? '—'
+          value ?? '-'
         )}
       </dd>
     </div>
@@ -1154,7 +1275,7 @@ function FlatFinancialSnapshot({
         <div key={label} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
           <p className={`mt-2 text-base font-semibold ${tone}`}>
-            {amount !== undefined && amount !== null ? formatCurrency(amount) : '—'}
+            {amount !== undefined && amount !== null ? formatCurrency(amount) : '-'}
           </p>
           <p className="text-xs text-gray-500 mt-1">
             {amount !== undefined && amount !== null
@@ -1184,15 +1305,15 @@ function buildDraftContent(fields: any) {
   const {
     customerName = 'Customer',
     spouseName = 'Spouse',
-    customerAddress = '—',
+    customerAddress = '-',
     milestoneId = 'Construction milestone',
     flatLabel = 'Flat',
-    bhk = '—',
+    bhk = '-',
     amount = 0,
     amountWords = '',
     reference = 'EECD/DEMAND/REF',
     date = new Date().toLocaleDateString('en-GB'),
-    place = '—',
+    place = '-',
     bankAccountHolder = 'Eastern Estate Construction & Developer’s Pvt. Ltd.',
     bankAccountNumber = 'XXXXXXXXXXXX',
     bankIfsc = 'SBINXXXXXXX',
