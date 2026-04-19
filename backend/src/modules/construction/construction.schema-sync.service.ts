@@ -298,63 +298,98 @@ export class ConstructionSchemaSyncService implements OnModuleInit {
         await qr.query(`
           DO $$
           BEGIN
-            -- Older prod installs were created without construction_project_id.
-            -- Add it if missing (nullable from the start).
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates'
-                AND column_name = 'construction_project_id'
-            ) THEN
-              ALTER TABLE construction_development_updates
-                ADD COLUMN construction_project_id UUID;
+            -- Scope / location columns
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'construction_project_id') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN construction_project_id UUID;
             END IF;
 
-            -- Make project_id optional so property-wide updates don't need a fake project.
-            IF EXISTS (
-              SELECT 1 FROM information_schema.columns
+            IF EXISTS (SELECT 1 FROM information_schema.columns
               WHERE table_name = 'construction_development_updates'
-                AND column_name = 'construction_project_id'
-                AND is_nullable = 'NO'
-            ) THEN
-              ALTER TABLE construction_development_updates
-                ALTER COLUMN construction_project_id DROP NOT NULL;
+                AND column_name = 'construction_project_id' AND is_nullable = 'NO') THEN
+              ALTER TABLE construction_development_updates ALTER COLUMN construction_project_id DROP NOT NULL;
             END IF;
 
-            -- Required audit columns the entity expects.
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates' AND column_name = 'created_by'
-            ) THEN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'property_id') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN property_id UUID;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'tower_id') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN tower_id UUID;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'scope_type') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN scope_type VARCHAR(30);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'common_area_label') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN common_area_label VARCHAR(200);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'category') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN category VARCHAR(40);
+            END IF;
+
+            -- Core content columns (entity requires these; add nullable so ADD works
+            -- on tables with existing rows, then downstream NULLs are fine on read)
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'update_date') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN update_date DATE;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'update_title') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN update_title VARCHAR(255);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'update_description') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN update_description TEXT;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'feedback_notes') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN feedback_notes TEXT;
+            END IF;
+
+            -- Media columns
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'images') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN images JSONB NOT NULL DEFAULT '[]'::jsonb;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'attachments') THEN
+              ALTER TABLE construction_development_updates ADD COLUMN attachments JSONB NOT NULL DEFAULT '[]'::jsonb;
+            END IF;
+
+            -- Audit / visibility
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'created_by') THEN
               ALTER TABLE construction_development_updates ADD COLUMN created_by UUID;
             END IF;
 
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates' AND column_name = 'visibility'
-            ) THEN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'visibility') THEN
               ALTER TABLE construction_development_updates
                 ADD COLUMN visibility VARCHAR(20) NOT NULL DEFAULT 'ALL';
             END IF;
 
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates' AND column_name = 'feedback_notes'
-            ) THEN
-              ALTER TABLE construction_development_updates ADD COLUMN feedback_notes TEXT;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'created_at') THEN
+              ALTER TABLE construction_development_updates
+                ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT now();
             END IF;
 
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates' AND column_name = 'images'
-            ) THEN
-              ALTER TABLE construction_development_updates ADD COLUMN images JSONB NOT NULL DEFAULT '[]'::jsonb;
-            END IF;
-
-            IF NOT EXISTS (
-              SELECT 1 FROM information_schema.columns
-              WHERE table_name = 'construction_development_updates' AND column_name = 'attachments'
-            ) THEN
-              ALTER TABLE construction_development_updates ADD COLUMN attachments JSONB NOT NULL DEFAULT '[]'::jsonb;
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_development_updates' AND column_name = 'updated_at') THEN
+              ALTER TABLE construction_development_updates
+                ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT now();
             END IF;
 
             IF NOT EXISTS (
