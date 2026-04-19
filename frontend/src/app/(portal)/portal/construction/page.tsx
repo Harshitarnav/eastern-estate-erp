@@ -102,9 +102,12 @@ function PhotoGrid({ photos }: { photos: string[] }) {
   );
 }
 
+type PortalTab = 'my-flat' | 'shared';
+
 export default function PortalConstructionPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<PortalTab>('my-flat');
 
   useEffect(() => {
     apiService
@@ -128,6 +131,27 @@ export default function PortalConstructionPage() {
     });
     return Array.from(map.values());
   }, [data]);
+
+  const myFlatCount = useMemo(
+    () => byFlat.filter((f) => f.rows.length).length,
+    [byFlat],
+  );
+  const sharedCount = useMemo(() => {
+    const projects = (data?.projects || []).length;
+    const devUpdates = (data?.developmentUpdates || []).length;
+    const legacy = (data?.updates || []).length;
+    return projects + devUpdates + legacy;
+  }, [data]);
+
+  // Prefer whichever tab has content on first load so customers with
+  // only shared updates (no per-flat progress yet) don't land on an
+  // empty tab. Runs once, after data arrives.
+  useEffect(() => {
+    if (!data) return;
+    if (myFlatCount === 0 && sharedCount > 0) {
+      setTab('shared');
+    }
+  }, [data, myFlatCount, sharedCount]);
 
   if (loading) {
     return (
@@ -166,8 +190,90 @@ export default function PortalConstructionPage() {
         </div>
       )}
 
-      {/* ── YOUR UNIT(s) ─ per-flat phase progress ──────────────── */}
-      {byFlat.length > 0 && byFlat.some((f) => f.rows.length) && (
+      {/* ── Tab switcher: My Flat(s) vs Shared Amenities ─────────── */}
+      {anyContent && (
+        <div
+          role="tablist"
+          aria-label="Construction updates sections"
+          className="sticky top-0 z-10 -mx-4 sm:mx-0 px-4 sm:px-0 pt-1 pb-3 bg-gradient-to-b from-white via-white to-transparent"
+        >
+          <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+            <button
+              role="tab"
+              aria-selected={tab === 'my-flat'}
+              onClick={() => setTab('my-flat')}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                tab === 'my-flat'
+                  ? 'bg-white text-[#A8211B] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Home className="w-4 h-4" />
+              {myFlatCount > 1 ? 'My Flats' : 'My Flat'}
+              {myFlatCount > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    tab === 'my-flat'
+                      ? 'bg-[#A8211B]/10 text-[#A8211B]'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {myFlatCount}
+                </span>
+              )}
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === 'shared'}
+              onClick={() => setTab('shared')}
+              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                tab === 'shared'
+                  ? 'bg-white text-[#A8211B] shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              Shared Amenities
+              {sharedCount > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    tab === 'shared'
+                      ? 'bg-[#A8211B]/10 text-[#A8211B]'
+                      : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {sharedCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── MY FLAT TAB: per-flat phase progress ──────────────────── */}
+      {tab === 'my-flat' && anyContent && myFlatCount === 0 && (
+        <div className="text-center py-12 text-gray-400 bg-white rounded-2xl border border-gray-100">
+          <Home className="w-10 h-10 mx-auto mb-2 opacity-30" />
+          <p className="text-sm font-medium text-gray-500">
+            No unit progress updates yet
+          </p>
+          <p className="text-xs mt-1 max-w-xs mx-auto">
+            Once the site team logs phase-wise progress for your flat, you'll see
+            it here with photos and notes.
+          </p>
+          {sharedCount > 0 && (
+            <button
+              onClick={() => setTab('shared')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[#A8211B] hover:underline"
+            >
+              See {sharedCount} shared amenity update
+              {sharedCount > 1 ? 's' : ''} instead
+            </button>
+          )}
+        </div>
+      )}
+
+      {tab === 'my-flat' && byFlat.length > 0 && byFlat.some((f) => f.rows.length) && (
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
             Your Unit Progress
@@ -262,8 +368,30 @@ export default function PortalConstructionPage() {
         </div>
       )}
 
+      {/* ── SHARED TAB: empty state ───────────────────────────────── */}
+      {tab === 'shared' && anyContent && sharedCount === 0 && (
+        <div className="text-center py-12 text-gray-400 bg-white rounded-2xl border border-gray-100">
+          <Sparkles className="w-10 h-10 mx-auto mb-2 opacity-30" />
+          <p className="text-sm font-medium text-gray-500">
+            No shared amenity updates yet
+          </p>
+          <p className="text-xs mt-1 max-w-xs mx-auto">
+            Common area work — lifts, landscaping, lobbies, façade, etc. —
+            will show up here when the site team logs it.
+          </p>
+          {myFlatCount > 0 && (
+            <button
+              onClick={() => setTab('my-flat')}
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[#A8211B] hover:underline"
+            >
+              See your {myFlatCount > 1 ? 'flats' : 'flat'} progress instead
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── PROJECTS ─────────────────────────────────────── */}
-      {projects.length > 0 && (
+      {tab === 'shared' && projects.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
             Projects
@@ -299,7 +427,7 @@ export default function PortalConstructionPage() {
       )}
 
       {/* ── DEVELOPMENT UPDATES (beautification, lifts, landscaping) ── */}
-      {developmentUpdates.length > 0 && (
+      {tab === 'shared' && developmentUpdates.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
             Property & Amenity Updates
@@ -370,7 +498,7 @@ export default function PortalConstructionPage() {
       )}
 
       {/* ── LEGACY DAILY PROGRESS LOGS (if any remain) ─────────── */}
-      {updates.length > 0 && (
+      {tab === 'shared' && updates.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wide">
             Recent Site Updates
