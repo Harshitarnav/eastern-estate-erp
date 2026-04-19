@@ -43,7 +43,15 @@ export declare class PaymentsService {
     update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<Payment>;
     markRefunded(id: string, userId?: string | null): Promise<Payment>;
     verify(id: string, userId: string): Promise<Payment>;
-    runPostCompletionHooks(paymentId: string, userId?: string | null): Promise<void>;
+    verifyWithReport(id: string, userId: string): Promise<{
+        payment: Payment;
+        journalEntryId: string | null;
+        journalEntrySkipReason: string | null;
+    }>;
+    runPostCompletionHooks(paymentId: string, userId?: string | null): Promise<{
+        journalEntryId: string | null;
+        journalEntrySkipReason: string | null;
+    }>;
     private notifyCustomerOnPaymentVerified;
     cancel(id: string): Promise<Payment>;
     remove(id: string): Promise<void>;

@@ -243,6 +243,25 @@ export class PaymentsService {
   }
 
   async verify(id: string, userId: string): Promise<Payment> {
+    const { payment } = await this.verifyWithReport(id, userId);
+    return payment;
+  }
+
+  /**
+   * Same as {@link verify}, but returns the post-completion hook
+   * summary so the caller can surface whether an auto-JE was posted,
+   * skipped, or failed. The Collections "Record Payment" action uses
+   * this to show a warning toast when the Chart of Accounts is
+   * incomplete (instead of a silent success that hides a missing JE).
+   */
+  async verifyWithReport(
+    id: string,
+    userId: string,
+  ): Promise<{
+    payment: Payment;
+    journalEntryId: string | null;
+    journalEntrySkipReason: string | null;
+  }> {
     const payment = await this.findOne(id);
 
     if (payment.status === PaymentStatus.COMPLETED) {
@@ -254,9 +273,13 @@ export class PaymentsService {
     payment.verifiedAt = new Date();
     const saved = await this.paymentRepository.save(payment);
 
-    await this.runPostCompletionHooks(saved.id, userId);
+    const hookResult = await this.runPostCompletionHooks(saved.id, userId);
 
-    return saved;
+    return {
+      payment: saved,
+      journalEntryId: hookResult.journalEntryId,
+      journalEntrySkipReason: hookResult.journalEntrySkipReason,
+    };
   }
 
   /**
@@ -278,11 +301,14 @@ export class PaymentsService {
   async runPostCompletionHooks(
     paymentId: string,
     userId?: string | null,
-  ): Promise<void> {
+  ): Promise<{
+    journalEntryId: string | null;
+    journalEntrySkipReason: string | null;
+  }> {
     const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
     if (!payment) {
       this.logger.warn(`runPostCompletionHooks: payment ${paymentId} not found`);
-      return;
+      return { journalEntryId: null, journalEntrySkipReason: 'payment-not-found' };
     }
 
     try {
@@ -293,8 +319,10 @@ export class PaymentsService {
       );
     }
 
+    let journalEntryId: string | null = null;
+    let journalEntrySkipReason: string | null = null;
     try {
-      await this.accountingIntegrationService.onPaymentCompleted({
+      const entry = await this.accountingIntegrationService.onPaymentCompleted({
         id: payment.id,
         paymentCode: payment.paymentCode,
         amount: Number(payment.amount),
@@ -302,7 +330,18 @@ export class PaymentsService {
         paymentMethod: payment.paymentMethod,
         createdBy: userId ?? undefined,
       });
+      if (entry?.id) {
+        journalEntryId = entry.id;
+      } else {
+        // onPaymentCompleted returns null when the Chart of Accounts is
+        // missing a default Bank/Cash or Sales/Revenue account. That
+        // should be self-healing via AccountsBootstrapService but on
+        // older installs it can still happen - surface it to the caller
+        // so the UI can show a warning instead of a misleading success.
+        journalEntrySkipReason = 'missing-default-accounts';
+      }
     } catch (err: any) {
+      journalEntrySkipReason = err?.message || 'unknown-error';
       this.logger.error(
         `Auto JE failed for payment ${payment.paymentCode}: ${err.message}`,
       );
@@ -311,6 +350,8 @@ export class PaymentsService {
     this.notifyCustomerOnPaymentVerified(payment).catch((e) =>
       this.logger.warn(`Failed to send payment notification: ${e.message}`),
     );
+
+    return { journalEntryId, journalEntrySkipReason };
   }
 
   private async notifyCustomerOnPaymentVerified(payment: Payment): Promise<void> {

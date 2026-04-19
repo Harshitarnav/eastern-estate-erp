@@ -165,6 +165,10 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         return this.paymentRepository.save(payment);
     }
     async verify(id, userId) {
+        const { payment } = await this.verifyWithReport(id, userId);
+        return payment;
+    }
+    async verifyWithReport(id, userId) {
         const payment = await this.findOne(id);
         if (payment.status === payment_entity_1.PaymentStatus.COMPLETED) {
             throw new common_1.BadRequestException('Payment is already verified');
@@ -173,14 +177,18 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         payment.verifiedBy = userId;
         payment.verifiedAt = new Date();
         const saved = await this.paymentRepository.save(payment);
-        await this.runPostCompletionHooks(saved.id, userId);
-        return saved;
+        const hookResult = await this.runPostCompletionHooks(saved.id, userId);
+        return {
+            payment: saved,
+            journalEntryId: hookResult.journalEntryId,
+            journalEntrySkipReason: hookResult.journalEntrySkipReason,
+        };
     }
     async runPostCompletionHooks(paymentId, userId) {
         const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
         if (!payment) {
             this.logger.warn(`runPostCompletionHooks: payment ${paymentId} not found`);
-            return;
+            return { journalEntryId: null, journalEntrySkipReason: 'payment-not-found' };
         }
         try {
             await this.getCompletionService().processPaymentCompletion(payment.id);
@@ -188,8 +196,10 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         catch (err) {
             this.logger.error(`Payment completion workflow failed for payment ${payment.paymentCode}: ${err.message}`);
         }
+        let journalEntryId = null;
+        let journalEntrySkipReason = null;
         try {
-            await this.accountingIntegrationService.onPaymentCompleted({
+            const entry = await this.accountingIntegrationService.onPaymentCompleted({
                 id: payment.id,
                 paymentCode: payment.paymentCode,
                 amount: Number(payment.amount),
@@ -197,11 +207,19 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
                 paymentMethod: payment.paymentMethod,
                 createdBy: userId ?? undefined,
             });
+            if (entry?.id) {
+                journalEntryId = entry.id;
+            }
+            else {
+                journalEntrySkipReason = 'missing-default-accounts';
+            }
         }
         catch (err) {
+            journalEntrySkipReason = err?.message || 'unknown-error';
             this.logger.error(`Auto JE failed for payment ${payment.paymentCode}: ${err.message}`);
         }
         this.notifyCustomerOnPaymentVerified(payment).catch((e) => this.logger.warn(`Failed to send payment notification: ${e.message}`));
+        return { journalEntryId, journalEntrySkipReason };
     }
     async notifyCustomerOnPaymentVerified(payment) {
         if (!payment.bookingId)

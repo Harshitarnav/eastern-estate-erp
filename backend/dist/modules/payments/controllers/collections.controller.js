@@ -106,7 +106,7 @@ let CollectionsController = class CollectionsController {
                 .filter(Boolean)
                 .join(' | '),
         }, userId ?? 'SYSTEM');
-        const verified = await this.payments.verify(payment.id, userId ?? 'SYSTEM');
+        const { payment: verified, journalEntryId, journalEntrySkipReason } = await this.payments.verifyWithReport(payment.id, userId ?? 'SYSTEM');
         return {
             ok: true,
             paymentId: verified.id,
@@ -114,6 +114,8 @@ let CollectionsController = class CollectionsController {
             amount: Number(verified.amount) || 0,
             status: verified.status,
             demandDraftId: dd.id,
+            journalEntryId,
+            journalEntrySkipReason,
         };
     }
     async contact(id, body, req) {

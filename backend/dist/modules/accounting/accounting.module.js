@@ -32,6 +32,7 @@ const journal_entries_controller_1 = require("./journal-entries.controller");
 const bank_accounts_controller_1 = require("./bank-accounts.controller");
 const bank_statements_controller_1 = require("./bank-statements.controller");
 const accounting_integration_service_1 = require("./accounting-integration.service");
+const accounts_bootstrap_service_1 = require("./accounts.bootstrap.service");
 const property_entity_1 = require("../properties/entities/property.entity");
 let AccountingModule = class AccountingModule {
 };
@@ -69,6 +70,7 @@ exports.AccountingModule = AccountingModule = __decorate([
             bank_accounts_service_1.BankAccountsService,
             bank_statements_service_1.BankStatementsService,
             accounting_integration_service_1.AccountingIntegrationService,
+            accounts_bootstrap_service_1.AccountsBootstrapService,
         ],
         exports: [
             accounting_service_1.AccountingService,

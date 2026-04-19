@@ -51,6 +51,8 @@ export declare class CollectionsController {
         amount: number;
         status: string;
         demandDraftId: string;
+        journalEntryId: string;
+        journalEntrySkipReason: string;
     }>;
     contact(id: string, body: {
         channel: 'phone' | 'email' | 'sms' | 'visit' | 'other';

@@ -247,6 +247,11 @@ class CollectionsService {
     amount: number;
     status: string;
     demandDraftId: string;
+    journalEntryId: string | null;
+    // Non-null when the auto-JE was skipped so the UI can surface a
+    // warning. 'missing-default-accounts' means the Chart of Accounts
+    // needs a Bank/Cash ASSET + Sales/Revenue INCOME account.
+    journalEntrySkipReason: string | null;
   }> {
     return apiService.post(`/collections/${id}/record-payment`, body);
   }

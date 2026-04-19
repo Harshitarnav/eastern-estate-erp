@@ -298,9 +298,21 @@ export default function CollectionDetailPage() {
         transactionReference: payReference || undefined,
         notes: payNotes || undefined,
       });
-      toast.success(
-        `Payment recorded (${res.paymentCode}). DD closed and ledger updated.`,
-      );
+      if (res.journalEntryId) {
+        toast.success(
+          `Payment recorded (${res.paymentCode}). DD closed and journal entry posted.`,
+        );
+      } else if (res.journalEntrySkipReason === 'missing-default-accounts') {
+        toast.warning(
+          `Payment recorded (${res.paymentCode}), but no journal entry was posted — your Chart of Accounts is missing a default Bank/Cash or Sales/Revenue account. Add both under /accounting/accounts so future payments auto-post to the ledger.`,
+        );
+      } else if (res.journalEntrySkipReason) {
+        toast.warning(
+          `Payment recorded (${res.paymentCode}), but the journal entry was skipped: ${res.journalEntrySkipReason}. Post it manually under /accounting/journal-entries.`,
+        );
+      } else {
+        toast.success(`Payment recorded (${res.paymentCode}). DD closed.`);
+      }
       setPayDialogOpen(false);
       await load();
     } catch (err: any) {
@@ -327,8 +339,12 @@ export default function CollectionDetailPage() {
     }
   };
 
-  const canEdit = row?.status === 'DRAFT';
+  // Edit is allowed for everything except PAID — once money has landed we
+  // lock the record because the amount feeds the ledger. The backend also
+  // accepts updates for any status, so the only gate is this UI switch.
+  const canEdit = !!row && row.status !== 'PAID';
   const canDelete = row?.status === 'DRAFT' || row?.status === 'FAILED';
+  const editedAfterSend = row?.status && row.status !== 'DRAFT';
   // Record-payment is offered for any non-closed DD. We don't require
   // SENT here because finance may take the money over the phone before
   // the DD is formally sent - the action short-circuits that handoff.
@@ -453,9 +469,17 @@ export default function CollectionDetailPage() {
                 </Button>
               )}
               {canEdit && (
-                <Button variant="outline" onClick={startEditing}>
+                <Button
+                  variant="outline"
+                  onClick={startEditing}
+                  title={
+                    editedAfterSend
+                      ? 'This DD has already been finalized — edits update the record only; the customer will not see the change until you re-send.'
+                      : 'Edit title, amount, due date and notice copy'
+                  }
+                >
                   <Pencil className="h-4 w-4 mr-2" />
-                  Edit Draft
+                  {editedAfterSend ? 'Edit' : 'Edit Draft'}
                 </Button>
               )}
               <Button

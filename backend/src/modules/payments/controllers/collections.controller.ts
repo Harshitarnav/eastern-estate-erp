@@ -195,7 +195,11 @@ export class CollectionsController {
 
     // Verify immediately so the post-completion pipeline runs - that's
     // what closes the DD, posts the JE, and updates the milestone.
-    const verified = await this.payments.verify(payment.id, userId ?? 'SYSTEM');
+    // We use verifyWithReport so the UI can warn when the auto-JE was
+    // skipped (e.g. Chart of Accounts still missing a default Bank or
+    // Sales account) instead of a misleading silent success.
+    const { payment: verified, journalEntryId, journalEntrySkipReason } =
+      await this.payments.verifyWithReport(payment.id, userId ?? 'SYSTEM');
 
     return {
       ok: true,
@@ -204,6 +208,10 @@ export class CollectionsController {
       amount: Number(verified.amount) || 0,
       status: verified.status,
       demandDraftId: dd.id,
+      journalEntryId,
+      // When the JE is skipped we return a human-readable explanation
+      // the frontend can show in a warning toast. null on success.
+      journalEntrySkipReason,
     };
   }
 

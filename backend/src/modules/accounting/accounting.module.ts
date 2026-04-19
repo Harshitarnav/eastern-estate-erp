@@ -23,6 +23,7 @@ import { JournalEntriesController } from './journal-entries.controller';
 import { BankAccountsController } from './bank-accounts.controller';
 import { BankStatementsController } from './bank-statements.controller';
 import { AccountingIntegrationService } from './accounting-integration.service';
+import { AccountsBootstrapService } from './accounts.bootstrap.service';
 import { Property } from '../properties/entities/property.entity';
 
 @Module({
@@ -57,6 +58,7 @@ import { Property } from '../properties/entities/property.entity';
     BankAccountsService,
     BankStatementsService,
     AccountingIntegrationService,
+    AccountsBootstrapService,
   ],
   exports: [
     AccountingService,
