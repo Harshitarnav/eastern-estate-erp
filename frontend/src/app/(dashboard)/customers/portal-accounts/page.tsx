@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
@@ -97,12 +97,30 @@ export default function PortalAccountsPage() {
 
   useEffect(() => { fetchAccounts(); }, [fetchAccounts]);
 
-  // Close action menu on outside click
+  // Close action menu on outside click or Escape. Ref-based so we only close
+  // when the click lands outside the currently open menu's wrapper — the old
+  // document-level listener was fragile against React 18's event delegation.
+  const menuWrapperRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const close = () => setActionMenu(null);
-    document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
-  }, []);
+    if (!actionMenu) return;
+    const handlePointer = (e: MouseEvent | TouchEvent) => {
+      if (!menuWrapperRef.current) return;
+      if (!menuWrapperRef.current.contains(e.target as Node)) {
+        setActionMenu(null);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setActionMenu(null);
+    };
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [actionMenu]);
 
   const handleToggleStatus = async (account: PortalAccount) => {
     setActionMenu(null);
@@ -255,7 +273,10 @@ export default function PortalAccountsPage() {
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden md:block bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          {/* NOTE: no `overflow-hidden` — the per-row action dropdown is
+             absolute-positioned with `top-full` and was getting clipped by the
+             rounded wrapper, which made the 3-dot button look dead. */}
+          <div className="hidden md:block bg-white rounded-2xl border border-gray-100">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-50 text-left">
@@ -317,30 +338,52 @@ export default function PortalAccountsPage() {
                     </td>
                     <td className="px-5 py-3.5 text-gray-500 text-xs">{fmtDate(account.createdAt)}</td>
                     <td className="px-5 py-3.5">
-                      <div className="relative">
+                      <div
+                        className="relative"
+                        ref={actionMenu === account.id ? menuWrapperRef : undefined}
+                      >
                         <button
-                          onClick={(e) => { e.stopPropagation(); setActionMenu(actionMenu === account.id ? null : account.id); }}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition">
+                          type="button"
+                          aria-haspopup="menu"
+                          aria-expanded={actionMenu === account.id}
+                          aria-label="Account actions"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActionMenu((prev) => (prev === account.id ? null : account.id));
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition"
+                        >
                           <MoreVertical className="w-4 h-4" />
                         </button>
                         {actionMenu === account.id && (
-                          <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-20 py-1 text-sm"
-                            onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => { setActionMenu(null); setResetUserId(account.id); setResetPassword(''); }}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 text-left text-gray-700">
+                          <div
+                            role="menu"
+                            className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-xl z-30 py-1 text-sm"
+                          >
+                            <button
+                              role="menuitem"
+                              onClick={() => { setActionMenu(null); setResetUserId(account.id); setResetPassword(''); }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 text-left text-gray-700"
+                            >
                               <KeyRound className="w-4 h-4 text-blue-500" /> Reset Password
                             </button>
-                            <button onClick={() => handleToggleStatus(account)}
+                            <button
+                              role="menuitem"
+                              onClick={() => handleToggleStatus(account)}
                               className={`w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-gray-50 text-left ${
                                 account.isActive ? 'text-orange-600' : 'text-green-600'
-                              }`}>
+                              }`}
+                            >
                               {account.isActive
                                 ? <><Ban className="w-4 h-4" /> Deactivate</>
                                 : <><ShieldCheck className="w-4 h-4" /> Activate</>}
                             </button>
                             <div className="border-t border-gray-50 my-1" />
-                            <button onClick={() => { setActionMenu(null); setRevokeAccount(account); }}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 text-left text-red-600">
+                            <button
+                              role="menuitem"
+                              onClick={() => { setActionMenu(null); setRevokeAccount(account); }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-red-50 text-left text-red-600"
+                            >
                               <Trash2 className="w-4 h-4" /> Revoke Access
                             </button>
                           </div>
