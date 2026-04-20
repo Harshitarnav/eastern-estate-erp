@@ -13,6 +13,11 @@ import {
   X,
   Zap,
   History,
+  Coins,
+  AlertTriangle,
+  FileText,
+  Lock,
+  Banknote,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,6 +64,50 @@ interface FlatProgressRow {
   updatedAt?: string;
 }
 
+interface PaymentPlanMilestone {
+  sequence: number;
+  name: string;
+  constructionPhase:
+    | 'FOUNDATION'
+    | 'STRUCTURE'
+    | 'MEP'
+    | 'FINISHING'
+    | 'HANDOVER'
+    | null;
+  phasePercentage: number | null;
+  amount: number;
+  status: 'PENDING' | 'TRIGGERED' | 'PAID' | 'OVERDUE';
+  demandDraftId: string | null;
+  paymentId: string | null;
+  description?: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
+}
+
+interface PaymentPlan {
+  id: string;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  status: string;
+  milestones: PaymentPlanMilestone[];
+}
+
+const fmtINR = (n: number) => {
+  if (!Number.isFinite(n)) return '—';
+  return `₹${Number(n).toLocaleString('en-IN')}`;
+};
+
+const STATUS_STYLES: Record<
+  PaymentPlanMilestone['status'],
+  { label: string; cls: string }
+> = {
+  PENDING: { label: 'Pending', cls: 'bg-gray-100 text-gray-600' },
+  TRIGGERED: { label: 'DD raised', cls: 'bg-amber-100 text-amber-800' },
+  PAID: { label: 'Paid', cls: 'bg-emerald-100 text-emerald-800' },
+  OVERDUE: { label: 'Overdue', cls: 'bg-red-100 text-red-700' },
+};
+
 export default function FlatLogPage() {
   const params = useParams<{ flatId: string }>();
   const router = useRouter();
@@ -68,6 +117,8 @@ export default function FlatLogPage() {
   const [loadingFlat, setLoadingFlat] = useState(true);
   const [history, setHistory] = useState<FlatProgressRow[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [plan, setPlan] = useState<PaymentPlan | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
 
   const [phase, setPhase] = useState<PhaseValue>('STRUCTURE');
   const [phasePct, setPhasePct] = useState<number>(0);
@@ -104,10 +155,26 @@ export default function FlatLogPage() {
     }
   }, [flatId]);
 
+  const loadPlan = useCallback(async () => {
+    if (!flatId) return;
+    try {
+      setLoadingPlan(true);
+      const data = await apiService.get<PaymentPlan | null>(
+        `/flat-payment-plans/flat/${flatId}`,
+      );
+      setPlan(data && (data as any).id ? (data as PaymentPlan) : null);
+    } catch {
+      setPlan(null);
+    } finally {
+      setLoadingPlan(false);
+    }
+  }, [flatId]);
+
   useEffect(() => {
     loadFlat();
     loadHistory();
-  }, [loadFlat, loadHistory]);
+    loadPlan();
+  }, [loadFlat, loadHistory, loadPlan]);
 
   // When phase changes, seed form with the latest known values for that phase
   useEffect(() => {
@@ -157,12 +224,42 @@ export default function FlatLogPage() {
 
   const removePhoto = (url: string) => setPhotos((prev) => prev.filter((u) => u !== url));
 
-  const willTriggerDD = useMemo(() => {
-    // Heuristic hint: if the phase is one of the DD-linked phases and phasePct
-    // will increase from what we already have, we *may* trigger a milestone.
-    const previous = summary.byPhase[phase] ?? 0;
-    return phasePct > previous;
-  }, [phase, phasePct, summary]);
+  // Milestones in the active payment plan whose threshold will be crossed by
+  // this save. A milestone triggers iff:
+  //   - status === 'PENDING'
+  //   - constructionPhase matches the phase being logged (token/down-payment
+  //     rows carry constructionPhase=null and are manual-only)
+  //   - phasePct >= milestone.phasePercentage (defaults to 100 if missing)
+  // The backend uses the identical rule in ConstructionWorkflowService.check-
+  // AndUpdateMilestones, so this preview stays in sync with what actually
+  // fires when you click Save.
+  const liveMatches = useMemo<PaymentPlanMilestone[]>(() => {
+    if (!plan?.milestones?.length) return [];
+    return plan.milestones.filter((m) => {
+      if (m.status !== 'PENDING') return false;
+      if (!m.constructionPhase) return false;
+      if (m.constructionPhase !== phase) return false;
+      const threshold = m.phasePercentage ?? 100;
+      return phasePct >= threshold;
+    });
+  }, [plan, phase, phasePct]);
+
+  // Sum-per-phase so the panel can show "Foundation: 15L of 15L" at a glance.
+  const planPhaseTotals = useMemo(() => {
+    const totals: Record<string, { total: number; triggered: number; paid: number }> = {};
+    (plan?.milestones || []).forEach((m) => {
+      if (!m.constructionPhase) return;
+      const key = m.constructionPhase;
+      totals[key] = totals[key] || { total: 0, triggered: 0, paid: 0 };
+      totals[key].total += Number(m.amount) || 0;
+      if (m.status === 'PAID') totals[key].paid += Number(m.amount) || 0;
+      if (m.status === 'TRIGGERED' || m.status === 'OVERDUE')
+        totals[key].triggered += Number(m.amount) || 0;
+    });
+    return totals;
+  }, [plan]);
+
+  const willTriggerDD = liveMatches.length > 0;
 
   const handleSave = async () => {
     if (!flatId) return;
@@ -210,10 +307,11 @@ export default function FlatLogPage() {
         toast.message('No milestone threshold hit yet for this phase.');
       }
 
-      // Reset note/photos, refresh history
+      // Reset note/photos, refresh history + payment plan (so milestone
+      // rows flip from PENDING → TRIGGERED and the panel stays accurate).
       setNotes('');
       setPhotos([]);
-      await loadHistory();
+      await Promise.all([loadHistory(), loadPlan()]);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Failed to save progress');
     } finally {
@@ -261,6 +359,165 @@ export default function FlatLogPage() {
           </div>
         </div>
       </header>
+
+      {/* ── Payment Plan (top of page, drives DD auto-generation) ── */}
+      <Card>
+        <CardContent className="p-4 md:p-5 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="h-8 w-8 rounded-lg bg-red-50 flex items-center justify-center shrink-0">
+                <Coins className="h-4 w-4 text-[#A8211B]" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-semibold text-sm md:text-base">
+                  Payment Plan
+                </h2>
+                <p className="text-[11px] text-muted-foreground">
+                  Milestones drive when demand drafts auto-generate.
+                </p>
+              </div>
+            </div>
+            {plan && (
+              <div className="text-right shrink-0 text-xs">
+                <div className="text-muted-foreground">Total</div>
+                <div className="font-bold tabular-nums">
+                  {fmtINR(Number(plan.totalAmount) || 0)}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  Paid {fmtINR(Number(plan.paidAmount) || 0)} · Bal{' '}
+                  {fmtINR(Number(plan.balanceAmount) || 0)}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {loadingPlan && !plan && (
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading plan…
+            </div>
+          )}
+
+          {!loadingPlan && !plan && (
+            <div
+              className="rounded-md border px-3 py-2 text-xs flex items-start gap-2"
+              style={{
+                background: '#FEF7EC',
+                borderColor: '#F4D590',
+                color: '#7B1E12',
+              }}
+            >
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                No active payment plan linked to this flat. Logs will be saved,
+                but <strong>demand drafts won't auto-generate</strong>. Set up a
+                plan from the Payment Plans screen to enable this.
+              </div>
+            </div>
+          )}
+
+          {plan && plan.milestones?.length > 0 && (
+            <div className="rounded-md border overflow-hidden">
+              <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 gap-y-0 text-[11px] uppercase tracking-wide text-muted-foreground px-3 py-1.5 border-b bg-gray-50">
+                <div>#</div>
+                <div>Milestone</div>
+                <div className="text-right">Amount</div>
+                <div className="text-right">Status</div>
+              </div>
+              <ul className="divide-y">
+                {plan.milestones
+                  .slice()
+                  .sort((a, b) => a.sequence - b.sequence)
+                  .map((m) => {
+                    const isManual = !m.constructionPhase;
+                    const threshold = m.phasePercentage ?? 100;
+                    const isLiveMatch = liveMatches.some(
+                      (x) => x.sequence === m.sequence,
+                    );
+                    const statusStyle =
+                      STATUS_STYLES[m.status] || STATUS_STYLES.PENDING;
+                    const phaseLabel = m.constructionPhase
+                      ? `${m.constructionPhase.charAt(0)}${m.constructionPhase.slice(1).toLowerCase()}`
+                      : 'Manual';
+
+                    return (
+                      <li
+                        key={m.sequence}
+                        className={`grid grid-cols-[auto_1fr_auto_auto] gap-x-3 gap-y-0.5 items-center px-3 py-2 text-xs ${
+                          isLiveMatch
+                            ? 'bg-amber-50'
+                            : isManual
+                              ? 'bg-gray-50/50 text-gray-500'
+                              : ''
+                        }`}
+                      >
+                        <div className="tabular-nums text-[11px] text-muted-foreground">
+                          {m.sequence}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-medium truncate flex items-center gap-1.5">
+                            {isManual && (
+                              <Lock className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            <span className="truncate">{m.name}</span>
+                            {isLiveMatch && (
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-800 bg-amber-200/70 px-1.5 py-0.5 rounded">
+                                <Zap className="h-2.5 w-2.5" />
+                                Fires on save
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate">
+                            {isManual
+                              ? 'Token / Down-payment · manual trigger'
+                              : `${phaseLabel} · threshold ${threshold}%`}
+                            {m.demandDraftId && (
+                              <>
+                                {' · '}
+                                <Link
+                                  href={`/demand-drafts/${m.demandDraftId}`}
+                                  className="underline hover:text-[#A8211B]"
+                                >
+                                  View DD
+                                </Link>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="tabular-nums font-semibold text-right">
+                          {fmtINR(Number(m.amount) || 0)}
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusStyle.cls}`}
+                          >
+                            {statusStyle.label}
+                          </span>
+                        </div>
+                      </li>
+                    );
+                  })}
+              </ul>
+
+              {Object.keys(planPhaseTotals).length > 0 && (
+                <div className="px-3 py-2 border-t bg-gray-50 text-[10px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+                  <span className="inline-flex items-center gap-1">
+                    <Banknote className="h-3 w-3" /> Per phase:
+                  </span>
+                  {PHASES.filter((p) => planPhaseTotals[p.value]).map((p) => {
+                    const t = planPhaseTotals[p.value];
+                    return (
+                      <span key={p.value} className="tabular-nums">
+                        <strong className="text-gray-700">{p.short}</strong>{' '}
+                        {fmtINR(t.paid)}/{fmtINR(t.total)}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Phase summary chips */}
       <Card>
@@ -442,13 +699,58 @@ export default function FlatLogPage() {
           {willTriggerDD && (
             <div
               className="rounded-md border px-3 py-2 text-sm flex items-start gap-2"
-              style={{ background: '#FEF7EC', borderColor: '#F4D590', color: '#7B1E12' }}
+              style={{
+                background: '#FEF7EC',
+                borderColor: '#F4D590',
+                color: '#7B1E12',
+              }}
             >
               <Zap className="h-4 w-4 mt-0.5 shrink-0" />
-              <div>
-                Saving may trigger a <strong>Demand Draft</strong> automatically if this %
-                crosses a milestone in the active payment plan.
+              <div className="min-w-0 space-y-1">
+                <div>
+                  Saving will raise{' '}
+                  <strong>
+                    {liveMatches.length === 1
+                      ? '1 Demand Draft'
+                      : `${liveMatches.length} Demand Drafts`}
+                  </strong>
+                  :
+                </div>
+                <ul className="space-y-0.5">
+                  {liveMatches.map((m) => (
+                    <li key={m.sequence} className="flex items-center gap-2">
+                      <FileText className="h-3 w-3 shrink-0" />
+                      <span className="truncate">
+                        <strong>#{m.sequence} {m.name}</strong> · {fmtINR(Number(m.amount) || 0)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
+            </div>
+          )}
+
+          {!willTriggerDD && plan && phasePct > 0 && (
+            <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+              No milestone threshold hit at {phasePct}% of{' '}
+              {PHASES.find((p) => p.value === phase)?.label}. Next for this
+              phase:{' '}
+              {(() => {
+                const next = (plan.milestones || [])
+                  .filter(
+                    (m) =>
+                      m.status === 'PENDING' &&
+                      m.constructionPhase === phase &&
+                      (m.phasePercentage ?? 100) > phasePct,
+                  )
+                  .sort(
+                    (a, b) =>
+                      (a.phasePercentage ?? 100) - (b.phasePercentage ?? 100),
+                  )[0];
+                return next
+                  ? `${next.phasePercentage ?? 100}% → ${next.name} (${fmtINR(Number(next.amount) || 0)})`
+                  : 'none';
+              })()}
             </div>
           )}
 
