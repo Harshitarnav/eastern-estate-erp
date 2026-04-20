@@ -119,7 +119,10 @@ export class AutoDemandDraftService {
   /**
    * Generate demand draft for a milestone match
    */
-  async generateDemandDraft(match: MilestoneMatch, systemUserId?: string): Promise<DemandDraft> {
+  async generateDemandDraft(
+    match: MilestoneMatch,
+    systemUserId?: string | null,
+  ): Promise<DemandDraft> {
     const { flatPaymentPlan, milestoneSequence, constructionProgress, amount } = match;
 
     // Load all required data
@@ -365,7 +368,10 @@ export class AutoDemandDraftService {
       );
     }
 
-    // Update flat payment plan milestone
+    // Update flat payment plan milestone. Pass null (not 'SYSTEM') when no
+    // human userId is available - updated_by is a UUID column and Postgres
+    // rejects string literals like 'SYSTEM' with code 22P02. The
+    // FlatPaymentPlanService now tolerates null userId on the write path.
     await this.flatPaymentPlanService.updateMilestone(
       flatPaymentPlan.id,
       milestoneSequence,
@@ -376,7 +382,7 @@ export class AutoDemandDraftService {
         demandDraftId: savedDemandDraft.id,
         constructionCheckpointId: constructionProgress?.id ?? null,
       },
-      systemUserId || 'SYSTEM',
+      systemUserId ?? null,
     );
 
     // Mark construction checkpoint as triggered (only if we have one)

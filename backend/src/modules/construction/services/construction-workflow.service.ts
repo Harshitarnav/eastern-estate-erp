@@ -248,10 +248,22 @@ export class ConstructionWorkflowService {
           `${currentPhase} at ${phaseProgress}% (required: ${milestone.phasePercentage}%)`,
       );
 
-      const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
-      if (summary) {
-        generatedDemandDrafts.push(summary);
-        milestonesTriggered += 1;
+      // Isolate each milestone's delegation so one failure (e.g. a stale
+      // payment_schedules column, a bad updated_by cast) doesn't prevent
+      // the others from firing AND doesn't drop the list of DDs that did
+      // succeed. The DD row for this milestone may still have been saved
+      // on disk before the failure – the 2-hourly cron sweep will report
+      // and reconcile it on the next pass.
+      try {
+        const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
+        if (summary) {
+          generatedDemandDrafts.push(summary);
+          milestonesTriggered += 1;
+        }
+      } catch (err: any) {
+        this.logger.error(
+          `Failed to delegate DD for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}: ${err?.message}`,
+        );
       }
     }
 
@@ -281,6 +293,22 @@ export class ConstructionWorkflowService {
       this.logger.log(
         `Demand draft already exists for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}`,
       );
+      // If the plan's milestone row never got flipped to TRIGGERED (e.g.
+      // a prior run crashed mid-way in updateMilestone), self-heal now.
+      // This keeps the Payment Plan panel in the log UI accurate instead
+      // of permanently showing PENDING even though a DD exists.
+      const planMilestone = paymentPlan.milestones?.find(
+        (m) => m.sequence === milestone.sequence,
+      );
+      if (planMilestone && planMilestone.status === 'PENDING') {
+        try {
+          await this.healMilestoneStatus(paymentPlan, milestone.sequence, existing.id);
+        } catch (err: any) {
+          this.logger.warn(
+            `Could not heal milestone ${milestone.sequence} status: ${err?.message}`,
+          );
+        }
+      }
       return null;
     }
 
@@ -317,6 +345,41 @@ export class ConstructionWorkflowService {
       customerName: paymentPlan.customer?.fullName || undefined,
       dueDate: saved.dueDate,
     };
+  }
+
+  /**
+   * Self-heal a plan's milestone row when a DD exists on disk but the
+   * milestone was left in PENDING (e.g. a prior run crashed mid-way in
+   * FlatPaymentPlanService.updateMilestone due to schema drift or a bad
+   * updated_by value). We re-apply the TRIGGERED state using the FlatPayment
+   * plan repo directly so we don't re-invoke the service method that
+   * already failed once. updated_by is left untouched (NULL) rather than
+   * stamped with the string 'SYSTEM'.
+   */
+  private async healMilestoneStatus(
+    paymentPlan: FlatPaymentPlan,
+    milestoneSequence: number,
+    demandDraftId: string,
+  ): Promise<void> {
+    const fresh = await this.flatPaymentPlanRepository.findOne({
+      where: { id: paymentPlan.id },
+    });
+    if (!fresh) return;
+    const idx = (fresh.milestones || []).findIndex(
+      (m) => m.sequence === milestoneSequence,
+    );
+    if (idx === -1) return;
+    if (fresh.milestones[idx].status !== 'PENDING') return;
+
+    fresh.milestones[idx] = {
+      ...fresh.milestones[idx],
+      status: 'TRIGGERED',
+      demandDraftId,
+    };
+    await this.flatPaymentPlanRepository.save(fresh);
+    this.logger.log(
+      `Healed milestone ${milestoneSequence} on plan ${fresh.id} → TRIGGERED (dd=${demandDraftId})`,
+    );
   }
 
   /**

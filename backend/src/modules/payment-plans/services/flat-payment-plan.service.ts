@@ -351,7 +351,7 @@ export class FlatPaymentPlanService {
     planId: string,
     milestoneSequence: number,
     updates: Partial<FlatPaymentMilestone>,
-    userId: string,
+    userId: string | null | undefined,
   ): Promise<FlatPaymentPlan> {
     const plan = await this.findOne(planId);
     
@@ -380,8 +380,21 @@ export class FlatPaymentPlanService {
       plan.status = FlatPaymentPlanStatus.COMPLETED;
     }
 
-    plan.updatedBy = userId;
+    // updated_by is a UUID column. Historically some callers passed the
+    // string 'SYSTEM' when no human user was in context, which Postgres
+    // rejects with 22P02 (invalid input syntax for type uuid). We now
+    // coerce anything that isn't a valid UUID to null so the write path
+    // can't be broken by a bad caller.
+    plan.updatedBy = this.normalizeUserId(userId);
     return await this.flatPaymentPlanRepository.save(plan);
+  }
+
+  private readonly uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+  private normalizeUserId(userId: string | null | undefined): string | null {
+    if (!userId) return null;
+    return this.uuidRegex.test(userId) ? userId : null;
   }
 
   /**
@@ -391,7 +404,7 @@ export class FlatPaymentPlanService {
   async updateMilestones(
     planId: string,
     milestones: FlatPaymentMilestone[],
-    userId: string,
+    userId: string | null | undefined,
   ): Promise<FlatPaymentPlan> {
     const plan = await this.findOne(planId);
 
@@ -412,7 +425,7 @@ export class FlatPaymentPlanService {
       plan.status = FlatPaymentPlanStatus.ACTIVE;
     }
 
-    plan.updatedBy = userId;
+    plan.updatedBy = this.normalizeUserId(userId);
     return await this.flatPaymentPlanRepository.save(plan);
   }
 
@@ -423,7 +436,7 @@ export class FlatPaymentPlanService {
   async updatePlan(
     planId: string,
     updates: { totalAmount?: number; status?: FlatPaymentPlanStatus },
-    userId: string,
+    userId: string | null | undefined,
   ): Promise<FlatPaymentPlan> {
     const plan = await this.findOne(planId);
 
@@ -435,17 +448,17 @@ export class FlatPaymentPlanService {
       plan.status = updates.status;
     }
 
-    plan.updatedBy = userId;
+    plan.updatedBy = this.normalizeUserId(userId);
     return await this.flatPaymentPlanRepository.save(plan);
   }
 
   /**
    * Cancel flat payment plan
    */
-  async cancel(id: string, userId: string): Promise<FlatPaymentPlan> {
+  async cancel(id: string, userId: string | null | undefined): Promise<FlatPaymentPlan> {
     const plan = await this.findOne(id);
     plan.status = FlatPaymentPlanStatus.CANCELLED;
-    plan.updatedBy = userId;
+    plan.updatedBy = this.normalizeUserId(userId);
     return await this.flatPaymentPlanRepository.save(plan);
   }
 
