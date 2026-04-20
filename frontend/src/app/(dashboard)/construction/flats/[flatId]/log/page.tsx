@@ -261,6 +261,38 @@ export default function FlatLogPage() {
 
   const willTriggerDD = liveMatches.length > 0;
 
+  // Summarise what the payment plan looks like for the currently-selected
+  // phase so the pre-save hint under the slider can say exactly why a DD
+  // will / will not fire. All buckets are computed once per render.
+  const phaseSummary = useMemo(() => {
+    if (!plan) {
+      return {
+        has: false,
+        pendingAhead: [] as PaymentPlanMilestone[],
+        alreadyResolvedAtOrBelow: [] as PaymentPlanMilestone[],
+      };
+    }
+    const forPhase = (plan.milestones || []).filter(
+      (m) => m.constructionPhase === phase,
+    );
+    const pendingAhead = forPhase
+      .filter(
+        (m) => m.status === 'PENDING' && (m.phasePercentage ?? 100) > phasePct,
+      )
+      .sort((a, b) => (a.phasePercentage ?? 100) - (b.phasePercentage ?? 100));
+    // Milestones whose threshold the current % already meets but that are no
+    // longer PENDING (they were raised on an earlier log). These are the
+    // reason a user can see "nothing will fire" and still be correct.
+    const alreadyResolvedAtOrBelow = forPhase
+      .filter(
+        (m) =>
+          m.status !== 'PENDING' &&
+          (m.phasePercentage ?? 100) <= phasePct,
+      )
+      .sort((a, b) => (a.phasePercentage ?? 100) - (b.phasePercentage ?? 100));
+    return { has: forPhase.length > 0, pendingAhead, alreadyResolvedAtOrBelow };
+  }, [plan, phase, phasePct]);
+
   const handleSave = async () => {
     if (!flatId) return;
     if (phasePct < 0 || phasePct > 100) {
@@ -280,12 +312,16 @@ export default function FlatLogPage() {
       };
       const res: any = await apiService.post('/construction/flat-progress', payload);
 
+      const phaseLabel = PHASES.find((p) => p.value === phase)?.label || phase;
+
       toast.success('Progress saved', {
-        description: `${PHASES.find((p) => p.value === phase)?.label} · ${phasePct}%`,
+        description: `${phaseLabel} · ${phasePct}%`,
       });
 
       const generated: any[] = res?.workflow?.generatedDemandDrafts ?? [];
       if (generated.length > 0) {
+        // Happy path: backend raised one or more DDs. Toast each so the user
+        // can jump straight to the DD detail page.
         generated.forEach((dd) => {
           const unit = [dd.flatNumber, dd.towerName].filter(Boolean).join(' · ');
           const fmtAmt =
@@ -303,8 +339,40 @@ export default function FlatLogPage() {
             },
           });
         });
-      } else if (res?.workflow?.milestonesTriggered === 0) {
-        toast.message('No milestone threshold hit yet for this phase.');
+      } else if (liveMatches.length > 0) {
+        // User's pre-save preview said N DDs should fire, but the backend
+        // returned zero. That's the "already raised" branch: the DD row
+        // exists from a previous log or cron sweep, and the workflow
+        // recognised it and skipped creating a duplicate.
+        toast.message(
+          `${liveMatches.length === 1 ? 'This milestone was' : 'These milestones were'} already raised earlier`,
+          {
+            description: liveMatches
+              .map((m) => `#${m.sequence} ${m.name}`)
+              .join(', '),
+          },
+        );
+      } else if (!plan) {
+        toast.message('No active payment plan linked to this flat', {
+          description: 'Logs saved. DDs won\u2019t auto-generate until a plan is set up.',
+        });
+      } else if (!phaseSummary.has) {
+        toast.message(
+          `No payment milestones linked to ${phaseLabel}`,
+          { description: 'Log saved — this phase has no DD triggers configured.' },
+        );
+      } else if (
+        phaseSummary.pendingAhead.length === 0 &&
+        phaseSummary.alreadyResolvedAtOrBelow.length > 0
+      ) {
+        toast.message(`All ${phaseLabel} milestones are already raised`, {
+          description: 'No more DDs will auto-fire for this phase.',
+        });
+      } else if (phaseSummary.pendingAhead.length > 0) {
+        const next = phaseSummary.pendingAhead[0];
+        toast.message(`No DD fires at ${phasePct}% of ${phaseLabel}`, {
+          description: `Next target: ${next.phasePercentage ?? 100}% \u2192 ${next.name}`,
+        });
       }
 
       // Reset note/photos, refresh history + payment plan (so milestone
@@ -730,29 +798,56 @@ export default function FlatLogPage() {
             </div>
           )}
 
-          {!willTriggerDD && plan && phasePct > 0 && (
-            <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
-              No milestone threshold hit at {phasePct}% of{' '}
-              {PHASES.find((p) => p.value === phase)?.label}. Next for this
-              phase:{' '}
-              {(() => {
-                const next = (plan.milestones || [])
-                  .filter(
-                    (m) =>
-                      m.status === 'PENDING' &&
-                      m.constructionPhase === phase &&
-                      (m.phasePercentage ?? 100) > phasePct,
+          {!willTriggerDD && plan && phasePct > 0 && (() => {
+            const phaseLabel =
+              PHASES.find((p) => p.value === phase)?.label || phase;
+            // Prioritised messaging:
+            //   1. Phase has no milestones in the plan → nothing to expect
+            //   2. All milestones for this phase already raised/paid → explain
+            //   3. Pending milestones exist above current % → show next target
+            //   4. Fallback (shouldn't normally happen) → neutral copy
+            if (!phaseSummary.has) {
+              return (
+                <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                  <strong>{phaseLabel}</strong> has no payment milestones in
+                  the active plan — logging will save progress only.
+                </div>
+              );
+            }
+            if (
+              phaseSummary.pendingAhead.length === 0 &&
+              phaseSummary.alreadyResolvedAtOrBelow.length > 0
+            ) {
+              return (
+                <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                  All payment milestones for <strong>{phaseLabel}</strong> are
+                  already{' '}
+                  {phaseSummary.alreadyResolvedAtOrBelow.every(
+                    (m) => m.status === 'PAID',
                   )
-                  .sort(
-                    (a, b) =>
-                      (a.phasePercentage ?? 100) - (b.phasePercentage ?? 100),
-                  )[0];
-                return next
-                  ? `${next.phasePercentage ?? 100}% → ${next.name} (${fmtINR(Number(next.amount) || 0)})`
-                  : 'none';
-              })()}
-            </div>
-          )}
+                    ? 'paid'
+                    : 'raised'}{' '}
+                  — no new DD will fire on save.
+                </div>
+              );
+            }
+            if (phaseSummary.pendingAhead.length > 0) {
+              const next = phaseSummary.pendingAhead[0];
+              return (
+                <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                  Saving at <strong>{phasePct}%</strong> won't raise a DD.
+                  Next target for <strong>{phaseLabel}</strong>:{' '}
+                  <strong>{next.phasePercentage ?? 100}%</strong> →{' '}
+                  {next.name} ({fmtINR(Number(next.amount) || 0)}).
+                </div>
+              );
+            }
+            return (
+              <div className="rounded-md border px-3 py-2 text-xs text-muted-foreground">
+                No DD will fire on save.
+              </div>
+            );
+          })()}
 
           <Button
             className="w-full h-11"

@@ -83,12 +83,14 @@ export declare class FlatPaymentPlanService {
     findOne(id: string): Promise<FlatPaymentPlan>;
     findByFlatId(flatId: string): Promise<FlatPaymentPlan | null>;
     findByBookingId(bookingId: string): Promise<FlatPaymentPlan | null>;
-    updateMilestone(planId: string, milestoneSequence: number, updates: Partial<FlatPaymentMilestone>, userId: string): Promise<FlatPaymentPlan>;
-    updateMilestones(planId: string, milestones: FlatPaymentMilestone[], userId: string): Promise<FlatPaymentPlan>;
+    updateMilestone(planId: string, milestoneSequence: number, updates: Partial<FlatPaymentMilestone>, userId: string | null | undefined): Promise<FlatPaymentPlan>;
+    private readonly uuidRegex;
+    private normalizeUserId;
+    updateMilestones(planId: string, milestones: FlatPaymentMilestone[], userId: string | null | undefined): Promise<FlatPaymentPlan>;
     updatePlan(planId: string, updates: {
         totalAmount?: number;
         status?: FlatPaymentPlanStatus;
-    }, userId: string): Promise<FlatPaymentPlan>;
-    cancel(id: string, userId: string): Promise<FlatPaymentPlan>;
+    }, userId: string | null | undefined): Promise<FlatPaymentPlan>;
+    cancel(id: string, userId: string | null | undefined): Promise<FlatPaymentPlan>;
     getLedger(bookingId: string): Promise<LedgerResponse>;
 }

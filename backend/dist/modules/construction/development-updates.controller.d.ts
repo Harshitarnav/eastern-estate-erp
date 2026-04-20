@@ -6,9 +6,12 @@ export declare class DevelopmentUpdatesController {
     constructor(developmentUpdatesService: DevelopmentUpdatesService);
     createUpdate(projectId: string, createDto: CreateDevelopmentUpdateDto, req: any): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
     getProjectUpdates(projectId: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate[]>;
-    getUpdate(updateId: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
-    updateUpdate(updateId: string, updateDto: UpdateDevelopmentUpdateDto): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
-    deleteUpdate(updateId: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
+    getUpdate(updateId: string, req: any): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
+    updateUpdate(updateId: string, updateDto: UpdateDevelopmentUpdateDto, req: any): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
+    deleteUpdate(updateId: string, req: any): Promise<{
+        success: true;
+        id: string;
+    }>;
     addImages(updateId: string, images: string[]): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
     removeImage(updateId: string, imageUrl: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
     addAttachments(updateId: string, attachments: string[]): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;

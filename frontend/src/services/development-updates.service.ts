@@ -85,7 +85,7 @@ export const developmentUpdatesService = {
   async create(payload: CreateDevelopmentUpdatePayload): Promise<DevelopmentUpdate> {
     return await api.post<DevelopmentUpdate>('/development-updates', payload);
   },
-  async remove(id: string): Promise<{ success: true }> {
+  async remove(id: string): Promise<{ success: true; id: string }> {
     return await api.delete(`/development-updates/${id}`);
   },
   async uploadImages(files: File[]): Promise<{ urls: string[] }> {

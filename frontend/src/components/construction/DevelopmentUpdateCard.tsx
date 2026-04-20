@@ -1,7 +1,14 @@
 'use client';
 
 import { DevelopmentUpdate } from '@/services/construction.service';
+import { CATEGORY_LABEL, SCOPE_LABEL } from '@/services/development-updates.service';
 import { useState } from 'react';
+
+function formatCreatorName(creator: DevelopmentUpdate['creator']): string {
+  if (!creator) return 'Unknown';
+  const full = [creator.firstName, creator.lastName].filter(Boolean).join(' ').trim();
+  return full || creator.email || 'Unknown';
+}
 
 interface DevelopmentUpdateCardProps {
   update: DevelopmentUpdate;
@@ -43,17 +50,32 @@ export default function DevelopmentUpdateCard({
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-1">
-            <h3 className="text-lg font-semibold text-gray-900">{update.updateTitle}</h3>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center flex-wrap gap-2 mb-1">
+            <h3 className="text-lg font-semibold text-gray-900 truncate">{update.updateTitle}</h3>
             <span className={`text-xs px-2 py-1 rounded-full ${getVisibilityBadge(update.visibility)}`}>
               {update.visibility.replace('_', ' ')}
             </span>
           </div>
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500">
             <span>{formatDate(update.updateDate)}</span>
-            {update.creator && (
-              <span>• By {update.creator.name || 'Unknown'}</span>
+            {update.creator && <span>• By {formatCreatorName(update.creator)}</span>}
+            {update.scopeType && (
+              <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {SCOPE_LABEL[update.scopeType]}
+                {update.commonAreaLabel ? ` · ${update.commonAreaLabel}` : ''}
+              </span>
+            )}
+            {update.category && (
+              <span className="text-xs font-medium bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">
+                {CATEGORY_LABEL[update.category]}
+              </span>
+            )}
+            {update.property?.name && (
+              <span className="text-xs text-gray-500">· {update.property.name}</span>
+            )}
+            {update.tower?.name && (
+              <span className="text-xs text-gray-500">· Tower {update.tower.name}</span>
             )}
           </div>
         </div>

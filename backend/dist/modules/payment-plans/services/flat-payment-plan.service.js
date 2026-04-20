@@ -30,6 +30,7 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         this.customerRepository = customerRepository;
         this.paymentRepository = paymentRepository;
         this.templateService = templateService;
+        this.uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     }
     async create(createDto, userId) {
         const flat = await this.flatRepository.findOne({ where: { id: createDto.flatId } });
@@ -234,8 +235,13 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         if (allPaid) {
             plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED;
         }
-        plan.updatedBy = userId;
+        plan.updatedBy = this.normalizeUserId(userId);
         return await this.flatPaymentPlanRepository.save(plan);
+    }
+    normalizeUserId(userId) {
+        if (!userId)
+            return null;
+        return this.uuidRegex.test(userId) ? userId : null;
     }
     async updateMilestones(planId, milestones, userId) {
         const plan = await this.findOne(planId);
@@ -252,7 +258,7 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         else if (plan.status === flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED) {
             plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE;
         }
-        plan.updatedBy = userId;
+        plan.updatedBy = this.normalizeUserId(userId);
         return await this.flatPaymentPlanRepository.save(plan);
     }
     async updatePlan(planId, updates, userId) {
@@ -264,13 +270,13 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         if (updates.status !== undefined) {
             plan.status = updates.status;
         }
-        plan.updatedBy = userId;
+        plan.updatedBy = this.normalizeUserId(userId);
         return await this.flatPaymentPlanRepository.save(plan);
     }
     async cancel(id, userId) {
         const plan = await this.findOne(id);
         plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.CANCELLED;
-        plan.updatedBy = userId;
+        plan.updatedBy = this.normalizeUserId(userId);
         return await this.flatPaymentPlanRepository.save(plan);
     }
     async getLedger(bookingId) {

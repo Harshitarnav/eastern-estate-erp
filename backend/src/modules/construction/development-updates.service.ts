@@ -1,6 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import {
   ConstructionDevelopmentUpdate,
   DevelopmentUpdateCategory,
@@ -9,6 +14,23 @@ import {
 import { CreateDevelopmentUpdateDto } from './dto/create-development-update.dto';
 import { UpdateDevelopmentUpdateDto } from './dto/update-development-update.dto';
 import { ConstructionProject } from './entities/construction-project.entity';
+
+// Fields clients are allowed to mutate via PUT. Anything else (id, createdBy,
+// createdAt, updatedAt, propertyId resolution) is derived server-side so a
+// misbehaving / malicious client cannot overwrite ownership columns.
+const MUTABLE_UPDATE_FIELDS = [
+  'scopeType',
+  'commonAreaLabel',
+  'category',
+  'updateDate',
+  'updateTitle',
+  'updateDescription',
+  'feedbackNotes',
+  'images',
+  'attachments',
+  'visibility',
+  'towerId',
+] as const;
 
 export interface ScopedUpdateFilters {
   propertyId?: string;
@@ -117,7 +139,7 @@ export class DevelopmentUpdatesService {
   async findOne(id: string) {
     const update = await this.updatesRepo.findOne({
       where: { id },
-      relations: ['constructionProject', 'creator'],
+      relations: ['constructionProject', 'creator', 'property', 'tower'],
     });
 
     if (!update) {
@@ -127,15 +149,81 @@ export class DevelopmentUpdatesService {
     return update;
   }
 
-  async update(id: string, updateDto: UpdateDevelopmentUpdateDto) {
+  /**
+   * Ensure the caller can act on this update. Property-less legacy rows are
+   * treated as company-wide and allowed through for any authenticated user.
+   * Rows attached to a property are rejected unless the caller has that
+   * property in their accessible set (null = super-admin scope → allow).
+   */
+  private assertCanAccess(
+    update: ConstructionDevelopmentUpdate,
+    accessiblePropertyIds?: string[] | null,
+  ) {
+    if (!accessiblePropertyIds || accessiblePropertyIds.length === 0) return;
+    if (!update.propertyId) return;
+    if (!accessiblePropertyIds.includes(update.propertyId)) {
+      throw new ForbiddenException('You do not have access to this update');
+    }
+  }
+
+  async findOneScoped(
+    id: string,
+    accessiblePropertyIds?: string[] | null,
+  ): Promise<ConstructionDevelopmentUpdate> {
     const update = await this.findOne(id);
-    Object.assign(update, updateDto);
+    this.assertCanAccess(update, accessiblePropertyIds);
+    return update;
+  }
+
+  async update(
+    id: string,
+    updateDto: UpdateDevelopmentUpdateDto,
+    accessiblePropertyIds?: string[] | null,
+  ) {
+    const update = await this.findOne(id);
+    this.assertCanAccess(update, accessiblePropertyIds);
+
+    // Whitelist the fields a client is allowed to change; anything else
+    // (id, createdBy, createdAt, propertyId, constructionProjectId) stays
+    // whatever we loaded from the DB.
+    for (const key of MUTABLE_UPDATE_FIELDS) {
+      if (key in updateDto && (updateDto as any)[key] !== undefined) {
+        (update as any)[key] = (updateDto as any)[key];
+      }
+    }
+
+    // If the caller explicitly passes propertyId/constructionProjectId we
+    // allow re-anchoring, but only to something they can access, and we
+    // keep the two in sync just like `create()` does.
+    if (updateDto.propertyId !== undefined) {
+      if (
+        accessiblePropertyIds &&
+        accessiblePropertyIds.length > 0 &&
+        updateDto.propertyId &&
+        !accessiblePropertyIds.includes(updateDto.propertyId)
+      ) {
+        throw new ForbiddenException('You cannot move this update to that property');
+      }
+      update.propertyId = updateDto.propertyId ?? null;
+    }
+    if (updateDto.constructionProjectId !== undefined) {
+      update.constructionProjectId = updateDto.constructionProjectId ?? null;
+      if (!update.propertyId && updateDto.constructionProjectId) {
+        const project = await this.projectRepo.findOne({
+          where: { id: updateDto.constructionProjectId },
+        });
+        update.propertyId = project?.propertyId ?? null;
+      }
+    }
+
     return this.updatesRepo.save(update);
   }
 
-  async remove(id: string) {
+  async remove(id: string, accessiblePropertyIds?: string[] | null) {
     const update = await this.findOne(id);
-    return this.updatesRepo.remove(update);
+    this.assertCanAccess(update, accessiblePropertyIds);
+    await this.updatesRepo.remove(update);
+    return { success: true as const, id };
   }
 
   // Add images to an existing update

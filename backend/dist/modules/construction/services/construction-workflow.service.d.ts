@@ -35,5 +35,6 @@ export declare class ConstructionWorkflowService {
     private isKnownPhase;
     private checkAndUpdateMilestones;
     private delegateDemandDraft;
+    private healMilestoneStatus;
     getPendingDemandDrafts(): Promise<DemandDraft[]>;
 }

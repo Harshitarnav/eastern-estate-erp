@@ -78,8 +78,10 @@ export class ScopedDevelopmentUpdatesController {
   }
 
   @Get(':id')
-  async getOne(@Param('id') id: string) {
-    return this.service.findOne(id);
+  async getOne(@Param('id') id: string, @Req() req: any) {
+    const accessiblePropertyIds: string[] | null =
+      req.user?.accessiblePropertyIds ?? null;
+    return this.service.findOneScoped(id, accessiblePropertyIds);
   }
 
   @Post()
@@ -89,8 +91,10 @@ export class ScopedDevelopmentUpdatesController {
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  async remove(@Param('id') id: string, @Req() req: any) {
+    const accessiblePropertyIds: string[] | null =
+      req.user?.accessiblePropertyIds ?? null;
+    return this.service.remove(id, accessiblePropertyIds);
   }
 
   @Post('upload/images')

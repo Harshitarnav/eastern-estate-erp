@@ -810,6 +810,45 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
         END IF;
       END $$;
     `);
+        await queryRunner.query(`
+      CREATE TABLE IF NOT EXISTS payment_schedules (
+        id uuid PRIMARY KEY DEFAULT uuid_generate_v4()
+      );
+    `);
+        await queryRunner.query(`
+      ALTER TABLE payment_schedules
+        ADD COLUMN IF NOT EXISTS booking_id           UUID,
+        ADD COLUMN IF NOT EXISTS schedule_number      VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS installment_number   INTEGER,
+        ADD COLUMN IF NOT EXISTS total_installments   INTEGER,
+        ADD COLUMN IF NOT EXISTS due_date             DATE,
+        ADD COLUMN IF NOT EXISTS amount               NUMERIC(15,2),
+        ADD COLUMN IF NOT EXISTS description          TEXT,
+        ADD COLUMN IF NOT EXISTS milestone            VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS status               VARCHAR(20) DEFAULT 'PENDING',
+        ADD COLUMN IF NOT EXISTS paid_amount          NUMERIC(15,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS paid_date            DATE,
+        ADD COLUMN IF NOT EXISTS payment_id           UUID,
+        ADD COLUMN IF NOT EXISTS is_overdue           BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS overdue_days         INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS penalty_amount       NUMERIC(15,2) DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS is_waived            BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS waiver_reason        TEXT,
+        ADD COLUMN IF NOT EXISTS waived_date          DATE,
+        ADD COLUMN IF NOT EXISTS waived_by            UUID,
+        ADD COLUMN IF NOT EXISTS notes                TEXT,
+        ADD COLUMN IF NOT EXISTS is_active            BOOLEAN DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS created_at           TIMESTAMPTZ DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS updated_at           TIMESTAMPTZ DEFAULT NOW(),
+        ADD COLUMN IF NOT EXISTS created_by           UUID,
+        ADD COLUMN IF NOT EXISTS updated_by           UUID;
+    `);
+        await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_payment_schedules_booking_id ON payment_schedules(booking_id);
+      CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date   ON payment_schedules(due_date);
+      CREATE INDEX IF NOT EXISTS idx_payment_schedules_status     ON payment_schedules(status);
+      CREATE INDEX IF NOT EXISTS idx_payment_schedules_schedule_number ON payment_schedules(schedule_number);
+    `);
         this.logger.log('Payments schema ensured - all columns up to date');
     }
 };

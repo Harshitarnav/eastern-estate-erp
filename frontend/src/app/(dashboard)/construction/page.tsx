@@ -13,6 +13,12 @@ import {
   TrendingUp, ChevronRight, Plus, BarChart3, Zap, FileText, Hammer,
   Camera, Palette, Home as HomeIcon, Clock,
 } from 'lucide-react';
+import {
+  CATEGORY_LABEL,
+  SCOPE_LABEL,
+  type DevelopmentUpdateCategory,
+  type DevelopmentUpdateScope,
+} from '@/services/development-updates.service';
 
 const MODULE_CARDS = [
   { icon: '📋', label: 'Projects',        desc: 'Track all construction projects',       href: '/construction/projects',        color: 'blue' },
@@ -416,12 +422,14 @@ export default function ConstructionDashboard() {
                           </span>
                           {u.category && (
                             <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded-full">
-                              {u.category.replace(/_/g, ' ')}
+                              {CATEGORY_LABEL[u.category as DevelopmentUpdateCategory] ||
+                                u.category.replace(/_/g, ' ')}
                             </span>
                           )}
                           {u.scopeType && (
                             <span className="text-[10px] font-medium bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">
-                              {u.scopeType.replace(/_/g, ' ')}
+                              {SCOPE_LABEL[u.scopeType as DevelopmentUpdateScope] ||
+                                u.scopeType.replace(/_/g, ' ')}
                             </span>
                           )}
                         </div>

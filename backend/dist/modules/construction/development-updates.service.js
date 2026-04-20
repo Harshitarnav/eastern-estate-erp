@@ -18,6 +18,19 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const construction_development_update_entity_1 = require("./entities/construction-development-update.entity");
 const construction_project_entity_1 = require("./entities/construction-project.entity");
+const MUTABLE_UPDATE_FIELDS = [
+    'scopeType',
+    'commonAreaLabel',
+    'category',
+    'updateDate',
+    'updateTitle',
+    'updateDescription',
+    'feedbackNotes',
+    'images',
+    'attachments',
+    'visibility',
+    'towerId',
+];
 let DevelopmentUpdatesService = class DevelopmentUpdatesService {
     constructor(updatesRepo, projectRepo) {
         this.updatesRepo = updatesRepo;
@@ -95,21 +108,60 @@ let DevelopmentUpdatesService = class DevelopmentUpdatesService {
     async findOne(id) {
         const update = await this.updatesRepo.findOne({
             where: { id },
-            relations: ['constructionProject', 'creator'],
+            relations: ['constructionProject', 'creator', 'property', 'tower'],
         });
         if (!update) {
             throw new common_1.NotFoundException('Development update not found');
         }
         return update;
     }
-    async update(id, updateDto) {
+    assertCanAccess(update, accessiblePropertyIds) {
+        if (!accessiblePropertyIds || accessiblePropertyIds.length === 0)
+            return;
+        if (!update.propertyId)
+            return;
+        if (!accessiblePropertyIds.includes(update.propertyId)) {
+            throw new common_1.ForbiddenException('You do not have access to this update');
+        }
+    }
+    async findOneScoped(id, accessiblePropertyIds) {
         const update = await this.findOne(id);
-        Object.assign(update, updateDto);
+        this.assertCanAccess(update, accessiblePropertyIds);
+        return update;
+    }
+    async update(id, updateDto, accessiblePropertyIds) {
+        const update = await this.findOne(id);
+        this.assertCanAccess(update, accessiblePropertyIds);
+        for (const key of MUTABLE_UPDATE_FIELDS) {
+            if (key in updateDto && updateDto[key] !== undefined) {
+                update[key] = updateDto[key];
+            }
+        }
+        if (updateDto.propertyId !== undefined) {
+            if (accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0 &&
+                updateDto.propertyId &&
+                !accessiblePropertyIds.includes(updateDto.propertyId)) {
+                throw new common_1.ForbiddenException('You cannot move this update to that property');
+            }
+            update.propertyId = updateDto.propertyId ?? null;
+        }
+        if (updateDto.constructionProjectId !== undefined) {
+            update.constructionProjectId = updateDto.constructionProjectId ?? null;
+            if (!update.propertyId && updateDto.constructionProjectId) {
+                const project = await this.projectRepo.findOne({
+                    where: { id: updateDto.constructionProjectId },
+                });
+                update.propertyId = project?.propertyId ?? null;
+            }
+        }
         return this.updatesRepo.save(update);
     }
-    async remove(id) {
+    async remove(id, accessiblePropertyIds) {
         const update = await this.findOne(id);
-        return this.updatesRepo.remove(update);
+        this.assertCanAccess(update, accessiblePropertyIds);
+        await this.updatesRepo.remove(update);
+        return { success: true, id };
     }
     async addImages(id, imageUrls) {
         const update = await this.findOne(id);

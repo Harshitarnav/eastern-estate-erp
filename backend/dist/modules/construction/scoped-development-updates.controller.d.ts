@@ -5,9 +5,12 @@ export declare class ScopedDevelopmentUpdatesController {
     private readonly service;
     constructor(service: DevelopmentUpdatesService);
     list(req: any, propertyId?: string, towerId?: string, scopeType?: DevelopmentUpdateScope, category?: DevelopmentUpdateCategory, limit?: string, offset?: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate[]>;
-    getOne(id: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
+    getOne(id: string, req: any): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
     create(dto: CreateDevelopmentUpdateDto, req: any): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
-    remove(id: string): Promise<import("./entities/construction-development-update.entity").ConstructionDevelopmentUpdate>;
+    remove(id: string, req: any): Promise<{
+        success: true;
+        id: string;
+    }>;
     uploadImages(files?: Express.Multer.File[]): {
         urls: string[];
     };

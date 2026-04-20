@@ -284,7 +284,7 @@ let AutoDemandDraftService = AutoDemandDraftService_1 = class AutoDemandDraftSer
             paymentScheduleId: savedScheduleId,
             demandDraftId: savedDemandDraft.id,
             constructionCheckpointId: constructionProgress?.id ?? null,
-        }, systemUserId || 'SYSTEM');
+        }, systemUserId ?? null);
         if (constructionProgress) {
             constructionProgress.isPaymentMilestone = true;
             constructionProgress.milestoneTriggered = true;

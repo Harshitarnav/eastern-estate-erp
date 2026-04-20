@@ -20,8 +20,13 @@ export declare class DevelopmentUpdatesService {
     findScoped(filters: ScopedUpdateFilters, accessiblePropertyIds?: string[] | null): Promise<ConstructionDevelopmentUpdate[]>;
     findByProject(projectId: string): Promise<ConstructionDevelopmentUpdate[]>;
     findOne(id: string): Promise<ConstructionDevelopmentUpdate>;
-    update(id: string, updateDto: UpdateDevelopmentUpdateDto): Promise<ConstructionDevelopmentUpdate>;
-    remove(id: string): Promise<ConstructionDevelopmentUpdate>;
+    private assertCanAccess;
+    findOneScoped(id: string, accessiblePropertyIds?: string[] | null): Promise<ConstructionDevelopmentUpdate>;
+    update(id: string, updateDto: UpdateDevelopmentUpdateDto, accessiblePropertyIds?: string[] | null): Promise<ConstructionDevelopmentUpdate>;
+    remove(id: string, accessiblePropertyIds?: string[] | null): Promise<{
+        success: true;
+        id: string;
+    }>;
     addImages(id: string, imageUrls: string[]): Promise<ConstructionDevelopmentUpdate>;
     removeImage(id: string, imageUrl: string): Promise<ConstructionDevelopmentUpdate>;
     addAttachments(id: string, attachmentUrls: string[]): Promise<ConstructionDevelopmentUpdate>;

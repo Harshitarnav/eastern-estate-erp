@@ -121,18 +121,49 @@ export interface FlatProgress {
   updatedAt: string;
 }
 
+export type DevelopmentUpdateScope = 'PROPERTY' | 'TOWER' | 'COMMON_AREA';
+
+export type DevelopmentUpdateCategory =
+  | 'BEAUTIFICATION'
+  | 'LIFT'
+  | 'HALLWAY_LOBBY'
+  | 'LANDSCAPING'
+  | 'FACADE_PAINT'
+  | 'AMENITY'
+  | 'SECURITY_GATES'
+  | 'UTILITIES_EXTERNAL'
+  | 'SIGNAGE'
+  | 'CLEANING'
+  | 'SAFETY'
+  | 'OTHER';
+
+// Unified shape matching the backend entity + scoped controller response.
+// Keep this in lockstep with `services/development-updates.service.ts` — both
+// feeds hit the same table so they must describe the same row.
 export interface DevelopmentUpdate {
   id: string;
-  constructionProjectId: string;
+  constructionProjectId: string | null;
+  propertyId: string | null;
+  towerId: string | null;
+  scopeType: DevelopmentUpdateScope | null;
+  category: DevelopmentUpdateCategory | null;
+  commonAreaLabel: string | null;
   updateDate: string;
   updateTitle: string;
   updateDescription: string;
-  feedbackNotes?: string;
+  feedbackNotes?: string | null;
   images?: string[];
   attachments?: string[];
   visibility: UpdateVisibility;
   createdBy: string;
-  creator?: any;
+  creator?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  } | null;
+  property?: { id: string; name: string } | null;
+  tower?: { id: string; name: string; towerNumber?: string } | null;
   constructionProject?: any;
   createdAt: string;
   updatedAt: string;

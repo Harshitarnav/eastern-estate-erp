@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DevelopmentUpdatesController = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const development_updates_service_1 = require("./development-updates.service");
 const create_development_update_dto_1 = require("./dto/create-development-update.dto");
 const update_development_update_dto_1 = require("./dto/update-development-update.dto");
@@ -28,14 +29,17 @@ let DevelopmentUpdatesController = class DevelopmentUpdatesController {
     async getProjectUpdates(projectId) {
         return this.developmentUpdatesService.findByProject(projectId);
     }
-    async getUpdate(updateId) {
-        return this.developmentUpdatesService.findOne(updateId);
+    async getUpdate(updateId, req) {
+        const accessiblePropertyIds = req.user?.accessiblePropertyIds ?? null;
+        return this.developmentUpdatesService.findOneScoped(updateId, accessiblePropertyIds);
     }
-    async updateUpdate(updateId, updateDto) {
-        return this.developmentUpdatesService.update(updateId, updateDto);
+    async updateUpdate(updateId, updateDto, req) {
+        const accessiblePropertyIds = req.user?.accessiblePropertyIds ?? null;
+        return this.developmentUpdatesService.update(updateId, updateDto, accessiblePropertyIds);
     }
-    async deleteUpdate(updateId) {
-        return this.developmentUpdatesService.remove(updateId);
+    async deleteUpdate(updateId, req) {
+        const accessiblePropertyIds = req.user?.accessiblePropertyIds ?? null;
+        return this.developmentUpdatesService.remove(updateId, accessiblePropertyIds);
     }
     async addImages(updateId, images) {
         return this.developmentUpdatesService.addImages(updateId, images);
@@ -82,23 +86,26 @@ __decorate([
 __decorate([
     (0, common_1.Get)('development-updates/:id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DevelopmentUpdatesController.prototype, "getUpdate", null);
 __decorate([
     (0, common_1.Put)('development-updates/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_development_update_dto_1.UpdateDevelopmentUpdateDto]),
+    __metadata("design:paramtypes", [String, update_development_update_dto_1.UpdateDevelopmentUpdateDto, Object]),
     __metadata("design:returntype", Promise)
 ], DevelopmentUpdatesController.prototype, "updateUpdate", null);
 __decorate([
     (0, common_1.Delete)('development-updates/:id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], DevelopmentUpdatesController.prototype, "deleteUpdate", null);
 __decorate([
@@ -164,6 +171,7 @@ __decorate([
 ], DevelopmentUpdatesController.prototype, "getUpdateStatistics", null);
 exports.DevelopmentUpdatesController = DevelopmentUpdatesController = __decorate([
     (0, common_1.Controller)('construction-projects'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [development_updates_service_1.DevelopmentUpdatesService])
 ], DevelopmentUpdatesController);
 //# sourceMappingURL=development-updates.controller.js.map

@@ -50,15 +50,17 @@ let ScopedDevelopmentUpdatesController = class ScopedDevelopmentUpdatesControlle
             offset: offset ? parseInt(offset, 10) : 0,
         }, accessiblePropertyIds);
     }
-    async getOne(id) {
-        return this.service.findOne(id);
+    async getOne(id, req) {
+        const accessiblePropertyIds = req.user?.accessiblePropertyIds ?? null;
+        return this.service.findOneScoped(id, accessiblePropertyIds);
     }
     async create(dto, req) {
         const userId = req.user?.sub || req.user?.id;
         return this.service.create(dto, userId);
     }
-    async remove(id) {
-        return this.service.remove(id);
+    async remove(id, req) {
+        const accessiblePropertyIds = req.user?.accessiblePropertyIds ?? null;
+        return this.service.remove(id, accessiblePropertyIds);
     }
     uploadImages(files = []) {
         if (!files || files.length === 0) {
@@ -86,8 +88,9 @@ __decorate([
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ScopedDevelopmentUpdatesController.prototype, "getOne", null);
 __decorate([
@@ -101,8 +104,9 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], ScopedDevelopmentUpdatesController.prototype, "remove", null);
 __decorate([

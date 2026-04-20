@@ -131,10 +131,15 @@ let ConstructionWorkflowService = ConstructionWorkflowService_1 = class Construc
             }
             this.logger.log(`Milestone ${milestone.sequence} reached for flat ${paymentPlan.flatId}: ` +
                 `${currentPhase} at ${phaseProgress}% (required: ${milestone.phasePercentage}%)`);
-            const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
-            if (summary) {
-                generatedDemandDrafts.push(summary);
-                milestonesTriggered += 1;
+            try {
+                const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
+                if (summary) {
+                    generatedDemandDrafts.push(summary);
+                    milestonesTriggered += 1;
+                }
+            }
+            catch (err) {
+                this.logger.error(`Failed to delegate DD for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}: ${err?.message}`);
             }
         }
         return { milestonesTriggered, generatedDemandDrafts };
@@ -148,6 +153,15 @@ let ConstructionWorkflowService = ConstructionWorkflowService_1 = class Construc
         });
         if (existing) {
             this.logger.log(`Demand draft already exists for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}`);
+            const planMilestone = paymentPlan.milestones?.find((m) => m.sequence === milestone.sequence);
+            if (planMilestone && planMilestone.status === 'PENDING') {
+                try {
+                    await this.healMilestoneStatus(paymentPlan, milestone.sequence, existing.id);
+                }
+                catch (err) {
+                    this.logger.warn(`Could not heal milestone ${milestone.sequence} status: ${err?.message}`);
+                }
+            }
             return null;
         }
         const constructionProgress = await this.progressRepository.findOne({
@@ -179,6 +193,25 @@ let ConstructionWorkflowService = ConstructionWorkflowService_1 = class Construc
             customerName: paymentPlan.customer?.fullName || undefined,
             dueDate: saved.dueDate,
         };
+    }
+    async healMilestoneStatus(paymentPlan, milestoneSequence, demandDraftId) {
+        const fresh = await this.flatPaymentPlanRepository.findOne({
+            where: { id: paymentPlan.id },
+        });
+        if (!fresh)
+            return;
+        const idx = (fresh.milestones || []).findIndex((m) => m.sequence === milestoneSequence);
+        if (idx === -1)
+            return;
+        if (fresh.milestones[idx].status !== 'PENDING')
+            return;
+        fresh.milestones[idx] = {
+            ...fresh.milestones[idx],
+            status: 'TRIGGERED',
+            demandDraftId,
+        };
+        await this.flatPaymentPlanRepository.save(fresh);
+        this.logger.log(`Healed milestone ${milestoneSequence} on plan ${fresh.id} → TRIGGERED (dd=${demandDraftId})`);
     }
     async getPendingDemandDrafts() {
         return await this.demandDraftRepository.find({

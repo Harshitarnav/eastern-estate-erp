@@ -8,12 +8,15 @@ import {
   Param,
   Query,
   Request,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { DevelopmentUpdatesService } from './development-updates.service';
 import { CreateDevelopmentUpdateDto } from './dto/create-development-update.dto';
 import { UpdateDevelopmentUpdateDto } from './dto/update-development-update.dto';
 
 @Controller('construction-projects')
+@UseGuards(JwtAuthGuard)
 export class DevelopmentUpdatesController {
   constructor(
     private readonly developmentUpdatesService: DevelopmentUpdatesService,
@@ -41,8 +44,13 @@ export class DevelopmentUpdatesController {
 
   // Get specific development update
   @Get('development-updates/:id')
-  async getUpdate(@Param('id') updateId: string) {
-    return this.developmentUpdatesService.findOne(updateId);
+  async getUpdate(@Param('id') updateId: string, @Request() req: any) {
+    const accessiblePropertyIds: string[] | null =
+      req.user?.accessiblePropertyIds ?? null;
+    return this.developmentUpdatesService.findOneScoped(
+      updateId,
+      accessiblePropertyIds,
+    );
   }
 
   // Update a development update
@@ -50,14 +58,26 @@ export class DevelopmentUpdatesController {
   async updateUpdate(
     @Param('id') updateId: string,
     @Body() updateDto: UpdateDevelopmentUpdateDto,
+    @Request() req: any,
   ) {
-    return this.developmentUpdatesService.update(updateId, updateDto);
+    const accessiblePropertyIds: string[] | null =
+      req.user?.accessiblePropertyIds ?? null;
+    return this.developmentUpdatesService.update(
+      updateId,
+      updateDto,
+      accessiblePropertyIds,
+    );
   }
 
   // Delete a development update
   @Delete('development-updates/:id')
-  async deleteUpdate(@Param('id') updateId: string) {
-    return this.developmentUpdatesService.remove(updateId);
+  async deleteUpdate(@Param('id') updateId: string, @Request() req: any) {
+    const accessiblePropertyIds: string[] | null =
+      req.user?.accessiblePropertyIds ?? null;
+    return this.developmentUpdatesService.remove(
+      updateId,
+      accessiblePropertyIds,
+    );
   }
 
   // Add images to an update
