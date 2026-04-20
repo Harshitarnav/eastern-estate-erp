@@ -43,6 +43,10 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Upper bound so a stalled upstream (proxy, DB, etc.) can never leave the
+      // UI showing an infinite spinner. Long enough for large report queries
+      // and file uploads; callers that need longer can override per-request.
+      timeout: 45_000,
     });
 
     this.api.interceptors.request.use(

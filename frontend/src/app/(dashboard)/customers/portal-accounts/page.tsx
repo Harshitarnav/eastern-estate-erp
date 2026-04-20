@@ -48,6 +48,7 @@ function fmtDate(dateStr: string) {
 export default function PortalAccountsPage() {
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [actionMenu, setActionMenu] = useState<string | null>(null);
 
@@ -62,12 +63,34 @@ export default function PortalAccountsPage() {
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
+    // Hard watchdog: if the network / backend hangs, the page would show
+    // skeletons forever. Flip to an error state after 25s so the user can
+    // retry instead of staring at a spinner.
+    let settled = false;
+    const watchdog = setTimeout(() => {
+      if (!settled) {
+        setLoading(false);
+        setLoadError('Request is taking too long. Check your connection and try again.');
+        toast.error('Portal accounts request timed out');
+      }
+    }, 25_000);
+
     try {
-      const data: any = await apiService.get('/customer-portal/accounts');
+      const data: any = await apiService.get('/customer-portal/accounts', {
+        timeout: 20_000,
+      });
       setAccounts(Array.isArray(data) ? data : []);
-    } catch {
-      toast.error('Failed to load portal accounts');
+    } catch (e: any) {
+      const msg =
+        e?.userMessage ||
+        e?.response?.data?.message ||
+        (e?.code === 'ECONNABORTED' ? 'Request timed out' : 'Failed to load portal accounts');
+      setLoadError(msg);
+      toast.error(msg);
     } finally {
+      settled = true;
+      clearTimeout(watchdog);
       setLoading(false);
     }
   }, []);
@@ -203,6 +226,18 @@ export default function PortalAccountsPage() {
           {[1,2,3,4,5].map(i => (
             <div key={i} className="h-20 bg-gray-100 rounded-2xl" />
           ))}
+        </div>
+      ) : loadError ? (
+        <div className="bg-white rounded-2xl border border-red-100 p-10 text-center">
+          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-3" />
+          <p className="text-gray-800 font-semibold">Couldn&apos;t load portal accounts</p>
+          <p className="text-sm text-gray-500 mt-1 max-w-sm mx-auto">{loadError}</p>
+          <button
+            onClick={fetchAccounts}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#A8211B] text-white text-sm font-semibold hover:bg-[#7B1E12] transition"
+          >
+            <RefreshCw className="w-4 h-4" /> Try again
+          </button>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">

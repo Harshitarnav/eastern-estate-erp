@@ -164,7 +164,47 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
             ) THEN
               ALTER TABLE construction_progress_logs ADD COLUMN photos JSONB DEFAULT '[]'::jsonb;
             END IF;
+
+            -- log_date is queried by the entity's ORDER BY / default findAll path.
+            -- Older installs have only legacy 'date' / 'created_at'. Add nullable
+            -- log_date and backfill from legacy columns so SELECTs don't 500.
+            IF NOT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'log_date'
+            ) THEN
+              ALTER TABLE construction_progress_logs ADD COLUMN log_date DATE;
+            END IF;
           END $$;
+        `);
+                await qr.query(`
+          DO $$
+          BEGIN
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'progress_date'
+            ) THEN
+              UPDATE construction_progress_logs
+              SET log_date = progress_date
+              WHERE log_date IS NULL AND progress_date IS NOT NULL;
+            END IF;
+
+            IF EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_progress_logs' AND column_name = 'date'
+            ) THEN
+              UPDATE construction_progress_logs
+              SET log_date = "date"
+              WHERE log_date IS NULL AND "date" IS NOT NULL;
+            END IF;
+
+            UPDATE construction_progress_logs
+            SET log_date = created_at::date
+            WHERE log_date IS NULL;
+          END $$;
+        `);
+                await qr.query(`
+          CREATE INDEX IF NOT EXISTS idx_cpl_log_date
+            ON construction_progress_logs (log_date DESC);
         `);
             });
             await runIsolated('nullable columns on construction_progress_logs', async (qr) => {
@@ -585,6 +625,117 @@ let ConstructionSchemaSyncService = ConstructionSchemaSyncService_1 = class Cons
               END IF;
             END LOOP;
           END $$;
+        `);
+            });
+            await runIsolated('ensure construction_teams expected columns', async (qr) => {
+                await qr.query(`
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.tables
+              WHERE table_name = 'construction_teams') THEN
+              RETURN;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'team_code') THEN
+              ALTER TABLE construction_teams ADD COLUMN team_code VARCHAR(50);
+            END IF;
+
+            -- team_code is marked UNIQUE on the entity; add the constraint
+            -- opportunistically (no-op if it already exists).
+            IF NOT EXISTS (
+              SELECT 1 FROM pg_indexes
+              WHERE tablename = 'construction_teams' AND indexname = 'construction_teams_team_code_key'
+            ) THEN
+              BEGIN
+                ALTER TABLE construction_teams ADD CONSTRAINT construction_teams_team_code_key UNIQUE (team_code);
+              EXCEPTION WHEN duplicate_table OR duplicate_object THEN NULL;
+              END;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'property_id') THEN
+              ALTER TABLE construction_teams ADD COLUMN property_id UUID;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'construction_project_id') THEN
+              ALTER TABLE construction_teams ADD COLUMN construction_project_id UUID;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'leader_name') THEN
+              ALTER TABLE construction_teams ADD COLUMN leader_name VARCHAR(255);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'contact_number') THEN
+              ALTER TABLE construction_teams ADD COLUMN contact_number VARCHAR(20);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'email') THEN
+              ALTER TABLE construction_teams ADD COLUMN email VARCHAR(255);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'total_members') THEN
+              ALTER TABLE construction_teams ADD COLUMN total_members INTEGER NOT NULL DEFAULT 0;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'active_members') THEN
+              ALTER TABLE construction_teams ADD COLUMN active_members INTEGER NOT NULL DEFAULT 0;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'specialization') THEN
+              ALTER TABLE construction_teams ADD COLUMN specialization VARCHAR(255);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'skills') THEN
+              ALTER TABLE construction_teams ADD COLUMN skills TEXT[];
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'contract_start_date') THEN
+              ALTER TABLE construction_teams ADD COLUMN contract_start_date DATE;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'contract_end_date') THEN
+              ALTER TABLE construction_teams ADD COLUMN contract_end_date DATE;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'daily_rate') THEN
+              ALTER TABLE construction_teams ADD COLUMN daily_rate NUMERIC(10,2);
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'is_active') THEN
+              ALTER TABLE construction_teams ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT TRUE;
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'created_at') THEN
+              ALTER TABLE construction_teams ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT NOW();
+            END IF;
+
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+              WHERE table_name = 'construction_teams' AND column_name = 'updated_at') THEN
+              ALTER TABLE construction_teams ADD COLUMN updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+            END IF;
+          END $$;
+        `);
+                await qr.query(`
+          CREATE INDEX IF NOT EXISTS idx_construction_teams_project
+            ON construction_teams (construction_project_id);
+          CREATE INDEX IF NOT EXISTS idx_construction_teams_property
+            ON construction_teams (property_id);
+          CREATE INDEX IF NOT EXISTS idx_construction_teams_active
+            ON construction_teams (is_active);
         `);
             });
             await runIsolated('add journal_entry_id to vendor_payments', async (qr) => {
