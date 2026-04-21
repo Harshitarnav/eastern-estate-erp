@@ -331,8 +331,19 @@ export class TowersService {
       updateTowerDto.towerCode = normalizedCode;
     }
 
-    // Validate updated data
-    if (updateTowerDto.totalFloors !== undefined || updateTowerDto.totalUnits !== undefined) {
+    // Validate updated data ONLY when the caller is actually changing totalFloors/totalUnits
+    // to a value that differs from what we already have. The frontend form echoes the
+    // existing values back on every edit (e.g. "rename tower") — we must not punish legacy
+    // rows whose stored ratio happens to fall outside the sanity band. If the values are
+    // unchanged, skip the ratio check; otherwise validate the final merged shape.
+    const floorsChanged =
+      updateTowerDto.totalFloors !== undefined &&
+      Number(updateTowerDto.totalFloors) !== Number(tower.totalFloors);
+    const unitsChanged =
+      updateTowerDto.totalUnits !== undefined &&
+      Number(updateTowerDto.totalUnits) !== Number(tower.totalUnits);
+
+    if (floorsChanged || unitsChanged) {
       this.validateTowerData({
         ...tower,
         ...updateTowerDto,
@@ -1063,12 +1074,15 @@ export class TowersService {
       );
     }
 
-    // Validate units vs floors ratio
+    // Sanity-check units vs floors ratio. Real projects span a wide range:
+    //   - villa clusters can sit on a single floor with 30+ units
+    //   - penthouse-only towers can have fewer units than floors
+    // We only reject values that are clearly impossible, not merely unusual.
     if (data.totalUnits && data.totalFloors) {
       const unitsPerFloor = data.totalUnits / data.totalFloors;
-      if (unitsPerFloor < 1 || unitsPerFloor > 20) {
+      if (unitsPerFloor <= 0 || unitsPerFloor > 60) {
         throw new BadRequestException(
-          'Units per floor ratio seems unusual (should be between 1 and 20). Please verify your numbers.',
+          'Units per floor ratio is outside the supported range. Please verify your numbers.',
         );
       }
     }

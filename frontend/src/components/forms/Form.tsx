@@ -43,6 +43,12 @@ export interface FormField {
   rows?: number; // for textarea
   prefix?: string; // for currency
   suffix?: string;
+  /**
+   * Optional predicate to hide the field based on current form values.
+   * When it returns false the field is not rendered and is skipped by validation,
+   * so downstream "required" checks don't block submission on hidden fields.
+   */
+  showIf?: (values: Record<string, any>) => boolean;
 }
 
 export interface FormSection {
@@ -198,6 +204,7 @@ export default function Form({
     const newTouched: Record<string, boolean> = {}
 
     allFields.forEach(field => {
+      if (field.showIf && !field.showIf(formValues)) return;
       newTouched[field.name] = true;
 
       const error = validateField(field, formValues[field.name]);
@@ -542,6 +549,8 @@ export default function Form({
   };
 
   const renderFormField = (field: FormField) => {
+    if (field.showIf && !field.showIf(formValues)) return null;
+
     if (field.type === 'checkbox') {
       return (
         <div key={field.name} className="col-span-full">

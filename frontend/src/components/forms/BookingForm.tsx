@@ -54,11 +54,16 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   const fetchFlats = async (propertyId: string) => {
     try {
       // When editing an existing booking (initialData?.flatId is set), fetch ALL flats so the
-      // already-booked flat (isAvailable: false) still appears in the dropdown.
-      // For new bookings, only show available flats.
+      // already-booked flat still appears in the dropdown.
+      //
+      // For new bookings we intentionally filter by `status = AVAILABLE` instead of
+      // `isAvailable = true`. The two flags can drift in production: a freshly seeded
+      // inventory with `status = AVAILABLE` may still have `is_available` stored as
+      // NULL/false from an older migration, which silently emptied this dropdown.
+      // `status` is the authoritative, user-facing value shown elsewhere in the ERP.
       const isEditing = !!initialData?.flatId;
       const query: any = { propertyId, limit: 200, sortBy: 'flatNumber', sortOrder: 'ASC' };
-      if (!isEditing) query.isAvailable = true;
+      if (!isEditing) query.status = 'AVAILABLE';
       const res = await flatsService.getFlats(query);
       setFlats(res.data);
     } catch (error) {

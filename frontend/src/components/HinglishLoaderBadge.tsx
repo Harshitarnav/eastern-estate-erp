@@ -11,9 +11,17 @@ import { brandPalette } from '@/utils/brand';
  *
  * Place inside a route-level `loading.tsx` alongside a layout skeleton.
  */
+/**
+ * NOTE on delay:
+ * Most dashboard routes render their skeleton in <300ms, so if the badge appeared
+ * right away the user would perceive *two* loaders stacked on top of each other
+ * (skeleton + floating pill). We delay it long enough that quick navigations only
+ * show the skeleton, and the warm Hinglish badge only kicks in for genuinely slow
+ * loads where the extra reassurance is actually useful.
+ */
 export function HinglishLoaderBadge({
   context = 'default',
-  delayMs = 250,
+  delayMs = 1500,
 }: {
   context?: LoaderContext;
   delayMs?: number;
