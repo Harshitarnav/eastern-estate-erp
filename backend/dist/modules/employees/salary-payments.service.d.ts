@@ -27,6 +27,7 @@ export interface CreateSalaryPaymentDto {
     otherDeductions?: number;
     notes?: string;
 }
+export type UpdateSalaryPaymentDto = Partial<Omit<CreateSalaryPaymentDto, 'employeeId' | 'paymentMonth'>>;
 export declare class SalaryPaymentsService {
     private salaryPaymentRepo;
     private employeeRepo;
@@ -35,6 +36,7 @@ export declare class SalaryPaymentsService {
     private readonly dataSource;
     constructor(salaryPaymentRepo: Repository<SalaryPayment>, employeeRepo: Repository<Employee>, accountingIntegrationService: AccountingIntegrationService, journalEntriesService: JournalEntriesService, dataSource: DataSource);
     create(dto: CreateSalaryPaymentDto, createdBy: string): Promise<SalaryPayment>;
+    updatePending(id: string, dto: UpdateSalaryPaymentDto, updatedBy: string): Promise<SalaryPayment>;
     findAll(filters?: {
         employeeId?: string;
         month?: string;

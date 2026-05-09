@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Form, FormSection } from './Form';
 import { Home, Building2, DollarSign } from 'lucide-react';
 
@@ -34,6 +34,11 @@ export default function FlatForm({
     if (!selectedPropertyId) return;
     onPropertyChange?.(selectedPropertyId);
   }, [selectedPropertyId]);
+
+  const towersForProperty = useMemo(
+    () => towers.filter((t) => t.propertyId === selectedPropertyId),
+    [towers, selectedPropertyId],
+  );
 
   const handleSubmit = async (values: any) => {
     const num = (val: any) => (val === '' || val === undefined || val === null ? undefined : Number(val));
@@ -94,15 +99,23 @@ export default function FlatForm({
           required: true,
           options: properties.map(p => ({ value: p.id, label: p.name })),
           icon: <Building2 className="w-5 h-5" />,
+          clearsFields: ['towerId'],
         },
         {
           name: 'towerId',
           label: 'Tower/Block',
           type: 'select',
           required: true,
-          options: towers.map(t => ({ value: t.id, label: t.name })),
+          options: towersForProperty.map((t) => ({
+            value: t.id,
+            label: [t.name, t.towerNumber ? `(${t.towerNumber})` : ''].filter(Boolean).join(' '),
+          })),
           icon: <Building2 className="w-5 h-5" />,
-          disabled: !selectedPropertyId || towers.length === 0,
+          disabled: !selectedPropertyId || towersForProperty.length === 0,
+          helperText:
+            towersForProperty.length === 0 && selectedPropertyId
+              ? 'No towers are defined for this property yet.'
+              : undefined,
         },
         {
           name: 'flatNumber',

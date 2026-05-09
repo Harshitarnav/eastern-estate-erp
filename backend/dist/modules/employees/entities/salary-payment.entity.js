@@ -49,27 +49,27 @@ __decorate([
     __metadata("design:type", Date)
 ], SalaryPayment.prototype, "paymentMonth", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int' }),
+    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2 }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "workingDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int' }),
+    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2 }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "presentDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "absentDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "paidLeaveDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "unpaidLeaveDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 8, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "overtimeHours", void 0);
 __decorate([

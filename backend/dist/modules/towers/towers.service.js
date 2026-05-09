@@ -176,7 +176,11 @@ let TowersService = TowersService_1 = class TowersService {
             }
             updateTowerDto.towerCode = normalizedCode;
         }
-        if (updateTowerDto.totalFloors !== undefined || updateTowerDto.totalUnits !== undefined) {
+        const floorsChanged = updateTowerDto.totalFloors !== undefined &&
+            Number(updateTowerDto.totalFloors) !== Number(tower.totalFloors);
+        const unitsChanged = updateTowerDto.totalUnits !== undefined &&
+            Number(updateTowerDto.totalUnits) !== Number(tower.totalUnits);
+        if (floorsChanged || unitsChanged) {
             this.validateTowerData({
                 ...tower,
                 ...updateTowerDto,
@@ -734,8 +738,8 @@ let TowersService = TowersService_1 = class TowersService {
         }
         if (data.totalUnits && data.totalFloors) {
             const unitsPerFloor = data.totalUnits / data.totalFloors;
-            if (unitsPerFloor < 1 || unitsPerFloor > 20) {
-                throw new common_1.BadRequestException('Units per floor ratio seems unusual (should be between 1 and 20). Please verify your numbers.');
+            if (unitsPerFloor <= 0 || unitsPerFloor > 60) {
+                throw new common_1.BadRequestException('Units per floor ratio is outside the supported range. Please verify your numbers.');
             }
         }
         if (data.carpetArea && data.builtUpArea) {

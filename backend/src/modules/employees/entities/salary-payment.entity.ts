@@ -51,22 +51,22 @@ export class SalaryPayment {
   @Column({ type: 'date' })
   paymentMonth: Date; // First day of the month for which salary is paid
 
-  @Column({ type: 'int' })
+  @Column('decimal', { precision: 6, scale: 2 })
   workingDays: number;
 
-  @Column({ type: 'int' })
+  @Column('decimal', { precision: 6, scale: 2 })
   presentDays: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 6, scale: 2, default: 0 })
   absentDays: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 6, scale: 2, default: 0 })
   paidLeaveDays: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 6, scale: 2, default: 0 })
   unpaidLeaveDays: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 8, scale: 2, default: 0 })
   overtimeHours: number;
 
   // Salary Components

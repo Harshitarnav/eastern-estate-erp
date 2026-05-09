@@ -256,19 +256,19 @@ __decorate([
     __metadata("design:type", String)
 ], Employee.prototype, "emergencyContactRelation", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 7, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "casualLeaveBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 7, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "sickLeaveBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 7, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "earnedLeaveBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0 }),
+    (0, typeorm_1.Column)('decimal', { precision: 7, scale: 2, default: 0 }),
     __metadata("design:type", Number)
 ], Employee.prototype, "leaveTaken", void 0);
 __decorate([

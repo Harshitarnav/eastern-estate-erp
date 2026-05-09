@@ -212,6 +212,17 @@ export const parseApiError = (error: any): ParsedApiError => {
       };
     }
 
+    // Global exception filter: generic `message` plus structured `errors` array
+    if (Array.isArray(data?.errors) && data.errors.length > 0) {
+      const rawDetails = data.errors.map((msg: unknown) =>
+        typeof msg === 'string' ? humanizeMessage(msg) : String(msg),
+      );
+      return {
+        title: 'Please fix the following and try again.',
+        details: rawDetails,
+      };
+    }
+
     // ── Single string message from server ───────────────────────────────────
     if (typeof data?.message === 'string' && data.message.trim()) {
       // If it contains bullet separators from old code, split it

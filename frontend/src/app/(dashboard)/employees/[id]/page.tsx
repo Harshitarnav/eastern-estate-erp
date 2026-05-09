@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { 
   ArrowLeft, 
   Edit, 
@@ -29,12 +30,16 @@ import {
   X as XIcon,
   StickyNote,
   Trash2,
+  CalendarDays,
 } from 'lucide-react';
-import { employeesService, Employee } from '@/services/employees.service';
+import { employeesService, Employee, EmployeePayrollLeaveRow, EmployeeLeaveDayRow } from '@/services/employees.service';
 import { rolesService } from '@/services/roles.service';
+import { useAuthStore } from '@/store/authStore';
+import { parseApiError } from '@/utils/error-handler';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
 import { api } from '@/services/api';
+import { describeLeaveDays, formatLeaveNumeric, countFullAndHalfLeaves } from '@/utils/leave-display';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -76,6 +81,54 @@ const fmtDate = (value: string | Date | null | undefined) => {
   if (!value) return null;
   try { return new Date(value).toLocaleDateString('en-IN'); } catch { return null; }
 };
+
+const fmtMonthYear = (value: string | Date | null | undefined) => {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  } catch {
+    return String(value);
+  }
+};
+
+const fmtDateTime = (value: string | Date | null | undefined) => {
+  if (!value) return '—';
+  try {
+    return new Date(value).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+  } catch {
+    return '—';
+  }
+};
+
+const leaveKindBadgeClass = (k: string) => {
+  switch (k) {
+    case 'PAID':
+      return 'bg-emerald-50 text-emerald-800';
+    case 'UNPAID':
+      return 'bg-amber-50 text-amber-800';
+    case 'ABSENT':
+      return 'bg-red-50 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-700';
+  }
+};
+
+function FullHalfPairCells({
+  total,
+  borderLeft,
+}: {
+  total: number;
+  borderLeft?: boolean;
+}) {
+  const { full, half } = countFullAndHalfLeaves(total);
+  const bl = borderLeft ? 'border-l border-gray-200' : '';
+  return (
+    <>
+      <td className={`px-2 py-2 text-center tabular-nums font-semibold text-gray-900 ${bl} bg-white`}>{full}</td>
+      <td className="px-2 py-2 text-center tabular-nums text-gray-800 bg-white">{half}</td>
+    </>
+  );
+}
 
 // ─── Small reusable field row ──────────────────────────────────────────────────
 function InfoRow({ label, value, icon }: { label: string; value?: string | null; icon?: React.ReactNode }) {
@@ -143,11 +196,16 @@ export default function EmployeeDetailPage() {
   const params = useParams();
   const employeeId = params.id as string;
 
+  const { user } = useAuthStore();
+  const canHrManageLeaveDays = user?.roles?.some((r: any) =>
+    ['super_admin', 'admin', 'hr', 'hr_manager'].includes(typeof r === 'string' ? r : r.name),
+  );
+
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [roleName, setRoleName] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'profile' | 'feedback' | 'reviews'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'feedback' | 'reviews' | 'leaveDays'>('profile');
 
   // Inline-edit state for Notes
   const [editingNote, setEditingNote] = useState(false);
@@ -167,6 +225,22 @@ export default function EmployeeDetailPage() {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [savingReview, setSavingReview] = useState(false);
+
+  const [payrollLeaveRows, setPayrollLeaveRows] = useState<EmployeePayrollLeaveRow[]>([]);
+  const [payrollLeaveLoading, setPayrollLeaveLoading] = useState(false);
+
+  const [leaveDays, setLeaveDays] = useState<EmployeeLeaveDayRow[]>([]);
+  const [leaveDaysLoading, setLeaveDaysLoading] = useState(false);
+  const [leaveDaysError, setLeaveDaysError] = useState('');
+  const [savingLeaveDay, setSavingLeaveDay] = useState(false);
+  const [editingLeaveDayId, setEditingLeaveDayId] = useState<string | null>(null);
+  const [showLeaveDayForm, setShowLeaveDayForm] = useState(false);
+  const [leaveDayForm, setLeaveDayForm] = useState({
+    leaveDate: new Date().toISOString().split('T')[0],
+    dayFraction: '1' as '1' | '0.5',
+    leaveKind: 'PAID' as 'PAID' | 'UNPAID' | 'ABSENT',
+    notes: '',
+  });
 
   const [feedbackForm, setFeedbackForm] = useState({
     feedbackType: 'MANAGER_TO_EMPLOYEE',
@@ -198,9 +272,120 @@ export default function EmployeeDetailPage() {
     reviewerComments: '',
   });
 
+  const payrollLeaveTotals = useMemo(() => {
+    let paid = 0;
+    let unpaid = 0;
+    let absent = 0;
+    for (const r of payrollLeaveRows) {
+      paid += r.paidLeaveDays;
+      unpaid += r.unpaidLeaveDays;
+      absent += r.absentDays;
+    }
+    return { paid, unpaid, absent, combined: paid + unpaid };
+  }, [payrollLeaveRows]);
+
   useEffect(() => {
-    if (employeeId) fetchEmployee();
+    if (employeeId) {
+      fetchEmployee();
+      fetchPayrollLeaves();
+    }
   }, [employeeId]);
+
+  const fetchPayrollLeaves = async () => {
+    setPayrollLeaveLoading(true);
+    try {
+      const rows = await employeesService.getPayrollLeaveRecords(employeeId);
+      const sorted = [...rows].sort(
+        (a, b) => new Date(b.paymentMonth).getTime() - new Date(a.paymentMonth).getTime(),
+      );
+      setPayrollLeaveRows(sorted);
+    } catch {
+      setPayrollLeaveRows([]);
+    } finally {
+      setPayrollLeaveLoading(false);
+    }
+  };
+
+  const fetchLeaveDays = async () => {
+    setLeaveDaysLoading(true);
+    setLeaveDaysError('');
+    try {
+      const rows = await employeesService.getLeaveDays(employeeId);
+      setLeaveDays(rows);
+    } catch (err: any) {
+      const { title, details } = parseApiError(err);
+      setLeaveDaysError(details.length ? `${title}\n• ${details.join('\n• ')}` : title);
+      setLeaveDays([]);
+    } finally {
+      setLeaveDaysLoading(false);
+    }
+  };
+
+  const resetLeaveDayForm = () => {
+    setEditingLeaveDayId(null);
+    setLeaveDayForm({
+      leaveDate: new Date().toISOString().split('T')[0],
+      dayFraction: '1',
+      leaveKind: 'PAID',
+      notes: '',
+    });
+  };
+
+  const openNewLeaveDayForm = () => {
+    resetLeaveDayForm();
+    setShowLeaveDayForm(true);
+  };
+
+  const startEditLeaveDay = (row: EmployeeLeaveDayRow) => {
+    setEditingLeaveDayId(row.id);
+    setLeaveDayForm({
+      leaveDate: row.leaveDate,
+      dayFraction: row.dayFraction === 0.5 ? '0.5' : '1',
+      leaveKind: row.leaveKind,
+      notes: row.notes ?? '',
+    });
+    setShowLeaveDayForm(true);
+  };
+
+  const handleSubmitLeaveDay = async () => {
+    if (!leaveDayForm.leaveDate.trim()) return;
+    setSavingLeaveDay(true);
+    setLeaveDaysError('');
+    try {
+      const body = {
+        leaveDate: leaveDayForm.leaveDate,
+        dayFraction: Number(leaveDayForm.dayFraction),
+        leaveKind: leaveDayForm.leaveKind,
+        notes: leaveDayForm.notes.trim() || undefined,
+      };
+      if (editingLeaveDayId) {
+        await employeesService.updateLeaveDay(employeeId, editingLeaveDayId, body);
+      } else {
+        await employeesService.createLeaveDay(employeeId, body);
+      }
+      setShowLeaveDayForm(false);
+      resetLeaveDayForm();
+      await fetchLeaveDays();
+    } catch (err: any) {
+      const { title, details } = parseApiError(err);
+      setLeaveDaysError(details.length ? `${title}\n• ${details.join('\n• ')}` : title);
+    } finally {
+      setSavingLeaveDay(false);
+    }
+  };
+
+  const handleDeleteLeaveDay = async (leaveDayId: string) => {
+    if (!canHrManageLeaveDays) return;
+    if (!window.confirm('Remove this leave date from the ledger?')) return;
+    setLeaveDaysError('');
+    try {
+      await employeesService.deleteLeaveDay(employeeId, leaveDayId);
+      await fetchLeaveDays();
+    } catch (err: any) {
+      const { title, details } = parseApiError(err);
+      setLeaveDaysError(details.length ? `${title}\n• ${details.join('\n• ')}` : title);
+    }
+  };
 
   const fetchEmployee = async () => {
     try {
@@ -242,11 +427,12 @@ export default function EmployeeDetailPage() {
     finally { setReviewLoading(false); }
   };
 
-  // Load feedback/reviews when switching to those tabs
-  const handleTabChange = (tab: 'profile' | 'feedback' | 'reviews') => {
+  // Load feedback/reviews when switching to those tabs; leave dates refresh when opening that tab
+  const handleTabChange = (tab: 'profile' | 'feedback' | 'reviews' | 'leaveDays') => {
     setActiveTab(tab);
     if (tab === 'feedback' && feedbacks.length === 0) fetchFeedback();
     if (tab === 'reviews' && reviews.length === 0) fetchReviews();
+    if (tab === 'leaveDays') fetchLeaveDays();
   };
 
   const handleSubmitFeedback = async () => {
@@ -475,6 +661,7 @@ export default function EmployeeDetailPage() {
             { id: 'profile', label: 'Profile', icon: User },
             { id: 'feedback', label: 'Feedback', icon: MessageSquare },
             { id: 'reviews', label: 'Reviews', icon: TrendingUp },
+            { id: 'leaveDays', label: 'Leave dates', icon: CalendarDays },
           ] as const).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -492,6 +679,9 @@ export default function EmployeeDetailPage() {
               )}
               {id === 'reviews' && reviews.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold">{reviews.length}</span>
+              )}
+              {id === 'leaveDays' && leaveDays.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-bold">{leaveDays.length}</span>
               )}
             </button>
           ))}
@@ -832,43 +1022,209 @@ export default function EmployeeDetailPage() {
             )}
           </div>
 
-          {/* Leave Balances */}
+          {/* Leave Balances & monthly payroll leave */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-lg font-bold mb-4" style={{ color: '#7B1E12' }}>Leave Balances</h2>
+            <h2 className="text-lg font-bold mb-4" style={{ color: '#7B1E12' }}>Leave</h2>
+            <p className="text-xs text-gray-600 mb-4">
+              Balances are days remaining on file. <strong>Monthly leave taken</strong> comes from payroll records (paid /
+              unpaid leave days entered per month in Payroll).
+            </p>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                 <div>
                   <p className="text-xs text-gray-600">Casual Leave</p>
-                  <p className="text-2xl font-bold text-blue-700">{employee.casualLeaveBalance ?? 0}</p>
-                  <p className="text-xs text-blue-500">days remaining</p>
+                  <p className="text-2xl font-bold text-blue-700">
+                    {formatLeaveNumeric(Number(employee.casualLeaveBalance ?? 0))}
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    {describeLeaveDays(Number(employee.casualLeaveBalance ?? 0))} remaining
+                  </p>
+                  <p className="text-xs text-blue-500">days on balance</p>
                 </div>
                 <Award className="h-8 w-8 text-blue-700 opacity-70" />
               </div>
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <div>
                   <p className="text-xs text-gray-600">Sick Leave</p>
-                  <p className="text-2xl font-bold text-green-700">{employee.sickLeaveBalance ?? 0}</p>
-                  <p className="text-xs text-green-500">days remaining</p>
+                  <p className="text-2xl font-bold text-green-700">
+                    {formatLeaveNumeric(Number(employee.sickLeaveBalance ?? 0))}
+                  </p>
+                  <p className="text-xs text-green-600">
+                    {describeLeaveDays(Number(employee.sickLeaveBalance ?? 0))} remaining
+                  </p>
+                  <p className="text-xs text-green-500">days on balance</p>
                 </div>
                 <FileText className="h-8 w-8 text-green-700 opacity-70" />
               </div>
               <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
                 <div>
                   <p className="text-xs text-gray-600">Earned Leave</p>
-                  <p className="text-2xl font-bold text-purple-700">{employee.earnedLeaveBalance ?? 0}</p>
-                  <p className="text-xs text-purple-500">days remaining</p>
+                  <p className="text-2xl font-bold text-purple-700">
+                    {formatLeaveNumeric(Number(employee.earnedLeaveBalance ?? 0))}
+                  </p>
+                  <p className="text-xs text-purple-600">
+                    {describeLeaveDays(Number(employee.earnedLeaveBalance ?? 0))} remaining
+                  </p>
+                  <p className="text-xs text-purple-500">days on balance</p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-purple-700 opacity-70" />
               </div>
               {(employee.leaveTaken !== undefined && Number(employee.leaveTaken) > 0) && (
                 <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
                   <div>
-                    <p className="text-xs text-gray-600">Leave Taken (YTD)</p>
-                    <p className="text-2xl font-bold text-orange-700">{employee.leaveTaken}</p>
-                    <p className="text-xs text-orange-500">days used</p>
+                    <p className="text-xs text-gray-600">Leave Taken (YTD — manual field)</p>
+                    <p className="text-2xl font-bold text-orange-700">
+                      {formatLeaveNumeric(Number(employee.leaveTaken))}
+                    </p>
+                    <p className="text-xs text-orange-600">
+                      {describeLeaveDays(Number(employee.leaveTaken))}
+                    </p>
+                    <p className="text-xs text-orange-500">see payroll table below for monthly detail</p>
                   </div>
                   <AlertCircle className="h-8 w-8 text-orange-700 opacity-70" />
                 </div>
+              )}
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center gap-2 mb-1">
+                <CalendarDays className="h-5 w-5 text-gray-600" />
+                <h3 className="text-base font-bold text-gray-900">Monthly leave log</h3>
+              </div>
+              <p className="text-xs text-gray-600 mb-3">
+                One row per <strong>payroll month</strong>. <strong>Full</strong> and <strong>½ day</strong> columns count
+                whole and half leaves for that month (from paid / unpaid / absent day units entered in Payroll).{' '}
+                <strong>Last updated</strong> is when that salary row was last saved — useful for auditing changes. Edit
+                leave amounts in{' '}
+                <Link href="/hr/payroll" className="text-red-800 underline font-medium">
+                  Payroll
+                </Link>{' '}
+                while status is pending.
+              </p>
+              {payrollLeaveLoading ? (
+                <p className="text-sm text-gray-500">Loading leave log…</p>
+              ) : payrollLeaveRows.length === 0 ? (
+                <p className="text-sm text-gray-500 bg-gray-50 rounded-lg p-4">
+                  No payroll months yet for this employee. When you add a monthly salary in Payroll, leave and half-leave
+                  counts for that month will show up here automatically.
+                </p>
+              ) : (
+                <>
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="w-full text-sm min-w-[900px]">
+                      <thead>
+                        <tr className="bg-gray-50 text-xs font-semibold text-gray-700">
+                          <th rowSpan={2} className="align-bottom px-3 py-2 text-left border-b border-gray-200">
+                            Month
+                          </th>
+                          <th
+                            colSpan={2}
+                            className="px-2 py-1.5 text-center border-b border-l border-gray-200 bg-sky-50/60"
+                          >
+                            Paid leave
+                          </th>
+                          <th
+                            colSpan={2}
+                            className="px-2 py-1.5 text-center border-b border-l border-gray-200 bg-amber-50/60"
+                          >
+                            Unpaid leave
+                          </th>
+                          <th
+                            colSpan={2}
+                            className="px-2 py-1.5 text-center border-b border-l border-gray-200 bg-violet-50/60"
+                          >
+                            Total leave
+                          </th>
+                          <th
+                            colSpan={2}
+                            className="px-2 py-1.5 text-center border-b border-l border-gray-200 bg-rose-50/50"
+                          >
+                            Absent
+                          </th>
+                          <th rowSpan={2} className="align-bottom px-2 py-2 text-left border-b border-l border-gray-200 max-w-[160px]">
+                            Notes
+                          </th>
+                          <th rowSpan={2} className="align-bottom px-2 py-2 text-left border-b border-l border-gray-200 whitespace-nowrap">
+                            Last updated
+                          </th>
+                          <th rowSpan={2} className="align-bottom px-2 py-2 text-center border-b border-l border-gray-200">
+                            Status
+                          </th>
+                        </tr>
+                        <tr className="bg-gray-50/90 text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                          <th className="px-2 py-1 text-center border-l border-gray-200">Full</th>
+                          <th className="px-2 py-1 text-center">½</th>
+                          <th className="px-2 py-1 text-center border-l border-gray-200">Full</th>
+                          <th className="px-2 py-1 text-center">½</th>
+                          <th className="px-2 py-1 text-center border-l border-gray-200">Full</th>
+                          <th className="px-2 py-1 text-center">½</th>
+                          <th className="px-2 py-1 text-center border-l border-gray-200">Full</th>
+                          <th className="px-2 py-1 text-center border-b border-gray-200">½</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {payrollLeaveRows.map((r) => {
+                          const totalLeave = r.paidLeaveDays + r.unpaidLeaveDays;
+                          const note = r.notes?.trim() || '';
+                          return (
+                            <tr key={r.id} className="border-t border-gray-100 hover:bg-gray-50/80">
+                              <td className="px-3 py-2 font-medium text-gray-900 whitespace-nowrap align-top">
+                                {fmtMonthYear(r.paymentMonth)}
+                              </td>
+                              <FullHalfPairCells total={r.paidLeaveDays} borderLeft />
+                              <FullHalfPairCells total={r.unpaidLeaveDays} borderLeft />
+                              <FullHalfPairCells total={totalLeave} borderLeft />
+                              <FullHalfPairCells total={r.absentDays} borderLeft />
+                              <td className="px-2 py-2 border-l border-gray-100 align-top max-w-[180px]">
+                                {note ? (
+                                  <span className="text-xs text-gray-700 line-clamp-2" title={note}>
+                                    {note.length > 120 ? `${note.slice(0, 120)}…` : note}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-gray-400">—</span>
+                                )}
+                              </td>
+                              <td className="px-2 py-2 border-l border-gray-100 align-top text-xs text-gray-600 whitespace-nowrap">
+                                {fmtDateTime(r.updatedAt || r.createdAt)}
+                              </td>
+                              <td className="px-2 py-2 border-l border-gray-100 align-top text-center">
+                                <span
+                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    r.paymentStatus === 'PAID'
+                                      ? 'bg-green-100 text-green-800'
+                                      : r.paymentStatus === 'CANCELLED'
+                                        ? 'bg-red-100 text-red-800'
+                                        : 'bg-amber-100 text-amber-900'
+                                  }`}
+                                >
+                                  {fmt(r.paymentStatus)}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-100 border-t-2 border-gray-300 font-semibold text-gray-900 text-sm">
+                          <td className="px-3 py-2">All months (sum)</td>
+                          <FullHalfPairCells total={payrollLeaveTotals.paid} borderLeft />
+                          <FullHalfPairCells total={payrollLeaveTotals.unpaid} borderLeft />
+                          <FullHalfPairCells total={payrollLeaveTotals.combined} borderLeft />
+                          <FullHalfPairCells total={payrollLeaveTotals.absent} borderLeft />
+                          <td colSpan={3} className="px-3 py-2 border-l border-gray-200 text-xs font-normal text-gray-600">
+                            Totals use {formatLeaveNumeric(payrollLeaveTotals.combined)} combined leave day units (
+                            {describeLeaveDays(payrollLeaveTotals.combined)}). Payroll notes are per month in the rows
+                            above.
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-2">
+                    Tip: Half-day leave is entered as 0.5 in Payroll. This log only reflects data saved on salary
+                    records.
+                  </p>
+                </>
               )}
             </div>
           </div>
@@ -1246,6 +1602,217 @@ export default function EmployeeDetailPage() {
                 </div>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {/* ── Leave dates tab (calendar ledger) ── */}
+      {activeTab === 'leaveDays' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <div>
+              <p className="text-sm text-gray-800 font-medium">Exact dates for full- and half-day absences</p>
+              <p className="text-xs text-gray-500 mt-1 max-w-2xl">
+                Records stay on file for history. This ledger is separate from monthly payroll totals—use it as the source
+                of truth when entering paid / unpaid / absent days on payroll if you maintain it here.
+              </p>
+            </div>
+            {canHrManageLeaveDays && (
+              <button
+                type="button"
+                onClick={() => openNewLeaveDayForm()}
+                className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white shrink-0"
+                style={{ backgroundColor: '#A8211B' }}
+              >
+                <CalendarDays className="h-4 w-4" /> Add leave date
+              </button>
+            )}
+          </div>
+
+          {leaveDaysError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 whitespace-pre-line">
+              {leaveDaysError}
+            </div>
+          )}
+
+          {showLeaveDayForm && canHrManageLeaveDays && (
+            <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-[#A8211B]">
+              <h3 className="font-bold text-gray-800 mb-4">{editingLeaveDayId ? 'Edit leave date' : 'New leave date'}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Date *</label>
+                  <input
+                    type="date"
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    value={leaveDayForm.leaveDate}
+                    onChange={(e) => setLeaveDayForm((f) => ({ ...f, leaveDate: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Kind *</label>
+                  <select
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    value={leaveDayForm.leaveKind}
+                    onChange={(e) =>
+                      setLeaveDayForm((f) => ({ ...f, leaveKind: e.target.value as typeof f.leaveKind }))
+                    }
+                  >
+                    <option value="PAID">Paid leave</option>
+                    <option value="UNPAID">Unpaid leave</option>
+                    <option value="ABSENT">Absent (no leave)</option>
+                  </select>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs text-gray-500 block mb-1">Day length *</label>
+                  <div className="flex flex-wrap gap-4">
+                    {[
+                      ['1', 'Full day'],
+                      ['0.5', 'Half day'],
+                    ].map(([val, label]) => (
+                      <label key={val} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="radio"
+                          name="dayFraction"
+                          checked={leaveDayForm.dayFraction === val}
+                          onChange={() => setLeaveDayForm((f) => ({ ...f, dayFraction: val as '1' | '0.5' }))}
+                          className="h-4 w-4"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs text-gray-500 block mb-1">Notes (optional)</label>
+                  <textarea
+                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                    rows={2}
+                    placeholder="Reason, reference, attendance sheet row…"
+                    value={leaveDayForm.notes}
+                    onChange={(e) => setLeaveDayForm((f) => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLeaveDayForm(false);
+                    resetLeaveDayForm();
+                  }}
+                  className="px-4 py-2 border rounded-lg text-sm text-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmitLeaveDay()}
+                  disabled={savingLeaveDay || !leaveDayForm.leaveDate.trim()}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ backgroundColor: '#A8211B' }}
+                >
+                  {savingLeaveDay ? 'Saving…' : editingLeaveDayId ? 'Save changes' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {leaveDaysLoading ? (
+            <div className="text-center py-8 text-gray-400">Loading…</div>
+          ) : leaveDays.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-12 text-center">
+              <CalendarDays className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+              <p className="text-gray-600 font-medium">No leave dates recorded yet.</p>
+              <p className="text-sm text-gray-500 mt-2">
+                {canHrManageLeaveDays
+                  ? 'Use “Add leave date” to log each full or half day—newest months appear first.'
+                  : 'HR or an admin can add entries; you have read-only access.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Kind</th>
+                    <th className="px-4 py-3">Length</th>
+                    <th className="px-4 py-3">Notes</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Last updated</th>
+                    {canHrManageLeaveDays && <th className="px-4 py-3 text-right w-24">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaveDays.map((row, i) => {
+                    const prev = leaveDays[i - 1];
+                    const showMonthHeading =
+                      !prev ||
+                      fmtMonthYear(row.leaveDate) !== fmtMonthYear(prev.leaveDate);
+                    return (
+                      <Fragment key={row.id}>
+                        {showMonthHeading && (
+                          <tr>
+                            <td
+                              colSpan={canHrManageLeaveDays ? 6 : 5}
+                              className="px-4 py-2 bg-stone-50 font-semibold text-stone-800 border-t border-stone-200"
+                            >
+                              {fmtMonthYear(row.leaveDate)}
+                            </td>
+                          </tr>
+                        )}
+                        <tr className="border-b border-gray-100 hover:bg-gray-50/80">
+                          <td className="px-4 py-3 font-medium text-gray-900 tabular-nums">
+                            {fmtDate(row.leaveDate) ?? row.leaveDate}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${leaveKindBadgeClass(row.leaveKind)}`}
+                            >
+                              {row.leaveKind === 'PAID'
+                                ? 'Paid'
+                                : row.leaveKind === 'UNPAID'
+                                  ? 'Unpaid'
+                                  : 'Absent'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-800">
+                            {row.dayFraction === 0.5 ? 'Half day' : 'Full day'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600 max-w-xs">
+                            {row.notes ? <span className="whitespace-pre-line">{row.notes}</span> : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap tabular-nums">
+                            {fmtDateTime(row.updatedAt || row.createdAt)}
+                          </td>
+                          {canHrManageLeaveDays && (
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => startEditLeaveDay(row)}
+                                  className="p-2 rounded text-gray-400 hover:text-[#A8211B] hover:bg-red-50 transition"
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteLeaveDay(row.id)}
+                                  className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                                  title="Remove"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import FlatForm from '@/components/forms/FlatForm';
 import { flatsService } from '@/services/flats.service';
@@ -27,6 +27,19 @@ function NewFlatContent() {
       : undefined,
   );
 
+  const fetchTowersByProperty = useCallback(async (propertyId: string) => {
+    setTowers([]);
+    try {
+      const response = await towersService.getTowers({
+        isActive: true,
+        propertyId,
+      });
+      setTowers(response.data);
+    } catch (error) {
+      console.error('Error fetching towers:', error);
+    }
+  }, []);
+
   useEffect(() => {
     fetchProperties();
     fetchCustomers();
@@ -41,16 +54,7 @@ function NewFlatContent() {
     } else if (preselectedPropertyId) {
       fetchTowersByProperty(preselectedPropertyId);
     }
-  }, []);
-
-  const fetchTowersByProperty = async (propertyId: string) => {
-    setTowers([]);
-    const response = await towersService.getTowers({
-      isActive: true,
-      propertyId,
-    });
-    setTowers(response.data);
-  };
+  }, [preselectedTowerId, preselectedPropertyId, fetchTowersByProperty]);
 
   const fetchProperties = async () => {
     try {
@@ -58,15 +62,6 @@ function NewFlatContent() {
       setProperties(response.data);
     } catch (error) {
       console.error('Error fetching properties:', error);
-    }
-  };
-
-  const fetchTowers = async () => {
-    try {
-      const response = await towersService.getTowers({ isActive: true });
-      setTowers(response.data);
-    } catch (error) {
-      console.error('Error fetching towers:', error);
     }
   };
 
@@ -186,6 +181,7 @@ function NewFlatContent() {
   return (
     <div className="container mx-auto py-8 px-4">
       <FlatForm
+        key={[initialData?.propertyId, initialData?.towerId].filter(Boolean).join('-') || 'new-flat'}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         loading={loading}

@@ -25,6 +25,7 @@ import { DollarSign, Users, Plus, CheckCircle, XCircle, Loader2, IndianRupee, Re
 import { propertiesService } from '@/services/properties.service';
 import { useAuthStore } from '@/store/authStore';
 import { toast } from 'sonner';
+import { parseApiError } from '@/utils/error-handler';
 
 interface Employee {
   id: string;
@@ -38,6 +39,20 @@ interface SalaryPayment {
   employeeId: string;
   employee?: { fullName: string; designation?: string };
   paymentMonth: string;
+  workingDays?: number;
+  presentDays?: number;
+  absentDays?: number;
+  paidLeaveDays?: number;
+  unpaidLeaveDays?: number;
+  houseRentAllowance?: number;
+  transportAllowance?: number;
+  medicalAllowance?: number;
+  otherAllowances?: number;
+  overtimePayment?: number;
+  advanceDeduction?: number;
+  loanDeduction?: number;
+  otherDeductions?: number;
+  notes?: string | null;
   basicSalary: number;
   grossSalary: number;
   totalDeductions: number;
@@ -86,6 +101,7 @@ export default function PayrollPage() {
   const [loading, setLoading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showPay, setShowPay] = useState<SalaryPayment | null>(null);
+  const [showEdit, setShowEdit] = useState<SalaryPayment | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [jeRetrying, setJeRetrying] = useState<string | null>(null);
@@ -96,6 +112,29 @@ export default function PayrollPage() {
     employeeId: '',
     workingDays: 26,
     presentDays: 26,
+    absentDays: 0,
+    paidLeaveDays: 0,
+    unpaidLeaveDays: 0,
+    basicSalary: '',
+    houseRentAllowance: '',
+    transportAllowance: '',
+    medicalAllowance: '',
+    otherAllowances: '',
+    pfDeduction: '',
+    esiDeduction: '',
+    taxDeduction: '',
+    advanceDeduction: '',
+  loanDeduction: '',
+  otherDeductions: '',
+  notes: '',
+});
+
+  const [editForm, setEditForm] = useState({
+    workingDays: 26,
+    presentDays: 26,
+    absentDays: 0,
+    paidLeaveDays: 0,
+    unpaidLeaveDays: 0,
     basicSalary: '',
     houseRentAllowance: '',
     transportAllowance: '',
@@ -180,11 +219,93 @@ export default function PayrollPage() {
         otherDeductions: Number(form.otherDeductions || 0),
         workingDays: Number(form.workingDays),
         presentDays: Number(form.presentDays),
+        absentDays: Number(form.absentDays ?? 0),
+        paidLeaveDays: Number(form.paidLeaveDays ?? 0),
+        unpaidLeaveDays: Number(form.unpaidLeaveDays ?? 0),
       });
       setShowCreate(false);
       loadData();
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to create salary');
+      const { title, details } = parseApiError(err);
+      setError(details.length ? `${title}\n• ${details.join('\n• ')}` : title);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const populateEditFormFromPayment = (p: SalaryPayment) => {
+    setEditForm({
+      workingDays: Number(p.workingDays ?? 26),
+      presentDays: Number(p.presentDays ?? 26),
+      absentDays: Number(p.absentDays ?? 0),
+      paidLeaveDays: Number(p.paidLeaveDays ?? 0),
+      unpaidLeaveDays: Number(p.unpaidLeaveDays ?? 0),
+      basicSalary: String(p.basicSalary ?? ''),
+      houseRentAllowance: String(p.houseRentAllowance ?? ''),
+      transportAllowance: String(p.transportAllowance ?? ''),
+      medicalAllowance: String(p.medicalAllowance ?? ''),
+      otherAllowances: String(p.otherAllowances ?? ''),
+      pfDeduction: String(p.pfDeduction ?? ''),
+      esiDeduction: String(p.esiDeduction ?? ''),
+      taxDeduction: String(p.taxDeduction ?? ''),
+      advanceDeduction: String(p.advanceDeduction ?? ''),
+      loanDeduction: String(p.loanDeduction ?? ''),
+      otherDeductions: String(p.otherDeductions ?? ''),
+      notes: p.notes ?? '',
+    });
+  };
+
+  const handleUpdatePending = async () => {
+    if (!showEdit) return;
+    if (!editForm.basicSalary) {
+      setError('Basic Salary is required');
+      return;
+    }
+    const previewGross =
+      Number(editForm.basicSalary || 0) +
+      Number(editForm.houseRentAllowance || 0) +
+      Number(editForm.transportAllowance || 0) +
+      Number(editForm.medicalAllowance || 0) +
+      Number(editForm.otherAllowances || 0);
+    const previewDeductions =
+      Number(editForm.pfDeduction || 0) +
+      Number(editForm.esiDeduction || 0) +
+      Number(editForm.taxDeduction || 0) +
+      Number(editForm.advanceDeduction || 0) +
+      Number(editForm.loanDeduction || 0) +
+      Number(editForm.otherDeductions || 0);
+    if (previewGross - previewDeductions <= 0) {
+      setError('Net salary must be greater than ₹0. Please check earnings and deductions.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await api.patch(`/employees/salary-payments/${showEdit.id}`, {
+        basicSalary: Number(editForm.basicSalary),
+        houseRentAllowance: Number(editForm.houseRentAllowance || 0),
+        transportAllowance: Number(editForm.transportAllowance || 0),
+        medicalAllowance: Number(editForm.medicalAllowance || 0),
+        otherAllowances: Number(editForm.otherAllowances || 0),
+        pfDeduction: Number(editForm.pfDeduction || 0),
+        esiDeduction: Number(editForm.esiDeduction || 0),
+        taxDeduction: Number(editForm.taxDeduction || 0),
+        advanceDeduction: Number(editForm.advanceDeduction || 0),
+        loanDeduction: Number(editForm.loanDeduction || 0),
+        otherDeductions: Number(editForm.otherDeductions || 0),
+        workingDays: Number(editForm.workingDays),
+        presentDays: Number(editForm.presentDays),
+        absentDays: Number(editForm.absentDays ?? 0),
+        paidLeaveDays: Number(editForm.paidLeaveDays ?? 0),
+        unpaidLeaveDays: Number(editForm.unpaidLeaveDays ?? 0),
+        notes: editForm.notes,
+      });
+      setShowEdit(null);
+      await loadData();
+      toast.success('Salary record updated');
+    } catch (err: any) {
+      const { title, details } = parseApiError(err);
+      setError(details.length ? `${title}\n• ${details.join('\n• ')}` : title);
     } finally {
       setSaving(false);
     }
@@ -261,14 +382,14 @@ export default function PayrollPage() {
               className="w-40"
             />
           </div>
-          <Button onClick={() => setShowCreate(true)} className="mt-5" style={{ backgroundColor: '#A8211B' }}>
+          <Button onClick={() => { setError(''); setShowCreate(true); }} className="mt-5" style={{ backgroundColor: '#A8211B' }}>
             <Plus className="h-4 w-4 mr-2" /> Add Salary
           </Button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
           {error}
         </div>
       )}
@@ -386,14 +507,31 @@ export default function PayrollPage() {
                       </td>
                       <td className="px-4 py-3 text-center">
                         {p.paymentStatus === 'PENDING' && (
-                          <Button
-                            size="sm"
-                            onClick={() => { setShowPay(p); setError(''); }}
-                            style={{ backgroundColor: '#10B981' }}
-                            className="text-white"
-                          >
-                            Pay Now
-                          </Button>
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setShowEdit(p);
+                                populateEditFormFromPayment(p);
+                                setError('');
+                              }}
+                              className="text-xs"
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setShowPay(p);
+                                setError('');
+                              }}
+                              style={{ backgroundColor: '#10B981' }}
+                              className="text-white"
+                            >
+                              Pay Now
+                            </Button>
+                          </div>
                         )}
                         {p.paymentStatus === 'PAID' && (
                           canAdminEdit ? (
@@ -481,15 +619,55 @@ export default function PayrollPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Working Days</Label>
-                <Input type="number" value={form.workingDays}
-                  onChange={e => setForm(f => ({ ...f, workingDays: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.workingDays}
+                  onChange={e => setForm(f => ({ ...f, workingDays: Number(e.target.value) }))}
+                />
               </div>
               <div>
                 <Label className="text-xs">Present Days</Label>
-                <Input type="number" value={form.presentDays}
-                  onChange={e => setForm(f => ({ ...f, presentDays: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.presentDays}
+                  onChange={e => setForm(f => ({ ...f, presentDays: Number(e.target.value) }))}
+                />
               </div>
             </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label className="text-xs">Absent Days</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.absentDays}
+                  onChange={e => setForm(f => ({ ...f, absentDays: Number(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Paid leave (incl. half days)</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.paidLeaveDays}
+                  onChange={e => setForm(f => ({ ...f, paidLeaveDays: Number(e.target.value) }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Unpaid leave</Label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  value={form.unpaidLeaveDays}
+                  onChange={e => setForm(f => ({ ...f, unpaidLeaveDays: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 -mt-2">
+              Use 0.5 for half-day leave. Monthly attendance and leave are stored on this salary row.
+            </p>
 
             {/* Earnings */}
             <div className="border-t pt-3">
@@ -565,7 +743,7 @@ export default function PayrollPage() {
               />
             </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && showCreate && <p className="text-red-500 text-sm whitespace-pre-line">{error}</p>}
           </div>
 
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2">
@@ -573,6 +751,170 @@ export default function PayrollPage() {
             <Button onClick={handleCreate} disabled={saving} style={{ backgroundColor: '#A8211B' }} className="w-full sm:w-auto">
               {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Create Salary Record
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit pending salary (monthly attendance & leave) */}
+      <Dialog
+        open={!!showEdit}
+        onOpenChange={(open) => {
+          if (!open) setShowEdit(null);
+        }}
+      >
+        <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Edit pending salary — {monthLabel}</DialogTitle>
+          </DialogHeader>
+          {showEdit && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm font-medium text-gray-800">
+                {showEdit.employee?.fullName ?? showEdit.employeeId}
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Working Days</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={editForm.workingDays}
+                    onChange={e => setEditForm(f => ({ ...f, workingDays: Number(e.target.value) }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Present Days</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={editForm.presentDays}
+                    onChange={e => setEditForm(f => ({ ...f, presentDays: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Absent Days</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={editForm.absentDays}
+                    onChange={e => setEditForm(f => ({ ...f, absentDays: Number(e.target.value) }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Paid leave</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={editForm.paidLeaveDays}
+                    onChange={e => setEditForm(f => ({ ...f, paidLeaveDays: Number(e.target.value) }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Unpaid leave</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={editForm.unpaidLeaveDays}
+                    onChange={e => setEditForm(f => ({ ...f, unpaidLeaveDays: Number(e.target.value) }))}
+                  />
+                </div>
+              </div>
+
+              <div className="border-t pt-3">
+                <p className="font-medium text-sm text-gray-700 mb-3">Earnings</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'basicSalary', label: 'Basic Salary *' },
+                    { key: 'houseRentAllowance', label: 'HRA' },
+                    { key: 'transportAllowance', label: 'Transport Allowance' },
+                    { key: 'medicalAllowance', label: 'Medical Allowance' },
+                    { key: 'otherAllowances', label: 'Other Allowances' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <Label className="text-xs">{f.label}</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={(editForm as any)[f.key]}
+                        onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-3">
+                <p className="font-medium text-sm text-gray-700 mb-3">Deductions</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { key: 'pfDeduction', label: 'PF Deduction' },
+                    { key: 'esiDeduction', label: 'ESI Deduction' },
+                    { key: 'taxDeduction', label: 'Income Tax (TDS)' },
+                    { key: 'advanceDeduction', label: 'Advance Recovery' },
+                    { key: 'loanDeduction', label: 'Loan Recovery' },
+                    { key: 'otherDeductions', label: 'Other Deductions' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <Label className="text-xs">{f.label}</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={(editForm as any)[f.key]}
+                        onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {(() => {
+                const gross =
+                  Number(editForm.basicSalary || 0) + Number(editForm.houseRentAllowance || 0) +
+                  Number(editForm.transportAllowance || 0) + Number(editForm.medicalAllowance || 0) +
+                  Number(editForm.otherAllowances || 0);
+                const deductions =
+                  Number(editForm.pfDeduction || 0) + Number(editForm.esiDeduction || 0) +
+                  Number(editForm.taxDeduction || 0) + Number(editForm.advanceDeduction || 0) +
+                  Number(editForm.loanDeduction || 0) + Number(editForm.otherDeductions || 0);
+                return (
+                  <div className="bg-green-50 rounded-lg p-3">
+                    <div className="flex flex-wrap gap-3 justify-between text-sm">
+                      <span>Gross: <strong>{fmt(gross)}</strong></span>
+                      <span>Deductions: <strong className="text-red-600">-{fmt(deductions)}</strong></span>
+                      <span>Net Pay: <strong className="text-green-700 text-base">{fmt(gross - deductions)}</strong></span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="border-t pt-3">
+                <Label className="text-xs">Notes / Remarks (optional)</Label>
+                <Input
+                  placeholder="e.g. Includes special incentive for Q4"
+                  value={editForm.notes}
+                  onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))}
+                />
+              </div>
+
+              {error && <p className="text-red-500 text-sm whitespace-pre-line">{error}</p>}
+            </div>
+          )}
+
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowEdit(null)} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdatePending}
+              disabled={saving}
+              style={{ backgroundColor: '#A8211B' }}
+              className="w-full sm:w-auto"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Save changes
             </Button>
           </DialogFooter>
         </DialogContent>

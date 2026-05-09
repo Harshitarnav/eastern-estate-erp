@@ -483,6 +483,7 @@ export default function TowersInventoryPage() {
 
       {editingTower && (
         <TowerForm
+          key={editingTower.id}
           tower={editingTower}
           onCancel={() => setEditingTower(null)}
           onSubmit={handleUpdateTower}

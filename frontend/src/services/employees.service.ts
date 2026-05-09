@@ -28,6 +28,51 @@ export interface EmployeeFilters {
    isActive?: boolean;
 }
 
+/** Salary rows used to show month-wise leave on the employee profile */
+export interface EmployeePayrollLeaveRow {
+  id: string;
+  paymentMonth: string;
+  paidLeaveDays: number;
+  unpaidLeaveDays: number;
+  absentDays: number;
+  presentDays?: number;
+  workingDays?: number;
+  paymentStatus: string;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Per-calendar-day leave entries (full or half day); kept as long-term history. */
+export interface EmployeeLeaveDayRow {
+  id: string;
+  leaveDate: string;
+  dayFraction: number;
+  leaveKind: 'PAID' | 'UNPAID' | 'ABSENT';
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+function mapLeaveDayRow(r: any): EmployeeLeaveDayRow {
+  const d = r.leaveDate;
+  const leaveDate =
+    typeof d === 'string'
+      ? d.slice(0, 10)
+      : d instanceof Date
+        ? d.toISOString().slice(0, 10)
+        : String(d).slice(0, 10);
+  return {
+    id: r.id,
+    leaveDate,
+    dayFraction: Number(r.dayFraction),
+    leaveKind: r.leaveKind,
+    notes: r.notes ?? null,
+    createdAt: r.createdAt ? String(r.createdAt) : undefined,
+    updatedAt: r.updatedAt ? String(r.updatedAt) : undefined,
+  };
+}
+
 interface EmployeesResponse {
   data: Employee[];
   meta: {
@@ -110,6 +155,56 @@ class EmployeesService {
   async getActive(): Promise<Employee[]> {
     const response = await api.get<Employee[]>('/employees?isActive=true');
     return response || [];
+  }
+
+  /**
+   * Payroll / salary records for an employee (used for month-wise leave taken).
+   */
+  async getPayrollLeaveRecords(employeeId: string): Promise<EmployeePayrollLeaveRow[]> {
+    const params = new URLSearchParams({ employeeId });
+    const rows = await api.get<any[]>(`/employees/salary-payments?${params.toString()}`);
+    const list = Array.isArray(rows) ? rows : [];
+    return list.map((r) => ({
+      id: r.id,
+      paymentMonth: r.paymentMonth,
+      paidLeaveDays: Number(r.paidLeaveDays ?? 0),
+      unpaidLeaveDays: Number(r.unpaidLeaveDays ?? 0),
+      absentDays: Number(r.absentDays ?? 0),
+      presentDays: r.presentDays !== undefined ? Number(r.presentDays) : undefined,
+      workingDays: r.workingDays !== undefined ? Number(r.workingDays) : undefined,
+      paymentStatus: String(r.paymentStatus ?? ''),
+      notes: r.notes ?? null,
+      createdAt: r.createdAt ? String(r.createdAt) : undefined,
+      updatedAt: r.updatedAt ? String(r.updatedAt) : undefined,
+    }));
+  }
+
+  /** Calendar leave ledger (exact dates). */
+  async getLeaveDays(employeeId: string): Promise<EmployeeLeaveDayRow[]> {
+    const rows = await api.get<any[]>(`/employees/${employeeId}/leave-days`);
+    const list = Array.isArray(rows) ? rows : [];
+    return list.map(mapLeaveDayRow);
+  }
+
+  async createLeaveDay(
+    employeeId: string,
+    body: { leaveDate: string; dayFraction: number; leaveKind: string; notes?: string },
+  ): Promise<EmployeeLeaveDayRow> {
+    const r = await api.post<any>(`/employees/${employeeId}/leave-days`, body);
+    return mapLeaveDayRow(r);
+  }
+
+  async updateLeaveDay(
+    employeeId: string,
+    leaveDayId: string,
+    body: { leaveDate?: string; dayFraction?: number; leaveKind?: string; notes?: string },
+  ): Promise<EmployeeLeaveDayRow> {
+    const r = await api.patch<any>(`/employees/${employeeId}/leave-days/${leaveDayId}`, body);
+    return mapLeaveDayRow(r);
+  }
+
+  async deleteLeaveDay(employeeId: string, leaveDayId: string): Promise<void> {
+    await api.delete(`/employees/${employeeId}/leave-days/${leaveDayId}`);
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import FlatForm from '@/components/forms/FlatForm';
 import { flatsService } from '@/services/flats.service';
@@ -26,16 +26,30 @@ export default function EditFlatPage() {
 
   useEffect(() => {
     fetchProperties();
-    fetchTowers();
     fetchCustomers();
     fetchFlat();
   }, [flatId]);
+
+  const fetchTowersByProperty = useCallback(async (propertyId: string) => {
+    if (!propertyId) {
+      setTowers([]);
+      return;
+    }
+    try {
+      const response = await towersService.getTowers({ isActive: true, propertyId });
+      setTowers(response.data);
+    } catch (error) {
+      console.error('Error fetching towers:', error);
+    }
+  }, []);
 
   const fetchFlat = async () => {
     try {
       const flat = await flatsService.getFlat(flatId);
       
       // Transform flat data to match form structure
+      await fetchTowersByProperty(flat.propertyId);
+
       setInitialData({
         propertyId: flat.propertyId,
         towerId: flat.towerId,
@@ -120,15 +134,6 @@ export default function EditFlatPage() {
       setProperties(response.data);
     } catch (error) {
       console.error('Error fetching properties:', error);
-    }
-  };
-
-  const fetchTowers = async () => {
-    try {
-      const response = await towersService.getTowers({ isActive: true });
-      setTowers(response.data);
-    } catch (error) {
-      console.error('Error fetching towers:', error);
     }
   };
 
@@ -236,6 +241,7 @@ export default function EditFlatPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <FlatForm
+        key={flatId}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         loading={loading}
@@ -244,6 +250,7 @@ export default function EditFlatPage() {
         customers={customers}
         initialData={initialData}
         isEdit={true}
+        onPropertyChange={fetchTowersByProperty}
       />
     </div>
   );

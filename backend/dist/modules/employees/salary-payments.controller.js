@@ -36,6 +36,9 @@ let SalaryPaymentsController = class SalaryPaymentsController {
     processPay(id, body, req) {
         return this.salaryPaymentsService.processPay(id, req.user.userId, body);
     }
+    update(id, dto, req) {
+        return this.salaryPaymentsService.updatePending(id, dto, req.user.userId);
+    }
     cancel(id) {
         return this.salaryPaymentsService.cancel(id);
     }
@@ -87,6 +90,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", void 0)
 ], SalaryPaymentsController.prototype, "processPay", null);
+__decorate([
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], SalaryPaymentsController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/cancel'),
     __param(0, (0, common_1.Param)('id')),

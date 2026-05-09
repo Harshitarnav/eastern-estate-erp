@@ -49,6 +49,10 @@ export interface FormField {
    * so downstream "required" checks don't block submission on hidden fields.
    */
   showIf?: (values: Record<string, any>) => boolean;
+  /** When this field changes, clear these other fields (e.g. property change clears tower). */
+  clearsFields?: string[];
+  /** HTML step for number inputs (e.g. "0.5" for half-day leave). */
+  step?: string;
 }
 
 export interface FormSection {
@@ -138,24 +142,32 @@ export default function Form({
     : fields || [];
 
   const handleChange = (name: string, value: any) => {
-    // setFormValues(prev => ({ ...prev, [name]: value }));
-    const updatedValues = { ...formValues, [name]: value };
+    const field = allFields.find((f) => f.name === name);
+    let updatedValues: Record<string, any> = { ...formValues, [name]: value };
+    if (field?.clearsFields?.length) {
+      for (const key of field.clearsFields) {
+        updatedValues = { ...updatedValues, [key]: '' };
+      }
+    }
     setFormValues(updatedValues);
     onValuesChange?.(updatedValues);
     
-    setTouched(prev => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({ ...prev, ...Object.fromEntries((field?.clearsFields ?? []).map((k) => [k, true])), [name]: true }));
 
     // Validate on change
-    const field = allFields.find(f => f.name === name);
     if (field) {
-      const error = validateField(field, value);
-      setErrors(prev => {
-        const updatedErrors = {
+      setErrors((prev) => {
+        const updatedErrors: Record<string, string> = {
           ...prev,
-          [name]: error || '',
+          [name]: validateField(field!, value) || '',
         };
+        for (const key of field.clearsFields ?? []) {
+          const f = allFields.find((x) => x.name === key);
+          if (f) {
+            updatedErrors[key] = validateField(f, updatedValues[key]) || '';
+          }
+        }
 
-        // If there are no errors left, reset submit status
         const hasAnyError = Object.values(updatedErrors).some(Boolean);
         if (!hasAnyError) {
           setSubmitStatus('idle');
@@ -163,8 +175,7 @@ export default function Form({
 
         return updatedErrors;
       });
-      
-      // Call field's onChange callback if provided
+
       if (field.onChange) {
         field.onChange(value);
       }
@@ -258,6 +269,7 @@ export default function Form({
               onChange={(e) => handleChange(field.name, e.target.value)}
               placeholder={field.placeholder}
               disabled={field.disabled}
+              step={field.type === 'number' && field.step ? field.step : undefined}
               className={`${inputClasses} ${field.icon ? 'pl-10' : ''}`}
             />
           </div>

@@ -20,14 +20,16 @@ const typeorm_2 = require("typeorm");
 const employee_entity_1 = require("./entities/employee.entity");
 const employee_feedback_entity_1 = require("./entities/employee-feedback.entity");
 const employee_review_entity_1 = require("./entities/employee-review.entity");
+const employee_leave_day_entity_1 = require("./entities/employee-leave-day.entity");
 const users_service_1 = require("../users/users.service");
 const notifications_service_1 = require("../notifications/notifications.service");
 const notification_entity_1 = require("../notifications/entities/notification.entity");
 let EmployeesService = EmployeesService_1 = class EmployeesService {
-    constructor(employeesRepository, feedbackRepository, reviewRepository, usersService, notificationsService) {
+    constructor(employeesRepository, feedbackRepository, reviewRepository, leaveDayRepository, usersService, notificationsService) {
         this.employeesRepository = employeesRepository;
         this.feedbackRepository = feedbackRepository;
         this.reviewRepository = reviewRepository;
+        this.leaveDayRepository = leaveDayRepository;
         this.usersService = usersService;
         this.notificationsService = notificationsService;
         this.logger = new common_1.Logger(EmployeesService_1.name);
@@ -255,6 +257,98 @@ let EmployeesService = EmployeesService_1 = class EmployeesService {
         review.isActive = false;
         await this.reviewRepository.save(review);
     }
+    parseLeaveDayFraction(raw) {
+        const n = raw === undefined || raw === null || raw === '' ? 1 : Number(raw);
+        if (!Number.isFinite(n)) {
+            throw new common_1.BadRequestException('dayFraction must be 0.5 or 1');
+        }
+        if (n === 1)
+            return 1;
+        if (n === 0.5)
+            return 0.5;
+        throw new common_1.BadRequestException('dayFraction must be 0.5 or 1');
+    }
+    parseLeaveKind(raw) {
+        const k = String(raw || '')
+            .trim()
+            .toUpperCase();
+        if (k === employee_leave_day_entity_1.EmployeeLeaveKind.PAID || k === employee_leave_day_entity_1.EmployeeLeaveKind.UNPAID || k === employee_leave_day_entity_1.EmployeeLeaveKind.ABSENT) {
+            return k;
+        }
+        throw new common_1.BadRequestException('leaveKind must be PAID, UNPAID, or ABSENT');
+    }
+    async getLeaveDays(employeeId) {
+        await this.findOne(employeeId);
+        return this.leaveDayRepository.find({
+            where: { employeeId, isActive: true },
+            order: { leaveDate: 'DESC' },
+        });
+    }
+    async createLeaveDay(employeeId, body, createdBy) {
+        await this.findOne(employeeId);
+        if (!body?.leaveDate) {
+            throw new common_1.BadRequestException('leaveDate is required');
+        }
+        const dayFraction = this.parseLeaveDayFraction(body.dayFraction);
+        const leaveKind = this.parseLeaveKind(body.leaveKind);
+        const row = this.leaveDayRepository.create({
+            employeeId,
+            leaveDate: body.leaveDate,
+            dayFraction,
+            leaveKind,
+            notes: body.notes?.trim() ? String(body.notes).trim() : null,
+            createdBy: createdBy ?? null,
+        });
+        try {
+            return await this.leaveDayRepository.save(row);
+        }
+        catch (e) {
+            if (e?.code === '23505') {
+                throw new common_1.ConflictException('An entry already exists for this date and leave type. Edit or remove the existing row first.');
+            }
+            throw e;
+        }
+    }
+    async updateLeaveDay(employeeId, leaveDayId, body, updatedBy) {
+        const row = await this.leaveDayRepository.findOne({
+            where: { id: leaveDayId, employeeId, isActive: true },
+        });
+        if (!row)
+            throw new common_1.NotFoundException('Leave day not found');
+        if (body.leaveDate !== undefined) {
+            if (!body.leaveDate)
+                throw new common_1.BadRequestException('leaveDate cannot be empty');
+            row.leaveDate = body.leaveDate;
+        }
+        if (body.dayFraction !== undefined) {
+            row.dayFraction = this.parseLeaveDayFraction(body.dayFraction);
+        }
+        if (body.leaveKind !== undefined) {
+            row.leaveKind = this.parseLeaveKind(body.leaveKind);
+        }
+        if (body.notes !== undefined) {
+            row.notes = body.notes?.trim() ? String(body.notes).trim() : null;
+        }
+        row.updatedBy = updatedBy ?? null;
+        try {
+            return await this.leaveDayRepository.save(row);
+        }
+        catch (e) {
+            if (e?.code === '23505') {
+                throw new common_1.ConflictException('Another entry already uses this date and leave type. Choose a different date or kind.');
+            }
+            throw e;
+        }
+    }
+    async deleteLeaveDay(employeeId, leaveDayId) {
+        const row = await this.leaveDayRepository.findOne({
+            where: { id: leaveDayId, employeeId, isActive: true },
+        });
+        if (!row)
+            throw new common_1.NotFoundException('Leave day not found');
+        row.isActive = false;
+        await this.leaveDayRepository.save(row);
+    }
     async getStatistics() {
         const total = await this.employeesRepository.count({
             where: { isActive: true },
@@ -286,7 +380,9 @@ exports.EmployeesService = EmployeesService = EmployeesService_1 = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(employee_entity_1.Employee)),
     __param(1, (0, typeorm_1.InjectRepository)(employee_feedback_entity_1.EmployeeFeedback)),
     __param(2, (0, typeorm_1.InjectRepository)(employee_review_entity_1.EmployeeReview)),
+    __param(3, (0, typeorm_1.InjectRepository)(employee_leave_day_entity_1.EmployeeLeaveDay)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         users_service_1.UsersService,

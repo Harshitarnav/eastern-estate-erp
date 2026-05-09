@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Tower } from '@/services/towers.service';
 import { propertiesService } from '@/services/properties.service';
+import { parseApiError } from '@/utils/error-handler';
 
 interface TowerFormProps {
   tower?: Tower | null;
@@ -99,11 +100,9 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
         numberOfLifts: Math.max(formData.numberOfLifts ?? 1, 1),
       });
     } catch (err: any) {
-      const apiMessage =
-        err?.response?.data?.message ||
-        err?.response?.data?.errors?.join?.(', ') ||
-        err?.message;
-      setError(apiMessage || 'Failed to save tower');
+      const { title, details } = parseApiError(err);
+      const msg = details.length ? `${title}\n• ${details.join('\n• ')}` : title;
+      setError(msg || 'Failed to save tower');
     } finally {
       setLoading(false);
     }
@@ -154,7 +153,7 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 whitespace-pre-line">
               {error}
             </div>
           )}

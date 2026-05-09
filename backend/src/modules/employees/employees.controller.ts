@@ -42,7 +42,7 @@ export class EmployeesController {
    * Requires: HR, Admin, or Super Admin role
    */
   @Post()
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeesService.create(createEmployeeDto);
   }
@@ -84,7 +84,7 @@ export class EmployeesController {
    * Requires: HR, Admin, or Super Admin role
    */
   @Patch(':id')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(id, updateEmployeeDto);
   }
@@ -94,7 +94,7 @@ export class EmployeesController {
    * Requires: HR, Admin, or Super Admin role
    */
   @Put(':id')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   replace(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
     return this.employeesService.update(id, updateEmployeeDto);
   }
@@ -117,19 +117,19 @@ export class EmployeesController {
   }
 
   @Post(':id/feedback')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   createFeedback(@Param('id') id: string, @Body() body: any, @Request() req: any) {
     return this.employeesService.createFeedback(id, body, req.user?.id);
   }
 
   @Patch(':id/feedback/:feedbackId')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   updateFeedback(@Param('id') id: string, @Param('feedbackId') feedbackId: string, @Body() body: any, @Request() req: any) {
     return this.employeesService.updateFeedback(id, feedbackId, body, req.user?.id);
   }
 
   @Delete(':id/feedback/:feedbackId')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   deleteFeedback(@Param('id') id: string, @Param('feedbackId') feedbackId: string) {
     return this.employeesService.deleteFeedback(id, feedbackId);
   }
@@ -142,20 +142,50 @@ export class EmployeesController {
   }
 
   @Post(':id/reviews')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   createReview(@Param('id') id: string, @Body() body: any, @Request() req: any) {
     return this.employeesService.createReview(id, body, req.user?.id);
   }
 
   @Patch(':id/reviews/:reviewId')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   updateReview(@Param('id') id: string, @Param('reviewId') reviewId: string, @Body() body: any, @Request() req: any) {
     return this.employeesService.updateReview(id, reviewId, body, req.user?.id);
   }
 
   @Delete(':id/reviews/:reviewId')
-  @Roles('hr', 'admin', 'super_admin')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
   deleteReview(@Param('id') id: string, @Param('reviewId') reviewId: string) {
     return this.employeesService.deleteReview(id, reviewId);
+  }
+
+  // ─── Leave days (calendar dates) ─────────────────────────────────────────
+
+  @Get(':id/leave-days')
+  getLeaveDays(@Param('id') id: string) {
+    return this.employeesService.getLeaveDays(id);
+  }
+
+  @Post(':id/leave-days')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
+  createLeaveDay(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    return this.employeesService.createLeaveDay(id, body, req.user?.id);
+  }
+
+  @Patch(':id/leave-days/:leaveDayId')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
+  updateLeaveDay(
+    @Param('id') id: string,
+    @Param('leaveDayId') leaveDayId: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
+    return this.employeesService.updateLeaveDay(id, leaveDayId, body, req.user?.id);
+  }
+
+  @Delete(':id/leave-days/:leaveDayId')
+  @Roles('hr', 'hr_manager', 'admin', 'super_admin')
+  deleteLeaveDay(@Param('id') id: string, @Param('leaveDayId') leaveDayId: string) {
+    return this.employeesService.deleteLeaveDay(id, leaveDayId);
   }
 }

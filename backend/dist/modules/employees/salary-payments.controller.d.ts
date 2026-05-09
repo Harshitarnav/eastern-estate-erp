@@ -1,4 +1,4 @@
-import { SalaryPaymentsService, CreateSalaryPaymentDto } from './salary-payments.service';
+import { SalaryPaymentsService, CreateSalaryPaymentDto, UpdateSalaryPaymentDto } from './salary-payments.service';
 export declare class SalaryPaymentsController {
     private readonly salaryPaymentsService;
     constructor(salaryPaymentsService: SalaryPaymentsService);
@@ -22,6 +22,7 @@ export declare class SalaryPaymentsController {
         paymentRemarks?: string;
         propertyId?: string;
     }, req: any): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
+    update(id: string, dto: UpdateSalaryPaymentDto, req: any): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
     cancel(id: string): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
     reversePay(id: string, req: any): Promise<import("./entities/salary-payment.entity").SalaryPayment>;
     retryJE(id: string, req: any): Promise<{

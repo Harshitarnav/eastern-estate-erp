@@ -514,7 +514,9 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       label: 'Casual Leave Balance',
       type: 'number',
       required: false,
-      placeholder: 'e.g., 10',
+      placeholder: 'e.g., 10 or 9.5',
+      step: '0.5',
+      helperText: 'You can use half days (e.g. 1.5).',
     },
     {
       name: 'sickLeaveBalance',
@@ -522,6 +524,7 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'number',
       required: false,
       placeholder: 'e.g., 7',
+      step: '0.5',
     },
     {
       name: 'earnedLeaveBalance',
@@ -529,13 +532,15 @@ export default function EmployeeForm({ onSubmit, initialData, onCancel }: Employ
       type: 'number',
       required: false,
       placeholder: 'e.g., 15',
+      step: '0.5',
     },
     {
       name: 'leaveTaken',
       label: 'Leave Taken (This Year)',
       type: 'number',
       required: false,
-      placeholder: 'e.g., 5',
+      placeholder: 'e.g., 5 or 4.5',
+      step: '0.5',
     },
     {
       name: 'totalPresent',

@@ -31,6 +31,11 @@ export interface CreateSalaryPaymentDto {
   notes?: string;
 }
 
+/** Fields allowed when correcting a pending salary row (month/employee are fixed). */
+export type UpdateSalaryPaymentDto = Partial<
+  Omit<CreateSalaryPaymentDto, 'employeeId' | 'paymentMonth'>
+>;
+
 @Injectable()
 export class SalaryPaymentsService {
   constructor(
@@ -92,6 +97,73 @@ export class SalaryPaymentsService {
     });
 
     return this.salaryPaymentRepo.save(payment);
+  }
+
+  /**
+   * Update a pending salary record (attendance, leave days, amounts). Recalculates gross/net.
+   */
+  async updatePending(id: string, dto: UpdateSalaryPaymentDto, updatedBy: string): Promise<SalaryPayment> {
+    const sp = await this.findOne(id);
+
+    if (sp.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException('Only pending salary records can be edited.');
+    }
+
+    const pick = (incoming: number | string | undefined | null, current: number): number => {
+      if (incoming === undefined || incoming === null || incoming === '') {
+        return current;
+      }
+      const n = Number(incoming);
+      return Number.isFinite(n) ? n : current;
+    };
+
+    sp.workingDays = pick(dto.workingDays, Number(sp.workingDays));
+    sp.presentDays = pick(dto.presentDays, Number(sp.presentDays));
+    sp.absentDays = pick(dto.absentDays, Number(sp.absentDays));
+    sp.paidLeaveDays = pick(dto.paidLeaveDays, Number(sp.paidLeaveDays));
+    sp.unpaidLeaveDays = pick(dto.unpaidLeaveDays, Number(sp.unpaidLeaveDays));
+    sp.overtimeHours = pick(dto.overtimeHours, Number(sp.overtimeHours ?? 0));
+
+    sp.basicSalary = pick(dto.basicSalary, Number(sp.basicSalary));
+    sp.houseRentAllowance = pick(dto.houseRentAllowance, Number(sp.houseRentAllowance));
+    sp.transportAllowance = pick(dto.transportAllowance, Number(sp.transportAllowance));
+    sp.medicalAllowance = pick(dto.medicalAllowance, Number(sp.medicalAllowance));
+    sp.overtimePayment = pick(dto.overtimePayment, Number(sp.overtimePayment ?? 0));
+    sp.otherAllowances = pick(dto.otherAllowances, Number(sp.otherAllowances));
+
+    sp.pfDeduction = pick(dto.pfDeduction, Number(sp.pfDeduction));
+    sp.esiDeduction = pick(dto.esiDeduction, Number(sp.esiDeduction));
+    sp.taxDeduction = pick(dto.taxDeduction, Number(sp.taxDeduction));
+    sp.advanceDeduction = pick(dto.advanceDeduction, Number(sp.advanceDeduction));
+    sp.loanDeduction = pick(dto.loanDeduction, Number(sp.loanDeduction));
+    sp.otherDeductions = pick(dto.otherDeductions, Number(sp.otherDeductions));
+
+    if (dto.notes !== undefined) {
+      sp.notes = dto.notes ?? null;
+    }
+
+    const grossSalary =
+      Number(sp.basicSalary) +
+      Number(sp.houseRentAllowance || 0) +
+      Number(sp.transportAllowance || 0) +
+      Number(sp.medicalAllowance || 0) +
+      Number(sp.overtimePayment || 0) +
+      Number(sp.otherAllowances || 0);
+
+    const totalDeductions =
+      Number(sp.pfDeduction || 0) +
+      Number(sp.esiDeduction || 0) +
+      Number(sp.taxDeduction || 0) +
+      Number(sp.advanceDeduction || 0) +
+      Number(sp.loanDeduction || 0) +
+      Number(sp.otherDeductions || 0);
+
+    sp.grossSalary = grossSalary;
+    sp.totalDeductions = totalDeductions;
+    sp.netSalary = Math.round((grossSalary - totalDeductions) * 100) / 100;
+    sp.updatedBy = updatedBy;
+
+    return this.salaryPaymentRepo.save(sp);
   }
 
   async findAll(filters?: { employeeId?: string; month?: string; status?: string }): Promise<SalaryPayment[]> {

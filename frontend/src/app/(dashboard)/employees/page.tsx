@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Plus, Search, Mail, Phone, Briefcase, UserCog, Shield, User } from 'lucide-react';
+import { Users, Plus, Search, Mail, Phone, Briefcase, UserCog, Shield, User, CalendarDays } from 'lucide-react';
 import { employeesService, Employee, EmployeeFilters } from '@/services/employees.service';
+import { describeLeaveDays, formatLeaveNumeric } from '@/utils/leave-display';
 
 export default function EmployeesPage() {
   const router = useRouter();
@@ -21,9 +22,46 @@ export default function EmployeesPage() {
     totalPages: 0,
   });
 
+  /** Paid + unpaid leave days summed across all payroll months (per employee on this page). */
+  const [payrollLeaveYtd, setPayrollLeaveYtd] = useState<
+    Record<string, { paid: number; unpaid: number }>
+  >({});
+  const [payrollYtdLoading, setPayrollYtdLoading] = useState(false);
+
   useEffect(() => {
     fetchEmployees();
   }, [filters]);
+
+  useEffect(() => {
+    if (!employees.length) {
+      setPayrollLeaveYtd({});
+      setPayrollYtdLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setPayrollYtdLoading(true);
+    (async () => {
+      const pairs = await Promise.all(
+        employees.map(async (e) => {
+          try {
+            const rows = await employeesService.getPayrollLeaveRecords(e.id);
+            const paid = rows.reduce((s, r) => s + r.paidLeaveDays, 0);
+            const unpaid = rows.reduce((s, r) => s + r.unpaidLeaveDays, 0);
+            return [e.id, { paid, unpaid }] as const;
+          } catch {
+            return [e.id, { paid: 0, unpaid: 0 }] as const;
+          }
+        }),
+      );
+      if (!cancelled) {
+        setPayrollLeaveYtd(Object.fromEntries(pairs));
+        setPayrollYtdLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [employees]);
 
   const fetchEmployees = async () => {
     try {
@@ -344,19 +382,52 @@ export default function EmployeesPage() {
                   {(employee.casualLeaveBalance !== undefined || employee.sickLeaveBalance !== undefined) && (
                     <div className="pt-3 border-t mt-3">
                       <p className="text-xs text-gray-500 mb-1">Leave Balance</p>
-                      <div className="flex gap-2 text-xs">
+                      <div className="flex gap-2 text-xs flex-wrap">
                         <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded">
-                          CL: {employee.casualLeaveBalance || 0}
+                          CL: {formatLeaveNumeric(Number(employee.casualLeaveBalance ?? 0))}
                         </span>
                         <span className="px-2 py-1 bg-green-50 text-green-700 rounded">
-                          SL: {employee.sickLeaveBalance || 0}
+                          SL: {formatLeaveNumeric(Number(employee.sickLeaveBalance ?? 0))}
                         </span>
                         <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded">
-                          EL: {employee.earnedLeaveBalance || 0}
+                          EL: {formatLeaveNumeric(Number(employee.earnedLeaveBalance ?? 0))}
                         </span>
                       </div>
                     </div>
                   )}
+
+                  <div className="pt-3 border-t mt-3">
+                    <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+                      Leave from payroll (monthly detail on profile)
+                    </p>
+                    {payrollYtdLoading ? (
+                      <p className="text-xs text-gray-400">Loading payroll history…</p>
+                    ) : (() => {
+                        const ytd = payrollLeaveYtd[employee.id];
+                        if (!ytd || (ytd.paid <= 0 && ytd.unpaid <= 0)) {
+                          return (
+                            <p className="text-xs text-gray-500">
+                              No leave recorded in payroll yet. Add or edit a monthly salary in Payroll (paid /
+                              unpaid leave, including 0.5 for half days).
+                            </p>
+                          );
+                        }
+                        const comb = ytd.paid + ytd.unpaid;
+                        return (
+                          <div className="rounded-md bg-amber-50/80 border border-amber-100 px-2 py-1.5 text-xs text-gray-800">
+                            <p className="mt-0.5">
+                              <span className="font-semibold text-amber-950">{describeLeaveDays(comb)}</span>
+                              <span className="text-gray-600">
+                                {' '}
+                                = {formatLeaveNumeric(comb)} day units (
+                                {formatLeaveNumeric(ytd.paid)} paid + {formatLeaveNumeric(ytd.unpaid)} unpaid)
+                              </span>
+                            </p>
+                          </div>
+                        );
+                      })()}
+                  </div>
 
                   <div className="flex gap-2 mt-4">
                     <button

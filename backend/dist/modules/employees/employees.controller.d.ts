@@ -26,4 +26,8 @@ export declare class EmployeesController {
     createReview(id: string, body: any, req: any): Promise<import("./entities/employee-review.entity").EmployeeReview>;
     updateReview(id: string, reviewId: string, body: any, req: any): Promise<import("./entities/employee-review.entity").EmployeeReview>;
     deleteReview(id: string, reviewId: string): Promise<void>;
+    getLeaveDays(id: string): Promise<import("./entities/employee-leave-day.entity").EmployeeLeaveDay[]>;
+    createLeaveDay(id: string, body: any, req: any): Promise<import("./entities/employee-leave-day.entity").EmployeeLeaveDay>;
+    updateLeaveDay(id: string, leaveDayId: string, body: any, req: any): Promise<import("./entities/employee-leave-day.entity").EmployeeLeaveDay>;
+    deleteLeaveDay(id: string, leaveDayId: string): Promise<void>;
 }

@@ -218,16 +218,16 @@ export class Employee {
   emergencyContactRelation: string;
 
   // Leave Management
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 7, scale: 2, default: 0 })
   casualLeaveBalance: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 7, scale: 2, default: 0 })
   sickLeaveBalance: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 7, scale: 2, default: 0 })
   earnedLeaveBalance: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column('decimal', { precision: 7, scale: 2, default: 0 })
   leaveTaken: number;
 
   // Attendance

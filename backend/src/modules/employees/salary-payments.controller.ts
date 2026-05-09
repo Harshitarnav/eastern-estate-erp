@@ -10,7 +10,11 @@ import {
   Request,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { SalaryPaymentsService, CreateSalaryPaymentDto } from './salary-payments.service';
+import {
+  SalaryPaymentsService,
+  CreateSalaryPaymentDto,
+  UpdateSalaryPaymentDto,
+} from './salary-payments.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('employees/salary-payments')
@@ -62,6 +66,12 @@ export class SalaryPaymentsController {
     @Request() req,
   ) {
     return this.salaryPaymentsService.processPay(id, req.user.userId, body);
+  }
+
+  /** Update a pending salary record (attendance, leave days, salary amounts) */
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateSalaryPaymentDto, @Request() req) {
+    return this.salaryPaymentsService.updatePending(id, dto, req.user.userId);
   }
 
   /** Cancel a pending salary payment */

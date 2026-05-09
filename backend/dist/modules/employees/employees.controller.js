@@ -71,11 +71,23 @@ let EmployeesController = class EmployeesController {
     deleteReview(id, reviewId) {
         return this.employeesService.deleteReview(id, reviewId);
     }
+    getLeaveDays(id) {
+        return this.employeesService.getLeaveDays(id);
+    }
+    createLeaveDay(id, body, req) {
+        return this.employeesService.createLeaveDay(id, body, req.user?.id);
+    }
+    updateLeaveDay(id, leaveDayId, body, req) {
+        return this.employeesService.updateLeaveDay(id, leaveDayId, body, req.user?.id);
+    }
+    deleteLeaveDay(id, leaveDayId) {
+        return this.employeesService.deleteLeaveDay(id, leaveDayId);
+    }
 };
 exports.EmployeesController = EmployeesController;
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [dto_1.CreateEmployeeDto]),
@@ -109,7 +121,7 @@ __decorate([
 ], EmployeesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -118,7 +130,7 @@ __decorate([
 ], EmployeesController.prototype, "update", null);
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -142,7 +154,7 @@ __decorate([
 ], EmployeesController.prototype, "getFeedback", null);
 __decorate([
     (0, common_1.Post)(':id/feedback'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),
@@ -152,7 +164,7 @@ __decorate([
 ], EmployeesController.prototype, "createFeedback", null);
 __decorate([
     (0, common_1.Patch)(':id/feedback/:feedbackId'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('feedbackId')),
     __param(2, (0, common_1.Body)()),
@@ -163,7 +175,7 @@ __decorate([
 ], EmployeesController.prototype, "updateFeedback", null);
 __decorate([
     (0, common_1.Delete)(':id/feedback/:feedbackId'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('feedbackId')),
     __metadata("design:type", Function),
@@ -179,7 +191,7 @@ __decorate([
 ], EmployeesController.prototype, "getReviews", null);
 __decorate([
     (0, common_1.Post)(':id/reviews'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),
@@ -189,7 +201,7 @@ __decorate([
 ], EmployeesController.prototype, "createReview", null);
 __decorate([
     (0, common_1.Patch)(':id/reviews/:reviewId'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('reviewId')),
     __param(2, (0, common_1.Body)()),
@@ -200,13 +212,50 @@ __decorate([
 ], EmployeesController.prototype, "updateReview", null);
 __decorate([
     (0, common_1.Delete)(':id/reviews/:reviewId'),
-    (0, roles_decorator_1.Roles)('hr', 'admin', 'super_admin'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Param)('reviewId')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], EmployeesController.prototype, "deleteReview", null);
+__decorate([
+    (0, common_1.Get)(':id/leave-days'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "getLeaveDays", null);
+__decorate([
+    (0, common_1.Post)(':id/leave-days'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "createLeaveDay", null);
+__decorate([
+    (0, common_1.Patch)(':id/leave-days/:leaveDayId'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('leaveDayId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, Object]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "updateLeaveDay", null);
+__decorate([
+    (0, common_1.Delete)(':id/leave-days/:leaveDayId'),
+    (0, roles_decorator_1.Roles)('hr', 'hr_manager', 'admin', 'super_admin'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('leaveDayId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", void 0)
+], EmployeesController.prototype, "deleteLeaveDay", null);
 exports.EmployeesController = EmployeesController = __decorate([
     (0, common_1.Controller)('employees'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),

@@ -48,6 +48,22 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
         response.status(status).json(errorResponse);
     }
     getErrorMessage(message, status) {
+        if (typeof message === 'object' && message.message) {
+            if (Array.isArray(message.message)) {
+                const parts = message.message
+                    .map((m) => (typeof m === 'string' ? m : m?.constraints ? Object.values(m.constraints).join('. ') : String(m)))
+                    .filter(Boolean);
+                if (parts.length > 0) {
+                    return parts.join('. ');
+                }
+            }
+            if (typeof message.message === 'string') {
+                return message.message;
+            }
+        }
+        if (typeof message === 'string') {
+            return message;
+        }
         const errorMessages = {
             400: 'Invalid input. Please check your data and try again.',
             401: 'Authentication required. Please log in to continue.',
@@ -59,15 +75,6 @@ let AllExceptionsFilter = AllExceptionsFilter_1 = class AllExceptionsFilter {
             500: 'Something went wrong on our end. Please try again later.',
             503: 'Service temporarily unavailable. Please try again later.',
         };
-        if (typeof message === 'object' && message.message) {
-            if (Array.isArray(message.message)) {
-                return 'Please fix the following errors and try again.';
-            }
-            return message.message;
-        }
-        if (typeof message === 'string') {
-            return message;
-        }
         return errorMessages[status] || 'An error occurred. Please try again.';
     }
     getValidationErrors(message) {

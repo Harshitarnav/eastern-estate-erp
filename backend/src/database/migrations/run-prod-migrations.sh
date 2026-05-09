@@ -154,9 +154,15 @@ run_migration "$MIGRATIONS_DIR/v016_construction_flat_progress_project_id.sql"
 
 echo ""
 echo "======================================================"
-echo " STEP 18: CONSTRUCTION_FLAT_PROGRESS phase / progress columns"
+echo " STEP 19: LEAVE BALANCES & PAYROLL HALF-DAY COLUMNS"
 echo "======================================================"
-run_migration "$MIGRATIONS_DIR/v017_construction_flat_progress_phase_columns.sql"
+run_migration "$MIGRATIONS_DIR/019_leave_balances_and_payroll_half_days.sql"
+
+echo ""
+echo "======================================================"
+echo " STEP 20: EMPLOYEE LEAVE DAY LEDGER (calendar dates)"
+echo "======================================================"
+run_migration "$MIGRATIONS_DIR/020_employee_leave_days.sql"
 
 echo ""
 echo "======================================================"

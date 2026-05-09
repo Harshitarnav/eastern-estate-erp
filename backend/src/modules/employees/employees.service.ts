@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Employee, EmploymentStatus } from './entities/employee.entity';
 import { EmployeeFeedback } from './entities/employee-feedback.entity';
 import { EmployeeReview } from './entities/employee-review.entity';
+import { EmployeeLeaveDay, EmployeeLeaveKind } from './entities/employee-leave-day.entity';
 import {
   CreateEmployeeDto,
   UpdateEmployeeDto,
@@ -25,6 +32,8 @@ export class EmployeesService {
     private feedbackRepository: Repository<EmployeeFeedback>,
     @InjectRepository(EmployeeReview)
     private reviewRepository: Repository<EmployeeReview>,
+    @InjectRepository(EmployeeLeaveDay)
+    private leaveDayRepository: Repository<EmployeeLeaveDay>,
     private usersService: UsersService,
     private notificationsService: NotificationsService,
   ) {}
@@ -324,6 +333,112 @@ export class EmployeesService {
     if (!review) throw new NotFoundException('Review not found');
     review.isActive = false;
     await this.reviewRepository.save(review);
+  }
+
+  // ─── Leave days (per calendar date) ───────────────────────────────────────
+
+  private parseLeaveDayFraction(raw: unknown): number {
+    const n = raw === undefined || raw === null || raw === '' ? 1 : Number(raw);
+    if (!Number.isFinite(n)) {
+      throw new BadRequestException('dayFraction must be 0.5 or 1');
+    }
+    if (n === 1) return 1;
+    if (n === 0.5) return 0.5;
+    throw new BadRequestException('dayFraction must be 0.5 or 1');
+  }
+
+  private parseLeaveKind(raw: unknown): EmployeeLeaveKind {
+    const k = String(raw || '')
+      .trim()
+      .toUpperCase();
+    if (k === EmployeeLeaveKind.PAID || k === EmployeeLeaveKind.UNPAID || k === EmployeeLeaveKind.ABSENT) {
+      return k as EmployeeLeaveKind;
+    }
+    throw new BadRequestException('leaveKind must be PAID, UNPAID, or ABSENT');
+  }
+
+  async getLeaveDays(employeeId: string): Promise<EmployeeLeaveDay[]> {
+    await this.findOne(employeeId);
+    return this.leaveDayRepository.find({
+      where: { employeeId, isActive: true },
+      order: { leaveDate: 'DESC' },
+    });
+  }
+
+  async createLeaveDay(
+    employeeId: string,
+    body: { leaveDate: string; dayFraction?: number; leaveKind: string; notes?: string | null },
+    createdBy?: string,
+  ): Promise<EmployeeLeaveDay> {
+    await this.findOne(employeeId);
+    if (!body?.leaveDate) {
+      throw new BadRequestException('leaveDate is required');
+    }
+    const dayFraction = this.parseLeaveDayFraction(body.dayFraction);
+    const leaveKind = this.parseLeaveKind(body.leaveKind);
+    const row = this.leaveDayRepository.create({
+      employeeId,
+      leaveDate: body.leaveDate as any,
+      dayFraction,
+      leaveKind,
+      notes: body.notes?.trim() ? String(body.notes).trim() : null,
+      createdBy: createdBy ?? null,
+    });
+    try {
+      return await this.leaveDayRepository.save(row);
+    } catch (e: any) {
+      if (e?.code === '23505') {
+        throw new ConflictException(
+          'An entry already exists for this date and leave type. Edit or remove the existing row first.',
+        );
+      }
+      throw e;
+    }
+  }
+
+  async updateLeaveDay(
+    employeeId: string,
+    leaveDayId: string,
+    body: { leaveDate?: string; dayFraction?: number; leaveKind?: string; notes?: string | null },
+    updatedBy?: string,
+  ): Promise<EmployeeLeaveDay> {
+    const row = await this.leaveDayRepository.findOne({
+      where: { id: leaveDayId, employeeId, isActive: true },
+    });
+    if (!row) throw new NotFoundException('Leave day not found');
+    if (body.leaveDate !== undefined) {
+      if (!body.leaveDate) throw new BadRequestException('leaveDate cannot be empty');
+      row.leaveDate = body.leaveDate as any;
+    }
+    if (body.dayFraction !== undefined) {
+      row.dayFraction = this.parseLeaveDayFraction(body.dayFraction);
+    }
+    if (body.leaveKind !== undefined) {
+      row.leaveKind = this.parseLeaveKind(body.leaveKind);
+    }
+    if (body.notes !== undefined) {
+      row.notes = body.notes?.trim() ? String(body.notes).trim() : null;
+    }
+    row.updatedBy = updatedBy ?? null;
+    try {
+      return await this.leaveDayRepository.save(row);
+    } catch (e: any) {
+      if (e?.code === '23505') {
+        throw new ConflictException(
+          'Another entry already uses this date and leave type. Choose a different date or kind.',
+        );
+      }
+      throw e;
+    }
+  }
+
+  async deleteLeaveDay(employeeId: string, leaveDayId: string): Promise<void> {
+    const row = await this.leaveDayRepository.findOne({
+      where: { id: leaveDayId, employeeId, isActive: true },
+    });
+    if (!row) throw new NotFoundException('Leave day not found');
+    row.isActive = false;
+    await this.leaveDayRepository.save(row);
   }
 
   async getStatistics() {
