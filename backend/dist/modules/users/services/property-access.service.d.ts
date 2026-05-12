@@ -2,6 +2,7 @@ import { Repository } from 'typeorm';
 import { UserPropertyAccess, PropertyRole } from '../entities/user-property-access.entity';
 import { User } from '../entities/user.entity';
 import { Property } from '../../properties/entities/property.entity';
+import { Booking } from '../../bookings/entities/booking.entity';
 export interface GrantAccessDto {
     userId: string;
     propertyId: string;
@@ -16,9 +17,12 @@ export declare class PropertyAccessService {
     private propertyAccessRepo;
     private userRepo;
     private propertyRepo;
+    private bookingRepo;
     private readonly logger;
-    constructor(propertyAccessRepo: Repository<UserPropertyAccess>, userRepo: Repository<User>, propertyRepo: Repository<Property>);
+    constructor(propertyAccessRepo: Repository<UserPropertyAccess>, userRepo: Repository<User>, propertyRepo: Repository<Property>, bookingRepo: Repository<Booking>);
     getUserProperties(userId: string): Promise<UserPropertyAccess[]>;
+    getUserCustomerId(userId: string): Promise<string | null>;
+    getPropertyIdsForCustomerBookings(customerId: string): Promise<string[]>;
     getPropertyUsers(propertyId: string): Promise<UserPropertyAccess[]>;
     grantAccess(userId: string, propertyId: string, role: PropertyRole, assignedBy: string): Promise<UserPropertyAccess>;
     revokeAccess(userId: string, propertyId: string, role?: PropertyRole): Promise<void>;

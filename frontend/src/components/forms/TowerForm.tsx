@@ -63,7 +63,7 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
 
   const fetchProperties = async () => {
     try {
-      const response = await propertiesService.getProperties({ isActive: true });
+      const response = await propertiesService.getProperties();
       setProperties(response.data);
     } catch (err) {
       console.error('Error fetching properties:', err);

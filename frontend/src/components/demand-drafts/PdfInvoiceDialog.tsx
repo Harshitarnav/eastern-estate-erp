@@ -41,10 +41,13 @@ export function PdfInvoiceDialog({
   open,
   onOpenChange,
   draft,
+  onSuccessfulExport,
 }: {
   open: boolean;
   onOpenChange: (next: boolean) => void;
   draft: DemandDraft | null;
+  /** Called after the PDF file is generated and the download has started. */
+  onSuccessfulExport?: () => void | Promise<void>;
 }) {
   const [generating, setGenerating] = useState(false);
   const [fields, setFields] = useState({
@@ -167,6 +170,7 @@ export function PdfInvoiceDialog({
 
       generateDemandInvoicePdf(invoiceData);
       toast.success('PDF downloaded!');
+      await onSuccessfulExport?.();
       onOpenChange(false);
     } catch (err) {
       console.error(err);

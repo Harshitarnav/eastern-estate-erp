@@ -12,8 +12,8 @@ var MailService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MailService = void 0;
 const common_1 = require("@nestjs/common");
-const nodemailer = require("nodemailer");
 const settings_service_1 = require("../../modules/settings/settings.service");
+const company_smtp_transport_1 = require("./company-smtp-transport");
 let MailService = MailService_1 = class MailService {
     constructor(settingsService) {
         this.settingsService = settingsService;
@@ -26,14 +26,14 @@ let MailService = MailService_1 = class MailService {
                 `Go to Settings → Company to configure SMTP.`);
             return { accepted: [], skipped: true };
         }
-        const transporter = nodemailer.createTransport({
-            host: settings.smtpHost,
-            port: settings.smtpPort ?? 587,
-            secure: (settings.smtpPort ?? 587) === 465,
-            auth: {
-                user: settings.smtpUser,
-                pass: settings.smtpPass ?? '',
-            },
+        const smtpPass = (0, company_smtp_transport_1.normalizeSmtpPassword)(settings.smtpPass);
+        if (!smtpPass) {
+            this.logger.warn(`SMTP password missing - email to ${options.to} was NOT sent. Save an App Password under Company Settings.`);
+            return { accepted: [], skipped: true };
+        }
+        const transporter = (0, company_smtp_transport_1.createCompanySmtpTransporter)({
+            ...settings,
+            smtpPass,
         });
         const fromAddress = settings.smtpFrom || settings.smtpUser;
         const fromName = settings.companyName || 'Eastern Estate';
@@ -41,6 +41,7 @@ let MailService = MailService_1 = class MailService {
             const info = await transporter.sendMail({
                 from: `"${fromName}" <${fromAddress}>`,
                 to: options.to,
+                bcc: options.bcc || undefined,
                 subject: options.subject,
                 html: options.html,
                 text: options.text,

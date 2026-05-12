@@ -47,49 +47,52 @@ let PropertyAccessGuard = PropertyAccessGuard_1 = class PropertyAccessGuard {
             request.accessiblePropertyIds = null;
             return true;
         }
-        if (userRoles.includes('head_accountant')) {
-            this.logger.debug(`User ${user.email} is head_accountant - full property bypass`);
-            request.isGlobalAdmin = true;
-            request.accessiblePropertyIds = null;
+        const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
+        if (userPropertyIds && userPropertyIds.length > 0) {
+            request.isGlobalAdmin = false;
+            request.accessiblePropertyIds = userPropertyIds;
+            const propertyId = request.params?.propertyId ||
+                request.query?.propertyId ||
+                request.body?.propertyId;
+            if (!propertyId) {
+                this.logger.debug(`No propertyId in request — user scoped to ${userPropertyIds.length} assigned project(s)`);
+                return true;
+            }
+            const hasAccess = await this.propertyAccessService.hasAccess(user.id, propertyId, requiredRoles);
+            if (!hasAccess) {
+                this.logger.warn(`User ${user.email} does not have access to property ${propertyId}`);
+                throw new common_1.ForbiddenException('You do not have access to this property');
+            }
+            const accesses = await this.propertyAccessService.getUserProperties(user.id);
+            request.propertyAccess = accesses.find((a) => a.propertyId === propertyId);
+            this.logger.debug(`User ${user.email} has ${request.propertyAccess?.role} access to property ${propertyId}`);
             return true;
         }
         if (userRoles.includes('customer')) {
-            this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);
+            const customerId = await this.propertyAccessService.getUserCustomerId(user.id);
+            if (!customerId) {
+                this.logger.debug(`User ${user.email} is customer with no linked profile — empty property scope`);
+                request.isGlobalAdmin = false;
+                request.accessiblePropertyIds = [];
+                return true;
+            }
+            const customerPropertyIds = await this.propertyAccessService.getPropertyIdsForCustomerBookings(customerId);
+            this.logger.debug(`User ${user.email} is customer — scoped to ${customerPropertyIds.length} booking project(s)`);
+            request.isGlobalAdmin = false;
+            request.accessiblePropertyIds = customerPropertyIds;
             return true;
         }
-        const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
-        const isPrivilegedRole = userRoles.includes('admin') || userRoles.includes('hr');
-        if (isPrivilegedRole && (!userPropertyIds || userPropertyIds.length === 0)) {
-            this.logger.debug(`User ${user.email} has ${userRoles.join(',')} role with no assignments - full bypass`);
+        const isPrivilegedWideRole = userRoles.includes('head_accountant') ||
+            userRoles.includes('admin') ||
+            userRoles.includes('hr');
+        if (isPrivilegedWideRole) {
+            this.logger.debug(`User ${user.email} has wide role (${userRoles.join(',')}) with no assignments — full bypass`);
             request.isGlobalAdmin = true;
             request.accessiblePropertyIds = null;
             return true;
         }
-        if (!userPropertyIds || userPropertyIds.length === 0) {
-            this.logger.warn(`User ${user.email} has no property access - denying request`);
-            throw new common_1.ForbiddenException('You have not been assigned to any projects yet. Please contact your administrator.');
-        }
-        request.isGlobalAdmin = false;
-        request.accessiblePropertyIds = userPropertyIds;
-        const propertyId = request.params?.propertyId ||
-            request.query?.propertyId ||
-            request.body?.propertyId;
-        if (!propertyId) {
-            this.logger.debug(`No propertyId in request - user has access to ${userPropertyIds.length} properties`);
-            request.isGlobalAdmin = false;
-            return true;
-        }
-        const hasAccess = await this.propertyAccessService.hasAccess(user.id, propertyId, requiredRoles);
-        if (!hasAccess) {
-            this.logger.warn(`User ${user.email} does not have access to property ${propertyId}`);
-            throw new common_1.ForbiddenException('You do not have access to this property');
-        }
-        const accesses = await this.propertyAccessService.getUserProperties(user.id);
-        const propertyAccess = accesses.find((a) => a.propertyId === propertyId);
-        request.propertyAccess = propertyAccess;
-        request.isGlobalAdmin = false;
-        this.logger.debug(`User ${user.email} has ${propertyAccess?.role} access to property ${propertyId}`);
-        return true;
+        this.logger.warn(`User ${user.email} has no property access - denying request`);
+        throw new common_1.ForbiddenException('You have not been assigned to any projects yet. Please contact your administrator.');
     }
 };
 exports.PropertyAccessGuard = PropertyAccessGuard;

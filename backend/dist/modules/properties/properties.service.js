@@ -89,10 +89,15 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
     }
     async findAll(queryDto, access) {
         const { page = 1, limit = 10, search, city, state, status, projectType, projectId, sortBy = 'createdAt', sortOrder = 'DESC', isActive, } = queryDto;
-        const activeFilter = isActive ?? true;
-        const queryBuilder = this.propertiesRepository
-            .createQueryBuilder('property')
-            .where('property.isActive = :isActive', { isActive: activeFilter });
+        const scopedNonGlobal = access &&
+            !access.isGlobalAdmin &&
+            access.accessiblePropertyIds &&
+            access.accessiblePropertyIds.length > 0;
+        const activeFilter = isActive !== undefined && isActive !== null ? isActive : scopedNonGlobal ? undefined : true;
+        const queryBuilder = this.propertiesRepository.createQueryBuilder('property');
+        if (activeFilter !== undefined) {
+            queryBuilder.andWhere('property.isActive = :isActive', { isActive: activeFilter });
+        }
         if (access && !access.isGlobalAdmin) {
             const pids = access.accessiblePropertyIds;
             if (pids && pids.length > 0) {
@@ -456,21 +461,19 @@ let PropertiesService = PropertiesService_1 = class PropertiesService {
         await this.flatsRepository.update({ propertyId: id }, { isActive: updatedProperty.isActive });
         return this.mapToResponseDto(updatedProperty);
     }
-    async getStats(userId) {
+    async getStats(access) {
         let propertyIds = [];
-        if (userId) {
-            const isAdmin = await this.propertyAccessService.isGlobalAdmin(userId);
-            if (!isAdmin) {
-                propertyIds = await this.propertyAccessService.getUserPropertyIds(userId);
-                if (propertyIds.length === 0) {
-                    return {
-                        totalProperties: 0,
-                        activeProperties: 0,
-                        underConstruction: 0,
-                        completed: 0,
-                    };
-                }
+        if (access && !access.isGlobalAdmin) {
+            const ids = access.accessiblePropertyIds;
+            if (!ids || ids.length === 0) {
+                return {
+                    totalProperties: 0,
+                    activeProperties: 0,
+                    underConstruction: 0,
+                    completed: 0,
+                };
             }
+            propertyIds = ids;
         }
         const whereClause = propertyIds.length > 0
             ? { isActive: true, id: (0, typeorm_2.In)(propertyIds) }

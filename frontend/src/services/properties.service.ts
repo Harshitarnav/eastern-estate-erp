@@ -126,6 +126,20 @@ export interface PaginatedPropertyResponse {
   };
 }
 
+/** Normalize GET /properties (`PaginatedPropertyResponse` or legacy shapes) for dropdowns/lists. */
+export function propertyListFromResponse(
+  res:
+    | PaginatedPropertyResponse
+    | Partial<PaginatedPropertyResponse>
+    | Property[]
+    | null
+    | undefined,
+): Property[] {
+  if (res == null) return [];
+  if (Array.isArray(res)) return res;
+  return res.data ?? [];
+}
+
 export type DataCompletenessStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'NEEDS_REVIEW' | 'COMPLETE';
 
 export interface FlatSalesBreakdown {

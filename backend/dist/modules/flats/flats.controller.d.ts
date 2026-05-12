@@ -14,9 +14,6 @@ export declare class FlatsController {
     }>;
     create(createFlatDto: CreateFlatDto): Promise<FlatResponseDto>;
     findAll(query: QueryFlatDto, req: any): Promise<PaginatedFlatsResponse>;
-    findOne(id: string): Promise<FlatResponseDto>;
-    findByTower(towerId: string): Promise<FlatResponseDto[]>;
-    findByProperty(propertyId: string): Promise<FlatResponseDto[]>;
     getTowerInventorySummary(towerId: string): Promise<FlatInventorySummaryDto>;
     getPropertyStats(propertyId: string): Promise<{
         total: number;
@@ -38,6 +35,9 @@ export declare class FlatsController {
         totalRevenue: number;
         occupancyRate: number;
     }>;
+    findByTower(towerId: string): Promise<FlatResponseDto[]>;
+    findByProperty(propertyId: string): Promise<FlatResponseDto[]>;
+    findOne(id: string): Promise<FlatResponseDto>;
     update(id: string, updateFlatDto: UpdateFlatDto): Promise<FlatResponseDto>;
     remove(id: string): Promise<void>;
 }

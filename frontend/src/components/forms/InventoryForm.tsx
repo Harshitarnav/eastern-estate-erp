@@ -21,7 +21,7 @@ export default function InventoryForm({ onSubmit, initialData, onCancel }: Inven
 
   const fetchData = async () => {
     try {
-      const propsRes = await propertiesService.getProperties({ limit: 100, isActive: true });
+      const propsRes = await propertiesService.getProperties({ limit: 100 });
       setProperties(propsRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);

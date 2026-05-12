@@ -69,11 +69,15 @@ class DemandDraftsService {
   }
 
   async sendDemandDraft(id: string, fileUrl?: string): Promise<DemandDraft> {
-    return await apiService.post<DemandDraft>(`/demand-drafts/${id}/send`, { fileUrl });
+    return await apiService.post<DemandDraft>(`/demand-drafts/${id}/send`, {
+      fileUrl,
+    });
   }
 
   async markSent(id: string, fileUrl?: string) {
-    return await apiService.post<DemandDraft>(`/demand-drafts/${id}/send`, { fileUrl });
+    return await apiService.post<DemandDraft>(`/demand-drafts/${id}/send`, {
+      fileUrl,
+    });
   }
 
   async getHtml(id: string): Promise<{ html: string }> {

@@ -160,6 +160,17 @@ class CollectionsService {
     return apiService.post(`/collections/${id}/contact`, body);
   }
 
+  async logActivity(
+    id: string,
+    body: {
+      kind: 'download_pdf' | 'download_html' | 'invoice_pdf';
+      label?: string;
+      detail?: string;
+    },
+  ): Promise<{ ok: boolean }> {
+    return apiService.post(`/collections/${id}/activity`, body);
+  }
+
   async sendWarning(id: string): Promise<any> {
     return apiService.post(`/collections/${id}/send-warning`, {});
   }

@@ -316,9 +316,9 @@ export default function CollectionsPage() {
     }
     if (
       !confirm(
-        `Approve (if needed) and send ${ids.length} demand draft${
+        `Send ${ids.length} demand draft${
           ids.length === 1 ? '' : 's'
-        } right now? Email + in-app notifications will fire for each.`,
+        } now? Each row is only marked sent after email is accepted by your mail server. Email + in-app notifications fire for each success.`,
       )
     )
       return;

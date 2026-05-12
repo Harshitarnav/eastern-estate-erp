@@ -115,7 +115,7 @@ export default function SalesDashboard() {
     if (properties.length === 0) {
       (async () => {
         try {
-          const res = await propertiesService.getProperties({ limit: 200, isActive: true });
+          const res = await propertiesService.getProperties({ limit: 200 });
           const mapped = (res.data || []).map((p: any) => ({
             id: p.id,
             name: p.name,

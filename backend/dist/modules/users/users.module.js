@@ -20,6 +20,7 @@ const users_bootstrap_1 = require("./users.bootstrap");
 const property_access_service_1 = require("./services/property-access.service");
 const property_access_controller_1 = require("./controllers/property-access.controller");
 const property_entity_1 = require("../properties/entities/property.entity");
+const booking_entity_1 = require("../bookings/entities/booking.entity");
 const notifications_module_1 = require("../notifications/notifications.module");
 let UsersModule = class UsersModule {
 };
@@ -34,6 +35,7 @@ exports.UsersModule = UsersModule = __decorate([
                 user_property_access_entity_1.UserPropertyAccess,
                 property_role_template_entity_1.PropertyRoleTemplate,
                 property_entity_1.Property,
+                booking_entity_1.Booking,
             ]),
             notifications_module_1.NotificationsModule,
         ],

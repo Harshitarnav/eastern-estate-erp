@@ -130,6 +130,11 @@ export declare class CollectionsService {
         pausedUntil: Date;
         scope: string;
     }>;
+    appendCollectionsActivity(id: string, input: {
+        kind: string;
+        label?: string;
+        detail?: string;
+    }, actorUserId?: string | null): Promise<void>;
     recordContact(id: string, input: {
         channel: 'phone' | 'email' | 'sms' | 'visit' | 'other';
         note: string;

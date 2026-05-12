@@ -110,7 +110,7 @@ function FlatsInventoryContent() {
   useEffect(() => {
     const loadProperties = async () => {
       try {
-        const response = await propertiesService.getProperties({ limit: 50, isActive: true, sortBy: 'name', sortOrder: 'ASC' });
+        const response = await propertiesService.getProperties({ limit: 50, sortBy: 'name', sortOrder: 'ASC' });
         setProperties(response.data ?? []);
         // Priority: URL query > top-bar selection > first property.
         if ((response.data?.length ?? 0) > 0 && !preselectedPropertyId && !topBarPropertyId) {

@@ -278,13 +278,30 @@ export function isAdminRole(userRoles: string[]): boolean {
   return userRoles.includes(UserRole.SUPER_ADMIN) || userRoles.includes(UserRole.ADMIN);
 }
 
-/** Same as backend: company-wide accounting / all projects in selectors (not limited to property-access list). */
+/** Role-only heuristic (ignores explicit project assignments). Prefer `hasWidePropertyScope`. */
 export function seesAllAccountingProjects(userRoles: string[]): boolean {
   return (
     userRoles.includes(UserRole.SUPER_ADMIN) ||
     userRoles.includes(UserRole.ADMIN) ||
     userRoles.includes(UserRole.HEAD_ACCOUNTANT)
   );
+}
+
+/**
+ * Wide project list in UI ("All projects", multi-select): super_admin always; admin / head_accountant / hr
+ * only when they have no explicit assignments (matches backend `propertyAccessMode`).
+ */
+export function hasWidePropertyScope(
+  userRoles: string[],
+  propertyAccessMode?: 'wide' | 'assigned',
+): boolean {
+  if (propertyAccessMode === 'assigned') {
+    return false;
+  }
+  if (propertyAccessMode === 'wide') {
+    return true;
+  }
+  return seesAllAccountingProjects(userRoles);
 }
 
 /**

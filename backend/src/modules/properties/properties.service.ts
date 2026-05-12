@@ -136,11 +136,22 @@ export class PropertiesService {
       isActive,
     } = queryDto;
 
-    const activeFilter = isActive ?? true;
+    const scopedNonGlobal =
+      access &&
+      !access.isGlobalAdmin &&
+      access.accessiblePropertyIds &&
+      access.accessiblePropertyIds.length > 0;
 
-    const queryBuilder = this.propertiesRepository
-      .createQueryBuilder('property')
-      .where('property.isActive = :isActive', { isActive: activeFilter });
+    // Staff scoped to specific projects should still see those projects in dropdowns
+    // even when `isActive` was toggled false — unless the caller passes isActive explicitly.
+    const activeFilter =
+      isActive !== undefined && isActive !== null ? isActive : scopedNonGlobal ? undefined : true;
+
+    const queryBuilder = this.propertiesRepository.createQueryBuilder('property');
+
+    if (activeFilter !== undefined) {
+      queryBuilder.andWhere('property.isActive = :isActive', { isActive: activeFilter });
+    }
 
     if (access && !access.isGlobalAdmin) {
       const pids = access.accessiblePropertyIds;
@@ -643,27 +654,29 @@ export class PropertiesService {
     return this.mapToResponseDto(updatedProperty);
   }
 
-  async getStats(userId?: string): Promise<any> {
-    // Get accessible property IDs for non-admin users
+  async getStats(access?: {
+    isGlobalAdmin: boolean;
+    accessiblePropertyIds: string[] | null;
+  }): Promise<any> {
     let propertyIds: string[] = [];
-    if (userId) {
-      const isAdmin = await this.propertyAccessService.isGlobalAdmin(userId);
-      if (!isAdmin) {
-        propertyIds = await this.propertyAccessService.getUserPropertyIds(userId);
-        if (propertyIds.length === 0) {
-          return {
-            totalProperties: 0,
-            activeProperties: 0,
-            underConstruction: 0,
-            completed: 0,
-          };
-        }
+
+    if (access && !access.isGlobalAdmin) {
+      const ids = access.accessiblePropertyIds;
+      if (!ids || ids.length === 0) {
+        return {
+          totalProperties: 0,
+          activeProperties: 0,
+          underConstruction: 0,
+          completed: 0,
+        };
       }
+      propertyIds = ids;
     }
 
-    const whereClause = propertyIds.length > 0 
-      ? { isActive: true, id: In(propertyIds) }
-      : { isActive: true };
+    const whereClause =
+      propertyIds.length > 0
+        ? { isActive: true, id: In(propertyIds) }
+        : { isActive: true };
 
     const totalProperties = await this.propertiesRepository.count({
       where: whereClause,

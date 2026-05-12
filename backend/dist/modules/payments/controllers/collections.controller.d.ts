@@ -60,6 +60,13 @@ export declare class CollectionsController {
     }, req: Request): Promise<{
         ok: boolean;
     }>;
+    logActivity(id: string, body: {
+        kind: string;
+        label?: string;
+        detail?: string;
+    }, req: Request): Promise<{
+        ok: boolean;
+    }>;
     sendWarning(id: string, req: Request): Promise<import("../../demand-drafts/entities/demand-draft.entity").DemandDraft>;
     scanNow(): Promise<import("../services/overdue-scanner.service").ScanStats>;
     bulkPause(body: {

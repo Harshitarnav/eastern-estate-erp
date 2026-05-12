@@ -11,6 +11,7 @@ import { UsersBootstrapService } from './users.bootstrap';
 import { PropertyAccessService } from './services/property-access.service';
 import { PropertyAccessController } from './controllers/property-access.controller';
 import { Property } from '../properties/entities/property.entity';
+import { Booking } from '../bookings/entities/booking.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       UserPropertyAccess,
       PropertyRoleTemplate,
       Property,
+      Booking,
     ]),
     NotificationsModule, // Import for PropertyAccessController
   ],

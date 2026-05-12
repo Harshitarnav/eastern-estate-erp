@@ -64,7 +64,10 @@ export class PropertiesController {
 
   @Get('stats')
   async getStats(@Request() req: any) {
-    return this.propertiesService.getStats(req.user?.id);
+    return this.propertiesService.getStats({
+      isGlobalAdmin: !!req.isGlobalAdmin,
+      accessiblePropertyIds: req.accessiblePropertyIds ?? null,
+    });
   }
 
   @Get('code/:code')

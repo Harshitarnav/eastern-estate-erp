@@ -38,7 +38,7 @@ let AuthController = class AuthController {
         return this.authService.logout(req.user.id, body.refreshToken);
     }
     async getProfile(req) {
-        return req.user;
+        return this.authService.getAuthenticatedProfile(req.user.id);
     }
     async googleAuth() {
     }

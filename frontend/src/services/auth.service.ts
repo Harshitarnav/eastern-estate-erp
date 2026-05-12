@@ -33,6 +33,9 @@ export interface User {
     name: string;
     displayName: string;
   }>;
+  /** From login /auth/me — when `assigned`, UI limits project list to assignments. */
+  propertyAccessMode?: 'wide' | 'assigned';
+  assignedPropertyIds?: string[];
 }
 
 class AuthService {

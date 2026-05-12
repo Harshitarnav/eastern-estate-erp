@@ -21,12 +21,14 @@ const bcrypt = require("bcrypt");
 const config_1 = require("@nestjs/config");
 const user_entity_1 = require("../modules/users/entities/user.entity");
 const refresh_token_entity_1 = require("./entities/refresh-token.entity");
+const property_access_service_1 = require("../modules/users/services/property-access.service");
 let AuthService = class AuthService {
-    constructor(usersRepository, refreshTokenRepository, jwtService, configService) {
+    constructor(usersRepository, refreshTokenRepository, jwtService, configService, propertyAccessService) {
         this.usersRepository = usersRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.propertyAccessService = propertyAccessService;
     }
     async validateUser(email, password) {
         const user = await this.usersRepository.findOne({
@@ -68,21 +70,11 @@ let AuthService = class AuthService {
         };
         const accessToken = this.jwtService.sign(payload);
         const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
+        const userDto = await this.buildAuthUserDto(user);
         return {
             accessToken,
             refreshToken: refreshToken.token,
-            user: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                roles: user.roles.map((r) => ({
-                    id: r.id,
-                    name: r.name,
-                    displayName: r.displayName,
-                })),
-            },
+            user: userDto,
         };
     }
     async register(registerDto) {
@@ -149,23 +141,82 @@ let AuthService = class AuthService {
         };
         const accessToken = this.jwtService.sign(payload);
         const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
+        const userDto = await this.buildAuthUserDto(user);
         return {
             accessToken,
             refreshToken: refreshToken.token,
-            user: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                profileImage: user.profileImage,
-                roles: user.roles.map((r) => ({
-                    id: r.id,
-                    name: r.name,
-                    displayName: r.displayName,
-                })),
-            },
+            user: userDto,
         };
+    }
+    async getAuthenticatedProfile(userId) {
+        const user = await this.usersRepository.findOne({
+            where: { id: userId },
+            relations: ['roles', 'roles.permissions'],
+        });
+        if (!user || !user.isActive) {
+            throw new common_1.UnauthorizedException();
+        }
+        const userDto = await this.buildAuthUserDto(user);
+        const permissions = user.roles.flatMap((role) => role.permissions || []);
+        return {
+            ...userDto,
+            permissions,
+        };
+    }
+    mapUserRoles(roles) {
+        return (roles || []).map((r) => ({
+            id: r.id,
+            name: r.name,
+            displayName: r.displayName,
+        }));
+    }
+    async buildAuthUserDto(user) {
+        const roles = user.roles || [];
+        const roleNames = roles.map((r) => typeof r === 'string' ? r : r.name);
+        const base = {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            roles: this.mapUserRoles(roles),
+            propertyAccessMode: 'assigned',
+        };
+        if (user.phone) {
+            base.phone = user.phone;
+        }
+        if (user.profileImage) {
+            base.profileImage = user.profileImage;
+        }
+        if (roleNames.includes('super_admin')) {
+            base.propertyAccessMode = 'wide';
+            return base;
+        }
+        const assigned = await this.propertyAccessService.getUserPropertyIds(user.id);
+        if (assigned.length > 0) {
+            base.propertyAccessMode = 'assigned';
+            base.assignedPropertyIds = assigned;
+            return base;
+        }
+        if (roleNames.includes('customer')) {
+            const customerId = await this.propertyAccessService.getUserCustomerId(user.id);
+            const ids = customerId
+                ? await this.propertyAccessService.getPropertyIdsForCustomerBookings(customerId)
+                : [];
+            base.propertyAccessMode = 'assigned';
+            base.assignedPropertyIds = ids;
+            return base;
+        }
+        const wideUnassigned = roleNames.includes('head_accountant') ||
+            roleNames.includes('admin') ||
+            roleNames.includes('hr');
+        if (wideUnassigned) {
+            base.propertyAccessMode = 'wide';
+            return base;
+        }
+        base.propertyAccessMode = 'assigned';
+        base.assignedPropertyIds = [];
+        return base;
     }
     async createRefreshToken(userId, ipAddress, userAgent) {
         const expiresAt = new Date();
@@ -192,6 +243,7 @@ exports.AuthService = AuthService = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         jwt_1.JwtService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        property_access_service_1.PropertyAccessService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

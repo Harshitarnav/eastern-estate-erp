@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { leadsService, Lead } from '@/services/leads.service';
-import { propertiesService } from '@/services/properties.service';
+import { propertiesService, propertyListFromResponse } from '@/services/properties.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,10 +29,10 @@ export default function LeadDetailPage() {
       setLoading(true);
       const [l, props] = await Promise.all([
         leadsService.getLead(id),
-        propertiesService.getProperties().catch(() => []),
+        propertiesService.getProperties().catch(() => ({ data: [] })),
       ]);
       setLead(l);
-      setProperties(Array.isArray(props) ? props : props.data || []);
+      setProperties(propertyListFromResponse(props));
     } catch (err: any) {
       setError(err?.message || 'Failed to load lead');
     } finally {

@@ -20,11 +20,13 @@ const typeorm_2 = require("typeorm");
 const user_property_access_entity_1 = require("../entities/user-property-access.entity");
 const user_entity_1 = require("../entities/user.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
+const booking_entity_1 = require("../../bookings/entities/booking.entity");
 let PropertyAccessService = PropertyAccessService_1 = class PropertyAccessService {
-    constructor(propertyAccessRepo, userRepo, propertyRepo) {
+    constructor(propertyAccessRepo, userRepo, propertyRepo, bookingRepo) {
         this.propertyAccessRepo = propertyAccessRepo;
         this.userRepo = userRepo;
         this.propertyRepo = propertyRepo;
+        this.bookingRepo = bookingRepo;
         this.logger = new common_1.Logger(PropertyAccessService_1.name);
     }
     async getUserProperties(userId) {
@@ -33,6 +35,20 @@ let PropertyAccessService = PropertyAccessService_1 = class PropertyAccessServic
             relations: ['property'],
             order: { assignedAt: 'DESC' },
         });
+    }
+    async getUserCustomerId(userId) {
+        const u = await this.userRepo.findOne({
+            where: { id: userId },
+            select: ['id', 'customerId'],
+        });
+        return u?.customerId ?? null;
+    }
+    async getPropertyIdsForCustomerBookings(customerId) {
+        const rows = await this.bookingRepo.find({
+            where: { customerId, isActive: true },
+            select: ['propertyId'],
+        });
+        return [...new Set(rows.map((r) => r.propertyId).filter(Boolean))];
     }
     async getPropertyUsers(propertyId) {
         return await this.propertyAccessRepo.find({
@@ -201,7 +217,9 @@ exports.PropertyAccessService = PropertyAccessService = PropertyAccessService_1 
     __param(0, (0, typeorm_1.InjectRepository)(user_property_access_entity_1.UserPropertyAccess)),
     __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(2, (0, typeorm_1.InjectRepository)(property_entity_1.Property)),
+    __param(3, (0, typeorm_1.InjectRepository)(booking_entity_1.Booking)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])
 ], PropertyAccessService);

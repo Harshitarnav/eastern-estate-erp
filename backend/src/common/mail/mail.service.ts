@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
 import { SettingsService } from '../../modules/settings/settings.service';
+import {
+  createCompanySmtpTransporter,
+  normalizeSmtpPassword,
+} from './company-smtp-transport';
 
 export interface SendMailOptions {
   to: string;
@@ -8,6 +11,8 @@ export interface SendMailOptions {
   html: string;
   /** Optional plain-text fallback */
   text?: string;
+  /** BCC archive copy (e.g. sender mailbox). SMTP submit does not sync to “Sent”. */
+  bcc?: string;
 }
 
 @Injectable()
@@ -31,14 +36,17 @@ export class MailService {
       return { accepted: [], skipped: true };
     }
 
-    const transporter = nodemailer.createTransport({
-      host: settings.smtpHost,
-      port: settings.smtpPort ?? 587,
-      secure: (settings.smtpPort ?? 587) === 465,
-      auth: {
-        user: settings.smtpUser,
-        pass: settings.smtpPass ?? '',
-      },
+    const smtpPass = normalizeSmtpPassword(settings.smtpPass);
+    if (!smtpPass) {
+      this.logger.warn(
+        `SMTP password missing - email to ${options.to} was NOT sent. Save an App Password under Company Settings.`,
+      );
+      return { accepted: [], skipped: true };
+    }
+
+    const transporter = createCompanySmtpTransporter({
+      ...settings,
+      smtpPass,
     });
 
     const fromAddress = settings.smtpFrom || settings.smtpUser;
@@ -48,6 +56,7 @@ export class MailService {
       const info = await transporter.sendMail({
         from: `"${fromName}" <${fromAddress}>`,
         to: options.to,
+        bcc: options.bcc || undefined,
         subject: options.subject,
         html: options.html,
         text: options.text,

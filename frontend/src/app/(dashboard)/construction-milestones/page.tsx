@@ -268,11 +268,12 @@ export default function ConstructionMilestonesPage() {
     setActionLoading(draftId);
     try {
       await demandDraftsService.sendDemandDraft(draftId);
-      toast.success('Demand draft sent successfully');
+      toast.success('Demand draft emailed to the customer');
       await loadData();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send demand draft');
       console.error(error);
+      await loadData();
     } finally {
       setActionLoading(null);
     }

@@ -142,7 +142,7 @@ function PaymentPlansContent() {
       const [templatesData, plansData, propertiesData, bookingsData, customersData] = await Promise.all([
         paymentPlansService.getPaymentPlanTemplates().catch(() => []),
         paymentPlansService.getFlatPaymentPlans({ propertyId: selectedPropertyId }).catch(() => []),
-        propertiesService.getProperties().catch(() => []),
+        propertiesService.getProperties().catch(() => ({ data: [] as any[] })),
         bookingsService.getBookings({ propertyId: selectedPropertyId }).catch(() => []),
         customersService.getCustomers({ propertyId: selectedPropertyId }).catch(() => []),
       ]);

@@ -67,7 +67,7 @@ export default function NewCustomerPage() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await propertiesService.getProperties({ limit: 200, isActive: true });
+        const res = await propertiesService.getProperties({ limit: 200 });
         const options =
           res.data?.map((p: any) => ({ value: p.id, label: p.name })) || [];
         setPropertyOptions(options);

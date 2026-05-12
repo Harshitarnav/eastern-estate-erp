@@ -40,7 +40,10 @@ let PropertiesController = class PropertiesController {
         });
     }
     async getStats(req) {
-        return this.propertiesService.getStats(req.user?.id);
+        return this.propertiesService.getStats({
+            isGlobalAdmin: !!req.isGlobalAdmin,
+            accessiblePropertyIds: req.accessiblePropertyIds ?? null,
+        });
     }
     async findByCode(code, req) {
         return this.propertiesService.findByCode(code, {

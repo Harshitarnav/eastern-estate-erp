@@ -57,7 +57,7 @@ function BookingsPageContent() {
       try {
         if (properties.length > 0) return;
         setLoadingProperties(true);
-        const res = await propertiesService.getProperties({ limit: 100, isActive: true });
+        const res = await propertiesService.getProperties({ limit: 100 });
         const mapped = (res.data || []).map((p: any) => ({
           id: p.id,
           name: p.name,

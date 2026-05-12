@@ -4,13 +4,16 @@ import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { usePropertyStore } from '@/store/propertyStore';
 import { propertiesService } from '@/services/properties.service';
-import apiService from '@/services/api';
-import { seesAllAccountingProjects } from '@/lib/roles';
+import { hasWidePropertyScope } from '@/lib/roles';
 import { Building2, ChevronDown } from 'lucide-react';
 
 /**
  * Global project scope for the dashboard header - drives the same Zustand selection
  * as accounting and other modules (via usePropertyStore).
+ *
+ * Always loads options from GET /properties, which the API scopes by the user's
+ * assignments — same source as booking/leads dropdowns (avoids desync with
+ * /users/:id/property-access and empty nested `property` payloads).
  */
 export function HeaderProjectSelect() {
   const { user } = useAuthStore();
@@ -24,21 +27,18 @@ export function HeaderProjectSelect() {
   const [listResolved, setListResolved] = useState(false);
 
   const userRoles = user?.roles?.map((r: any) => (typeof r === 'string' ? r : r.name)) || [];
-  const wideAccess = seesAllAccountingProjects(userRoles);
+  const wideAccess = hasWidePropertyScope(userRoles, user?.propertyAccessMode);
 
   useEffect(() => {
-    if (!user?.id || !wideAccess) return;
-    if (properties.length > 0) {
-      setListResolved(true);
-      return;
-    }
+    if (!user?.id) return;
     let cancelled = false;
+    setListResolved(false);
     propertiesService
       .getProperties({ limit: 200 })
       .then((res: any) => {
         if (cancelled) return;
-        const list = res?.data ?? res ?? [];
-        const arr = Array.isArray(list) ? list : list.data ?? [];
+        const list = res?.data ?? [];
+        const arr = Array.isArray(list) ? list : [];
         setProperties(
           arr.map((p: any) => ({
             id: p.id,
@@ -47,33 +47,6 @@ export function HeaderProjectSelect() {
             type: p.propertyType || p.type || 'Property',
           })),
         );
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setListResolved(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id, wideAccess, properties.length, setProperties]);
-
-  useEffect(() => {
-    if (!user?.id || wideAccess) return;
-    let cancelled = false;
-    apiService
-      .get(`/users/${user.id}/property-access`)
-      .then((res: any) => {
-        if (cancelled) return;
-        const items: any[] = Array.isArray(res) ? res : (res?.data ?? []);
-        const mapped = items
-          .filter((a: any) => a.property)
-          .map((a: any) => ({
-            id: a.property.id,
-            name: a.property.name,
-            location: a.property.city || '',
-            type: 'Property',
-          }));
-        setProperties(mapped);
       })
       .catch(() => {
         if (!cancelled) setProperties([]);
@@ -84,23 +57,21 @@ export function HeaderProjectSelect() {
     return () => {
       cancelled = true;
     };
-  }, [user?.id, wideAccess, setProperties]);
+  }, [user?.id, user?.propertyAccessMode, setProperties]);
 
   useEffect(() => {
     if (properties.length === 0 || wideAccess) return;
-    if (selectedProperties.length === 0 && properties.length === 1) {
+    if (selectedProperties.length === 0) {
       setSelectedProperties([properties[0].id]);
     }
-  }, [properties, selectedProperties, wideAccess, setSelectedProperties]);
+  }, [properties, selectedProperties.length, wideAccess, setSelectedProperties]);
 
   useEffect(() => {
     if (wideAccess || properties.length === 0) return;
     const allowed = new Set(properties.map((p) => p.id));
     const next = selectedProperties.filter((id) => allowed.has(id));
     if (next.length === selectedProperties.length) return;
-    setSelectedProperties(
-      next.length > 0 ? next : properties.length === 1 ? [properties[0].id] : [],
-    );
+    setSelectedProperties(next.length > 0 ? next : [properties[0].id]);
   }, [properties, selectedProperties, wideAccess, setSelectedProperties]);
 
   if (!user?.id) return null;
@@ -120,7 +91,7 @@ export function HeaderProjectSelect() {
     return (
       <div className="flex items-center gap-1.5 min-w-0 flex-1 basis-0 sm:max-w-[min(100%,20rem)]">
         <Building2 className="h-3.5 w-3.5 shrink-0 hidden sm:block text-amber-600" />
-        <span className="text-xs text-amber-800 truncate" title="Ask an admin to assign property access">
+        <span className="text-xs text-amber-800 truncate" title="Ask an admin to assign project access">
           No project assigned - contact admin
         </span>
       </div>
@@ -135,7 +106,16 @@ export function HeaderProjectSelect() {
           value={wideAccess && !selectedId ? '' : selectedId}
           onChange={(e) => {
             const v = e.target.value;
-            setSelectedProperties(v ? [v] : []);
+            if (wideAccess) {
+              setSelectedProperties(v ? [v] : []);
+              return;
+            }
+            // Scoped users: never leave “no project” — keep at least the first assignment
+            if (!v && properties[0]) {
+              setSelectedProperties([properties[0].id]);
+              return;
+            }
+            setSelectedProperties(v ? [v] : properties[0] ? [properties[0].id] : []);
           }}
           aria-label="Project scope"
           className="w-full appearance-none pl-2 sm:pl-3 pr-7 py-1.5 text-xs sm:text-sm font-medium rounded-lg border bg-[#FEF9F0] truncate"

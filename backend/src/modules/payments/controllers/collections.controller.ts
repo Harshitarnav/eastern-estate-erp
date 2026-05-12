@@ -231,9 +231,34 @@ export class CollectionsController {
   }
 
   /**
-   * Approve and send a DRAFT cancellation-warning letter. Two-step
-   * (approve then send) via the existing DD endpoints so audit fields
-   * are preserved.
+   * Log a lightweight audit event (PDF/HTML download, etc.) on the DD
+   * metadata for the Collections timeline.
+   */
+  @Post(':id/activity')
+  @HttpCode(HttpStatus.OK)
+  async logActivity(
+    @Param('id') id: string,
+    @Body() body: { kind: string; label?: string; detail?: string },
+    @Req() req: Request,
+  ) {
+    const allowed = new Set([
+      'download_pdf',
+      'download_html',
+      'invoice_pdf',
+    ]);
+    if (!body?.kind || !allowed.has(body.kind)) {
+      throw new BadRequestException(
+        `kind must be one of: ${[...allowed].join(', ')}`,
+      );
+    }
+    const userId = (req as any).user?.id ?? null;
+    await this.collections.appendCollectionsActivity(id, body, userId);
+    return { ok: true };
+  }
+
+  /**
+   * Send a DRAFT cancellation-warning letter (SMTP). Row is only marked
+   * SENT after the message is accepted by the mail server.
    */
   @Post(':id/send-warning')
   @Roles('admin', 'super_admin')
@@ -251,7 +276,6 @@ export class CollectionsController {
         'Warning is already in a non-DRAFT state',
       );
     }
-    await this.autoDemandDrafts.approveDemandDraft(id, userId);
     return this.autoDemandDrafts.sendDemandDraft(id, userId);
   }
 
@@ -380,8 +404,8 @@ export class CollectionsController {
   /**
    * Approve (if needed) and send a set of DDs immediately. Warning
    * letters are explicitly excluded here to force review through the
-   * single-row `:id/send-warning` path for auditability. READY rows are
-   * sent as-is; DRAFT non-warning rows are approved first.
+   * single-row `:id/send-warning` path for auditability. READY and
+   * DRAFT rows are sent in one step; SENT is only set after SMTP accepts.
    */
   @Post('bulk/send')
   @Roles('admin', 'super_admin')
@@ -417,9 +441,6 @@ export class CollectionsController {
         ) {
           skipped.push({ id, reason: `Not sendable from ${dd.status}` });
           continue;
-        }
-        if (dd.status === DemandDraftStatus.DRAFT) {
-          await this.autoDemandDrafts.approveDemandDraft(id, userId);
         }
         await this.autoDemandDrafts.sendDemandDraft(id, userId);
         sent.push(id);

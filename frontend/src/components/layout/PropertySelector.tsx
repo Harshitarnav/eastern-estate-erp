@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Check, ChevronDown, Building2, X, Loader2 } from 'lucide-react';
 import { usePropertyStore } from '@/store/propertyStore';
-import { propertiesService } from '@/services/properties.service';
+import { propertiesService, propertyListFromResponse } from '@/services/properties.service';
 import { useAuth } from '@/hooks/useAuth';
+import { hasWidePropertyScope } from '@/lib/roles';
 import {
   Command,
   CommandEmpty,
@@ -31,50 +32,27 @@ export function PropertySelector() {
     isMultiSelectMode,
     setProperties,
     setMultiSelectMode,
+    setSelectedProperties,
     toggleProperty,
     selectAll,
     clearSelection,
     getSelectedPropertyNames,
   } = usePropertyStore();
 
-  // Determine if user is admin - check multiple possible formats
-  const isAdmin = (() => {
-    if (!user?.roles || !Array.isArray(user.roles)) {
-      return true; // Default to admin for now
-    }
-    
-    return user.roles.some((role: any) => {
-      // Handle both role object and string
-      const roleName = typeof role === 'string' ? role : (role?.name || role?.roleName || '');
-      const normalizedRole = roleName.toUpperCase().replace(/[-_\s]/g, '');
-      
-      // Check for admin roles
-      return (
-        normalizedRole.includes('ADMIN') ||
-        normalizedRole.includes('SUPERADMIN') || 
-        normalizedRole.includes('SALESGM') ||
-        normalizedRole === 'GM'
-      );
-    });
-  })();
+  const userRoles =
+    user?.roles?.map((r: any) => (typeof r === 'string' ? r : r?.name || r?.roleName || '')) ||
+    [];
+  const wideAccess = hasWidePropertyScope(userRoles.filter(Boolean), user?.propertyAccessMode);
 
-  // Load properties on mount
   useEffect(() => {
-    loadProperties();
-  }, []);
+    setMultiSelectMode(wideAccess);
+  }, [wideAccess, setMultiSelectMode]);
 
-  // Set multi-select mode based on user role
-  useEffect(() => {
-    if (isAdmin !== undefined) {
-      setMultiSelectMode(isAdmin);
-    }
-  }, [isAdmin, setMultiSelectMode]);
-
-  const loadProperties = async () => {
+  const loadProperties = useCallback(async () => {
     try {
       setLoading(true);
       const data = await propertiesService.getProperties();
-      const propertyList = Array.isArray(data) ? data : data.data || [];
+      const propertyList = propertyListFromResponse(data);
       
       const mappedProperties = propertyList.map(p => ({
         id: p.id,
@@ -84,13 +62,24 @@ export function PropertySelector() {
       }));
       
       setProperties(mappedProperties);
-      // NOTE: Auto-select disabled to allow "All properties" (no filter) view.
+
+      if (!wideAccess && mappedProperties.length > 0) {
+        const { selectedProperties: sel } = usePropertyStore.getState();
+        if (sel.length === 0) {
+          setSelectedProperties([mappedProperties[0].id]);
+        }
+      }
     } catch (error) {
       console.error('[PropertySelector] Failed to load properties:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [wideAccess, setProperties, setSelectedProperties]);
+
+  // Load properties on mount / when scope mode changes
+  useEffect(() => {
+    loadProperties();
+  }, [loadProperties]);
 
   const selectedPropertiesData = properties.filter(p => 
     selectedProperties.includes(p.id)
@@ -100,7 +89,9 @@ export function PropertySelector() {
     ? 'Loading properties...' 
     : properties.length === 0 
       ? 'No properties found' 
-      : selectedProperties.length === 0
+      : !wideAccess && selectedProperties.length === 0
+        ? properties[0]?.name ?? 'Select project'
+        : selectedProperties.length === 0
         ? 'All properties'
         : getSelectedPropertyNames();
       
@@ -155,24 +146,26 @@ export function PropertySelector() {
             </div>
           </CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-auto">
-            <CommandItem
-              key="__all"
-              value="__all"
-              onSelect={() => {
-                clearSelection();
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-gray-400" />
-                <div>
-                  <div className="font-medium text-sm text-gray-900">All properties</div>
-                  <div className="text-xs text-gray-500">Show leads across every property</div>
+            {wideAccess && (
+              <CommandItem
+                key="__all"
+                value="__all"
+                onSelect={() => {
+                  clearSelection();
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-gray-400" />
+                  <div>
+                    <div className="font-medium text-sm text-gray-900">All properties</div>
+                    <div className="text-xs text-gray-500">Show leads across every project you can access</div>
+                  </div>
                 </div>
-              </div>
-              {selectedProperties.length === 0 && <Check className="h-4 w-4 ml-auto text-blue-600" />}
-            </CommandItem>
+                {selectedProperties.length === 0 && <Check className="h-4 w-4 ml-auto text-blue-600" />}
+              </CommandItem>
+            )}
             {/* All Properties Option (Admin only) */}
-            {isMultiSelectMode && (
+            {wideAccess && isMultiSelectMode && (
               <>
                 <CommandItem
                   onSelect={() => {
@@ -268,7 +261,11 @@ export function PropertySelector() {
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  clearSelection();
+                  if (wideAccess) {
+                    clearSelection();
+                  } else if (properties[0]) {
+                    setSelectedProperties([properties[0].id]);
+                  }
                   setOpen(false);
                 }}
                 className="h-7 text-xs"

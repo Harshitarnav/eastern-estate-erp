@@ -57,5 +57,9 @@ export const settingsService = {
     apiService.patch('/settings/company', data),
 
   testEmail: (to: string, subject?: string, message?: string): Promise<TestEmailResult> =>
-    apiService.post('/settings/company/test-email', { to, subject, message }),
+    apiService.post(
+      '/settings/company/test-email',
+      { to, subject, message },
+      { timeout: 120_000 },
+    ),
 };

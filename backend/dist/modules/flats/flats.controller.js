@@ -33,15 +33,6 @@ let FlatsController = class FlatsController {
     async findAll(query, req) {
         return this.flatsService.findAll(query, req.accessiblePropertyIds);
     }
-    async findOne(id) {
-        return this.flatsService.findOne(id);
-    }
-    async findByTower(towerId) {
-        return this.flatsService.findByTower(towerId);
-    }
-    async findByProperty(propertyId) {
-        return this.flatsService.findByProperty(propertyId);
-    }
     async getTowerInventorySummary(towerId) {
         return this.flatsService.getTowerInventorySummary(towerId);
     }
@@ -50,6 +41,15 @@ let FlatsController = class FlatsController {
     }
     async getTowerStats(towerId) {
         return this.flatsService.getTowerStats(towerId);
+    }
+    async findByTower(towerId) {
+        return this.flatsService.findByTower(towerId);
+    }
+    async findByProperty(propertyId) {
+        return this.flatsService.findByProperty(propertyId);
+    }
+    async findOne(id) {
+        return this.flatsService.findOne(id);
     }
     async update(id, updateFlatDto) {
         return this.flatsService.update(id, updateFlatDto);
@@ -84,27 +84,6 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], FlatsController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], FlatsController.prototype, "findOne", null);
-__decorate([
-    (0, common_1.Get)('tower/:towerId'),
-    __param(0, (0, common_1.Param)('towerId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], FlatsController.prototype, "findByTower", null);
-__decorate([
-    (0, common_1.Get)('property/:propertyId'),
-    __param(0, (0, common_1.Param)('propertyId')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], FlatsController.prototype, "findByProperty", null);
-__decorate([
     (0, common_1.Get)('tower/:towerId/inventory/summary'),
     __param(0, (0, common_1.Param)('towerId')),
     __metadata("design:type", Function),
@@ -125,6 +104,27 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], FlatsController.prototype, "getTowerStats", null);
+__decorate([
+    (0, common_1.Get)('tower/:towerId'),
+    __param(0, (0, common_1.Param)('towerId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlatsController.prototype, "findByTower", null);
+__decorate([
+    (0, common_1.Get)('property/:propertyId'),
+    __param(0, (0, common_1.Param)('propertyId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlatsController.prototype, "findByProperty", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlatsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Put)(':id'),
     (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),

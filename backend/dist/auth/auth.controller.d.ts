@@ -9,14 +9,7 @@ export declare class AuthController {
     login(loginDto: LoginDto, req: any): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: {
-            id: any;
-            email: any;
-            username: any;
-            firstName: any;
-            lastName: any;
-            roles: any;
-        };
+        user: import("./auth.service").AuthUserDto;
     }>;
     register(registerDto: RegisterDto): Promise<{
         id: string;
@@ -55,7 +48,23 @@ export declare class AuthController {
     }): Promise<{
         message: string;
     }>;
-    getProfile(req: any): Promise<any>;
+    getProfile(req: any): Promise<{
+        permissions: import("../modules/users/entities/permission.entity").Permission[];
+        id: string;
+        email: string;
+        username: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
+        profileImage?: string;
+        roles: Array<{
+            id: string;
+            name: string;
+            displayName: string;
+        }>;
+        propertyAccessMode: import("./auth.service").PropertyAccessMode;
+        assignedPropertyIds?: string[];
+    }>;
     googleAuth(): Promise<void>;
     googleAuthCallback(req: any, res: Response): Promise<void>;
 }

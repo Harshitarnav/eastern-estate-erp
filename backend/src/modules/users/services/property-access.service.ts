@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { UserPropertyAccess, PropertyRole } from '../entities/user-property-access.entity';
 import { User } from '../entities/user.entity';
 import { Property } from '../../properties/entities/property.entity';
+import { Booking } from '../../bookings/entities/booking.entity';
 
 export interface GrantAccessDto {
   userId: string;
@@ -28,6 +29,8 @@ export class PropertyAccessService {
     private userRepo: Repository<User>,
     @InjectRepository(Property)
     private propertyRepo: Repository<Property>,
+    @InjectRepository(Booking)
+    private bookingRepo: Repository<Booking>,
   ) {}
 
   /**
@@ -39,6 +42,24 @@ export class PropertyAccessService {
       relations: ['property'],
       order: { assignedAt: 'DESC' },
     });
+  }
+
+  /** Linked customer profile (portal accounts). */
+  async getUserCustomerId(userId: string): Promise<string | null> {
+    const u = await this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'customerId'],
+    });
+    return u?.customerId ?? null;
+  }
+
+  /** Property scope for customer portal logins (bookings they own). */
+  async getPropertyIdsForCustomerBookings(customerId: string): Promise<string[]> {
+    const rows = await this.bookingRepo.find({
+      where: { customerId, isActive: true },
+      select: ['propertyId'],
+    });
+    return [...new Set(rows.map((r) => r.propertyId).filter(Boolean))];
   }
 
   /**

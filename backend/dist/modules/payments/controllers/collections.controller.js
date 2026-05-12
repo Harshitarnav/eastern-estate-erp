@@ -126,6 +126,19 @@ let CollectionsController = class CollectionsController {
         await this.collections.recordContact(id, { ...body, by: userId });
         return { ok: true };
     }
+    async logActivity(id, body, req) {
+        const allowed = new Set([
+            'download_pdf',
+            'download_html',
+            'invoice_pdf',
+        ]);
+        if (!body?.kind || !allowed.has(body.kind)) {
+            throw new common_1.BadRequestException(`kind must be one of: ${[...allowed].join(', ')}`);
+        }
+        const userId = req.user?.id ?? null;
+        await this.collections.appendCollectionsActivity(id, body, userId);
+        return { ok: true };
+    }
     async sendWarning(id, req) {
         const userId = req.user?.id;
         const dd = await this.demandDrafts.findOne(id);
@@ -135,7 +148,6 @@ let CollectionsController = class CollectionsController {
         if (dd.status !== demand_draft_entity_1.DemandDraftStatus.DRAFT) {
             throw new common_1.BadRequestException('Warning is already in a non-DRAFT state');
         }
-        await this.autoDemandDrafts.approveDemandDraft(id, userId);
         return this.autoDemandDrafts.sendDemandDraft(id, userId);
     }
     async scanNow() {
@@ -218,9 +230,6 @@ let CollectionsController = class CollectionsController {
                     skipped.push({ id, reason: `Not sendable from ${dd.status}` });
                     continue;
                 }
-                if (dd.status === demand_draft_entity_1.DemandDraftStatus.DRAFT) {
-                    await this.autoDemandDrafts.approveDemandDraft(id, userId);
-                }
                 await this.autoDemandDrafts.sendDemandDraft(id, userId);
                 sent.push(id);
             }
@@ -292,6 +301,16 @@ __decorate([
     __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], CollectionsController.prototype, "contact", null);
+__decorate([
+    (0, common_1.Post)(':id/activity'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], CollectionsController.prototype, "logActivity", null);
 __decorate([
     (0, common_1.Post)(':id/send-warning'),
     (0, roles_decorator_1.Roles)('admin', 'super_admin'),

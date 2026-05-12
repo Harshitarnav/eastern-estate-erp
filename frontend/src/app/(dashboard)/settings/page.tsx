@@ -159,7 +159,7 @@ export default function SettingsPage() {
     { id: 'accountant-guide',     title: '💰 Accountant / Finance Team Guide',    category: 'Role-Based', description: 'Record payments, expenses, and generate reports' },
     { id: 'telecaller-guide',     title: '📞 Telecaller / Receptionist Guide',    category: 'Role-Based', description: 'Make calls, handle walk-ins, and manage inquiries' },
     { id: 'purchase-manager-guide',title: '🛒 Purchase / Procurement Manager Guide', category: 'Role-Based', description: 'Create purchase orders and manage vendors' },
-    { id: 'smtp-setup',           title: '📧 SMTP Email Setup Guide',             category: 'Technical',  description: 'How to configure Gmail / custom email for sending demand drafts' },
+    { id: 'smtp-setup',           title: '📧 SMTP Email Setup Guide',             category: 'Technical',  description: 'Migadu, Gmail, Microsoft 365, and custom SMTP for demand drafts' },
     { id: 'troubleshooting',      title: '🔧 Common Issues & Troubleshooting',   category: 'Help',       description: 'Solutions to common problems' },
     { id: 'keyboard-shortcuts',   title: '⌨️ Keyboard Shortcuts',                category: 'Tips',       description: 'Work faster with keyboard shortcuts' },
   ];
@@ -196,67 +196,96 @@ You're all set! Start exploring the system.`,
     },
     'smtp-setup': {
       title: '📧 SMTP Email Setup Guide',
-      content: `This guide explains how to configure Eastern Estate ERP to send real emails - demand drafts, payment reminders, etc.
+      content: `This guide explains how to configure Eastern Estate ERP to send real emails — demand drafts, reminders, test messages, etc.
 
 ## What is SMTP?
-SMTP (Simple Mail Transfer Protocol) is how email software sends emails. You need to give the ERP your email credentials so it can send emails on your behalf.
+SMTP (Simple Mail Transfer Protocol) is how applications send outbound email. You store one mailbox’s credentials in **Settings → Company**. The ERP sends *as* that address (or the **From Address** you set, if your provider allows it).
 
-## Option A - Gmail (Recommended for most teams)
+Official references: [Migadu guides](https://www.migadu.com/guides/) · [Google App Passwords](https://myaccount.google.com/apppasswords) (Gmail only).
+
+---
+
+## Option A — Migadu (recommended when your domain email is on Migadu)
+
+Migadu uses a normal mailbox **username + password** (no “App Password” flow like Gmail). Use a **dedicated mailbox** for the ERP (e.g. \`noreply@yourdomain.com\` or \`notifications@yourdomain.com\`) so you can rotate the password without breaking someone’s personal inbox.
+
+### Step 1 — Create or pick a mailbox in Migadu
+1. Log in to the [Migadu admin](https://admin.migadu.com/) for your account.
+2. Under your domain, open **Mailboxes** (or **Aliases** if you only need receive; for *sending* SMTP you need a real **mailbox** with a password).
+3. Create a mailbox (or use an existing one) and set a **strong password**. Note the **full email address** (e.g. \`noreply@easternestate.in\`).
+
+### Step 2 — Use Migadu’s SMTP parameters (from their docs)
+Per [Migadu’s generic settings](https://www.migadu.com/guides/):
+
+| Field | Value |
+|-------|--------|
+| **SMTP Host** | \`smtp.migadu.com\` |
+| **SMTP Port** | **465** (TLS/SSL — this is what Migadu documents for SMTP) |
+| **SMTP Username** | **Full mailbox address** (e.g. \`noreply@yourdomain.com\`) |
+| **SMTP Password** | That mailbox’s **password** (plain password; not an API key) |
+| **From Address** | Usually the **same** mailbox (or another address on the same domain if Migadu allows it for that mailbox) |
+
+### Step 3 — Enter values in the ERP
+1. Go to **Settings → Company**.
+2. Under **Email (SMTP) Configuration**, fill in the table above.
+3. Click **Save Changes** (always save after typing the password — the field is blank again after reload for security).
+4. Scroll to **Test SMTP Connection**, enter a test recipient, and run the test.
+
+### Migadu tips
+- **Username must be the full email** — not just the part before \`@\`.
+- **Port 465** maps to SSL in the ERP (same as Migadu’s “TLS” on 465 in client docs). If your network blocks 465, ask your provider or try **587** only if Migadu documents it for your account; their primary published SMTP port is **465**.
+- **DNS**: Sending will only look professional if your domain’s **SPF/DKIM** are correct in Migadu; complete Migadu’s DNS checks in the admin panel to reduce spam folder placement.
+- **Aliases**: Sending SMTP generally requires authentication as a **mailbox** user. If you only have an alias pointing to another inbox, authenticate as the underlying mailbox or create a dedicated mailbox for the ERP.
+
+---
+
+## Option B — Gmail (personal or small team)
 
 ### Step 1: Enable 2-Factor Authentication on Gmail
-1. Go to myaccount.google.com
-2. Click "Security" in the left menu
-3. Under "How you sign in to Google", click "2-Step Verification"
-4. Follow the steps to turn it on
+1. Go to [myaccount.google.com](https://myaccount.google.com)
+2. Click **Security**
+3. Under **How you sign in to Google**, turn on **2-Step Verification**
 
 ### Step 2: Generate an App Password
-1. After enabling 2FA, go back to myaccount.google.com → Security
-2. Search for "App passwords" in the search bar at the top
-3. Click "App passwords"
-4. Choose "Other (Custom name)" → type "Eastern Estate ERP"
-5. Click Generate
-6. Copy the 16-character password shown (looks like: abcd efgh ijkl mnop)
+1. In Google Account → **Security**, open **App passwords**
+2. Create one named e.g. “Eastern Estate ERP”
+3. Copy the **16-character** password (spaces are fine — the ERP strips them)
 
-### Step 3: Fill in the ERP Settings
-Go to Settings → Company & Bank → SMTP Configuration:
-- **SMTP Host**: smtp.gmail.com
-- **SMTP Port**: 587
-- **SMTP User**: your-email@gmail.com
-- **SMTP Password**: paste the 16-character App Password (no spaces)
-- **From Email**: your-email@gmail.com
-- **From Name**: Eastern Estate
+### Step 3: ERP fields
+Go to **Settings → Company → Email (SMTP)**:
+- **SMTP Host**: \`smtp.gmail.com\`
+- **SMTP Port**: **587** (or 465 with SSL)
+- **SMTP User**: your Gmail address
+- **SMTP Password**: the App Password (not your normal login)
+- **From Address**: usually the same Gmail or your Workspace address
 
-Click Save. Done ✅
+Save, then use **Test SMTP Connection**.
 
-## Option B - Business Email (e.g. info@easternestate.in)
+---
 
-### If hosted on cPanel (GoDaddy, Hostinger, etc.)
-Contact your hosting provider or IT person for:
-- SMTP Host (usually: mail.yourdomain.com)
-- SMTP Port (usually: 587 or 465)
-- Username: your full email address (info@easternestate.in)
-- Password: your email account password
+## Option C — Other providers
 
-### If using Google Workspace (G Suite)
-Same as Gmail setup above - just use your workspace email.
+### cPanel / generic hosting
+Ask your host for **SMTP host**, **port (587 or 465)**, and whether to use **TLS** or **SSL**. Username is usually the **full email**.
 
-### If using Microsoft 365 / Outlook
-- SMTP Host: smtp.office365.com
-- SMTP Port: 587
-- Username: your-email@yourdomain.com
-- Password: your Microsoft account password (or App Password if MFA is on)
+### Microsoft 365 / Outlook
+- **Host**: \`smtp.office365.com\`
+- **Port**: **587**
+- **User**: full email  
+- **Password**: account password or Microsoft **App Password** if MFA is on
 
-## Testing the Setup
-After saving, go to any demand draft → click "Send Draft" - if SMTP is configured correctly, the customer will receive an email. Check the backend logs if the email doesn't arrive.
+---
 
-## Common Issues
-❌ "Authentication failed" → Wrong App Password or 2FA not enabled
-❌ "Connection refused" → Wrong SMTP host or port
-❌ "Less secure apps" error → Use App Password instead of your regular password (Google has blocked this method)
-❌ Email goes to spam → Add a proper "From Name" and use a business email address
+## Testing
+Use **Settings → Company → Test SMTP Connection** after every change. For demand drafts, use **Collections → Send** only after the test succeeds.
 
-## Security Note
-Your SMTP password is stored encrypted in the database. Never share it. If someone leaves the company, immediately change the email password and update the ERP settings.`,
+## Common issues
+- **Authentication failed** — Wrong password, wrong **full email** as username, or (Gmail) not using an **App Password**.
+- **Connection refused / timeout** — Wrong host/port or firewall blocking **465** or **587**.
+- **Email in spam** — Finish **SPF/DKIM** (especially on Migadu) and use a sensible **From** name.
+
+## Security
+The SMTP password is stored on the server and not returned to the browser after save. Saving **other** company fields without retyping the password **keeps** the existing password. If someone leaves, change the mailbox password in Migadu (or Gmail) and update the ERP once.`,
     },
     'ceo-guide': {
       title: '👨‍💼 CEO / Managing Director Guide',
@@ -818,7 +847,7 @@ Master these shortcuts to work like a pro!`,
               <CardContent className="p-4">
                 <Server className="h-7 w-7 text-blue-600 mb-2" />
                 <h3 className="font-semibold text-sm mb-1">SMTP Email Setup</h3>
-                <p className="text-xs text-gray-500">Configure Gmail or business email for sending drafts</p>
+                <p className="text-xs text-gray-500">Migadu, Gmail, M365 — outbound email for drafts</p>
               </CardContent>
             </Card>
             <Card className="hover:shadow-md transition-shadow cursor-pointer border-amber-200 bg-amber-50"

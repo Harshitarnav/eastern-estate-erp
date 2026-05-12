@@ -1,8 +1,11 @@
 import { Injectable, OnModuleInit, Logger, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as nodemailer from 'nodemailer';
 import { CompanySettings } from './entities/company-settings.entity';
+import {
+  createCompanySmtpTransporter,
+  normalizeSmtpPassword,
+} from '../../common/mail/company-smtp-transport';
 
 @Injectable()
 export class SettingsService implements OnModuleInit {
@@ -40,7 +43,32 @@ export class SettingsService implements OnModuleInit {
   /** Partial update of the single settings row */
   async update(dto: Partial<CompanySettings>): Promise<CompanySettings> {
     const settings = await this.get();
-    Object.assign(settings, dto);
+    const patch: Partial<CompanySettings> = { ...dto };
+
+    if (typeof patch.smtpHost === 'string') {
+      patch.smtpHost = patch.smtpHost.trim() || null;
+    }
+    if (typeof patch.smtpUser === 'string') {
+      patch.smtpUser = patch.smtpUser.trim() || null;
+    }
+    if (typeof patch.smtpFrom === 'string') {
+      patch.smtpFrom = patch.smtpFrom.trim() || null;
+    }
+
+    // API never returns smtpPass on GET; the form loads with an empty field.
+    // Never overwrite a stored password with that empty string.
+    if (patch.smtpPass !== undefined && patch.smtpPass !== null) {
+      const normalized = normalizeSmtpPassword(patch.smtpPass as string);
+      if (normalized === '') {
+        delete (patch as any).smtpPass;
+      } else {
+        (patch as any).smtpPass = normalized;
+      }
+    } else {
+      delete (patch as any).smtpPass;
+    }
+
+    Object.assign(settings, patch);
     return this.repo.save(settings);
   }
 
@@ -55,33 +83,33 @@ export class SettingsService implements OnModuleInit {
     messageId?: string;
   }> {
     const settings = await this.get();
+    const smtpPass = normalizeSmtpPassword(settings.smtpPass);
 
     if (!settings.smtpHost || !settings.smtpUser) {
       throw new BadRequestException(
         'SMTP is not configured. Fill in SMTP Host and Username first, then Save Settings before testing.',
       );
     }
+    if (!smtpPass) {
+      throw new BadRequestException(
+        'SMTP password is missing. Enter your Gmail App Password (or SMTP password), click Save Changes, then run the test again. The password field stays empty after you reload the page (security); re-enter it whenever you set or change SMTP.',
+      );
+    }
     if (!to) {
       throw new BadRequestException('Recipient email address is required.');
     }
 
-    const transporter = nodemailer.createTransport({
-      host: settings.smtpHost,
-      port: settings.smtpPort ?? 587,
-      secure: (settings.smtpPort ?? 587) === 465,
-      auth: {
-        user: settings.smtpUser,
-        pass: settings.smtpPass ?? '',
-      },
+    const transporter = createCompanySmtpTransporter({
+      ...settings,
+      smtpPass,
     });
 
     const fromAddress = settings.smtpFrom || settings.smtpUser;
     const fromName    = settings.companyName || 'Eastern Estate';
 
     try {
-      // Verify connection first - gives a clear error before sending
-      await transporter.verify();
-
+      // One connection only: verify() + sendMail() doubled connection time and often
+      // exceeded the browser API timeout (45s). sendMail still surfaces AUTH/tls errors.
       const info = await transporter.sendMail({
         from: `"${fromName}" <${fromAddress}>`,
         to,
@@ -118,7 +146,13 @@ export class SettingsService implements OnModuleInit {
 
       // Give a human-friendly error based on the error code
       let detail = err?.message ?? 'Unknown error';
-      if (err?.code === 'EAUTH')        detail = 'Authentication failed - wrong username or password / App Password. Make sure 2-Step Verification is enabled on Gmail.';
+      if (err?.code === 'EAUTH') {
+        detail =
+          'Authentication failed. For Gmail: use your full email as Username, a 16-character App Password (not your normal password), Port 587 or 465, and ensure 2-Step Verification is on. Strip spaces from the App Password or paste as-is — both work after save.';
+      } else if (err?.responseCode === 535 || err?.responseCode === 534) {
+        detail =
+          'Server rejected the username/password (SMTP code 535). Regenerate a fresh App Password at myaccount.google.com/apppasswords and save it under Company Settings.';
+      }
       else if (err?.code === 'ECONNREFUSED') detail = `Connection refused to ${settings.smtpHost}:${settings.smtpPort}. Check the host and port.`;
       else if (err?.code === 'ETIMEDOUT')    detail = `Connection timed out. The SMTP host may be blocked by your firewall.`;
       else if (err?.code === 'ESOCKET')      detail = `Socket error - try changing port from ${settings.smtpPort} to 587 (TLS) or 465 (SSL).`;

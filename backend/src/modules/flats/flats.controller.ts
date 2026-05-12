@@ -58,39 +58,8 @@ export class FlatsController {
   }
 
   /**
-   * Get flat by ID
-   * GET /flats/:id
-   */
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<FlatResponseDto> {
-    return this.flatsService.findOne(id);
-  }
-
-  /**
-   * Get flats by tower ID
-   * GET /flats/tower/:towerId
-   */
-  @Get('tower/:towerId')
-  async findByTower(
-    @Param('towerId') towerId: string,
-  ): Promise<FlatResponseDto[]> {
-    return this.flatsService.findByTower(towerId);
-  }
-
-  /**
-   * Get flats by property ID
-   * GET /flats/property/:propertyId
-   */
-  @Get('property/:propertyId')
-  async findByProperty(
-    @Param('propertyId') propertyId: string,
-  ): Promise<FlatResponseDto[]> {
-    return this.flatsService.findByProperty(propertyId);
-  }
-
-  /**
-   * Get tower inventory summary
-   * GET /flats/tower/:towerId/inventory/summary
+   * Static path routes must be declared before @Get(':id') so segments like `tower`/`property`
+   * are not captured as a flat UUID.
    */
   @Get('tower/:towerId/inventory/summary')
   async getTowerInventorySummary(
@@ -99,22 +68,37 @@ export class FlatsController {
     return this.flatsService.getTowerInventorySummary(towerId);
   }
 
-  /**
-   * Get property statistics
-   * GET /flats/property/:propertyId/stats
-   */
   @Get('property/:propertyId/stats')
   async getPropertyStats(@Param('propertyId') propertyId: string) {
     return this.flatsService.getPropertyStats(propertyId);
   }
 
-  /**
-   * Get tower statistics
-   * GET /flats/tower/:towerId/stats
-   */
   @Get('tower/:towerId/stats')
   async getTowerStats(@Param('towerId') towerId: string) {
     return this.flatsService.getTowerStats(towerId);
+  }
+
+  @Get('tower/:towerId')
+  async findByTower(
+    @Param('towerId') towerId: string,
+  ): Promise<FlatResponseDto[]> {
+    return this.flatsService.findByTower(towerId);
+  }
+
+  @Get('property/:propertyId')
+  async findByProperty(
+    @Param('propertyId') propertyId: string,
+  ): Promise<FlatResponseDto[]> {
+    return this.flatsService.findByProperty(propertyId);
+  }
+
+  /**
+   * Get flat by ID
+   * GET /flats/:id
+   */
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<FlatResponseDto> {
+    return this.flatsService.findOne(id);
   }
 
   /**

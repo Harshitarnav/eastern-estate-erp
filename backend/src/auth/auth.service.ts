@@ -8,6 +8,22 @@ import { User } from '../modules/users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { PropertyAccessService } from '../modules/users/services/property-access.service';
+
+export type PropertyAccessMode = 'wide' | 'assigned';
+
+export interface AuthUserDto {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  profileImage?: string;
+  roles: Array<{ id: string; name: string; displayName: string }>;
+  propertyAccessMode: PropertyAccessMode;
+  assignedPropertyIds?: string[];
+}
 
 @Injectable()
 export class AuthService {
@@ -18,6 +34,7 @@ export class AuthService {
     private refreshTokenRepository: Repository<RefreshToken>,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private propertyAccessService: PropertyAccessService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -75,21 +92,12 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
 
+    const userDto = await this.buildAuthUserDto(user as User);
+
     return {
       accessToken,
       refreshToken: refreshToken.token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        roles: user.roles.map((r: any) => ({
-            id: r.id,
-            name: r.name,
-            displayName: r.displayName,
-        })),
-      },
+      user: userDto,
     };
   }
 
@@ -175,23 +183,104 @@ export class AuthService {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = await this.createRefreshToken(user.id, ipAddress, userAgent);
 
+    const userDto = await this.buildAuthUserDto(user as User);
+
     return {
       accessToken,
       refreshToken: refreshToken.token,
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImage: user.profileImage,
-        roles: user.roles.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          displayName: r.displayName,
-        })),
-      },
+      user: userDto,
     };
+  }
+
+  /** Same public user shape as login — plus `permissions` for JWT /auth/me parity. */
+  async getAuthenticatedProfile(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['roles', 'roles.permissions'],
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException();
+    }
+
+    const userDto = await this.buildAuthUserDto(user);
+    const permissions = user.roles.flatMap((role) => role.permissions || []);
+
+    return {
+      ...userDto,
+      permissions,
+    };
+  }
+
+  private mapUserRoles(roles: any[] | undefined): AuthUserDto['roles'] {
+    return (roles || []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      displayName: r.displayName,
+    }));
+  }
+
+  /**
+   * `wide` = org-wide project list (privileged role with no explicit assignments, or super_admin).
+   * `assigned` = only projects in user_property_access (or customer booking projects).
+   */
+  private async buildAuthUserDto(user: User | any): Promise<AuthUserDto> {
+    const roles = user.roles || [];
+    const roleNames: string[] = roles.map((r: any) =>
+      typeof r === 'string' ? r : r.name,
+    );
+
+    const base: AuthUserDto = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: this.mapUserRoles(roles),
+      propertyAccessMode: 'assigned',
+    };
+
+    if (user.phone) {
+      base.phone = user.phone;
+    }
+    if (user.profileImage) {
+      base.profileImage = user.profileImage;
+    }
+
+    if (roleNames.includes('super_admin')) {
+      base.propertyAccessMode = 'wide';
+      return base;
+    }
+
+    const assigned = await this.propertyAccessService.getUserPropertyIds(user.id);
+    if (assigned.length > 0) {
+      base.propertyAccessMode = 'assigned';
+      base.assignedPropertyIds = assigned;
+      return base;
+    }
+
+    if (roleNames.includes('customer')) {
+      const customerId = await this.propertyAccessService.getUserCustomerId(user.id);
+      const ids = customerId
+        ? await this.propertyAccessService.getPropertyIdsForCustomerBookings(customerId)
+        : [];
+      base.propertyAccessMode = 'assigned';
+      base.assignedPropertyIds = ids;
+      return base;
+    }
+
+    const wideUnassigned =
+      roleNames.includes('head_accountant') ||
+      roleNames.includes('admin') ||
+      roleNames.includes('hr');
+    if (wideUnassigned) {
+      base.propertyAccessMode = 'wide';
+      return base;
+    }
+
+    base.propertyAccessMode = 'assigned';
+    base.assignedPropertyIds = [];
+    return base;
   }
 
   private async createRefreshToken(userId: string, ipAddress?: string, userAgent?: string) {

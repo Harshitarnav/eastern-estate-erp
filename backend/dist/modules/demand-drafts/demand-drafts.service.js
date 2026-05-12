@@ -21,6 +21,7 @@ const demand_draft_entity_1 = require("./entities/demand-draft.entity");
 const user_entity_1 = require("../users/entities/user.entity");
 const notifications_service_1 = require("../notifications/notifications.service");
 const notification_entity_1 = require("../notifications/entities/notification.entity");
+const collections_dd_activity_util_1 = require("../../common/utils/collections-dd-activity.util");
 let DemandDraftsService = DemandDraftsService_1 = class DemandDraftsService {
     constructor(demandDraftRepository, userRepository, notificationsService) {
         this.demandDraftRepository = demandDraftRepository;
@@ -115,12 +116,44 @@ let DemandDraftsService = DemandDraftsService_1 = class DemandDraftsService {
     }
     async update(id, updateDto, userId) {
         const draft = await this.findOne(id);
+        const tracked = ['title', 'amount', 'dueDate', 'content'];
+        const changed = [];
+        const unchanged = (key, newVal) => {
+            const oldVal = draft[key];
+            if (newVal === undefined)
+                return true;
+            if (key === 'dueDate') {
+                const a = newVal == null || newVal === ''
+                    ? ''
+                    : new Date(newVal).toISOString().slice(0, 10);
+                const b = oldVal == null ? '' : new Date(oldVal).toISOString().slice(0, 10);
+                return a === b;
+            }
+            if (key === 'amount') {
+                return Number(newVal) === Number(oldVal);
+            }
+            return String(newVal ?? '') === String(oldVal ?? '');
+        };
+        for (const key of tracked) {
+            if (!(key in updateDto) || updateDto[key] === undefined)
+                continue;
+            if (!unchanged(key, updateDto[key]))
+                changed.push(key);
+        }
         for (const key in updateDto) {
             if (updateDto.hasOwnProperty(key)) {
                 draft[key] = updateDto[key];
             }
         }
         draft.updatedBy = userId;
+        if (changed.length) {
+            draft.metadata = (0, collections_dd_activity_util_1.appendCollectionsActivityPayload)(draft.metadata, {
+                kind: 'edit',
+                label: 'Draft edited',
+                detail: `Updated fields: ${changed.join(', ')}`,
+                by: userId,
+            });
+        }
         return this.demandDraftRepository.save(draft);
     }
     async remove(id) {

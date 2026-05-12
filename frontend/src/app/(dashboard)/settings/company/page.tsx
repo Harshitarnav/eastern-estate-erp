@@ -131,7 +131,14 @@ export default function CompanySettingsPage() {
       if (result.success) toast.success('Test email sent! Check your inbox.');
       else toast.error('Test failed - see details below.');
     } catch (err: any) {
-      const msg = err?.response?.data?.message ?? err?.message ?? 'Test failed';
+      let msg = err?.response?.data?.message ?? err?.message ?? 'Test failed';
+      if (
+        err?.code === 'ECONNABORTED' ||
+        /timeout of \d+ms exceeded/i.test(String(msg))
+      ) {
+        msg =
+          'The SMTP test timed out. The app now waits longer for slow connections. If it still fails, your server may block outbound port 465/587 or have no route to the SMTP host — check hosting firewall and try port 587 (TLS) if 465 (SSL) is blocked.';
+      }
       setTestResult({ success: false, message: 'Test failed', detail: msg });
       toast.error(msg);
     } finally {
@@ -145,8 +152,13 @@ export default function CompanySettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await settingsService.updateCompanySettings(form);
+      const payload = { ...form };
+      if (!String(payload.smtpPass ?? '').trim()) {
+        delete payload.smtpPass;
+      }
+      await settingsService.updateCompanySettings(payload);
       toast.success('Settings saved successfully');
+      setForm((prev) => ({ ...prev, smtpPass: '' }));
     } catch {
       toast.error('Failed to save settings');
     } finally {
@@ -297,9 +309,9 @@ export default function CompanySettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          <InfoBanner text="Gmail users: generate an App Password from your Google Account → Security → 2-Step Verification → App Passwords. Do NOT use your normal login password here." />
+          <InfoBanner text="Migadu: Host smtp.migadu.com, Port 465, Username = full mailbox email (e.g. noreply@yourdomain.com), Password = that mailbox’s password. Gmail: use a 16‑character App Password from Google Account → Security → App passwords—not your normal login." />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <Field label="SMTP Host" id="smtpHost" value={form.smtpHost ?? ''} onChange={set('smtpHost')} placeholder="smtp.gmail.com" />
+            <Field label="SMTP Host" id="smtpHost" value={form.smtpHost ?? ''} onChange={set('smtpHost')} placeholder="smtp.migadu.com or smtp.gmail.com" />
             <Field
               label="SMTP Port"
               id="smtpPort"
@@ -307,7 +319,7 @@ export default function CompanySettingsPage() {
               onChange={(v) => setForm(p => ({ ...p, smtpPort: Number(v) }))}
               placeholder="587"
               type="number"
-              hint="465 = SSL · 587 = TLS (recommended)"
+              hint="Migadu: 465 (SSL). Gmail / many hosts: 587 (TLS)."
             />
             <Field label="SMTP Username" id="smtpUser" value={form.smtpUser ?? ''} onChange={set('smtpUser')} placeholder="your@email.com" />
             <Field
@@ -315,8 +327,9 @@ export default function CompanySettingsPage() {
               id="smtpPass"
               value={form.smtpPass ?? ''}
               onChange={set('smtpPass')}
-              placeholder="••••••••••••••••"
+              placeholder="Enter only when setting or rotating the password"
               type="password"
+              hint="Never shown after you reload this page. Leave blank when saving other fields — your saved password is kept. Migadu: mailbox password. Gmail: App Password (spaces OK)."
             />
             <Field
               label="From Address"
@@ -339,7 +352,12 @@ export default function CompanySettingsPage() {
           </div>
           <CardDescription>
             Send a real test email to verify your SMTP settings are working.
-            <strong className="text-amber-700"> Save your settings first</strong>, then test.
+            <strong className="text-amber-700">
+              {' '}
+              Enter the App Password and click Save, then test
+            </strong>
+            . If the test still fails, re-type the App Password and Save again — older versions
+            could clear it when saving other fields (now fixed).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

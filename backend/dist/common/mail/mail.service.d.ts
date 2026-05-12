@@ -4,6 +4,7 @@ export interface SendMailOptions {
     subject: string;
     html: string;
     text?: string;
+    bcc?: string;
 }
 export declare class MailService {
     private readonly settingsService;

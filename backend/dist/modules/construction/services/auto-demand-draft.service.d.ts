@@ -35,5 +35,6 @@ export declare class AutoDemandDraftService {
     generateDemandDraft(match: MilestoneMatch, systemUserId?: string | null): Promise<DemandDraft>;
     manualGenerateDemandDraft(flatPaymentPlanId: string, milestoneSequence: number, userId: string): Promise<DemandDraft>;
     approveDemandDraft(demandDraftId: string, userId: string): Promise<DemandDraft>;
+    private recordEmailDispatchFailure;
     sendDemandDraft(demandDraftId: string, userId: string): Promise<DemandDraft>;
 }

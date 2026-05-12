@@ -5,6 +5,7 @@ import { DemandDraft } from './entities/demand-draft.entity';
 import { User } from '../users/entities/user.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationCategory, NotificationType } from '../notifications/entities/notification.entity';
+import { appendCollectionsActivityPayload } from '../../common/utils/collections-dd-activity.util';
 
 @Injectable()
 export class DemandDraftsService {
@@ -130,14 +131,52 @@ export class DemandDraftsService {
 
   async update(id: string, updateDto: any, userId: string): Promise<DemandDraft> {
     const draft = await this.findOne(id);
-    
+
+    const tracked = ['title', 'amount', 'dueDate', 'content'] as const;
+    const changed: string[] = [];
+
+    const unchanged = (key: (typeof tracked)[number], newVal: unknown): boolean => {
+      const oldVal = (draft as any)[key];
+      if (newVal === undefined) return true;
+      if (key === 'dueDate') {
+        const a =
+          newVal == null || newVal === ''
+            ? ''
+            : new Date(newVal as string).toISOString().slice(0, 10);
+        const b =
+          oldVal == null ? '' : new Date(oldVal as Date).toISOString().slice(0, 10);
+        return a === b;
+      }
+      if (key === 'amount') {
+        return Number(newVal) === Number(oldVal);
+      }
+      return String(newVal ?? '') === String(oldVal ?? '');
+    };
+
+    for (const key of tracked) {
+      if (!(key in updateDto) || updateDto[key] === undefined) continue;
+      if (!unchanged(key, updateDto[key])) changed.push(key);
+    }
+
     for (const key in updateDto) {
       if (updateDto.hasOwnProperty(key)) {
         draft[key] = updateDto[key];
       }
     }
     draft.updatedBy = userId;
-    
+
+    if (changed.length) {
+      draft.metadata = appendCollectionsActivityPayload(
+        draft.metadata as Record<string, unknown>,
+        {
+          kind: 'edit',
+          label: 'Draft edited',
+          detail: `Updated fields: ${changed.join(', ')}`,
+          by: userId,
+        },
+      );
+    }
+
     return this.demandDraftRepository.save(draft);
   }
 

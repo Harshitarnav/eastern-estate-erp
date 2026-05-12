@@ -58,7 +58,7 @@ function NewFlatContent() {
 
   const fetchProperties = async () => {
     try {
-      const response = await propertiesService.getProperties({ isActive: true });
+      const response = await propertiesService.getProperties();
       setProperties(response.data);
     } catch (error) {
       console.error('Error fetching properties:', error);

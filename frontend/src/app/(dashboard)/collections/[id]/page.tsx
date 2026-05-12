@@ -53,9 +53,17 @@ import {
   demandDraftsService,
 } from '@/services/demand-drafts.service';
 import { PdfInvoiceDialog } from '@/components/demand-drafts/PdfInvoiceDialog';
+import { downloadDemandDraftLetterPdf } from '@/lib/generate-demand-draft-letter-pdf';
 import { HinglishLoader } from '@/components/HinglishLoader';
 
-type Busy = 'warning' | 'send' | 'save' | 'delete' | 'recordPayment' | null;
+type Busy =
+  | 'warning'
+  | 'send'
+  | 'save'
+  | 'delete'
+  | 'recordPayment'
+  | 'pdfLetter'
+  | null;
 
 function formatINR(n: number): string {
   if (!Number.isFinite(n)) return '₹0';
@@ -198,12 +206,13 @@ export default function CollectionDetailPage() {
     setBusy('send');
     try {
       await demandDraftsService.sendDemandDraft(row.id);
-      toast.success('Demand draft sent');
+      toast.success('Demand draft emailed to the customer');
       load();
     } catch (err: any) {
       toast.error(
         err?.response?.data?.message || 'Failed to send demand draft',
       );
+      load();
     } finally {
       setBusy(null);
     }
@@ -252,6 +261,28 @@ export default function CollectionDetailPage() {
     }
   };
 
+  const handleDownloadLetterPdf = async () => {
+    if (!draft?.content) {
+      toast.error('No content to export as PDF');
+      return;
+    }
+    if (!row?.id) return;
+    setBusy('pdfLetter');
+    try {
+      await downloadDemandDraftLetterPdf({
+        title: draft.title || row?.title || 'demand-draft',
+        html: draft.content,
+      });
+      toast.success('Demand draft downloaded as PDF');
+      collectionsService.logActivity(row.id, { kind: 'download_pdf' }).catch(() => {});
+      await load();
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to generate PDF');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const handleDownloadHtml = () => {
     if (!draft?.content) {
       toast.error('No content to download');
@@ -270,6 +301,10 @@ export default function CollectionDetailPage() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast.success('Downloaded as HTML - open in browser to print as PDF');
+    if (row?.id) {
+      collectionsService.logActivity(row.id, { kind: 'download_html' }).catch(() => {});
+      load();
+    }
   };
 
   const openPayDialog = () => {
@@ -356,7 +391,9 @@ export default function CollectionDetailPage() {
     [row],
   );
   const isSendableDraft = useMemo(
-    () => row?.status === 'DRAFT' && row?.tone !== 'CANCELLATION_WARNING',
+    () =>
+      (row?.status === 'DRAFT' || row?.status === 'READY') &&
+      row?.tone !== 'CANCELLATION_WARNING',
     [row],
   );
 
@@ -411,8 +448,8 @@ export default function CollectionDetailPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Edit flow: while editing, show Save + Cancel. Otherwise, the
-              usual Send / Approve & Send Warning / Edit Draft trio. */}
+          {/* Edit flow: while editing, show Save + Cancel. Otherwise, Send /
+              warning / edit / export actions. */}
           {editing ? (
             <>
               <Button
@@ -489,6 +526,18 @@ export default function CollectionDetailPage() {
               >
                 <FileDown className="h-4 w-4 mr-2" />
                 PDF Invoice
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadLetterPdf}
+                disabled={busy !== null || !draft?.content}
+              >
+                {busy === 'pdfLetter' ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                Download PDF
               </Button>
               <Button variant="outline" onClick={handleDownloadHtml}>
                 <Download className="h-4 w-4 mr-2" />
@@ -779,9 +828,9 @@ export default function CollectionDetailPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Timeline</CardTitle>
               <CardDescription className="text-xs">
-                System events (generation, reminders, warnings) link to the
-                exact draft that was sent. Manual events (contact attempts,
-                pauses) stay inline.
+                Generation, sends, edits, downloads, contact attempts, and
+                other audit events for this draft (and linked thread
+                notices).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -803,7 +852,17 @@ export default function CollectionDetailPage() {
                                   ? 'bg-slate-400'
                                   : ev.kind === 'paid'
                                     ? 'bg-emerald-600'
-                                    : 'bg-emerald-500'
+                                    : ev.kind === 'sent'
+                                      ? 'bg-blue-600'
+                                      : ev.kind === 'email_failed'
+                                        ? 'bg-red-600'
+                                        : ev.kind === 'edit'
+                                          ? 'bg-violet-500'
+                                          : ev.kind === 'download_pdf' ||
+                                              ev.kind === 'download_html' ||
+                                              ev.kind === 'invoice_pdf'
+                                            ? 'bg-cyan-600'
+                                            : 'bg-emerald-500'
                         }`}
                       />
                     );
@@ -837,7 +896,10 @@ export default function CollectionDetailPage() {
                       </>
                     );
                     return (
-                      <li key={idx} className="ml-4">
+                      <li
+                        key={`${ev.at}-${ev.kind}-${idx}`}
+                        className="ml-4"
+                      >
                         {dot}
                         {isClickable ? (
                           <Link
@@ -864,6 +926,16 @@ export default function CollectionDetailPage() {
         open={pdfDialogOpen}
         onOpenChange={setPdfDialogOpen}
         draft={draft}
+        onSuccessfulExport={
+          row?.id
+            ? () => {
+                collectionsService
+                  .logActivity(row.id, { kind: 'invoice_pdf' })
+                  .catch(() => {});
+                load();
+              }
+            : undefined
+        }
       />
 
       {/* Record-payment dialog: creates + verifies a payment in one

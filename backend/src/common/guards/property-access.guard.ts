@@ -61,84 +61,86 @@ export class PropertyAccessGuard implements CanActivate {
       return true;
     }
 
-    // Head Accountant - company-wide accounting (same property visibility as admin for API filtering)
-    if (userRoles.includes('head_accountant')) {
-      this.logger.debug(`User ${user.email} is head_accountant - full property bypass`);
-      request.isGlobalAdmin = true;
-      request.accessiblePropertyIds = null;
-      return true;
-    }
-
-    // Customer portal users - scoped by customerId, not property assignments
-    if (userRoles.includes('customer')) {
-      this.logger.debug(`User ${user.email} is a customer - bypassing property access check`);
-      return true;
-    }
-
-    // For all other users (admin, hr, staff, etc.) check assigned properties first
+    // Explicit rows in user_property_access win over everything else (including `customer` role).
+    // Otherwise ERP assignments are ignored for anyone tagged as customer, and GET /properties returns [].
     const userPropertyIds = await this.propertyAccessService.getUserPropertyIds(user.id);
 
-    // Admin / HR with NO explicit assignments → full access (opt-in restriction)
-    const isPrivilegedRole = userRoles.includes('admin') || userRoles.includes('hr');
-    if (isPrivilegedRole && (!userPropertyIds || userPropertyIds.length === 0)) {
-      this.logger.debug(`User ${user.email} has ${userRoles.join(',')} role with no assignments - full bypass`);
+    if (userPropertyIds && userPropertyIds.length > 0) {
+      request.isGlobalAdmin = false;
+      request.accessiblePropertyIds = userPropertyIds;
+
+      const propertyId =
+        request.params?.propertyId ||
+        request.query?.propertyId ||
+        request.body?.propertyId;
+
+      if (!propertyId) {
+        this.logger.debug(
+          `No propertyId in request — user scoped to ${userPropertyIds.length} assigned project(s)`,
+        );
+        return true;
+      }
+
+      const hasAccess = await this.propertyAccessService.hasAccess(
+        user.id,
+        propertyId,
+        requiredRoles,
+      );
+
+      if (!hasAccess) {
+        this.logger.warn(
+          `User ${user.email} does not have access to property ${propertyId}`,
+        );
+        throw new ForbiddenException(
+          'You do not have access to this property',
+        );
+      }
+
+      const accesses = await this.propertyAccessService.getUserProperties(user.id);
+      request.propertyAccess = accesses.find((a) => a.propertyId === propertyId);
+
+      this.logger.debug(
+        `User ${user.email} has ${request.propertyAccess?.role} access to property ${propertyId}`,
+      );
+      return true;
+    }
+
+    // Customer portal users — scope by bookings (no user_property_access rows)
+    if (userRoles.includes('customer')) {
+      const customerId = await this.propertyAccessService.getUserCustomerId(user.id);
+      if (!customerId) {
+        this.logger.debug(`User ${user.email} is customer with no linked profile — empty property scope`);
+        request.isGlobalAdmin = false;
+        request.accessiblePropertyIds = [];
+        return true;
+      }
+      const customerPropertyIds =
+        await this.propertyAccessService.getPropertyIdsForCustomerBookings(customerId);
+      this.logger.debug(
+        `User ${user.email} is customer — scoped to ${customerPropertyIds.length} booking project(s)`,
+      );
+      request.isGlobalAdmin = false;
+      request.accessiblePropertyIds = customerPropertyIds;
+      return true;
+    }
+
+    // Privileged roles with NO explicit assignments → full access (opt-in restriction via assignments)
+    const isPrivilegedWideRole =
+      userRoles.includes('head_accountant') ||
+      userRoles.includes('admin') ||
+      userRoles.includes('hr');
+    if (isPrivilegedWideRole) {
+      this.logger.debug(
+        `User ${user.email} has wide role (${userRoles.join(',')}) with no assignments — full bypass`,
+      );
       request.isGlobalAdmin = true;
       request.accessiblePropertyIds = null;
       return true;
     }
     
-    if (!userPropertyIds || userPropertyIds.length === 0) {
-      this.logger.warn(`User ${user.email} has no property access - denying request`);
-      throw new ForbiddenException(
-        'You have not been assigned to any projects yet. Please contact your administrator.',
-      );
-    }
-
-    // Attach accessible property IDs - services will filter by these
-    request.isGlobalAdmin = false;
-    request.accessiblePropertyIds = userPropertyIds;
-
-    // Extract propertyId from request (params, query, or body)
-    const propertyId =
-      request.params?.propertyId ||
-      request.query?.propertyId ||
-      request.body?.propertyId;
-
-    if (!propertyId) {
-      // If no propertyId in request, allow (service will filter using accessiblePropertyIds)
-      this.logger.debug(`No propertyId in request - user has access to ${userPropertyIds.length} properties`);
-      request.isGlobalAdmin = false;
-      return true;
-    }
-
-    // Check if user has access to this specific property
-    const hasAccess = await this.propertyAccessService.hasAccess(
-      user.id,
-      propertyId,
-      requiredRoles,
+    this.logger.warn(`User ${user.email} has no property access - denying request`);
+    throw new ForbiddenException(
+      'You have not been assigned to any projects yet. Please contact your administrator.',
     );
-
-    if (!hasAccess) {
-      this.logger.warn(
-        `User ${user.email} does not have access to property ${propertyId}`,
-      );
-      throw new ForbiddenException(
-        'You do not have access to this property',
-      );
-    }
-
-    // Get the specific access for this property
-    const accesses = await this.propertyAccessService.getUserProperties(user.id);
-    const propertyAccess = accesses.find((a) => a.propertyId === propertyId);
-
-    // Attach property access info to request for later use
-    request.propertyAccess = propertyAccess;
-    request.isGlobalAdmin = false;
-
-    this.logger.debug(
-      `User ${user.email} has ${propertyAccess?.role} access to property ${propertyId}`,
-    );
-
-    return true;
   }
 }

@@ -5,24 +5,36 @@ import { User } from '../modules/users/entities/user.entity';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { PropertyAccessService } from '../modules/users/services/property-access.service';
+export type PropertyAccessMode = 'wide' | 'assigned';
+export interface AuthUserDto {
+    id: string;
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    profileImage?: string;
+    roles: Array<{
+        id: string;
+        name: string;
+        displayName: string;
+    }>;
+    propertyAccessMode: PropertyAccessMode;
+    assignedPropertyIds?: string[];
+}
 export declare class AuthService {
     private usersRepository;
     private refreshTokenRepository;
     private jwtService;
     private configService;
-    constructor(usersRepository: Repository<User>, refreshTokenRepository: Repository<RefreshToken>, jwtService: JwtService, configService: ConfigService);
+    private propertyAccessService;
+    constructor(usersRepository: Repository<User>, refreshTokenRepository: Repository<RefreshToken>, jwtService: JwtService, configService: ConfigService, propertyAccessService: PropertyAccessService);
     validateUser(email: string, password: string): Promise<any>;
     login(loginDto: LoginDto, ipAddress?: string, userAgent?: string): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: {
-            id: any;
-            email: any;
-            username: any;
-            firstName: any;
-            lastName: any;
-            roles: any;
-        };
+        user: AuthUserDto;
     }>;
     register(registerDto: RegisterDto): Promise<{
         id: string;
@@ -62,15 +74,26 @@ export declare class AuthService {
     googleLogin(user: any, ipAddress?: string, userAgent?: string): Promise<{
         accessToken: string;
         refreshToken: string;
-        user: {
-            id: any;
-            email: any;
-            username: any;
-            firstName: any;
-            lastName: any;
-            profileImage: any;
-            roles: any;
-        };
+        user: AuthUserDto;
     }>;
+    getAuthenticatedProfile(userId: string): Promise<{
+        permissions: import("../modules/users/entities/permission.entity").Permission[];
+        id: string;
+        email: string;
+        username: string;
+        firstName: string;
+        lastName: string;
+        phone?: string;
+        profileImage?: string;
+        roles: Array<{
+            id: string;
+            name: string;
+            displayName: string;
+        }>;
+        propertyAccessMode: PropertyAccessMode;
+        assignedPropertyIds?: string[];
+    }>;
+    private mapUserRoles;
+    private buildAuthUserDto;
     private createRefreshToken;
 }

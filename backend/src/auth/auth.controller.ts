@@ -46,7 +46,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@Request() req: any) {
-    return req.user;
+    return this.authService.getAuthenticatedProfile(req.user.id);
   }
 
   // Google OAuth Login

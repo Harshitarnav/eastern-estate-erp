@@ -32,7 +32,10 @@ export declare class PropertiesService {
     update(id: string, updatePropertyDto: UpdatePropertyDto, userId?: string): Promise<PropertyResponseDto>;
     remove(id: string, userId?: string): Promise<void>;
     toggleActive(id: string, userId?: string): Promise<PropertyResponseDto>;
-    getStats(userId?: string): Promise<any>;
+    getStats(access?: {
+        isGlobalAdmin: boolean;
+        accessiblePropertyIds: string[] | null;
+    }): Promise<any>;
     private mapToResponseDto;
     private mapFlatToHierarchyDto;
     private calculateTowerStats;

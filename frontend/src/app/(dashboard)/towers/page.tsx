@@ -85,7 +85,7 @@ export default function TowersInventoryPage() {
     const fetchProperties = async () => {
       try {
         setLoadingProperties(true);
-        const response = await propertiesService.getProperties({ limit: 50, isActive: true, sortBy: 'name', sortOrder: 'ASC' });
+        const response = await propertiesService.getProperties({ limit: 50, sortBy: 'name', sortOrder: 'ASC' });
         setProperties(response.data ?? []);
         if ((response.data?.length ?? 0) > 0) {
           setSelectedPropertyId(response.data![0].id);

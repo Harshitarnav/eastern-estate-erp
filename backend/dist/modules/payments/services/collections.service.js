@@ -22,6 +22,7 @@ const booking_entity_1 = require("../../bookings/entities/booking.entity");
 const customer_entity_1 = require("../../customers/entities/customer.entity");
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const flat_payment_plan_entity_1 = require("../../payment-plans/entities/flat-payment-plan.entity");
+const collections_dd_activity_util_1 = require("../../../common/utils/collections-dd-activity.util");
 const DAYS_OVERDUE_SQL = `GREATEST(0, (CURRENT_DATE - dd.due_date::date))::int`;
 let CollectionsService = CollectionsService_1 = class CollectionsService {
     constructor(ddRepo, bookingRepo, customerRepo, flatRepo, planRepo) {
@@ -296,6 +297,16 @@ let CollectionsService = CollectionsService_1 = class CollectionsService {
                 detail: t.title ?? undefined,
                 demandDraftId: t.id,
             });
+            const fullRow = threadFull.find((x) => x.id === t.id);
+            if (fullRow?.sentAt) {
+                timeline.push({
+                    at: fullRow.sentAt,
+                    kind: 'sent',
+                    label: 'Demand notice emailed to customer',
+                    detail: t.customerEmail ? `Recipient: ${t.customerEmail}` : undefined,
+                    demandDraftId: t.id,
+                });
+            }
             if (t.lastReminderAt) {
                 timeline.push({
                     at: t.lastReminderAt,
@@ -326,8 +337,9 @@ let CollectionsService = CollectionsService_1 = class CollectionsService {
             }
         }
         const focal = await this.ddRepo.findOne({ where: { id } });
-        if (focal?.metadata) {
-            const contacts = focal.metadata.contacts || [];
+        const meta = focal?.metadata && typeof focal.metadata === 'object' ? focal.metadata : {};
+        {
+            const contacts = meta.contacts || [];
             for (const c of contacts) {
                 if (!c?.at)
                     continue;
@@ -338,7 +350,7 @@ let CollectionsService = CollectionsService_1 = class CollectionsService {
                     detail: c.note ? String(c.note) : undefined,
                 });
             }
-            const pauses = focal.metadata.pauses || [];
+            const pauses = meta.pauses || [];
             for (const p of pauses) {
                 if (!p?.at)
                     continue;
@@ -347,6 +359,17 @@ let CollectionsService = CollectionsService_1 = class CollectionsService {
                     kind: 'pause',
                     label: `Reminders paused (${String(p.scope ?? 'plan')}, ${Number(p.days) || 0}d)`,
                     detail: p.note ? String(p.note) : undefined,
+                });
+            }
+            const activities = meta.collectionsActivities || [];
+            for (const a of activities) {
+                if (!a?.at)
+                    continue;
+                timeline.push({
+                    at: new Date(a.at),
+                    kind: String(a.kind || 'activity'),
+                    label: String(a.label || 'Activity'),
+                    detail: a.detail ? String(a.detail) : undefined,
                 });
             }
         }
@@ -382,6 +405,26 @@ let CollectionsService = CollectionsService_1 = class CollectionsService {
         };
         await this.ddRepo.save(dd);
         return { pausedUntil, scope };
+    }
+    async appendCollectionsActivity(id, input, actorUserId) {
+        const dd = await this.ddRepo.findOne({ where: { id } });
+        if (!dd)
+            throw new common_1.NotFoundException(`DD ${id} not found`);
+        const defaults = {
+            download_pdf: 'Demand letter PDF downloaded',
+            download_html: 'Demand letter HTML downloaded',
+            invoice_pdf: 'GST invoice PDF downloaded',
+        };
+        const label = input.label ||
+            defaults[input.kind] ||
+            'Activity recorded';
+        dd.metadata = (0, collections_dd_activity_util_1.appendCollectionsActivityPayload)(dd.metadata, {
+            kind: input.kind,
+            label,
+            detail: input.detail ?? null,
+            by: actorUserId ?? null,
+        });
+        await this.ddRepo.save(dd);
     }
     async recordContact(id, input) {
         const dd = await this.ddRepo.findOne({ where: { id } });

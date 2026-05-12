@@ -33,6 +33,7 @@ const demand_draft_html_builder_1 = require("../../../common/utils/demand-draft-
 const settings_service_1 = require("../../settings/settings.service");
 const mail_service_1 = require("../../../common/mail/mail.service");
 const auto_send_resolver_service_1 = require("./auto-send-resolver.service");
+const collections_dd_activity_util_1 = require("../../../common/utils/collections-dd-activity.util");
 let AutoDemandDraftService = AutoDemandDraftService_1 = class AutoDemandDraftService {
     constructor(demandDraftRepository, paymentScheduleRepository, progressRepository, flatRepository, customerRepository, bookingRepository, propertyRepository, towerRepository, milestoneDetectionService, flatPaymentPlanService, templateService, settingsService, mailService, autoSendResolver) {
         this.demandDraftRepository = demandDraftRepository;
@@ -351,6 +352,20 @@ let AutoDemandDraftService = AutoDemandDraftService_1 = class AutoDemandDraftSer
         demandDraft.updatedBy = userId;
         return await this.demandDraftRepository.save(demandDraft);
     }
+    async recordEmailDispatchFailure(demandDraftId, userId, detail) {
+        const dd = await this.demandDraftRepository.findOne({
+            where: { id: demandDraftId },
+        });
+        if (!dd)
+            return;
+        dd.metadata = (0, collections_dd_activity_util_1.appendCollectionsActivityPayload)(dd.metadata, {
+            kind: 'email_failed',
+            label: 'Email not delivered',
+            detail,
+            by: userId,
+        });
+        await this.demandDraftRepository.save(dd);
+    }
     async sendDemandDraft(demandDraftId, userId) {
         const demandDraft = await this.demandDraftRepository.findOne({
             where: { id: demandDraftId },
@@ -358,43 +373,61 @@ let AutoDemandDraftService = AutoDemandDraftService_1 = class AutoDemandDraftSer
         if (!demandDraft) {
             throw new common_1.NotFoundException('Demand draft not found');
         }
-        if (demandDraft.status !== demand_draft_entity_1.DemandDraftStatus.READY) {
-            throw new common_1.BadRequestException(`Demand draft is currently in "${demandDraft.status}" status. ` +
-                `Please approve it first (set to READY) before sending.`);
+        if (demandDraft.status === demand_draft_entity_1.DemandDraftStatus.SENT ||
+            demandDraft.status === demand_draft_entity_1.DemandDraftStatus.PAID) {
+            throw new common_1.BadRequestException(`Demand draft is already ${demandDraft.status.toLowerCase()} and cannot be sent again.`);
+        }
+        if (demandDraft.status !== demand_draft_entity_1.DemandDraftStatus.DRAFT &&
+            demandDraft.status !== demand_draft_entity_1.DemandDraftStatus.READY) {
+            throw new common_1.BadRequestException(`Demand draft cannot be sent from status "${demandDraft.status}".`);
         }
         let customerEmail = null;
         if (demandDraft.customerId) {
-            const customer = await this.customerRepository.findOne({ where: { id: demandDraft.customerId } });
+            const customer = await this.customerRepository.findOne({
+                where: { id: demandDraft.customerId },
+            });
             customerEmail = customer?.email ?? null;
         }
         const emailSubject = demandDraft.metadata?.subject ||
             demandDraft.title ||
             `Payment Demand Notice - ₹${demandDraft.amount?.toLocaleString('en-IN')}`;
-        if (customerEmail) {
-            try {
-                const result = await this.mailService.sendMail({
-                    to: customerEmail,
-                    subject: emailSubject,
-                    html: demandDraft.content || '<p>Please contact us for your payment demand details.</p>',
-                });
-                if (result.skipped) {
-                    this.logger.warn(`Email skipped (SMTP not configured) for draft ${demandDraftId}`);
-                }
-                else {
-                    this.logger.log(`Email sent to ${customerEmail} for draft ${demandDraftId}`);
-                }
-            }
-            catch (mailErr) {
-                this.logger.error(`Email delivery failed for draft ${demandDraftId}: ${mailErr?.message}`);
+        if (!customerEmail) {
+            await this.recordEmailDispatchFailure(demandDraftId, userId, 'No email address on the customer record.');
+            throw new common_1.BadRequestException('Cannot send: customer has no email address. Add one on the customer profile, then try again.');
+        }
+        const settings = await this.settingsService.get();
+        const fromAddress = (settings.smtpFrom || settings.smtpUser || '').trim();
+        const bccArchive = fromAddress && fromAddress.toLowerCase() !== customerEmail.toLowerCase()
+            ? fromAddress
+            : undefined;
+        try {
+            const result = await this.mailService.sendMail({
+                to: customerEmail,
+                subject: emailSubject,
+                html: demandDraft.content ||
+                    '<p>Please contact us for your payment demand details.</p>',
+                ...(bccArchive ? { bcc: bccArchive } : {}),
+            });
+            if (result.skipped) {
+                await this.recordEmailDispatchFailure(demandDraftId, userId, 'SMTP is not configured in Settings → Company.');
+                throw new common_1.BadRequestException('Cannot send email: SMTP host and user are not configured under Settings → Company.');
             }
         }
-        else {
-            this.logger.warn(`Draft ${demandDraftId} has no customer email - skipping email send`);
+        catch (err) {
+            if (err instanceof common_1.BadRequestException) {
+                throw err;
+            }
+            const msg = err?.message || 'Unknown error';
+            await this.recordEmailDispatchFailure(demandDraftId, userId, msg);
+            throw new common_1.BadRequestException(`Email delivery failed: ${msg}`);
         }
         demandDraft.status = demand_draft_entity_1.DemandDraftStatus.SENT;
         demandDraft.sentAt = new Date();
         demandDraft.updatedBy = userId;
-        this.logger.log(`Demand draft ${demandDraftId} marked as sent`);
+        demandDraft.requiresReview = false;
+        demandDraft.reviewedBy = userId;
+        demandDraft.reviewedAt = new Date();
+        this.logger.log(`Demand draft ${demandDraftId} emailed and marked SENT`);
         return await this.demandDraftRepository.save(demandDraft);
     }
 };

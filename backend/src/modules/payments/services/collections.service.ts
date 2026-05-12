@@ -10,6 +10,7 @@ import { Booking, BookingStatus } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
 import { Flat } from '../../flats/entities/flat.entity';
 import { FlatPaymentPlan } from '../../payment-plans/entities/flat-payment-plan.entity';
+import { appendCollectionsActivityPayload } from '../../../common/utils/collections-dd-activity.util';
 
 export type CollectionTier =
   | 'ON_TRACK'
@@ -487,6 +488,16 @@ export class CollectionsService {
         detail: t.title ?? undefined,
         demandDraftId: t.id,
       });
+      const fullRow = threadFull.find((x) => x.id === t.id);
+      if (fullRow?.sentAt) {
+        timeline.push({
+          at: fullRow.sentAt,
+          kind: 'sent',
+          label: 'Demand notice emailed to customer',
+          detail: t.customerEmail ? `Recipient: ${t.customerEmail}` : undefined,
+          demandDraftId: t.id,
+        });
+      }
       if (t.lastReminderAt) {
         timeline.push({
           at: t.lastReminderAt,
@@ -517,11 +528,10 @@ export class CollectionsService {
       }
     }
 
-    // Pull contact attempts and pause events from the focal DD's metadata
-    // so the human audit trail surfaces next to the system events.
     const focal = await this.ddRepo.findOne({ where: { id } });
-    if (focal?.metadata) {
-      const contacts = (focal.metadata.contacts as any[]) || [];
+    const meta = focal?.metadata && typeof focal.metadata === 'object' ? focal.metadata : {};
+    {
+      const contacts = (meta.contacts as any[]) || [];
       for (const c of contacts) {
         if (!c?.at) continue;
         timeline.push({
@@ -531,7 +541,7 @@ export class CollectionsService {
           detail: c.note ? String(c.note) : undefined,
         });
       }
-      const pauses = (focal.metadata.pauses as any[]) || [];
+      const pauses = (meta.pauses as any[]) || [];
       for (const p of pauses) {
         if (!p?.at) continue;
         timeline.push({
@@ -539,6 +549,16 @@ export class CollectionsService {
           kind: 'pause',
           label: `Reminders paused (${String(p.scope ?? 'plan')}, ${Number(p.days) || 0}d)`,
           detail: p.note ? String(p.note) : undefined,
+        });
+      }
+      const activities = (meta.collectionsActivities as any[]) || [];
+      for (const a of activities) {
+        if (!a?.at) continue;
+        timeline.push({
+          at: new Date(a.at),
+          kind: String(a.kind || 'activity'),
+          label: String(a.label || 'Activity'),
+          detail: a.detail ? String(a.detail) : undefined,
         });
       }
     }
@@ -596,6 +616,37 @@ export class CollectionsService {
    * Append a "contact attempt" note to the DD metadata so finance can
    * track who called/emailed the customer outside the system.
    */
+  /**
+   * Append a user-visible audit event (download, future manual notes, etc.)
+   * to the focal DD metadata. Shown on the Collections detail timeline.
+   */
+  async appendCollectionsActivity(
+    id: string,
+    input: { kind: string; label?: string; detail?: string },
+    actorUserId?: string | null,
+  ): Promise<void> {
+    const dd = await this.ddRepo.findOne({ where: { id } });
+    if (!dd) throw new NotFoundException(`DD ${id} not found`);
+
+    const defaults: Record<string, string> = {
+      download_pdf: 'Demand letter PDF downloaded',
+      download_html: 'Demand letter HTML downloaded',
+      invoice_pdf: 'GST invoice PDF downloaded',
+    };
+    const label =
+      input.label ||
+      defaults[input.kind] ||
+      'Activity recorded';
+
+    dd.metadata = appendCollectionsActivityPayload(dd.metadata as Record<string, unknown>, {
+      kind: input.kind,
+      label,
+      detail: input.detail ?? null,
+      by: actorUserId ?? null,
+    });
+    await this.ddRepo.save(dd);
+  }
+
   async recordContact(
     id: string,
     input: { channel: 'phone' | 'email' | 'sms' | 'visit' | 'other'; note: string; by?: string | null },

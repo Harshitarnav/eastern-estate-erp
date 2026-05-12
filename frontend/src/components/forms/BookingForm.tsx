@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Form, FormField } from './Form';
-import { propertiesService } from '@/services/properties.service';
+import { propertiesService, propertyListFromResponse } from '@/services/properties.service';
 import { flatsService } from '@/services/flats.service';
 import { customersService } from '@/services/customers.service';
+import { usePropertyStore } from '@/store/propertyStore';
+import { filterBookableFlats } from '@/lib/property-scope';
 
 interface BookingFormProps {
   onSubmit: (data: any) => void;
@@ -13,6 +15,7 @@ interface BookingFormProps {
 }
 
 export default function BookingForm({ onSubmit, initialData, onCancel }: BookingFormProps) {
+  const headerPropertyId = usePropertyStore((s) => s.selectedProperties[0] ?? '');
   const [properties, setProperties] = useState<any[]>([]);
   const [flats, setFlats] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -21,6 +24,21 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   const [activeTab, setActiveTab] = useState('basic');
   const [isHomeLoan, setIsHomeLoan] = useState(false);
 
+  // Align with global project filter + single-assigned preselect
+  useEffect(() => {
+    if (initialData?.propertyId) {
+      setSelectedProperty(initialData.propertyId);
+      return;
+    }
+    if (properties.length === 1) {
+      setSelectedProperty(properties[0].id);
+      return;
+    }
+    if (headerPropertyId && properties.some((p) => p.id === headerPropertyId)) {
+      setSelectedProperty(headerPropertyId);
+    }
+  }, [initialData?.propertyId, properties, headerPropertyId]);
+
   useEffect(() => {
     fetchData(initialData);
   }, [initialData]);
@@ -28,17 +46,19 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   useEffect(() => {
     if (selectedProperty) {
       fetchFlats(selectedProperty);
+    } else {
+      setFlats([]);
     }
   }, [selectedProperty]);
 
   const fetchData = async (initial?: any) => {
     try {
       const [propsRes, customersRes] = await Promise.all([
-        propertiesService.getProperties({ limit: 100, isActive: true }),
+        propertiesService.getProperties({ limit: 100 }),
         customersService.getCustomers({ limit: 100, isActive: true }),
       ]);
-      setProperties(propsRes.data);
-      setCustomers(customersRes.data);
+      setProperties(propertyListFromResponse(propsRes));
+      setCustomers(customersRes.data ?? []);
       if (initial?.propertyId) {
         setSelectedProperty(initial.propertyId);
         setIsHomeLoan(!!initial.isHomeLoan);
@@ -53,42 +73,55 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   const fetchFlats = async (propertyId: string) => {
     try {
-      // When editing an existing booking (initialData?.flatId is set), fetch ALL flats so the
-      // already-booked flat still appears in the dropdown.
-      //
-      // For new bookings we intentionally filter by `status = AVAILABLE` instead of
-      // `isAvailable = true`. The two flags can drift in production: a freshly seeded
-      // inventory with `status = AVAILABLE` may still have `is_available` stored as
-      // NULL/false from an older migration, which silently emptied this dropdown.
-      // `status` is the authoritative, user-facing value shown elsewhere in the ERP.
       const isEditing = !!initialData?.flatId;
-      const query: any = { propertyId, limit: 200, sortBy: 'flatNumber', sortOrder: 'ASC' };
-      if (!isEditing) query.status = 'AVAILABLE';
+      const query: Record<string, unknown> = {
+        propertyId,
+        limit: 500,
+        sortBy: 'flatNumber',
+        sortOrder: 'ASC',
+        isActive: true,
+      };
+      if (isEditing) {
+        // Editing: include every unit so the booked flat stays in the list
+      } else {
+        // New booking: load saleable inventory; do not require status=AVAILABLE only
+        // (many rows default to UNDER_CONSTRUCTION but are still bookable).
+      }
       const res = await flatsService.getFlats(query);
-      setFlats(res.data);
+      const rows = res.data ?? [];
+      setFlats(isEditing ? rows : filterBookableFlats(rows));
     } catch (error) {
       console.error('Error fetching flats:', error);
+      setFlats([]);
     }
   };
+
+  const mergedInitialValues = useMemo(
+    () => ({
+      ...initialData,
+      propertyId: selectedProperty || initialData?.propertyId || '',
+    }),
+    [initialData, selectedProperty],
+  );
 
   // Tab 1: Basic Information
   const basicFields: FormField[] = [
     {
       name: 'bookingNumber',
-      label: 'Booking Number *',
+      label: 'Booking Number',
       type: 'text',
       required: true,
       placeholder: 'e.g., BK-2025-001',
     },
     {
       name: 'bookingDate',
-      label: 'Booking Date *',
+      label: 'Booking Date',
       type: 'date',
       required: true,
     },
     {
       name: 'status',
-      label: 'Booking Status *',
+      label: 'Booking Status',
       type: 'select',
       required: true,
       options: [
@@ -103,28 +136,25 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     },
     {
       name: 'customerId',
-      label: 'Customer *',
+      label: 'Customer',
       type: 'select',
       required: true,
       options: customers.map(c => ({ value: c.id, label: `${c.fullName} (${c.phoneNumber})` })),
     },
     {
       name: 'propertyId',
-      label: 'Property *',
+      label: 'Property',
       type: 'select',
       required: true,
+      clearsFields: ['flatId'],
       options: properties.map(p => ({ value: p.id, label: `${p.name} - ${p.location}` })),
       onChange: (value) => {
         setSelectedProperty(String(value));
-        setFlats([]);
-        if (value) {
-          fetchFlats(String(value));
-        }
       },
     },
     {
       name: 'flatId',
-      label: 'Flat/Unit *',
+      label: 'Flat/Unit',
       type: 'select',
       required: true,
       options: flats.map(f => {
@@ -136,6 +166,10 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
         };
       }),
       disabled: !selectedProperty,
+      helperText:
+        selectedProperty && flats.length === 0
+          ? 'No bookable units for this project yet (inventory may be UNDER_CONSTRUCTION, BLOCKED, or all sold).'
+          : undefined,
     },
   ];
 
@@ -143,14 +177,14 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   const financialFields: FormField[] = [
     {
       name: 'totalAmount',
-      label: 'Total Amount (₹) *',
+      label: 'Total Amount (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 5000000',
     },
     {
       name: 'tokenAmount',
-      label: 'Token Amount (₹) *',
+      label: 'Token Amount (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 100000',
@@ -184,7 +218,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     },
     {
       name: 'agreementAmount',
-      label: 'Agreement Amount (₹) *',
+      label: 'Agreement Amount (₹)',
       type: 'number',
       required: true,
       placeholder: 'e.g., 1000000',
@@ -542,8 +576,9 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
       {/* Form */}
       <Form
+        key={`${initialData?.id ?? 'new-booking'}-${selectedProperty}-${properties.length}`}
         fields={currentFields}
-        initialValues={initialData}
+        initialValues={mergedInitialValues}
         onSubmit={onSubmit}
         submitLabel={initialData ? 'Update Booking' : 'Create Booking'}
         onCancel={onCancel}

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { authService, User } from '@/services/auth.service';
+import { usePropertyStore } from '@/store/propertyStore';
 
 interface AuthState {
   user: User | null;
@@ -21,6 +22,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (email, password) => {
     try {
       const response = await authService.login({ email, password });
+      usePropertyStore.getState().setProperties([]);
+      usePropertyStore.getState().setSelectedProperties([]);
       set({ user: response.user, isAuthenticated: true });
     } catch (error) {
       throw error;
@@ -29,6 +32,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await authService.logout();
+    usePropertyStore.getState().setProperties([]);
+    usePropertyStore.getState().setSelectedProperties([]);
     set({ user: null, isAuthenticated: false });
   },
 

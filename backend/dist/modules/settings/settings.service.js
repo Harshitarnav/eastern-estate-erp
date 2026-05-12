@@ -17,8 +17,8 @@ exports.SettingsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const nodemailer = require("nodemailer");
 const company_settings_entity_1 = require("./entities/company-settings.entity");
+const company_smtp_transport_1 = require("../../common/mail/company-smtp-transport");
 let SettingsService = SettingsService_1 = class SettingsService {
     constructor(repo) {
         this.repo = repo;
@@ -47,30 +47,50 @@ let SettingsService = SettingsService_1 = class SettingsService {
     }
     async update(dto) {
         const settings = await this.get();
-        Object.assign(settings, dto);
+        const patch = { ...dto };
+        if (typeof patch.smtpHost === 'string') {
+            patch.smtpHost = patch.smtpHost.trim() || null;
+        }
+        if (typeof patch.smtpUser === 'string') {
+            patch.smtpUser = patch.smtpUser.trim() || null;
+        }
+        if (typeof patch.smtpFrom === 'string') {
+            patch.smtpFrom = patch.smtpFrom.trim() || null;
+        }
+        if (patch.smtpPass !== undefined && patch.smtpPass !== null) {
+            const normalized = (0, company_smtp_transport_1.normalizeSmtpPassword)(patch.smtpPass);
+            if (normalized === '') {
+                delete patch.smtpPass;
+            }
+            else {
+                patch.smtpPass = normalized;
+            }
+        }
+        else {
+            delete patch.smtpPass;
+        }
+        Object.assign(settings, patch);
         return this.repo.save(settings);
     }
     async testEmail(to, subject, body) {
         const settings = await this.get();
+        const smtpPass = (0, company_smtp_transport_1.normalizeSmtpPassword)(settings.smtpPass);
         if (!settings.smtpHost || !settings.smtpUser) {
             throw new common_1.BadRequestException('SMTP is not configured. Fill in SMTP Host and Username first, then Save Settings before testing.');
+        }
+        if (!smtpPass) {
+            throw new common_1.BadRequestException('SMTP password is missing. Enter your Gmail App Password (or SMTP password), click Save Changes, then run the test again. The password field stays empty after you reload the page (security); re-enter it whenever you set or change SMTP.');
         }
         if (!to) {
             throw new common_1.BadRequestException('Recipient email address is required.');
         }
-        const transporter = nodemailer.createTransport({
-            host: settings.smtpHost,
-            port: settings.smtpPort ?? 587,
-            secure: (settings.smtpPort ?? 587) === 465,
-            auth: {
-                user: settings.smtpUser,
-                pass: settings.smtpPass ?? '',
-            },
+        const transporter = (0, company_smtp_transport_1.createCompanySmtpTransporter)({
+            ...settings,
+            smtpPass,
         });
         const fromAddress = settings.smtpFrom || settings.smtpUser;
         const fromName = settings.companyName || 'Eastern Estate';
         try {
-            await transporter.verify();
             const info = await transporter.sendMail({
                 from: `"${fromName}" <${fromAddress}>`,
                 to,
@@ -105,8 +125,14 @@ let SettingsService = SettingsService_1 = class SettingsService {
         catch (err) {
             this.logger.error(`SMTP test failed: ${err?.message}`);
             let detail = err?.message ?? 'Unknown error';
-            if (err?.code === 'EAUTH')
-                detail = 'Authentication failed - wrong username or password / App Password. Make sure 2-Step Verification is enabled on Gmail.';
+            if (err?.code === 'EAUTH') {
+                detail =
+                    'Authentication failed. For Gmail: use your full email as Username, a 16-character App Password (not your normal password), Port 587 or 465, and ensure 2-Step Verification is on. Strip spaces from the App Password or paste as-is — both work after save.';
+            }
+            else if (err?.responseCode === 535 || err?.responseCode === 534) {
+                detail =
+                    'Server rejected the username/password (SMTP code 535). Regenerate a fresh App Password at myaccount.google.com/apppasswords and save it under Company Settings.';
+            }
             else if (err?.code === 'ECONNREFUSED')
                 detail = `Connection refused to ${settings.smtpHost}:${settings.smtpPort}. Check the host and port.`;
             else if (err?.code === 'ETIMEDOUT')
