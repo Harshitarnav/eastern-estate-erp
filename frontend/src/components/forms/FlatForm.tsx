@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Form, FormSection } from './Form';
 import { Home, Building2, DollarSign } from 'lucide-react';
+import {
+  formatFlatNumberFromTower,
+  towerAreaDefaults,
+} from '@/lib/flat-number-format';
 
 interface FlatFormProps {
   initialData?: any;
@@ -29,11 +33,53 @@ export default function FlatForm({
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>(
     initialData?.propertyId || ''
   );
+  const [formSnapshot, setFormSnapshot] = useState<Record<string, any>>({});
+  const [towerPrefill, setTowerPrefill] = useState<Record<string, any>>({});
+  const [formVersion, setFormVersion] = useState(0);
 
   useEffect(() => {
     if (!selectedPropertyId) return;
     onPropertyChange?.(selectedPropertyId);
   }, [selectedPropertyId]);
+
+  const applyTowerDefaults = (towerId: string, current: Record<string, any>) => {
+    const tower = towersForProperty.find((t) => t.id === towerId);
+    if (!tower) return;
+    const areas = towerAreaDefaults(tower);
+    const prefill: Record<string, any> = {};
+    if (areas.superBuiltUpArea && !current.superBuiltUpArea) {
+      prefill.superBuiltUpArea = areas.superBuiltUpArea;
+    }
+    if (areas.builtUpArea && !current.builtUpArea) {
+      prefill.builtUpArea = areas.builtUpArea;
+    }
+    if (areas.carpetArea && !current.carpetArea) {
+      prefill.carpetArea = areas.carpetArea;
+    }
+    const floor = current.floor ?? '';
+    if (!current.flatNumber && tower.flatNumberPrefix && floor !== '') {
+      prefill.flatNumber = formatFlatNumberFromTower(
+        tower.flatNumberPrefix,
+        floor,
+        1,
+      );
+    }
+    if (Object.keys(prefill).length) {
+      setTowerPrefill((prev) => ({ ...prev, ...prefill }));
+      setFormVersion((v) => v + 1);
+    }
+  };
+
+  const mergedInitialValues = useMemo(
+    () => ({
+      ...initialData,
+      ...towerPrefill,
+      ...formSnapshot,
+      propertyId: formSnapshot.propertyId || initialData?.propertyId || '',
+      towerId: formSnapshot.towerId || initialData?.towerId || '',
+    }),
+    [initialData, towerPrefill, formSnapshot],
+  );
 
   const towersForProperty = useMemo(
     () => towers.filter((t) => t.propertyId === selectedPropertyId),
@@ -106,6 +152,12 @@ export default function FlatForm({
           label: 'Tower/Block',
           type: 'select',
           required: true,
+          onChange: (towerId: string) => {
+            applyTowerDefaults(String(towerId), {
+              ...mergedInitialValues,
+              ...formSnapshot,
+            });
+          },
           options: towersForProperty.map((t) => ({
             value: t.id,
             label: [t.name, t.towerNumber ? `(${t.towerNumber})` : ''].filter(Boolean).join(' '),
@@ -115,15 +167,39 @@ export default function FlatForm({
           helperText:
             towersForProperty.length === 0 && selectedPropertyId
               ? 'No towers are defined for this property yet.'
-              : undefined,
+              : 'Block area defaults and flat number prefix apply when you pick a tower.',
         },
         {
           name: 'flatNumber',
           label: 'Flat Number',
           type: 'text',
-          placeholder: 'T1-101',
+          placeholder: 'A-101',
           required: true,
-          helperText: 'e.g., T1-101, A-501',
+          helperText: 'Uses block prefix + floor when set on the tower (e.g. A- → A-101).',
+        },
+        {
+          name: 'floor',
+          label: 'Floor Number',
+          type: 'number',
+          placeholder: '1',
+          required: true,
+          validation: { min: 0 },
+          onChange: (floorVal: string) => {
+            const towerId = formSnapshot.towerId || mergedInitialValues.towerId;
+            const tower = towersForProperty.find((t) => t.id === towerId);
+            if (!tower?.flatNumberPrefix) return;
+            const current = formSnapshot.flatNumber ?? mergedInitialValues.flatNumber;
+            if (current) return;
+            const suggested = formatFlatNumberFromTower(
+              tower.flatNumberPrefix,
+              floorVal,
+              1,
+            );
+            if (suggested) {
+              setFormSnapshot((prev) => ({ ...prev, floor: floorVal, flatNumber: suggested }));
+              setFormVersion((v) => v + 1);
+            }
+          },
         },
         {
           name: 'name',
@@ -147,14 +223,6 @@ export default function FlatForm({
             { value: 'DUPLEX', label: 'Duplex' },
             { value: 'VILLA', label: 'Villa' },
           ],
-        },
-        {
-          name: 'floor',
-          label: 'Floor Number',
-          type: 'number',
-          placeholder: '1',
-          required: true,
-          validation: { min: 0 },
         },
       ],
     },
@@ -331,6 +399,7 @@ export default function FlatForm({
             { value: 'SOLD', label: 'Sold' },
             { value: 'ON_HOLD', label: 'On Hold' },
             { value: 'UNDER_CONSTRUCTION', label: 'Under Construction' },
+            { value: 'CANCELLED', label: 'Cancelled' },
           ],
         },
         {
@@ -620,10 +689,11 @@ export default function FlatForm({
 
   return (
     <Form
+      key={`flat-form-${initialData?.id ?? 'new'}-${formVersion}`}
       title={initialData ? 'Edit Flat/Unit' : 'Add New Flat/Unit'}
       description={initialData ? 'Update flat details' : 'Add a new flat/unit to the tower'}
       sections={sections}
-      initialValues={initialData}
+      initialValues={mergedInitialValues}
       onSubmit={handleSubmit}
       onCancel={onCancel}
       submitLabel={initialData ? 'Update Flat' : 'Create Flat'}
@@ -631,6 +701,7 @@ export default function FlatForm({
       loading={loading}
       columns={2}
       onValuesChange={(values) => {
+        setFormSnapshot(values);
         if (values.propertyId !== selectedPropertyId) {
           setSelectedPropertyId(values.propertyId);
         }

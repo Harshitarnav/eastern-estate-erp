@@ -4,14 +4,44 @@ import { useState, useEffect, useMemo } from 'react';
 import { Form, FormField } from './Form';
 import { propertiesService, propertyListFromResponse } from '@/services/properties.service';
 import { flatsService } from '@/services/flats.service';
-import { customersService } from '@/services/customers.service';
+import { customersService, Customer } from '@/services/customers.service';
 import { usePropertyStore } from '@/store/propertyStore';
 import { filterBookableFlats } from '@/lib/property-scope';
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  IdCard,
+  Briefcase,
+  IndianRupee,
+  ShieldCheck,
+  Loader2,
+} from 'lucide-react';
 
 interface BookingFormProps {
   onSubmit: (data: any) => void;
   initialData?: any;
   onCancel?: () => void;
+}
+
+const fmtINR = (n: any) =>
+  n && Number(n) > 0 ? '₹' + Number(n).toLocaleString('en-IN') : null;
+
+/**
+ * Build a partial set of booking fields from a Customer record so users don't
+ * re-type info already saved on the Customer module.
+ *
+ * Only emits values for fields where we have actual data — caller merges with
+ * what the user has already typed so we never clobber their input.
+ */
+function customerPrefill(c: Customer | null): Record<string, any> {
+  if (!c) return {};
+  const out: Record<string, any> = {};
+  if (c.needsHomeLoan != null) out.isHomeLoan = c.needsHomeLoan ? 'true' : 'false';
+  if (c.bankName) out.bankName = c.bankName;
+  if (c.approvedLoanAmount) out.loanAmount = c.approvedLoanAmount;
+  return out;
 }
 
 export default function BookingForm({ onSubmit, initialData, onCancel }: BookingFormProps) {
@@ -23,6 +53,21 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [isHomeLoan, setIsHomeLoan] = useState(false);
+
+  // Customer auto-populate: track the picked customer + their full record so
+  // we can show a "Customer Information" preview and prefill home-loan fields.
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
+    initialData?.customerId ?? '',
+  );
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [loadingCustomer, setLoadingCustomer] = useState(false);
+
+  // Snapshot of live form values; used so the prefill remount preserves
+  // anything the user already typed.
+  const [formSnapshot, setFormSnapshot] = useState<Record<string, any>>({});
+  // Bumped whenever we change initialValues (customer/property selection) so
+  // the inner Form remounts with merged values.
+  const [formVersion, setFormVersion] = useState(0);
 
   // Align with global project filter + single-assigned preselect
   useEffect(() => {
@@ -51,18 +96,53 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
     }
   }, [selectedProperty]);
 
+  // Whenever the chosen customer changes, fetch the full record so the preview
+  // panel + home-loan prefills are accurate (list endpoint may be trimmed).
+  useEffect(() => {
+    if (!selectedCustomerId) {
+      setSelectedCustomer(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingCustomer(true);
+    customersService
+      .getCustomer(selectedCustomerId)
+      .then((c) => {
+        if (cancelled) return;
+        setSelectedCustomer(c);
+        // Sync the home-loan toggle that drives field disabled state.
+        if (c?.needsHomeLoan != null) setIsHomeLoan(!!c.needsHomeLoan);
+        // Remount Form so the prefilled home-loan / co-applicant fields pick up
+        // the customer's values — merged with whatever the user already typed.
+        setFormVersion((v) => v + 1);
+      })
+      .catch(() => {
+        if (!cancelled) setSelectedCustomer(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCustomer(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCustomerId]);
+
   const fetchData = async (initial?: any) => {
     try {
-      const [propsRes, customersRes] = await Promise.all([
+      const [propsRes, customerRows] = await Promise.all([
         propertiesService.getProperties({ limit: 100 }),
-        customersService.getCustomers({ limit: 100, isActive: true }),
+        customersService.getCustomersForSelect({ isActive: true }),
       ]);
       setProperties(propertyListFromResponse(propsRes));
-      setCustomers(customersRes.data ?? []);
+      setCustomers(customerRows);
       if (initial?.propertyId) {
         setSelectedProperty(initial.propertyId);
         setIsHomeLoan(!!initial.isHomeLoan);
         await fetchFlats(initial.propertyId);
+      }
+      // Edit mode: kick off customer fetch so the info card is populated.
+      if (initial?.customerId) {
+        setSelectedCustomerId(initial.customerId);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -98,10 +178,18 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   const mergedInitialValues = useMemo(
     () => ({
+      // 1. backend record (edit mode)
       ...initialData,
-      propertyId: selectedProperty || initialData?.propertyId || '',
+      // 2. customer-derived defaults (only for empty/missing fields)
+      ...customerPrefill(selectedCustomer),
+      // 3. anything the user has already typed in the current session — wins
+      //    over the prefill so we never clobber their edits.
+      ...formSnapshot,
+      // 4. always-controlled fields (top-bar driven property + picked customer)
+      propertyId: selectedProperty || formSnapshot.propertyId || initialData?.propertyId || '',
+      customerId: selectedCustomerId || formSnapshot.customerId || initialData?.customerId || '',
     }),
-    [initialData, selectedProperty],
+    [initialData, selectedProperty, selectedCustomerId, selectedCustomer, formSnapshot],
   );
 
   // Tab 1: Basic Information
@@ -139,7 +227,21 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       label: 'Customer',
       type: 'select',
       required: true,
-      options: customers.map(c => ({ value: c.id, label: `${c.fullName} (${c.phoneNumber})` })),
+      onChange: (value) => {
+        setSelectedCustomerId(String(value || ''));
+      },
+      options: customers.map((c) => {
+        const name =
+          c.fullName || [c.firstName, c.lastName].filter(Boolean).join(' ') || 'Unnamed';
+        const phone = c.phoneNumber || c.phone || '';
+        return {
+          value: c.id,
+          label: phone ? `${name} (${phone})` : name,
+        };
+      }),
+      helperText: customers.length
+        ? `${customers.length} customer(s) — KYC and home-loan details load when you pick one.`
+        : 'No active customers found. Create one under Customers first.',
     },
     {
       name: 'propertyId',
@@ -553,6 +655,15 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
   return (
     <div className="space-y-6">
+      {/* Customer Information preview — visible across all tabs once a customer
+          is picked, so users don't have to flip back to the Customer module. */}
+      {selectedCustomerId && (
+        <CustomerInfoCard
+          customer={selectedCustomer}
+          loading={loadingCustomer}
+        />
+      )}
+
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
         <nav className="flex space-x-4 overflow-x-auto" aria-label="Tabs">
@@ -576,13 +687,198 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
 
       {/* Form */}
       <Form
-        key={`${initialData?.id ?? 'new-booking'}-${selectedProperty}-${properties.length}`}
+        key={`${initialData?.id ?? 'new-booking'}-${selectedProperty}-${properties.length}-${formVersion}`}
         fields={currentFields}
         initialValues={mergedInitialValues}
+        onValuesChange={setFormSnapshot}
         onSubmit={onSubmit}
         submitLabel={initialData ? 'Update Booking' : 'Create Booking'}
         onCancel={onCancel}
       />
+    </div>
+  );
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Customer Information preview panel
+//
+// Shown above the tabs when a customer is selected. Surfaces every field the
+// CRM lead said was missing (PAN, Aadhaar, address, KYC, home-loan info, etc.)
+// so booking staff don't have to re-type or open another page to verify.
+// ───────────────────────────────────────────────────────────────────────────
+function CustomerInfoCard({
+  customer,
+  loading,
+}: {
+  customer: Customer | null;
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading customer details…
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        Could not load that customer's saved details. The booking can still be
+        created, but please double-check the customer record.
+      </div>
+    );
+  }
+
+  const fullName =
+    customer.fullName ||
+    [customer.firstName, customer.lastName].filter(Boolean).join(' ') ||
+    'Customer';
+  const phone = customer.phoneNumber || customer.phone || '';
+  const address = [
+    customer.address || customer.addressLine1,
+    customer.addressLine2,
+    customer.city,
+    customer.state,
+    customer.pincode,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const kycBadgeColor =
+    customer.kycStatus === 'VERIFIED'
+      ? 'bg-green-100 text-green-700 border-green-200'
+      : customer.kycStatus === 'REJECTED'
+      ? 'bg-red-100 text-red-700 border-red-200'
+      : 'bg-amber-100 text-amber-700 border-amber-200';
+
+  return (
+    <div className="rounded-lg border border-[#F3E3C1] bg-[#FEF9F0] p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#7B1E12]">
+            <User className="h-3.5 w-3.5" />
+            Customer Information (saved record)
+          </div>
+          <h3 className="mt-1 text-lg font-bold text-gray-900">{fullName}</h3>
+          {customer.customerCode && (
+            <p className="text-xs text-gray-500">Customer Code: {customer.customerCode}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium ${kycBadgeColor}`}
+          >
+            <ShieldCheck className="h-3 w-3" />
+            KYC: {customer.kycStatus || 'PENDING'}
+          </span>
+          {customer.type && (
+            <span className="inline-flex rounded-full border border-gray-200 bg-white px-2.5 py-0.5 text-xs font-medium text-gray-700">
+              {customer.type}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 text-sm md:grid-cols-2">
+        {phone && (
+          <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label="Phone" value={phone} />
+        )}
+        {customer.alternatePhone && (
+          <InfoRow
+            icon={<Phone className="h-3.5 w-3.5" />}
+            label="Alternate Phone"
+            value={customer.alternatePhone}
+          />
+        )}
+        {customer.email && (
+          <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={customer.email} />
+        )}
+        {customer.panNumber && (
+          <InfoRow
+            icon={<IdCard className="h-3.5 w-3.5" />}
+            label="PAN"
+            value={customer.panNumber}
+          />
+        )}
+        {customer.aadharNumber && (
+          <InfoRow
+            icon={<IdCard className="h-3.5 w-3.5" />}
+            label="Aadhaar"
+            value={customer.aadharNumber}
+          />
+        )}
+        {customer.occupation && (
+          <InfoRow
+            icon={<Briefcase className="h-3.5 w-3.5" />}
+            label="Occupation"
+            value={customer.occupation}
+          />
+        )}
+        {customer.companyName || customer.company ? (
+          <InfoRow
+            icon={<Briefcase className="h-3.5 w-3.5" />}
+            label="Company"
+            value={customer.companyName || customer.company || ''}
+          />
+        ) : null}
+        {customer.annualIncome ? (
+          <InfoRow
+            icon={<IndianRupee className="h-3.5 w-3.5" />}
+            label="Annual Income"
+            value={fmtINR(customer.annualIncome) || '-'}
+          />
+        ) : null}
+        {address && (
+          <InfoRow
+            icon={<MapPin className="h-3.5 w-3.5" />}
+            label="Address"
+            value={address}
+            wide
+          />
+        )}
+      </div>
+
+      {(customer.needsHomeLoan || customer.hasApprovedLoan) && (
+        <div className="mt-4 rounded-md border border-[#F3E3C1] bg-white px-3 py-2 text-xs text-gray-700">
+          <span className="font-semibold text-[#7B1E12]">Home Loan: </span>
+          {customer.needsHomeLoan ? 'Required' : 'Not required'}
+          {customer.bankName && ` · ${customer.bankName}`}
+          {customer.approvedLoanAmount
+            ? ` · Approved ${fmtINR(customer.approvedLoanAmount)}`
+            : customer.hasApprovedLoan
+            ? ' · Approved'
+            : ''}
+          <span className="ml-1 text-gray-500">
+            (auto-filled in the Home Loan tab — change there if needed)
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+  wide,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  wide?: boolean;
+}) {
+  return (
+    <div className={wide ? 'md:col-span-2' : ''}>
+      <div className="flex items-start gap-2 text-gray-700">
+        <span className="mt-0.5 text-gray-400">{icon}</span>
+        <div>
+          <div className="text-xs uppercase tracking-wide text-gray-500">{label}</div>
+          <div className="font-medium text-gray-900 break-words">{value}</div>
+        </div>
+      </div>
     </div>
   );
 }

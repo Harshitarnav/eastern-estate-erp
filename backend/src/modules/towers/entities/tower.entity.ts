@@ -163,6 +163,45 @@ export class Tower {
   carpetArea: number;
 
   /**
+   * Per-unit area defaults applied when creating/editing flats in this block.
+   */
+  @Column({
+    name: 'default_super_built_up_area',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  defaultSuperBuiltUpArea: number | null;
+
+  @Column({
+    name: 'default_built_up_area',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  defaultBuiltUpArea: number | null;
+
+  @Column({
+    name: 'default_carpet_area',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: decimalTransformer,
+  })
+  defaultCarpetArea: number | null;
+
+  /**
+   * Prefix for flat numbers in this block, e.g. "A-" → flats A-101, A-201.
+   */
+  @Column({ name: 'flat_number_prefix', type: 'varchar', length: 30, nullable: true })
+  flatNumberPrefix: string | null;
+
+  /**
    * Floor-to-ceiling height (in feet)
    * @example 10.5
    */

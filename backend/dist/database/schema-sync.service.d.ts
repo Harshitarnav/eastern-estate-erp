@@ -17,4 +17,5 @@ export declare class SchemaSyncService implements OnModuleInit {
     private ensureDocumentsSchema;
     private ensureCustomersSchema;
     private ensurePaymentsSchema;
+    private ensureSystemRoles;
 }

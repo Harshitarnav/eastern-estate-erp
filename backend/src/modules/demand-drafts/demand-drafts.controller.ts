@@ -27,6 +27,7 @@ import { NotificationType, NotificationCategory } from '../notifications/entitie
 const DD_DEFAULT_ROLES = [
   UserRole.ADMIN,
   UserRole.SUPER_ADMIN,
+  UserRole.CRM,
   UserRole.SALES_TEAM,
   UserRole.ACCOUNTANT,
   UserRole.HEAD_ACCOUNTANT,
@@ -62,7 +63,7 @@ export class DemandDraftsController {
    * Sales team can create drafts, admin receives notification
    */
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.SALES_TEAM)
+  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.CRM, UserRole.SALES_TEAM)
   async create(@Body() createDto: any, @Req() req: any) {
     const draft = await this.demandDraftsService.create(createDto, req.user.id);
 

@@ -67,6 +67,10 @@ function newMilestone(sequence: number): FlatPaymentMilestone {
     phasePercentage: null,
     amount: 0,
     dueDate: null,
+    taxAmount: 0,
+    netAmount: 0,
+    adjustAmount: 0,
+    remarks: '',
     status: 'PENDING',
     paymentScheduleId: null,
     constructionCheckpointId: null,
@@ -75,6 +79,14 @@ function newMilestone(sequence: number): FlatPaymentMilestone {
     completedAt: null,
     description: '',
   };
+}
+
+/** Net = gross amount + tax − adjustment (matches backend normalizeMilestone). */
+function recalcNet(m: FlatPaymentMilestone): number {
+  const amount = Number(m.amount) || 0;
+  const tax = Number(m.taxAmount) || 0;
+  const adjust = Number(m.adjustAmount) || 0;
+  return Math.round((amount + tax - adjust) * 100) / 100;
 }
 
 export default function PaymentPlanDetailPage() {
@@ -428,7 +440,11 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
   const updateMilestone = useCallback((index: number, field: keyof FlatPaymentMilestone, value: any) => {
     setEditedMilestones(prev => {
       const next = [...prev];
-      next[index] = { ...next[index], [field]: value };
+      const row = { ...next[index], [field]: value };
+      if (field === 'amount' || field === 'taxAmount' || field === 'adjustAmount') {
+        row.netAmount = recalcNet(row);
+      }
+      next[index] = row;
       return next;
     });
   }, []);
@@ -748,11 +764,15 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                   <TableHead className="w-10">#</TableHead>
                   <TableHead className="min-w-[180px]">Milestone Name</TableHead>
                   {!editMode && <TableHead className="w-36">Invoice / DD</TableHead>}
-                  <TableHead className="min-w-[140px]">Amount (₹)</TableHead>
+                  <TableHead className="min-w-[120px]">Amount (₹)</TableHead>
+                  <TableHead className="w-36">Due Date</TableHead>
+                  <TableHead className="w-28">Tax (₹)</TableHead>
+                  <TableHead className="w-28">Net (₹)</TableHead>
+                  <TableHead className="w-28">Adjust (₹)</TableHead>
+                  <TableHead className="min-w-[140px]">Remarks</TableHead>
                   <TableHead className="w-36">Status</TableHead>
                   <TableHead className="min-w-[150px]">Construction Phase</TableHead>
                   <TableHead className="w-24">Phase %</TableHead>
-                  <TableHead className="w-36">Due Date</TableHead>
                   {!editMode && <TableHead className="w-32">Completed At</TableHead>}
                   {editMode && <TableHead className="w-10" />}
                 </TableRow>
@@ -852,6 +872,87 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                         )}
                       </TableCell>
 
+                      {/* Due Date */}
+                      <TableCell>
+                        {editMode ? (
+                          <Input
+                            type="date"
+                            value={milestone.dueDate ? milestone.dueDate.slice(0, 10) : ''}
+                            onChange={e =>
+                              updateMilestone(index, 'dueDate', e.target.value || null)
+                            }
+                            className="h-8"
+                          />
+                        ) : milestone.dueDate ? (
+                          new Date(milestone.dueDate).toLocaleDateString('en-IN')
+                        ) : (
+                          '–'
+                        )}
+                      </TableCell>
+
+                      {/* Tax */}
+                      <TableCell>
+                        {editMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            value={milestone.taxAmount ?? 0}
+                            onChange={e => updateMilestone(index, 'taxAmount', Number(e.target.value))}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span>₹{Number(milestone.taxAmount || 0).toLocaleString('en-IN')}</span>
+                        )}
+                      </TableCell>
+
+                      {/* Net */}
+                      <TableCell>
+                        {editMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            value={milestone.netAmount ?? recalcNet(milestone)}
+                            onChange={e => updateMilestone(index, 'netAmount', Number(e.target.value))}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="font-semibold text-green-700">
+                            ₹{Number(milestone.netAmount ?? recalcNet(milestone)).toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </TableCell>
+
+                      {/* Adjust */}
+                      <TableCell>
+                        {editMode ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            value={milestone.adjustAmount ?? 0}
+                            onChange={e => updateMilestone(index, 'adjustAmount', Number(e.target.value))}
+                            className="h-8"
+                          />
+                        ) : (
+                          <span>₹{Number(milestone.adjustAmount || 0).toLocaleString('en-IN')}</span>
+                        )}
+                      </TableCell>
+
+                      {/* Remarks */}
+                      <TableCell>
+                        {editMode ? (
+                          <Input
+                            value={milestone.remarks ?? ''}
+                            onChange={e => updateMilestone(index, 'remarks', e.target.value)}
+                            placeholder="Notes"
+                            className="h-8"
+                          />
+                        ) : (
+                          <span className="text-sm text-muted-foreground truncate max-w-[140px] block">
+                            {milestone.remarks || '–'}
+                          </span>
+                        )}
+                      </TableCell>
+
                       {/* Status */}
                       <TableCell>
                         {editMode ? (
@@ -928,24 +1029,6 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
                         )}
                       </TableCell>
 
-                      {/* Due Date */}
-                      <TableCell>
-                        {editMode ? (
-                          <Input
-                            type="date"
-                            value={milestone.dueDate ? milestone.dueDate.slice(0, 10) : ''}
-                            onChange={e =>
-                              updateMilestone(index, 'dueDate', e.target.value || null)
-                            }
-                            className="h-8"
-                          />
-                        ) : milestone.dueDate ? (
-                          new Date(milestone.dueDate).toLocaleDateString('en-IN')
-                        ) : (
-                          '–'
-                        )}
-                      </TableCell>
-
                       {/* Completed At (read mode only) */}
                       {!editMode && (
                         <TableCell>
@@ -973,7 +1056,7 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
 
                 {displayMilestones.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={editMode ? 8 : 9} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={editMode ? 12 : 13} className="text-center text-muted-foreground py-8">
                       {editMode ? 'No milestones yet - click "Add Milestone" to start.' : 'No milestones found.'}
                     </TableCell>
                   </TableRow>

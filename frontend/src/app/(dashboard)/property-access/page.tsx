@@ -32,6 +32,7 @@ const ROLE_COLORS: Record<string, string> = {
   hr:          'bg-purple-100 text-purple-800',
   accounts:    'bg-blue-100 text-blue-800',
   sales_team:  'bg-green-100 text-green-800',
+  crm:         'bg-teal-100 text-teal-800',
   staff:       'bg-gray-100 text-gray-700',
 };
 

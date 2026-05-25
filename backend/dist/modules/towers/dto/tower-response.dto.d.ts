@@ -16,6 +16,10 @@ export declare class TowerResponseDto {
     reraNumber?: string;
     builtUpArea?: number;
     carpetArea?: number;
+    defaultSuperBuiltUpArea?: number;
+    defaultBuiltUpArea?: number;
+    defaultCarpetArea?: number;
+    flatNumberPrefix?: string;
     ceilingHeight?: number;
     numberOfLifts: number;
     vastuCompliant: boolean;

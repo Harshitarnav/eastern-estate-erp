@@ -109,6 +109,18 @@ export class TowerResponseDto {
   })
   carpetArea?: number;
 
+  @ApiPropertyOptional({ description: 'Default super built-up per unit (sq.ft)' })
+  defaultSuperBuiltUpArea?: number;
+
+  @ApiPropertyOptional({ description: 'Default built-up per unit (sq.ft)' })
+  defaultBuiltUpArea?: number;
+
+  @ApiPropertyOptional({ description: 'Default carpet per unit (sq.ft)' })
+  defaultCarpetArea?: number;
+
+  @ApiPropertyOptional({ description: 'Flat number prefix', example: 'A-' })
+  flatNumberPrefix?: string;
+
   @ApiPropertyOptional({
     description: 'Ceiling height in feet',
     example: 10.5,

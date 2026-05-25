@@ -1,6 +1,7 @@
 export declare enum UserRole {
     SUPER_ADMIN = "super_admin",
     ADMIN = "admin",
+    CRM = "crm",
     ACCOUNTANT = "accountant",
     HEAD_ACCOUNTANT = "head_accountant",
     HR = "hr",
@@ -10,9 +11,12 @@ export declare enum UserRole {
     STAFF = "staff",
     CUSTOMER = "customer"
 }
+export declare const INVENTORY_WRITE_ROLES: readonly [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.CRM];
+export declare const PROPERTY_UPDATE_ROLES: readonly [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.CRM];
 export declare const ROLE_HIERARCHY: {
     super_admin: number;
     admin: number;
+    crm: number;
     head_accountant: number;
     hr: number;
     accountant: number;
@@ -25,6 +29,7 @@ export declare const ROLE_HIERARCHY: {
 export declare const ROLE_DISPLAY_NAMES: {
     super_admin: string;
     admin: string;
+    crm: string;
     accountant: string;
     head_accountant: string;
     hr: string;
@@ -40,6 +45,7 @@ export declare const ROLE_MODULE_ACCESS: {
     hr: string[];
     construction_team: string[];
     marketing_team: string[];
+    crm: string[];
     sales_team: string[];
     staff: string[];
     accountant: string[];

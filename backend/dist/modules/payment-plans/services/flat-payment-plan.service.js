@@ -32,6 +32,37 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         this.templateService = templateService;
         this.uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     }
+    normalizeMilestone(m) {
+        const amount = Number(m.amount) || 0;
+        const taxAmount = m.taxAmount != null && Number.isFinite(Number(m.taxAmount))
+            ? Number(m.taxAmount)
+            : 0;
+        const adjustAmount = m.adjustAmount != null && Number.isFinite(Number(m.adjustAmount))
+            ? Number(m.adjustAmount)
+            : 0;
+        const netAmount = m.netAmount != null && Number.isFinite(Number(m.netAmount))
+            ? Number(m.netAmount)
+            : amount + taxAmount - adjustAmount;
+        return {
+            sequence: m.sequence,
+            name: m.name,
+            constructionPhase: m.constructionPhase ?? null,
+            phasePercentage: m.phasePercentage ?? null,
+            amount,
+            dueDate: m.dueDate ?? null,
+            taxAmount,
+            netAmount,
+            adjustAmount,
+            remarks: m.remarks ?? null,
+            status: m.status ?? 'PENDING',
+            paymentScheduleId: m.paymentScheduleId ?? null,
+            constructionCheckpointId: m.constructionCheckpointId ?? null,
+            demandDraftId: m.demandDraftId ?? null,
+            paymentId: m.paymentId ?? null,
+            completedAt: m.completedAt ?? null,
+            description: m.description ?? '',
+        };
+    }
     async create(createDto, userId) {
         const flat = await this.flatRepository.findOne({ where: { id: createDto.flatId } });
         if (!flat) {
@@ -52,19 +83,12 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
             throw new common_1.BadRequestException('This flat-booking combination already has a payment plan');
         }
         const template = await this.templateService.findOne(createDto.paymentPlanTemplateId);
-        const milestones = template.milestones.map((tm) => ({
+        const milestones = template.milestones.map((tm) => this.normalizeMilestone({
             sequence: tm.sequence,
             name: tm.name,
             constructionPhase: tm.constructionPhase,
             phasePercentage: tm.phasePercentage,
             amount: (createDto.totalAmount * tm.paymentPercentage) / 100,
-            dueDate: null,
-            status: 'PENDING',
-            paymentScheduleId: null,
-            constructionCheckpointId: null,
-            demandDraftId: null,
-            paymentId: null,
-            completedAt: null,
             description: tm.description,
         }));
         const flatPaymentPlan = this.flatPaymentPlanRepository.create({
@@ -99,19 +123,12 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
             const template = await this.templateService.findOne(input.templateId);
             templateId = template.id;
             if (input.mode === 'template') {
-                milestones = template.milestones.map((tm) => ({
+                milestones = template.milestones.map((tm) => this.normalizeMilestone({
                     sequence: tm.sequence,
                     name: tm.name,
                     constructionPhase: tm.constructionPhase,
                     phasePercentage: tm.phasePercentage,
                     amount: (input.totalAmount * tm.paymentPercentage) / 100,
-                    dueDate: null,
-                    status: 'PENDING',
-                    paymentScheduleId: null,
-                    constructionCheckpointId: null,
-                    demandDraftId: null,
-                    paymentId: null,
-                    completedAt: null,
                     description: tm.description,
                 }));
             }
@@ -129,21 +146,19 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
                         : NaN;
                 if (!Number.isFinite(resolvedAmount))
                     return null;
-                return {
+                return this.normalizeMilestone({
                     sequence: m.sequence,
                     name: m.name,
                     constructionPhase: m.constructionPhase ?? null,
                     phasePercentage: m.phasePercentage ?? null,
                     amount: resolvedAmount,
-                    dueDate: null,
-                    status: 'PENDING',
-                    paymentScheduleId: null,
-                    constructionCheckpointId: null,
-                    demandDraftId: null,
-                    paymentId: null,
-                    completedAt: null,
+                    dueDate: m.dueDate ?? null,
+                    taxAmount: m.taxAmount,
+                    netAmount: m.netAmount,
+                    adjustAmount: m.adjustAmount,
+                    remarks: m.remarks,
                     description: m.description ?? '',
-                };
+                });
             })
                 .filter((m) => m !== null);
         }
@@ -245,13 +260,19 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
     }
     async updateMilestones(planId, milestones, userId) {
         const plan = await this.findOne(planId);
-        plan.milestones = milestones;
-        const paidAmount = milestones
+        plan.milestones = milestones.map((m, idx) => this.normalizeMilestone({
+            ...m,
+            sequence: m.sequence ?? idx + 1,
+            name: m.name || `Milestone ${idx + 1}`,
+            amount: Number(m.amount) || 0,
+        }));
+        const paidAmount = plan.milestones
             .filter(m => m.status === 'PAID')
             .reduce((sum, m) => sum + Number(m.amount), 0);
         plan.paidAmount = paidAmount;
         plan.balanceAmount = plan.totalAmount - paidAmount;
-        const allPaid = milestones.length > 0 && milestones.every(m => m.status === 'PAID');
+        const allPaid = plan.milestones.length > 0 &&
+            plan.milestones.every((m) => m.status === 'PAID');
         if (allPaid) {
             plan.status = flat_payment_plan_entity_1.FlatPaymentPlanStatus.COMPLETED;
         }

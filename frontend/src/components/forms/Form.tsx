@@ -53,6 +53,16 @@ export interface FormField {
   clearsFields?: string[];
   /** HTML step for number inputs (e.g. "0.5" for half-day leave). */
   step?: string;
+  /**
+   * Names of other fields this one is derived from. When any of them change
+   * the form runs `compute(values)` and replaces this field's value. The user
+   * can still type a manual value into this field — but the next time a
+   * dependency changes, the computed value will overwrite it (matches the
+   * "GST % → auto-fill GST amount" UX requested by accounting).
+   */
+  dependsOn?: string[];
+  /** Pure function that returns the new value when a dependency changes. */
+  compute?: (values: Record<string, any>) => any;
 }
 
 export interface FormSection {
@@ -149,9 +159,30 @@ export default function Form({
         updatedValues = { ...updatedValues, [key]: '' };
       }
     }
+
+    // Cascade computed values (GST %, TDS %, Net amount, etc.) so a single
+    // user keystroke updates every dependent field in the same render. We
+    // iterate to a fixed point so chained computes (e.g. amount → gstAmount
+    // → netAmount) settle correctly without recursion.
+    const changedSet = new Set<string>([name, ...(field?.clearsFields ?? [])]);
+    for (let pass = 0; pass < 4; pass++) {
+      let mutated = false;
+      for (const f of allFields) {
+        if (!f.compute || !f.dependsOn?.length) continue;
+        if (!f.dependsOn.some((d) => changedSet.has(d))) continue;
+        const next = f.compute(updatedValues);
+        if (next !== updatedValues[f.name]) {
+          updatedValues = { ...updatedValues, [f.name]: next };
+          changedSet.add(f.name);
+          mutated = true;
+        }
+      }
+      if (!mutated) break;
+    }
+
     setFormValues(updatedValues);
     onValuesChange?.(updatedValues);
-    
+
     setTouched((prev) => ({ ...prev, ...Object.fromEntries((field?.clearsFields ?? []).map((k) => [k, true])), [name]: true }));
 
     // Validate on change

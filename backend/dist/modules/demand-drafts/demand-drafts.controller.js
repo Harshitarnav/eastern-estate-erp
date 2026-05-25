@@ -25,6 +25,7 @@ const notification_entity_1 = require("../notifications/entities/notification.en
 const DD_DEFAULT_ROLES = [
     roles_constant_1.UserRole.ADMIN,
     roles_constant_1.UserRole.SUPER_ADMIN,
+    roles_constant_1.UserRole.CRM,
     roles_constant_1.UserRole.SALES_TEAM,
     roles_constant_1.UserRole.ACCOUNTANT,
     roles_constant_1.UserRole.HEAD_ACCOUNTANT,
@@ -213,7 +214,7 @@ __decorate([
 ], DemandDraftsController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Post)(),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.SALES_TEAM),
+    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN, roles_constant_1.UserRole.CRM, roles_constant_1.UserRole.SALES_TEAM),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),

@@ -26,6 +26,7 @@ var FlatStatus;
     FlatStatus["BOOKED"] = "BOOKED";
     FlatStatus["SOLD"] = "SOLD";
     FlatStatus["UNDER_CONSTRUCTION"] = "UNDER_CONSTRUCTION";
+    FlatStatus["CANCELLED"] = "CANCELLED";
 })(FlatStatus || (exports.FlatStatus = FlatStatus = {}));
 var FlatType;
 (function (FlatType) {
@@ -291,7 +292,7 @@ __decorate([
     __metadata("design:type", String)
 ], Flat.prototype, "furnishingStatus", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'text', array: true, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'simple-array', nullable: true }),
     __metadata("design:type", Array)
 ], Flat.prototype, "amenities", void 0);
 __decorate([

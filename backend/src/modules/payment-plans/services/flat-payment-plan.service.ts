@@ -68,6 +68,49 @@ export class FlatPaymentPlanService {
     private readonly templateService: PaymentPlanTemplateService,
   ) {}
 
+  /** Ensure tax / net / adjust / remarks exist on every milestone row (JSONB). */
+  private normalizeMilestone(
+    m: Partial<FlatPaymentMilestone> & {
+      sequence: number;
+      name: string;
+      amount: number;
+    },
+  ): FlatPaymentMilestone {
+    const amount = Number(m.amount) || 0;
+    const taxAmount =
+      m.taxAmount != null && Number.isFinite(Number(m.taxAmount))
+        ? Number(m.taxAmount)
+        : 0;
+    const adjustAmount =
+      m.adjustAmount != null && Number.isFinite(Number(m.adjustAmount))
+        ? Number(m.adjustAmount)
+        : 0;
+    const netAmount =
+      m.netAmount != null && Number.isFinite(Number(m.netAmount))
+        ? Number(m.netAmount)
+        : amount + taxAmount - adjustAmount;
+
+    return {
+      sequence: m.sequence,
+      name: m.name,
+      constructionPhase: m.constructionPhase ?? null,
+      phasePercentage: m.phasePercentage ?? null,
+      amount,
+      dueDate: m.dueDate ?? null,
+      taxAmount,
+      netAmount,
+      adjustAmount,
+      remarks: m.remarks ?? null,
+      status: m.status ?? 'PENDING',
+      paymentScheduleId: m.paymentScheduleId ?? null,
+      constructionCheckpointId: m.constructionCheckpointId ?? null,
+      demandDraftId: m.demandDraftId ?? null,
+      paymentId: m.paymentId ?? null,
+      completedAt: m.completedAt ?? null,
+      description: m.description ?? '',
+    };
+  }
+
   /**
    * Create a flat payment plan from a template
    */
@@ -102,21 +145,16 @@ export class FlatPaymentPlanService {
     const template = await this.templateService.findOne(createDto.paymentPlanTemplateId);
 
     // Convert template milestones to flat milestones with calculated amounts
-    const milestones: FlatPaymentMilestone[] = template.milestones.map((tm) => ({
-      sequence: tm.sequence,
-      name: tm.name,
-      constructionPhase: tm.constructionPhase,
-      phasePercentage: tm.phasePercentage,
-      amount: (createDto.totalAmount * tm.paymentPercentage) / 100,
-      dueDate: null,
-      status: 'PENDING',
-      paymentScheduleId: null,
-      constructionCheckpointId: null,
-      demandDraftId: null,
-      paymentId: null,
-      completedAt: null,
-      description: tm.description,
-    }));
+    const milestones: FlatPaymentMilestone[] = template.milestones.map((tm) =>
+      this.normalizeMilestone({
+        sequence: tm.sequence,
+        name: tm.name,
+        constructionPhase: tm.constructionPhase,
+        phasePercentage: tm.phasePercentage,
+        amount: (createDto.totalAmount * tm.paymentPercentage) / 100,
+        description: tm.description,
+      }),
+    );
 
     // Create flat payment plan
     const flatPaymentPlan = this.flatPaymentPlanRepository.create({
@@ -167,6 +205,11 @@ export class FlatPaymentPlanService {
         phasePercentage?: number | null;
         paymentPercentage?: number;
         amount?: number;
+        dueDate?: string | null;
+        taxAmount?: number | null;
+        netAmount?: number | null;
+        adjustAmount?: number | null;
+        remarks?: string | null;
         description?: string;
       }>;
     },
@@ -191,21 +234,16 @@ export class FlatPaymentPlanService {
       templateId = template.id;
 
       if (input.mode === 'template') {
-        milestones = template.milestones.map((tm) => ({
-          sequence: tm.sequence,
-          name: tm.name,
-          constructionPhase: tm.constructionPhase,
-          phasePercentage: tm.phasePercentage,
-          amount: (input.totalAmount * tm.paymentPercentage) / 100,
-          dueDate: null,
-          status: 'PENDING',
-          paymentScheduleId: null,
-          constructionCheckpointId: null,
-          demandDraftId: null,
-          paymentId: null,
-          completedAt: null,
-          description: tm.description,
-        }));
+        milestones = template.milestones.map((tm) =>
+          this.normalizeMilestone({
+            sequence: tm.sequence,
+            name: tm.name,
+            constructionPhase: tm.constructionPhase,
+            phasePercentage: tm.phasePercentage,
+            amount: (input.totalAmount * tm.paymentPercentage) / 100,
+            description: tm.description,
+          }),
+        );
       }
     }
 
@@ -225,21 +263,19 @@ export class FlatPaymentPlanService {
 
           if (!Number.isFinite(resolvedAmount)) return null;
 
-          return {
+          return this.normalizeMilestone({
             sequence: m.sequence,
             name: m.name,
             constructionPhase: m.constructionPhase ?? null,
             phasePercentage: m.phasePercentage ?? null,
             amount: resolvedAmount,
-            dueDate: null,
-            status: 'PENDING',
-            paymentScheduleId: null,
-            constructionCheckpointId: null,
-            demandDraftId: null,
-            paymentId: null,
-            completedAt: null,
+            dueDate: m.dueDate ?? null,
+            taxAmount: m.taxAmount,
+            netAmount: m.netAmount,
+            adjustAmount: m.adjustAmount,
+            remarks: m.remarks,
             description: m.description ?? '',
-          } as FlatPaymentMilestone;
+          });
         })
         .filter((m): m is FlatPaymentMilestone => m !== null);
     }
@@ -408,17 +444,26 @@ export class FlatPaymentPlanService {
   ): Promise<FlatPaymentPlan> {
     const plan = await this.findOne(planId);
 
-    plan.milestones = milestones;
+    plan.milestones = milestones.map((m, idx) =>
+      this.normalizeMilestone({
+        ...m,
+        sequence: m.sequence ?? idx + 1,
+        name: m.name || `Milestone ${idx + 1}`,
+        amount: Number(m.amount) || 0,
+      }),
+    );
 
     // Recalculate paid and balance amounts
-    const paidAmount = milestones
+    const paidAmount = plan.milestones
       .filter(m => m.status === 'PAID')
       .reduce((sum, m) => sum + Number(m.amount), 0);
 
     plan.paidAmount = paidAmount;
     plan.balanceAmount = plan.totalAmount - paidAmount;
 
-    const allPaid = milestones.length > 0 && milestones.every(m => m.status === 'PAID');
+    const allPaid =
+      plan.milestones.length > 0 &&
+      plan.milestones.every((m) => m.status === 'PAID');
     if (allPaid) {
       plan.status = FlatPaymentPlanStatus.COMPLETED;
     } else if (plan.status === FlatPaymentPlanStatus.COMPLETED) {

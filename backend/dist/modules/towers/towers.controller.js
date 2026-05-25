@@ -61,7 +61,7 @@ exports.TowersController = TowersController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(...roles_constant_1.INVENTORY_WRITE_ROLES),
     (0, swagger_1.ApiOperation)({
         summary: 'Create a new tower',
         description: 'Creates a new tower within a property with complete details and validation',
@@ -135,7 +135,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('bulk-import'),
     (0, common_1.HttpCode)(common_1.HttpStatus.CREATED),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(...roles_constant_1.INVENTORY_WRITE_ROLES),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     (0, swagger_1.ApiOperation)({
         summary: 'Bulk import towers',
@@ -173,7 +173,7 @@ __decorate([
 __decorate([
     (0, common_1.Put)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(...roles_constant_1.INVENTORY_WRITE_ROLES),
     (0, swagger_1.ApiOperation)({
         summary: 'Update tower',
         description: 'Updates tower information with validation. Supports partial updates.',
@@ -209,7 +209,7 @@ __decorate([
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(...roles_constant_1.INVENTORY_WRITE_ROLES),
     (0, swagger_1.ApiOperation)({
         summary: 'Delete tower',
         description: 'Soft deletes a tower (deactivates). Historical data is preserved.',

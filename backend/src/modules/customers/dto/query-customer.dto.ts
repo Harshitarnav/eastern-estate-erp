@@ -54,6 +54,16 @@ export class QueryCustomerDto {
   @IsString()
   propertyId?: string;
 
+  /**
+   * When true, return every active customer for booking/payment dropdowns.
+   * Skips the property-access narrowing that hides newly created customers
+   * who are not yet linked to a booking on the user's assigned project(s).
+   */
+  @IsOptional()
+  @IsBoolean()
+  @Type(() => Boolean)
+  forBooking?: boolean;
+
   @IsOptional()
   @IsNumber()
   @Type(() => Number)

@@ -37,7 +37,7 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/constants/roles.constant';
+import { INVENTORY_WRITE_ROLES } from '../../common/constants/roles.constant';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 /**
@@ -94,7 +94,7 @@ export class TowersController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   @ApiOperation({
     summary: 'Create a new tower',
     description: 'Creates a new tower within a property with complete details and validation',
@@ -207,7 +207,7 @@ export class TowersController {
 
   @Post('bulk-import')
   @HttpCode(HttpStatus.CREATED)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({
     summary: 'Bulk import towers',
@@ -278,7 +278,7 @@ export class TowersController {
    */
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   @ApiOperation({
     summary: 'Update tower',
     description: 'Updates tower information with validation. Supports partial updates.',
@@ -333,7 +333,7 @@ export class TowersController {
    */
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   @ApiOperation({
     summary: 'Delete tower',
     description: 'Soft deletes a tower (deactivates). Historical data is preserved.',

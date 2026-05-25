@@ -24,7 +24,7 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/constants/roles.constant';
+import { INVENTORY_WRITE_ROLES } from '../../common/constants/roles.constant';
 
 @Controller('flats')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,11 +39,11 @@ export class FlatsController {
   /**
    * Create a new flat
    * POST /flats
-   * Only admin and super_admin can create flats
+   * Admin, super_admin, and CRM can create flats
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   async create(@Body() createFlatDto: CreateFlatDto): Promise<FlatResponseDto> {
     return this.flatsService.create(createFlatDto);
   }
@@ -104,10 +104,10 @@ export class FlatsController {
   /**
    * Update flat
    * PUT /flats/:id
-   * Only admin and super_admin can update flats
+   * Admin, super_admin, and CRM can update flats
    */
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   async update(
     @Param('id') id: string,
     @Body() updateFlatDto: UpdateFlatDto,
@@ -118,11 +118,11 @@ export class FlatsController {
   /**
    * Delete flat
    * DELETE /flats/:id
-   * Only admin and super_admin can delete flats
+   * Admin, super_admin, and CRM can delete flats
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...INVENTORY_WRITE_ROLES)
   async remove(@Param('id') id: string): Promise<void> {
     return this.flatsService.remove(id);
   }

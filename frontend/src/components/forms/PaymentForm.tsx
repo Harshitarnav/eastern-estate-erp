@@ -11,6 +11,13 @@ interface PaymentFormProps {
   onCancel?: () => void;
 }
 
+const numeric = (v: any): number => {
+  const n = parseFloat(String(v ?? '').replace(/[, ]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
+
+const round2 = (n: number): number => Math.round(n * 100) / 100;
+
 export default function PaymentForm({ onSubmit, initialData, onCancel }: PaymentFormProps) {
   const [bookings, setBookings] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -24,12 +31,12 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
 
   const fetchData = async () => {
     try {
-      const [bookingsRes, customersRes] = await Promise.all([
+      const [bookingsRes, customerRows] = await Promise.all([
         bookingsService.getBookings({ limit: 100, isActive: true }),
-        customersService.getCustomers({ limit: 100, isActive: true }),
+        customersService.getCustomersForSelect({ isActive: true }),
       ]);
       setBookings(bookingsRes.data);
-      setCustomers(customersRes.data);
+      setCustomers(customerRows);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -111,6 +118,16 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
   ];
 
   // Tab 2: Amount Details
+  //
+  // GST / TDS auto-calculation:
+  //   gstAmount = round(amount × gstPercentage / 100, 2)
+  //   tdsAmount = round(amount × tdsPercentage / 100, 2)
+  //   netAmount = amount + gstAmount − tdsAmount
+  //
+  // Driven by the shared Form's `dependsOn` / `compute` hooks — typing the
+  // percentage now updates the amount in the same render (accounting team
+  // ask: "if we put gst or tds percentage the amount should be calculated
+  // automatically").
   const amountFields: FormField[] = [
     {
       name: 'amount',
@@ -118,6 +135,7 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       type: 'number',
       required: true,
       placeholder: 'e.g., 500000',
+      helperText: 'Gross amount before tax. GST / TDS below auto-fill from percentages.',
     },
     {
       name: 'tdsPercentage',
@@ -125,13 +143,17 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       type: 'number',
       required: false,
       placeholder: 'e.g., 1',
+      step: '0.01',
     },
     {
       name: 'tdsAmount',
       label: 'TDS Amount (₹)',
       type: 'number',
       required: false,
-      placeholder: 'e.g., 5000',
+      placeholder: 'auto from %',
+      dependsOn: ['amount', 'tdsPercentage'],
+      compute: (v) => round2(numeric(v.amount) * numeric(v.tdsPercentage) / 100),
+      helperText: 'Auto-calculated from Payment Amount × TDS %. Override manually if needed.',
     },
     {
       name: 'gstPercentage',
@@ -139,20 +161,28 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       type: 'number',
       required: false,
       placeholder: 'e.g., 5',
+      step: '0.01',
     },
     {
       name: 'gstAmount',
       label: 'GST Amount (₹)',
       type: 'number',
       required: false,
-      placeholder: 'e.g., 25000',
+      placeholder: 'auto from %',
+      dependsOn: ['amount', 'gstPercentage'],
+      compute: (v) => round2(numeric(v.amount) * numeric(v.gstPercentage) / 100),
+      helperText: 'Auto-calculated from Payment Amount × GST %. Override manually if needed.',
     },
     {
       name: 'netAmount',
       label: 'Net Amount (₹) *',
       type: 'number',
       required: true,
-      placeholder: 'e.g., 470000',
+      placeholder: 'auto = amount + gst − tds',
+      dependsOn: ['amount', 'gstAmount', 'tdsAmount'],
+      compute: (v) =>
+        round2(numeric(v.amount) + numeric(v.gstAmount) - numeric(v.tdsAmount)),
+      helperText: 'Auto = Payment Amount + GST − TDS.',
     },
   ];
 

@@ -473,8 +473,9 @@ let FlatsService = class FlatsService {
         if (!flat) {
             throw new common_1.NotFoundException(`Flat with ID ${id} not found`);
         }
-        if (flat.status === flat_entity_1.FlatStatus.BOOKED || flat.status === flat_entity_1.FlatStatus.SOLD) {
-            throw new common_1.BadRequestException('Cannot deactivate a flat that is booked or sold');
+        if (flat.status === flat_entity_1.FlatStatus.BOOKED ||
+            flat.status === flat_entity_1.FlatStatus.SOLD) {
+            throw new common_1.BadRequestException('Cannot deactivate a flat that is booked or sold. Use Cancel Flat instead.');
         }
         flat.isActive = false;
         await this.flatsRepository.save(flat);

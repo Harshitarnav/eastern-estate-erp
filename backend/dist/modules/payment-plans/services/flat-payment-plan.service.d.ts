@@ -61,6 +61,7 @@ export declare class FlatPaymentPlanService {
     private readonly paymentRepository;
     private readonly templateService;
     constructor(flatPaymentPlanRepository: Repository<FlatPaymentPlan>, flatRepository: Repository<Flat>, bookingRepository: Repository<Booking>, customerRepository: Repository<Customer>, paymentRepository: Repository<Payment>, templateService: PaymentPlanTemplateService);
+    private normalizeMilestone;
     create(createDto: CreateFlatPaymentPlanDto, userId: string): Promise<FlatPaymentPlan>;
     createForBooking(input: {
         flatId: string;
@@ -76,6 +77,11 @@ export declare class FlatPaymentPlanService {
             phasePercentage?: number | null;
             paymentPercentage?: number;
             amount?: number;
+            dueDate?: string | null;
+            taxAmount?: number | null;
+            netAmount?: number | null;
+            adjustAmount?: number | null;
+            remarks?: string | null;
             description?: string;
         }>;
     }, userId: string): Promise<FlatPaymentPlan>;

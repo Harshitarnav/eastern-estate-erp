@@ -19,6 +19,10 @@ export declare class Tower {
     reraNumber: string;
     builtUpArea: number;
     carpetArea: number;
+    defaultSuperBuiltUpArea: number | null;
+    defaultBuiltUpArea: number | null;
+    defaultCarpetArea: number | null;
+    flatNumberPrefix: string | null;
     ceilingHeight: number;
     numberOfLifts: number;
     vastuCompliant: boolean;

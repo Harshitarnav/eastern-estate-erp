@@ -7,6 +7,8 @@
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
+  /** CRM / back-office: inventory master data, customers, bookings, paperwork */
+  CRM = 'crm',
   ACCOUNTANT = 'accountant',
   HEAD_ACCOUNTANT = 'head_accountant',
   HR = 'hr',
@@ -17,9 +19,24 @@ export enum UserRole {
   CUSTOMER = 'customer',
 }
 
+/** Create/update towers and flats */
+export const INVENTORY_WRITE_ROLES = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.CRM,
+] as const;
+
+/** Update property details (not create/delete projects) */
+export const PROPERTY_UPDATE_ROLES = [
+  UserRole.SUPER_ADMIN,
+  UserRole.ADMIN,
+  UserRole.CRM,
+] as const;
+
 export const ROLE_HIERARCHY = {
   [UserRole.SUPER_ADMIN]: 100,
   [UserRole.ADMIN]: 90,
+  [UserRole.CRM]: 75,
   [UserRole.HEAD_ACCOUNTANT]: 85,
   [UserRole.HR]: 80,
   [UserRole.ACCOUNTANT]: 55,
@@ -33,6 +50,7 @@ export const ROLE_HIERARCHY = {
 export const ROLE_DISPLAY_NAMES = {
   [UserRole.SUPER_ADMIN]: 'Super Admin',
   [UserRole.ADMIN]: 'Admin',
+  [UserRole.CRM]: 'CRM',
   [UserRole.ACCOUNTANT]: 'Accountant',
   [UserRole.HEAD_ACCOUNTANT]: 'Head Accountant',
   [UserRole.HR]: 'HR',
@@ -106,6 +124,19 @@ export const ROLE_MODULE_ACCESS = {
     'flats', // view only
     'marketing',
     'leads',
+  ],
+  [UserRole.CRM]: [
+    'dashboard',
+    'properties',
+    'towers',
+    'flats',
+    'customers',
+    'bookings',
+    'payments',
+    'payment-plans',
+    'demand-drafts',
+    'construction-milestones',
+    'reports',
   ],
   [UserRole.SALES_TEAM]: [
     'dashboard',

@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Building2, CheckCircle, ChevronRight, ExternalLink,
-  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload, Trash2, Hammer, Camera,
+  FileText, Loader2, MapPin, RefreshCw, ShieldAlert, Upload, Trash2, Hammer, Camera, XCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { flatsService, Flat } from '@/services/flats.service';
 import { customersService, Customer } from '@/services/customers.service';
 import { demandDraftsService, DemandDraft } from '@/services/demand-drafts.service';
@@ -81,6 +82,7 @@ export default function FlatDetailPage() {
   });
   const [draftMessage, setDraftMessage] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+  const [cancellingFlat, setCancellingFlat] = useState(false);
   const [flatProgressRows, setFlatProgressRows] = useState<FlatProgressRow[]>([]);
 
   useEffect(() => {
@@ -221,6 +223,35 @@ export default function FlatDetailPage() {
       alert(err?.response?.data?.message || 'Failed to deactivate unit.');
     } finally {
       setDeactivating(false);
+    }
+  };
+
+  /** Mark unit as Cancelled (allotment withdrawn) — distinct from soft-delete. */
+  const handleCancelFlat = async () => {
+    if (!flat) return;
+    if (flat.status === 'CANCELLED') {
+      toast.info('This unit is already marked as cancelled.');
+      return;
+    }
+    if (
+      !confirm(
+        `Cancel flat ${flat.flatNumber}? It will be marked CANCELLED and removed from saleable inventory.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      setCancellingFlat(true);
+      const updated = await flatsService.updateFlat(flatId, {
+        status: 'CANCELLED',
+        isAvailable: false,
+      });
+      setFlat(updated);
+      toast.success('Flat marked as cancelled.');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Failed to cancel flat.');
+    } finally {
+      setCancellingFlat(false);
     }
   };
 
@@ -396,7 +427,22 @@ export default function FlatDetailPage() {
             <Hammer className="h-4 w-4" />
             Log progress
           </button>
-          {flat && flat.status !== 'BOOKED' && flat.status !== 'SOLD' && (
+          {flat && flat.status !== 'CANCELLED' && (
+            <button
+              onClick={handleCancelFlat}
+              disabled={cancellingFlat}
+              className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 shadow-sm transition hover:bg-amber-100 disabled:opacity-50"
+              title="Mark this unit as cancelled (allotment withdrawn)"
+            >
+              {cancellingFlat ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              Cancel Flat
+            </button>
+          )}
+          {flat && flat.status !== 'BOOKED' && flat.status !== 'SOLD' && flat.status !== 'CANCELLED' && (
             <button
               onClick={handleDeactivate}
               disabled={deactivating}

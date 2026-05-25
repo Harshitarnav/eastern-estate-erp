@@ -47,6 +47,7 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
             await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
             await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
             await runIsolated('bookings_collections', (qr) => this.ensureBookingsCollectionsSchema(qr));
+            await runIsolated('system_roles', (qr) => this.ensureSystemRoles(qr));
             await runIsolated('cleanup_legacy', (qr) => this.dropLegacyTables(qr));
             await runIsolated('foreign_keys', (qr) => this.ensureForeignKeys(qr));
         }
@@ -850,6 +851,41 @@ let SchemaSyncService = SchemaSyncService_1 = class SchemaSyncService {
       CREATE INDEX IF NOT EXISTS idx_payment_schedules_schedule_number ON payment_schedules(schedule_number);
     `);
         this.logger.log('Payments schema ensured - all columns up to date');
+    }
+    async ensureSystemRoles(queryRunner) {
+        const systemRoles = [
+            {
+                name: 'crm',
+                displayName: 'CRM',
+                description: 'Maintains towers, flats, customers, bookings, payment plans, and demand paperwork for assigned projects',
+            },
+            {
+                name: 'head_accountant',
+                displayName: 'Head Accountant',
+                description: 'Senior accounting and finance operations with approval authority',
+            },
+            {
+                name: 'hr',
+                displayName: 'HR',
+                description: 'Human resources, employee management, payroll, and attendance',
+            },
+            {
+                name: 'sales_team',
+                displayName: 'Sales Team',
+                description: 'Sales operations, lead management, and customer bookings',
+            },
+        ];
+        for (const role of systemRoles) {
+            await queryRunner.query(`INSERT INTO roles (name, display_name, description, is_system, is_active)
+         VALUES ($1, $2, $3, TRUE, TRUE)
+         ON CONFLICT (name) DO UPDATE SET
+           display_name = EXCLUDED.display_name,
+           description  = EXCLUDED.description,
+           is_system    = TRUE,
+           is_active    = TRUE,
+           updated_at   = CURRENT_TIMESTAMP`, [role.name, role.displayName, role.description]);
+        }
+        this.logger.log('System roles ensured (crm, head_accountant, hr, sales_team)');
     }
 };
 exports.SchemaSyncService = SchemaSyncService;

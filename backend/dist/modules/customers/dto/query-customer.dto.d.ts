@@ -10,6 +10,7 @@ export declare class QueryCustomerDto {
     createdTo?: string;
     isActive?: boolean;
     propertyId?: string;
+    forBooking?: boolean;
     page?: number;
     limit?: number;
     sortBy?: string;

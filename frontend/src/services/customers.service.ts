@@ -64,6 +64,8 @@ export interface CustomerFilters {
   createdTo?: string;
   isActive?: boolean;
   propertyId?: string;
+  /** Include full CRM list for booking/payment dropdowns (not property-scoped). */
+  forBooking?: boolean;
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -85,7 +87,7 @@ class CustomersService {
 
   async getCustomers(filters?: CustomerFilters): Promise<PaginatedCustomersResponse> {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -96,6 +98,35 @@ class CustomersService {
 
     const response = await api.get<PaginatedCustomersResponse>(`${this.baseUrl}?${params.toString()}`);
     return response;
+  }
+
+  /**
+   * Load all customers for dropdowns (booking, payments). Paginates until the full
+   * list is retrieved — avoids the old limit=100 cap and property-scope filter.
+   */
+  async getCustomersForSelect(options?: {
+    isActive?: boolean;
+  }): Promise<Customer[]> {
+    const pageSize = 500;
+    let page = 1;
+    const all: Customer[] = [];
+
+    for (;;) {
+      const res = await this.getCustomers({
+        forBooking: true,
+        isActive: options?.isActive ?? true,
+        limit: pageSize,
+        page,
+        sortBy: 'fullName',
+        sortOrder: 'ASC',
+      });
+      all.push(...(res.data ?? []));
+      if (page >= (res.meta?.totalPages ?? 1)) break;
+      page += 1;
+      if (page > 50) break;
+    }
+
+    return all;
   }
 
   async getCustomer(id: string): Promise<Customer> {

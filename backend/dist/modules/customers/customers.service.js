@@ -146,7 +146,7 @@ let CustomersService = CustomersService_1 = class CustomersService {
         return dto_1.CustomerResponseDto.fromEntity(savedCustomer);
     }
     async findAll(query, accessiblePropertyIds) {
-        const { search, type, kycStatus, needsHomeLoan, isVIP, city, createdFrom, createdTo, isActive, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
+        const { search, type, kycStatus, needsHomeLoan, isVIP, city, createdFrom, createdTo, isActive, forBooking, page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'DESC', } = query;
         const allowedSortFields = [
             'createdAt',
             'updatedAt',
@@ -155,8 +155,10 @@ let CustomersService = CustomersService_1 = class CustomersService {
             'city',
             'kycStatus',
             'customerType',
+            'fullName',
         ];
         const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+        const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), forBooking ? 2000 : 500);
         const applyFilters = (qb, includeMetadata = true) => {
             if (search) {
                 qb.andWhere("(customer.fullName ILIKE :search OR customer.email ILIKE :search OR customer.phoneNumber ILIKE :search)", { search: `%${search}%` });
@@ -200,7 +202,9 @@ let CustomersService = CustomersService_1 = class CustomersService {
             )`, { pid: query.propertyId, pidText: query.propertyId });
                 }
             }
-            else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+            else if (!forBooking &&
+                accessiblePropertyIds &&
+                accessiblePropertyIds.length > 0) {
                 qb.andWhere(`(
             (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
             OR EXISTS (SELECT 1 FROM bookings b WHERE b.customer_id = customer.id AND b.property_id = ANY(CAST(:pids AS uuid[])))
@@ -219,16 +223,16 @@ let CustomersService = CustomersService_1 = class CustomersService {
             applyFilters(qb, true);
             const total = await qb.getCount();
             const customers = await qb
-                .skip((page - 1) * limit)
-                .take(limit)
+                .skip((page - 1) * safeLimit)
+                .take(safeLimit)
                 .getMany();
             return {
                 data: await materializeDtos(customers),
                 meta: {
                     total,
                     page,
-                    limit,
-                    totalPages: Math.ceil(total / limit),
+                    limit: safeLimit,
+                    totalPages: Math.ceil(total / safeLimit),
                 },
             };
         }
@@ -238,16 +242,16 @@ let CustomersService = CustomersService_1 = class CustomersService {
             applyFilters(qb, false);
             const total = await qb.getCount();
             const customers = await qb
-                .skip((page - 1) * limit)
-                .take(limit)
+                .skip((page - 1) * safeLimit)
+                .take(safeLimit)
                 .getMany();
             return {
                 data: await materializeDtos(customers),
                 meta: {
                     total,
                     page,
-                    limit,
-                    totalPages: Math.ceil(total / limit),
+                    limit: safeLimit,
+                    totalPages: Math.ceil(total / safeLimit),
                     warning: 'Returned without metadata-based filters (isVIP/needsHomeLoan) due to schema incompatibility.',
                 },
             };

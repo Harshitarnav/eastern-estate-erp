@@ -7,6 +7,8 @@
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
+  /** Back-office: towers/flats, customers, bookings, demand drafts */
+  CRM = 'crm',
   ACCOUNTANT = 'accountant',
   HEAD_ACCOUNTANT = 'head_accountant',
   HR = 'hr',
@@ -20,6 +22,7 @@ export enum UserRole {
 export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: 'Super Admin',
   [UserRole.ADMIN]: 'Admin',
+  [UserRole.CRM]: 'CRM',
   [UserRole.ACCOUNTANT]: 'Accountant',
   [UserRole.HEAD_ACCOUNTANT]: 'Head Accountant',
   [UserRole.HR]: 'HR',
@@ -211,6 +214,28 @@ export const ROLE_MODULE_ACCESS: Record<UserRole, string[]> = {
     'marketing',
     'leads',
   ],
+  [UserRole.CRM]: [
+    'dashboard',
+    'property-inventory',
+    'properties',
+    'towers',
+    'flats',
+    'sales',
+    'customers',
+    'portal-accounts',
+    'bookings',
+    'payments',
+    'payments-list',
+    'payment-plans',
+    'demand-drafts',
+    'construction-milestones',
+    'reports',
+    'reports-outstanding',
+    'reports-collection',
+    'reports-inventory',
+    'collections',
+    'collections-workstation',
+  ],
   [UserRole.SALES_TEAM]: [
     'dashboard',
     'property-inventory',
@@ -276,6 +301,14 @@ export function hasModuleAccess(userRoles: string[], moduleId: string): boolean 
  */
 export function isAdminRole(userRoles: string[]): boolean {
   return userRoles.includes(UserRole.SUPER_ADMIN) || userRoles.includes(UserRole.ADMIN);
+}
+
+/** Towers, flats, and property detail edits (not user/settings admin). */
+export function canManageInventory(userRoles: string[]): boolean {
+  return (
+    isAdminRole(userRoles) ||
+    userRoles.includes(UserRole.CRM)
+  );
 }
 
 /** Role-only heuristic (ignores explicit project assignments). Prefer `hasWidePropertyScope`. */

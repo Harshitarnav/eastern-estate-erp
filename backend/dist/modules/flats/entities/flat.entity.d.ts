@@ -7,7 +7,8 @@ export declare enum FlatStatus {
     BLOCKED = "BLOCKED",
     BOOKED = "BOOKED",
     SOLD = "SOLD",
-    UNDER_CONSTRUCTION = "UNDER_CONSTRUCTION"
+    UNDER_CONSTRUCTION = "UNDER_CONSTRUCTION",
+    CANCELLED = "CANCELLED"
 }
 export declare enum FlatType {
     STUDIO = "STUDIO",

@@ -29,6 +29,10 @@ export interface FlatPaymentMilestone {
   phasePercentage: number | null;
   amount: number;
   dueDate: string | null;
+  taxAmount?: number | null;
+  netAmount?: number | null;
+  adjustAmount?: number | null;
+  remarks?: string | null;
   status: 'PENDING' | 'TRIGGERED' | 'PAID' | 'OVERDUE';
   paymentScheduleId: string | null;
   constructionCheckpointId: string | null;

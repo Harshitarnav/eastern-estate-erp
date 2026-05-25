@@ -1,4 +1,4 @@
-const NON_BOOKABLE_FLAT = new Set(['BOOKED', 'SOLD', 'BLOCKED']);
+const NON_BOOKABLE_FLAT = new Set(['BOOKED', 'SOLD', 'BLOCKED', 'CANCELLED']);
 
 /**
  * Units that can be chosen on a new booking. Many inventories default status to

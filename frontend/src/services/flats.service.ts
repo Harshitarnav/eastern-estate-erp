@@ -32,7 +32,7 @@ export interface Flat {
   totalPrice: number;
   discountAmount?: number;
   finalPrice: number;
-  status: 'AVAILABLE' | 'ON_HOLD' | 'BLOCKED' | 'BOOKED' | 'SOLD' | 'UNDER_CONSTRUCTION';
+  status: 'AVAILABLE' | 'ON_HOLD' | 'BLOCKED' | 'BOOKED' | 'SOLD' | 'UNDER_CONSTRUCTION' | 'CANCELLED';
   isAvailable: boolean;
   availableFrom?: string;
   expectedPossession?: string;

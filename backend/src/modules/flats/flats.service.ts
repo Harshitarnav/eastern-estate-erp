@@ -651,10 +651,12 @@ export class FlatsService {
       throw new NotFoundException(`Flat with ID ${id} not found`);
     }
 
-    // Check if flat is booked or sold
-    if (flat.status === FlatStatus.BOOKED || flat.status === FlatStatus.SOLD) {
+    if (
+      flat.status === FlatStatus.BOOKED ||
+      flat.status === FlatStatus.SOLD
+    ) {
       throw new BadRequestException(
-        'Cannot deactivate a flat that is booked or sold',
+        'Cannot deactivate a flat that is booked or sold. Use Cancel Flat instead.',
       );
     }
 

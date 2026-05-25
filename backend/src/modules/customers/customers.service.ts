@@ -207,6 +207,7 @@ export class CustomersService {
       createdFrom,
       createdTo,
       isActive,
+      forBooking,
       page = 1,
       limit = 10,
       sortBy = 'createdAt',
@@ -221,8 +222,10 @@ export class CustomersService {
       'city',
       'kycStatus',
       'customerType',
+      'fullName',
     ];
     const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
+    const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), forBooking ? 2000 : 500);
 
     // Helper to apply filters; toggle metadata-dependent filters to allow fallback if column missing
     const applyFilters = (qb: ReturnType<Repository<Customer>['createQueryBuilder']>, includeMetadata = true) => {
@@ -291,7 +294,13 @@ export class CustomersService {
             { pid: query.propertyId, pidText: query.propertyId },
           );
         }
-      } else if (accessiblePropertyIds && accessiblePropertyIds.length > 0) {
+      } else if (
+        !forBooking &&
+        accessiblePropertyIds &&
+        accessiblePropertyIds.length > 0
+      ) {
+        // Default list: scoped users only see customers tied to their projects.
+        // Booking/payment dropdowns pass forBooking=true to include the full CRM list.
         qb.andWhere(
           `(
             (customer.metadata ->> 'propertyId') = ANY(CAST(:pidsText AS text[]))
@@ -317,8 +326,8 @@ export class CustomersService {
 
       const total = await qb.getCount();
       const customers = await qb
-        .skip((page - 1) * limit)
-        .take(limit)
+        .skip((page - 1) * safeLimit)
+        .take(safeLimit)
         .getMany();
 
       return {
@@ -326,8 +335,8 @@ export class CustomersService {
         meta: {
           total,
           page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          limit: safeLimit,
+          totalPages: Math.ceil(total / safeLimit),
         },
       };
     } catch (error) {
@@ -339,8 +348,8 @@ export class CustomersService {
 
       const total = await qb.getCount();
       const customers = await qb
-        .skip((page - 1) * limit)
-        .take(limit)
+        .skip((page - 1) * safeLimit)
+        .take(safeLimit)
         .getMany();
 
       return {
@@ -348,8 +357,8 @@ export class CustomersService {
         meta: {
           total,
           page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+          limit: safeLimit,
+          totalPages: Math.ceil(total / safeLimit),
           warning: 'Returned without metadata-based filters (isVIP/needsHomeLoan) due to schema incompatibility.',
         } as any,
       };

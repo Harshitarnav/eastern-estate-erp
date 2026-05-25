@@ -48,6 +48,10 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
     reraNumber: tower?.reraNumber || '',
     builtUpArea: tower?.builtUpArea ?? undefined,
     carpetArea: tower?.carpetArea ?? undefined,
+    defaultSuperBuiltUpArea: tower?.defaultSuperBuiltUpArea ?? undefined,
+    defaultBuiltUpArea: tower?.defaultBuiltUpArea ?? undefined,
+    defaultCarpetArea: tower?.defaultCarpetArea ?? undefined,
+    flatNumberPrefix: tower?.flatNumberPrefix ?? '',
     ceilingHeight: tower?.ceilingHeight ?? undefined,
     numberOfLifts: tower?.numberOfLifts ?? 1,
     vastuCompliant: tower?.vastuCompliant ?? true,
@@ -419,6 +423,63 @@ export function TowerForm({ tower, onSubmit, onCancel }: TowerFormProps) {
                 onChange={handleChange}
                 min="0"
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+              />
+            </div>
+
+            <div className="md:col-span-2 mt-2">
+              <p className="text-sm font-semibold mb-2" style={{ color: '#7B1E12' }}>
+                Per-unit defaults (applied when adding flats in this block)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Default Super Built-up (sq.ft)</label>
+              <input
+                type="number"
+                name="defaultSuperBuiltUpArea"
+                value={formData.defaultSuperBuiltUpArea ?? ''}
+                onChange={handleChange}
+                min="0"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                placeholder="e.g. 1450"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Default Built-up (sq.ft)</label>
+              <input
+                type="number"
+                name="defaultBuiltUpArea"
+                value={formData.defaultBuiltUpArea ?? ''}
+                onChange={handleChange}
+                min="0"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                placeholder="e.g. 1200"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Default Carpet (sq.ft)</label>
+              <input
+                type="number"
+                name="defaultCarpetArea"
+                value={formData.defaultCarpetArea ?? ''}
+                onChange={handleChange}
+                min="0"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                placeholder="e.g. 1050"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Flat Number Prefix</label>
+              <input
+                type="text"
+                name="flatNumberPrefix"
+                value={formData.flatNumberPrefix || ''}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2"
+                placeholder="e.g. A- (units become A-101, A-201…)"
               />
             </div>
 

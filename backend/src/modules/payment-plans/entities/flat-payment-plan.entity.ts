@@ -25,8 +25,13 @@ export interface FlatPaymentMilestone {
   name: string;
   constructionPhase: 'FOUNDATION' | 'STRUCTURE' | 'MEP' | 'FINISHING' | 'HANDOVER' | null;
   phasePercentage: number | null;
+  /** Gross milestone amount (before tax / adjustments). */
   amount: number;
   dueDate: string | null;
+  taxAmount?: number | null;
+  netAmount?: number | null;
+  adjustAmount?: number | null;
+  remarks?: string | null;
   status: 'PENDING' | 'TRIGGERED' | 'PAID' | 'OVERDUE';
   paymentScheduleId: string | null;
   constructionCheckpointId: string | null;

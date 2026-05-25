@@ -192,6 +192,49 @@ __decorate([
 ], CreateTowerDto.prototype, "carpetArea", void 0);
 __decorate([
     (0, swagger_1.ApiPropertyOptional)({
+        description: 'Default super built-up area (sq.ft) for each unit in this block',
+        example: 1450,
+    }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateTowerDto.prototype, "defaultSuperBuiltUpArea", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Default built-up area (sq.ft) for each unit in this block',
+        example: 1200,
+    }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateTowerDto.prototype, "defaultBuiltUpArea", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Default carpet area (sq.ft) for each unit in this block',
+        example: 1050,
+    }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], CreateTowerDto.prototype, "defaultCarpetArea", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Flat number prefix for units in this block (e.g. A- → A-101)',
+        example: 'A-',
+    }),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.MaxLength)(30),
+    __metadata("design:type", String)
+], CreateTowerDto.prototype, "flatNumberPrefix", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
         description: 'Floor-to-ceiling height in feet',
         example: 10.5,
     }),

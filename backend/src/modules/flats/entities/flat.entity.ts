@@ -25,6 +25,8 @@ export enum FlatStatus {
   BOOKED = 'BOOKED',
   SOLD = 'SOLD',
   UNDER_CONSTRUCTION = 'UNDER_CONSTRUCTION',
+  /** Unit withdrawn from sale (allotment cancelled / returned to builder). */
+  CANCELLED = 'CANCELLED',
 }
 
 export enum FlatType {
@@ -266,8 +268,9 @@ export class Flat {
   @Column({ length: 50, nullable: true })
   furnishingStatus: string; // Unfurnished, Semi-Furnished, Fully-Furnished
 
-  @Column({ type: 'text', array: true, nullable: true })
-  amenities: string[]; // AC, Modular Kitchen, Wardrobes, etc.
+  /** Stored as comma-separated TEXT (see FlatsSchemaSyncService). */
+  @Column({ type: 'simple-array', nullable: true })
+  amenities: string[];
 
   // Additional Details
   @Column({ type: 'text', nullable: true })

@@ -128,7 +128,10 @@ export class PropertyAccessGuard implements CanActivate {
     const isPrivilegedWideRole =
       userRoles.includes('head_accountant') ||
       userRoles.includes('admin') ||
-      userRoles.includes('hr');
+      userRoles.includes('hr') ||
+      userRoles.includes('crm') ||
+      userRoles.includes('sales_team') ||
+      userRoles.includes('accountant');
     if (isPrivilegedWideRole) {
       this.logger.debug(
         `User ${user.email} has wide role (${userRoles.join(',')}) with no assignments — full bypass`,

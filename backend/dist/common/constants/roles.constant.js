@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ROLE_MODULE_ACCESS = exports.ROLE_DISPLAY_NAMES = exports.ROLE_HIERARCHY = exports.UserRole = void 0;
+exports.ROLE_MODULE_ACCESS = exports.ROLE_DISPLAY_NAMES = exports.ROLE_HIERARCHY = exports.PROPERTY_UPDATE_ROLES = exports.INVENTORY_WRITE_ROLES = exports.UserRole = void 0;
 exports.hasModuleAccess = hasModuleAccess;
 exports.isAdminRole = isAdminRole;
 exports.seesAllAccountingProjects = seesAllAccountingProjects;
@@ -10,6 +10,7 @@ var UserRole;
 (function (UserRole) {
     UserRole["SUPER_ADMIN"] = "super_admin";
     UserRole["ADMIN"] = "admin";
+    UserRole["CRM"] = "crm";
     UserRole["ACCOUNTANT"] = "accountant";
     UserRole["HEAD_ACCOUNTANT"] = "head_accountant";
     UserRole["HR"] = "hr";
@@ -19,9 +20,20 @@ var UserRole;
     UserRole["STAFF"] = "staff";
     UserRole["CUSTOMER"] = "customer";
 })(UserRole || (exports.UserRole = UserRole = {}));
+exports.INVENTORY_WRITE_ROLES = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.CRM,
+];
+exports.PROPERTY_UPDATE_ROLES = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.CRM,
+];
 exports.ROLE_HIERARCHY = {
     [UserRole.SUPER_ADMIN]: 100,
     [UserRole.ADMIN]: 90,
+    [UserRole.CRM]: 75,
     [UserRole.HEAD_ACCOUNTANT]: 85,
     [UserRole.HR]: 80,
     [UserRole.ACCOUNTANT]: 55,
@@ -34,6 +46,7 @@ exports.ROLE_HIERARCHY = {
 exports.ROLE_DISPLAY_NAMES = {
     [UserRole.SUPER_ADMIN]: 'Super Admin',
     [UserRole.ADMIN]: 'Admin',
+    [UserRole.CRM]: 'CRM',
     [UserRole.ACCOUNTANT]: 'Accountant',
     [UserRole.HEAD_ACCOUNTANT]: 'Head Accountant',
     [UserRole.HR]: 'HR',
@@ -102,6 +115,19 @@ exports.ROLE_MODULE_ACCESS = {
         'flats',
         'marketing',
         'leads',
+    ],
+    [UserRole.CRM]: [
+        'dashboard',
+        'properties',
+        'towers',
+        'flats',
+        'customers',
+        'bookings',
+        'payments',
+        'payment-plans',
+        'demand-drafts',
+        'construction-milestones',
+        'reports',
     ],
     [UserRole.SALES_TEAM]: [
         'dashboard',

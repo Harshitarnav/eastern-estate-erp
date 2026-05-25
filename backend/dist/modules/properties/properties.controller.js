@@ -136,7 +136,7 @@ __decorate([
 ], PropertiesController.prototype, "findOne", null);
 __decorate([
     (0, common_1.Put)(':id'),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(...roles_constant_1.PROPERTY_UPDATE_ROLES),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __param(2, (0, common_1.Request)()),
@@ -155,7 +155,7 @@ __decorate([
 ], PropertiesController.prototype, "remove", null);
 __decorate([
     (0, common_1.Put)(':id/toggle-active'),
-    (0, roles_decorator_1.Roles)(roles_constant_1.UserRole.ADMIN, roles_constant_1.UserRole.SUPER_ADMIN),
+    (0, roles_decorator_1.Roles)(...roles_constant_1.PROPERTY_UPDATE_ROLES),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),

@@ -99,6 +99,43 @@ __decorate([
     __metadata("design:type", Number)
 ], Tower.prototype, "carpetArea", void 0);
 __decorate([
+    (0, typeorm_1.Column)({
+        name: 'default_super_built_up_area',
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        nullable: true,
+        transformer: decimalTransformer,
+    }),
+    __metadata("design:type", Number)
+], Tower.prototype, "defaultSuperBuiltUpArea", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'default_built_up_area',
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        nullable: true,
+        transformer: decimalTransformer,
+    }),
+    __metadata("design:type", Number)
+], Tower.prototype, "defaultBuiltUpArea", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
+        name: 'default_carpet_area',
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        nullable: true,
+        transformer: decimalTransformer,
+    }),
+    __metadata("design:type", Number)
+], Tower.prototype, "defaultCarpetArea", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'flat_number_prefix', type: 'varchar', length: 30, nullable: true }),
+    __metadata("design:type", String)
+], Tower.prototype, "flatNumberPrefix", void 0);
+__decorate([
     (0, typeorm_1.Column)({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], Tower.prototype, "ceilingHeight", void 0);

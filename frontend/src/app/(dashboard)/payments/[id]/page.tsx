@@ -5,6 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, CheckCircle, XCircle, Download, Loader2 } from 'lucide-react';
 import { paymentsService } from '@/services/payments.service';
 import { flatsService } from '@/services/flats.service';
+import { bookingsService } from '@/services/bookings.service';
+import { customersService } from '@/services/customers.service';
+import { settingsService } from '@/services/settings.service';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
 import { generateReceiptPdf, ReceiptData } from '@/lib/generate-receipt-pdf';
@@ -89,51 +92,193 @@ export default function ViewPaymentPage() {
 
     setGeneratingReceipt(true);
     try {
-      // Fetch flat details via booking's flatId
-      let flat: any = null;
-      const bookingFlatId = payment?.booking?.flatId || payment?.booking?.flat?.id;
-      if (bookingFlatId) {
-        try {
-          flat = await flatsService.getFlat(bookingFlatId);
-        } catch {
-          // proceed without flat details if unavailable
-        }
-      }
+      // Pull every piece of context the redesigned receipt needs in one go:
+      //   • Flat (project › tower › flat, type, area)
+      //   • Booking (totalAmount, paidAmount, balance, GST/TDS context)
+      //   • Customer (full address, PAN, Aadhaar, email)
+      //   • Company settings (registered name, GSTIN, RERA, bank A/c, signatory)
+      const bookingFlatId =
+        payment?.booking?.flatId || payment?.booking?.flat?.id || payment?.flatId;
+      const bookingId = payment?.bookingId || payment?.booking?.id;
+      const customerId = payment?.customerId || payment?.customer?.id;
 
-      const customer = payment?.customer || {};
-      const booking  = payment?.booking  || {};
+      const [flat, booking, customer, company] = await Promise.all([
+        bookingFlatId
+          ? flatsService.getFlat(bookingFlatId).catch(() => null)
+          : Promise.resolve(null),
+        bookingId
+          ? bookingsService.getBooking(bookingId).catch(() => payment?.booking ?? null)
+          : Promise.resolve(payment?.booking ?? null),
+        customerId
+          ? customersService.getCustomer(customerId).catch(() => payment?.customer ?? null)
+          : Promise.resolve(payment?.customer ?? null),
+        settingsService.getCompanySettings().catch(() => null),
+      ]);
 
-      const description = [
-        flat ? `${flat.flatNumber || flat.number || 'Flat'} / ${flat.tower?.name || ''} – ${flat.property?.name || ''}` : '',
-        booking.bookingNumber ? `Booking ${booking.bookingNumber}` : '',
-      ].filter(Boolean).join(' | ') || 'Payment Received Against Booking';
+      // ── Tax breakup ─────────────────────────────────────────────────────────
+      // The redesigned receipt shows gross → GST → TDS → net. If the payment
+      // doesn't store these explicitly, we treat the recorded amount as net
+      // and zero out the tax lines so the table degrades gracefully.
+      const netAmount = Number(payment.amount || payment.netAmount || 0);
+      const gstAmount = Number(payment.gstAmount || 0);
+      const tdsAmount = Number(payment.tdsAmount || 0);
+      // Approximation when gross isn't stored: net = gross + gst − tds  ⇒
+      // gross = net − gst + tds.
+      const grossAmount = netAmount - gstAmount + tdsAmount;
+      const gstPercentage = grossAmount > 0 && gstAmount > 0
+        ? +((gstAmount / grossAmount) * 100).toFixed(2)
+        : undefined;
+      const tdsPercentage = grossAmount > 0 && tdsAmount > 0
+        ? +((tdsAmount / grossAmount) * 100).toFixed(2)
+        : undefined;
 
+      // ── Ledger summary ──────────────────────────────────────────────────────
+      const bookingTotal = Number(
+        booking?.totalAmount || payment?.booking?.totalAmount || 0,
+      );
+      // The booking's stored `paidAmount` is updated server-side as payments
+      // clear; if this receipt is being generated for a payment that is
+      // already CLEARED, that value is correct as-is. Otherwise we tack the
+      // current net amount on so the customer's balance lines up.
+      const alreadyPaid = Number(booking?.paidAmount || 0);
+      const statusBaked = ['CLEARED', 'RECEIVED', 'COMPLETED'].includes(
+        String(payment.status || '').toUpperCase(),
+      );
+      const totalReceivedTillDate = statusBaked
+        ? alreadyPaid
+        : alreadyPaid + netAmount;
+      const balanceOutstanding = Math.max(
+        bookingTotal - totalReceivedTillDate,
+        0,
+      );
+
+      // ── Description ─────────────────────────────────────────────────────────
+      const paymentTypeLabel = (payment.paymentType || '').replace(/_/g, ' ');
+      const description =
+        paymentTypeLabel
+          ? `${paymentTypeLabel.charAt(0) + paymentTypeLabel.slice(1).toLowerCase()} ` +
+            `payment received against booking ${booking?.bookingNumber || ''}`.trim()
+          : `Payment received against booking ${booking?.bookingNumber || ''}`.trim();
+
+      // ── Customer address (multi-field assembly) ────────────────────────────
+      const cust: any = customer || {};
+      const customerAddress =
+        cust.addressLine1 ||
+        cust.address ||
+        cust.currentAddress ||
+        '';
+
+      // ── Build the final ReceiptData payload ────────────────────────────────
       const receiptData: ReceiptData = {
         receiptNumber: receiptNumber.trim(),
-        narration: receiptNarration.trim(),
+        receiptDate: new Date().toISOString(),
+        copyLabel: 'CUSTOMER COPY',
+        narration: receiptNarration.trim() || undefined,
 
+        // payment
         paymentDate: payment.paymentDate,
-        amount: Number(payment.amount || 0),
         paymentMethod: payment.paymentMode || payment.paymentMethod || 'OTHER',
         bankName: payment.bankName,
+        bankBranch: payment.bankBranch || payment.branch,
         chequeNumber: payment.chequeNumber,
         chequeDate: payment.chequeDate,
-        transactionRef: payment.transactionId || payment.transactionReference || payment.upiId,
-        bookingNumber: booking.bookingNumber || '-',
+        transactionRef:
+          payment.transactionId || payment.transactionReference || payment.upiId,
+        clearanceDate: payment.clearanceDate,
         paymentNumber: payment.paymentNumber || payment.paymentCode || '-',
+        paymentTypeLabel: paymentTypeLabel || undefined,
 
-        customerName: customer.fullName || customer.name || '-',
-        customerAddress: customer.address || customer.currentAddress || '',
-        customerPan: customer.panNumber || '',
-        customerPhone: customer.phone || customer.mobile || '',
+        // booking
+        bookingNumber: booking?.bookingNumber || '-',
+        bookingDate: booking?.bookingDate,
+        bookingValue: bookingTotal || undefined,
 
-        propertyName: flat?.property?.name || booking.property?.name || '',
-        towerName: flat?.tower?.name || '',
-        flatNumber: flat?.flatNumber || flat?.number || '',
-        flatType: flat?.flatType || flat?.type || '',
-        flatArea: flat?.areaSqFt ? `${flat.areaSqFt} Sq.Ft.` : '',
+        // customer
+        customerName:
+          cust.fullName ||
+          [cust.firstName, cust.lastName].filter(Boolean).join(' ') ||
+          cust.name ||
+          '-',
+        customerAddress,
+        customerCity: cust.city,
+        customerState: cust.state,
+        customerPincode: cust.pincode,
+        customerPan: cust.panNumber || cust.pan,
+        customerAadhaar: cust.aadharNumber || cust.aadhaar,
+        customerPhone: cust.phoneNumber || cust.phone || cust.mobile,
+        customerEmail: cust.email,
 
+        // unit — Flat is loosely typed across the system; we cast to `any` so
+        // we can defensively read whichever field happens to be present
+        // (older rows have `flatType`, newer ones have `type`; some flats
+        // expose `areaSqFt` from the import script while normalised rows use
+        // `carpetArea` / `superBuiltUpArea`).
+        propertyName:
+          (flat as any)?.property?.name || (booking as any)?.property?.name || '',
+        towerName: (flat as any)?.tower?.name || '',
+        flatNumber: (flat as any)?.flatNumber || (flat as any)?.number || '',
+        flatType:
+          (flat as any)?.flatType ||
+          (flat as any)?.type ||
+          (flat as any)?.bhkType,
+        flatArea: (() => {
+          const f: any = flat || {};
+          const parts: string[] = [];
+          if (f.carpetArea) parts.push(`${f.carpetArea} Sq.Ft. Carpet`);
+          else if (f.areaSqFt) parts.push(`${f.areaSqFt} Sq.Ft.`);
+          if (f.superBuiltUpArea) parts.push(`${f.superBuiltUpArea} Sq.Ft. SBA`);
+          return parts.join(' • ');
+        })(),
+
+        // description
         description,
+
+        // tax breakup
+        tax: {
+          grossAmount: grossAmount > 0 ? +grossAmount.toFixed(2) : undefined,
+          gstPercentage,
+          gstAmount: gstAmount || undefined,
+          splitCgstSgst: !!gstAmount, // assume intra-state by default (CGST+SGST)
+          tdsPercentage,
+          tdsAmount: tdsAmount || undefined,
+          netAmount,
+        },
+
+        // ledger
+        ledger: bookingTotal
+          ? {
+              totalBookingAmount: bookingTotal,
+              totalReceivedTillDate,
+              balanceOutstanding,
+            }
+          : undefined,
+
+        // company / signatory — fall back to Eastern Estate defaults when
+        // company-settings have not been filled in yet.
+        company: {
+          name: company?.companyName || 'Eastern Estate Construction & Development Pvt. Ltd.',
+          tagline: company?.tagline,
+          address: company?.address,
+          city: company?.city,
+          state: company?.state,
+          pincode: company?.pincode,
+          phone: company?.phone,
+          email: company?.email,
+          website: company?.website,
+          gstin: company?.gstin,
+          reraNumber: company?.reraNumber,
+          // PAN and CIN are not currently in company_settings — left blank so
+          // they fall away cleanly in the header instead of showing "undefined".
+          bankName: company?.bankName,
+          accountName: company?.accountName,
+          accountNumber: company?.accountNumber,
+          ifscCode: company?.ifscCode,
+          branch: company?.branch,
+          upiId: company?.upiId,
+          authorisedSignatoryName: 'Authorised Signatory',
+          authorisedSignatoryDesignation: undefined,
+          jurisdictionCity: company?.city,
+        },
       };
 
       generateReceiptPdf(receiptData);

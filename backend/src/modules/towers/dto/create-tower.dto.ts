@@ -243,6 +243,45 @@ export class CreateTowerDto {
   @Type(() => Number)
   carpetArea?: number;
 
+  @ApiPropertyOptional({
+    description: 'Default super built-up area (sq.ft) for each unit in this block',
+    example: 1450,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  defaultSuperBuiltUpArea?: number;
+
+  @ApiPropertyOptional({
+    description: 'Default built-up area (sq.ft) for each unit in this block',
+    example: 1200,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  defaultBuiltUpArea?: number;
+
+  @ApiPropertyOptional({
+    description: 'Default carpet area (sq.ft) for each unit in this block',
+    example: 1050,
+  })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  @Type(() => Number)
+  defaultCarpetArea?: number;
+
+  @ApiPropertyOptional({
+    description: 'Flat number prefix for units in this block (e.g. A- → A-101)',
+    example: 'A-',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(30)
+  flatNumberPrefix?: string;
+
   /**
    * Floor-to-ceiling height for spaciousness
    * Premium living standard indicator

@@ -26,7 +26,7 @@ import {
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UserRole } from '../../common/constants/roles.constant';
+import { UserRole, PROPERTY_UPDATE_ROLES } from '../../common/constants/roles.constant';
 
 @Controller('properties')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -109,7 +109,7 @@ export class PropertiesController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...PROPERTY_UPDATE_ROLES)
   async update(
     @Param('id') id: string,
     @Body() updatePropertyDto: UpdatePropertyDto,
@@ -130,7 +130,7 @@ export class PropertiesController {
   }
 
   @Put(':id/toggle-active')
-  @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+  @Roles(...PROPERTY_UPDATE_ROLES)
   async toggleActive(
     @Param('id') id: string,
     @Request() req: any,

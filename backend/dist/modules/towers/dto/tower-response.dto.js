@@ -130,6 +130,22 @@ __decorate([
     __metadata("design:type", Number)
 ], TowerResponseDto.prototype, "carpetArea", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Default super built-up per unit (sq.ft)' }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "defaultSuperBuiltUpArea", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Default built-up per unit (sq.ft)' }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "defaultBuiltUpArea", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Default carpet per unit (sq.ft)' }),
+    __metadata("design:type", Number)
+], TowerResponseDto.prototype, "defaultCarpetArea", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Flat number prefix', example: 'A-' }),
+    __metadata("design:type", String)
+], TowerResponseDto.prototype, "flatNumberPrefix", void 0);
+__decorate([
     (0, swagger_1.ApiPropertyOptional)({
         description: 'Ceiling height in feet',
         example: 10.5,

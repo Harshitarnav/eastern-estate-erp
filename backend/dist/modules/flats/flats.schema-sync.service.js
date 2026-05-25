@@ -175,6 +175,28 @@ let FlatsSchemaSyncService = FlatsSchemaSyncService_1 = class FlatsSchemaSyncSer
             ) THEN
               ALTER TYPE flat_status_enum ADD VALUE 'ON_HOLD';
             END IF;
+            IF NOT EXISTS (
+              SELECT 1
+              FROM pg_enum
+              WHERE enumtypid = 'flat_status_enum'::regtype
+                AND enumlabel = 'CANCELLED'
+            ) THEN
+              ALTER TYPE flat_status_enum ADD VALUE 'CANCELLED';
+            END IF;
+          END IF;
+        END $$;
+      `);
+            await queryRunner.query(`
+        DO $$
+        DECLARE col_udt text;
+        BEGIN
+          SELECT udt_name INTO col_udt
+          FROM information_schema.columns
+          WHERE table_schema = current_schema()
+            AND table_name = 'flats'
+            AND column_name = 'amenities';
+          IF col_udt = '_text' THEN
+            EXECUTE 'ALTER TABLE flats ALTER COLUMN amenities TYPE TEXT USING array_to_string(amenities, '','')';
           END IF;
         END $$;
       `);

@@ -29,6 +29,7 @@ const ROLE_COLORS: Record<string, string> = {
   hr:            'bg-purple-100 text-purple-800',
   accounts:      'bg-blue-100 text-blue-800',
   sales_team:    'bg-green-100 text-green-800',
+  crm:           'bg-teal-100 text-teal-800',
   staff:         'bg-gray-100 text-gray-700',
 };
 const roleBadge = (r: Role) => (
@@ -653,7 +654,8 @@ export default function UserManagementPage() {
             { name: 'admin',       label: 'Admin - all except user management' },
             { name: 'hr',          label: 'HR - employees + payroll' },
             { name: 'accounts',    label: 'Accounts - payments + reports' },
-            { name: 'sales_team',  label: 'Sales - customers + bookings + CRM' },
+            { name: 'sales_team',  label: 'Sales - customers + bookings (inventory view only)' },
+            { name: 'crm',         label: 'CRM - towers/flats + paperwork + bookings' },
             { name: 'staff',       label: 'Staff - dashboard read-only' },
           ].map(({ name, label }) => (
             <span

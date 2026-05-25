@@ -44,6 +44,7 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
       await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
       await runIsolated('bookings_collections', (qr) => this.ensureBookingsCollectionsSchema(qr));
+      await runIsolated('system_roles', (qr) => this.ensureSystemRoles(qr));
       // Cleanup must run AFTER marketing (which migrates campaigns → marketing_campaigns)
       await runIsolated('cleanup_legacy', (qr) => this.dropLegacyTables(qr));
       // FK constraints last – they power the Database Relationships viewer.
@@ -1027,5 +1028,51 @@ export class SchemaSyncService implements OnModuleInit {
     `);
 
     this.logger.log('Payments schema ensured - all columns up to date');
+  }
+
+  /**
+   * Upsert system roles that must always exist in the DB.
+   * Add new system roles here — they are inserted idempotently so re-running
+   * on an already-seeded DB is safe.
+   */
+  private async ensureSystemRoles(queryRunner: QueryRunner) {
+    const systemRoles = [
+      {
+        name: 'crm',
+        displayName: 'CRM',
+        description: 'Maintains towers, flats, customers, bookings, payment plans, and demand paperwork for assigned projects',
+      },
+      {
+        name: 'head_accountant',
+        displayName: 'Head Accountant',
+        description: 'Senior accounting and finance operations with approval authority',
+      },
+      {
+        name: 'hr',
+        displayName: 'HR',
+        description: 'Human resources, employee management, payroll, and attendance',
+      },
+      {
+        name: 'sales_team',
+        displayName: 'Sales Team',
+        description: 'Sales operations, lead management, and customer bookings',
+      },
+    ];
+
+    for (const role of systemRoles) {
+      await queryRunner.query(
+        `INSERT INTO roles (name, display_name, description, is_system, is_active)
+         VALUES ($1, $2, $3, TRUE, TRUE)
+         ON CONFLICT (name) DO UPDATE SET
+           display_name = EXCLUDED.display_name,
+           description  = EXCLUDED.description,
+           is_system    = TRUE,
+           is_active    = TRUE,
+           updated_at   = CURRENT_TIMESTAMP`,
+        [role.name, role.displayName, role.description],
+      );
+    }
+
+    this.logger.log('System roles ensured (crm, head_accountant, hr, sales_team)');
   }
 }
