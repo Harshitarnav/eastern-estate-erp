@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Form, FormSection } from './Form';
 import { Home, Building2, DollarSign } from 'lucide-react';
 import {
@@ -36,6 +36,8 @@ export default function FlatForm({
   const [formSnapshot, setFormSnapshot] = useState<Record<string, any>>({});
   const [towerPrefill, setTowerPrefill] = useState<Record<string, any>>({});
   const [formVersion, setFormVersion] = useState(0);
+  // Tracks whether tower defaults were auto-applied for a pre-selected tower (URL param scenario).
+  const preselectedDefaultsApplied = useRef(false);
 
   useEffect(() => {
     if (!selectedPropertyId) return;
@@ -85,6 +87,20 @@ export default function FlatForm({
     () => towers.filter((t) => t.propertyId === selectedPropertyId),
     [towers, selectedPropertyId],
   );
+
+  // When a tower is pre-selected via URL param (e.g. "Add Missing Units" button),
+  // the onChange handler on the tower dropdown never fires, so defaults are never
+  // applied. Run applyTowerDefaults once when the tower list finishes loading.
+  useEffect(() => {
+    if (preselectedDefaultsApplied.current) return;
+    if (towersForProperty.length === 0) return;
+    const preselectedId = initialData?.towerId;
+    if (!preselectedId) return;
+
+    preselectedDefaultsApplied.current = true;
+    applyTowerDefaults(preselectedId, mergedInitialValues);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [towersForProperty]);
 
   const handleSubmit = async (values: any) => {
     const num = (val: any) => (val === '' || val === undefined || val === null ? undefined : Number(val));

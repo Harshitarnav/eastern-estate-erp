@@ -343,7 +343,20 @@ export class FlatPaymentPlanService {
       });
     }
 
-    return qb.getMany();
+    const plans = await qb.getMany();
+    return plans.map((p) => this.normalizePlanMilestones(p));
+  }
+
+  /**
+   * Normalize milestones on a plan so that taxAmount / netAmount / adjustAmount / remarks
+   * are always present — even on records written before these fields were added.
+   * This is a read-side shim; it does not persist unless the plan is later saved.
+   */
+  private normalizePlanMilestones(plan: FlatPaymentPlan): FlatPaymentPlan {
+    if (Array.isArray(plan.milestones)) {
+      plan.milestones = plan.milestones.map((m) => this.normalizeMilestone(m));
+    }
+    return plan;
   }
 
   /**
@@ -357,27 +370,29 @@ export class FlatPaymentPlanService {
     if (!plan) {
       throw new NotFoundException(`Flat payment plan with ID ${id} not found`);
     }
-    return plan;
+    return this.normalizePlanMilestones(plan);
   }
 
   /**
    * Get flat payment plan by flat ID
    */
   async findByFlatId(flatId: string): Promise<FlatPaymentPlan | null> {
-    return await this.flatPaymentPlanRepository.findOne({
+    const plan = await this.flatPaymentPlanRepository.findOne({
       where: { flatId, status: FlatPaymentPlanStatus.ACTIVE },
       relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'booking.customer', 'customer', 'paymentPlanTemplate'],
     });
+    return plan ? this.normalizePlanMilestones(plan) : null;
   }
 
   /**
    * Get flat payment plan by booking ID
    */
   async findByBookingId(bookingId: string): Promise<FlatPaymentPlan | null> {
-    return await this.flatPaymentPlanRepository.findOne({
+    const plan = await this.flatPaymentPlanRepository.findOne({
       where: { bookingId, status: FlatPaymentPlanStatus.ACTIVE },
       relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'booking.customer', 'customer', 'paymentPlanTemplate'],
     });
+    return plan ? this.normalizePlanMilestones(plan) : null;
   }
 
   /**
