@@ -86,6 +86,7 @@ export declare class FlatPaymentPlanService {
         }>;
     }, userId: string): Promise<FlatPaymentPlan>;
     findAll(propertyId?: string, accessiblePropertyIds?: string[] | null): Promise<FlatPaymentPlan[]>;
+    private normalizePlanMilestones;
     findOne(id: string): Promise<FlatPaymentPlan>;
     findByFlatId(flatId: string): Promise<FlatPaymentPlan | null>;
     findByBookingId(bookingId: string): Promise<FlatPaymentPlan | null>;

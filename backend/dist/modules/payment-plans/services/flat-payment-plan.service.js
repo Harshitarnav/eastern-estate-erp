@@ -207,7 +207,14 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
                 accessiblePropertyIds,
             });
         }
-        return qb.getMany();
+        const plans = await qb.getMany();
+        return plans.map((p) => this.normalizePlanMilestones(p));
+    }
+    normalizePlanMilestones(plan) {
+        if (Array.isArray(plan.milestones)) {
+            plan.milestones = plan.milestones.map((m) => this.normalizeMilestone(m));
+        }
+        return plan;
     }
     async findOne(id) {
         const plan = await this.flatPaymentPlanRepository.findOne({
@@ -217,19 +224,21 @@ let FlatPaymentPlanService = class FlatPaymentPlanService {
         if (!plan) {
             throw new common_1.NotFoundException(`Flat payment plan with ID ${id} not found`);
         }
-        return plan;
+        return this.normalizePlanMilestones(plan);
     }
     async findByFlatId(flatId) {
-        return await this.flatPaymentPlanRepository.findOne({
+        const plan = await this.flatPaymentPlanRepository.findOne({
             where: { flatId, status: flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE },
             relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'booking.customer', 'customer', 'paymentPlanTemplate'],
         });
+        return plan ? this.normalizePlanMilestones(plan) : null;
     }
     async findByBookingId(bookingId) {
-        return await this.flatPaymentPlanRepository.findOne({
+        const plan = await this.flatPaymentPlanRepository.findOne({
             where: { bookingId, status: flat_payment_plan_entity_1.FlatPaymentPlanStatus.ACTIVE },
             relations: ['flat', 'flat.property', 'flat.tower', 'booking', 'booking.customer', 'customer', 'paymentPlanTemplate'],
         });
+        return plan ? this.normalizePlanMilestones(plan) : null;
     }
     async updateMilestone(planId, milestoneSequence, updates, userId) {
         const plan = await this.findOne(planId);
