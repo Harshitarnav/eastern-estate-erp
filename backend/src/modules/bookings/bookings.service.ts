@@ -590,6 +590,16 @@ export class BookingsService {
 
     const cancelledBooking = await this.bookingsRepository.save(booking);
 
+    // Reset flat back to available so it can be re-booked
+    if (booking.flatId) {
+      const flat = await this.flatsRepository.findOne({ where: { id: booking.flatId } });
+      if (flat) {
+        flat.status = FlatStatus.AVAILABLE;
+        flat.isAvailable = true;
+        await this.flatsRepository.save(flat);
+      }
+    }
+
     return BookingResponseDto.fromEntity(cancelledBooking);
   }
 
