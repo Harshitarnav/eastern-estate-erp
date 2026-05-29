@@ -94,11 +94,12 @@ export class TowersService {
 
     const towerCode = (createTowerDto.towerCode ?? towerNumber).trim();
 
-    // Check for duplicate tower number within the same property
+    // Check for duplicate tower number within the same property (exclude soft-deleted)
     const existingTowerNumber = await this.towerRepository.findOne({
       where: {
         propertyId: createTowerDto.propertyId,
         towerNumber,
+        isActive: true,
       },
     });
 
@@ -112,6 +113,7 @@ export class TowersService {
       where: {
         propertyId: createTowerDto.propertyId,
         towerCode,
+        isActive: true,
       },
     });
 
@@ -305,6 +307,7 @@ export class TowersService {
         where: {
           propertyId: tower.propertyId,
           towerNumber: normalizedNumber,
+          isActive: true,
         },
       });
 
@@ -322,6 +325,7 @@ export class TowersService {
         where: {
           propertyId: tower.propertyId,
           towerCode: normalizedCode,
+          isActive: true,
         },
       });
 
