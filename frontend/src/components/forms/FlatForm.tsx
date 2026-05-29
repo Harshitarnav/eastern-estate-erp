@@ -44,9 +44,12 @@ export default function FlatForm({
     onPropertyChange?.(selectedPropertyId);
   }, [selectedPropertyId]);
 
+  const [activeTower, setActiveTower] = useState<any | null>(null);
+
   const applyTowerDefaults = (towerId: string, current: Record<string, any>) => {
     const tower = towersForProperty.find((t) => t.id === towerId);
     if (!tower) return;
+    setActiveTower(tower);
     const areas = towerAreaDefaults(tower);
     const prefill: Record<string, any> = {};
     if (areas.superBuiltUpArea && !current.superBuiltUpArea) {
@@ -88,15 +91,16 @@ export default function FlatForm({
     [towers, selectedPropertyId],
   );
 
-  // When a tower is pre-selected via URL param (e.g. "Add Missing Units" button),
-  // the onChange handler on the tower dropdown never fires, so defaults are never
-  // applied. Run applyTowerDefaults once when the tower list finishes loading.
+  // When a tower is pre-selected via URL param (e.g. "Add Missing Units" button)
+  // or when editing an existing flat, set activeTower for defaults display and
+  // apply area defaults if the flat has no area values yet.
   useEffect(() => {
-    if (preselectedDefaultsApplied.current) return;
     if (towersForProperty.length === 0) return;
-    const preselectedId = initialData?.towerId;
+    const preselectedId = initialData?.towerId || formSnapshot.towerId;
     if (!preselectedId) return;
-
+    const tower = towersForProperty.find((t) => t.id === preselectedId);
+    if (tower) setActiveTower(tower);
+    if (preselectedDefaultsApplied.current) return;
     preselectedDefaultsApplied.current = true;
     applyTowerDefaults(preselectedId, mergedInitialValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -289,31 +293,36 @@ export default function FlatForm({
     },
     {
       title: 'Area Details',
-      description: 'Enter area measurements (in sq.ft)',
+      description: activeTower?.defaultSuperBuiltUpArea || activeTower?.defaultBuiltUpArea || activeTower?.defaultCarpetArea
+        ? `Tower defaults — Super: ${activeTower.defaultSuperBuiltUpArea ?? '—'} · Built-up: ${activeTower.defaultBuiltUpArea ?? '—'} · Carpet: ${activeTower.defaultCarpetArea ?? '—'} sq.ft. Edit per unit if this flat differs.`
+        : 'Enter area measurements (in sq.ft)',
       fields: [
         {
           name: 'superBuiltUpArea',
           label: 'Super Built-up Area (sq.ft)',
           type: 'number',
-          placeholder: '1200',
+          placeholder: activeTower?.defaultSuperBuiltUpArea ? String(activeTower.defaultSuperBuiltUpArea) : '1200',
           required: true,
           validation: { min: 0 },
+          helperText: activeTower?.defaultSuperBuiltUpArea ? `Tower default: ${activeTower.defaultSuperBuiltUpArea} sq.ft` : undefined,
         },
         {
           name: 'builtUpArea',
           label: 'Built-up Area (sq.ft)',
           type: 'number',
-          placeholder: '1050',
+          placeholder: activeTower?.defaultBuiltUpArea ? String(activeTower.defaultBuiltUpArea) : '1050',
           required: true,
           validation: { min: 0 },
+          helperText: activeTower?.defaultBuiltUpArea ? `Tower default: ${activeTower.defaultBuiltUpArea} sq.ft` : undefined,
         },
         {
           name: 'carpetArea',
           label: 'Carpet Area (sq.ft)',
           type: 'number',
-          placeholder: '900',
+          placeholder: activeTower?.defaultCarpetArea ? String(activeTower.defaultCarpetArea) : '900',
           required: true,
           validation: { min: 0 },
+          helperText: activeTower?.defaultCarpetArea ? `Tower default: ${activeTower.defaultCarpetArea} sq.ft` : undefined,
         },
         {
           name: 'balconyArea',

@@ -14,6 +14,7 @@ import {
   FileSpreadsheet,
   FileText,
   X,
+  Trash2,
 } from 'lucide-react';
 import {
   propertiesService,
@@ -29,6 +30,8 @@ import { BrandStatCard } from '@/components/layout/BrandStatCard';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
+import { useAuthStore } from '@/store/authStore';
+import { canManageInventory } from '@/lib/roles';
 
 
 const completenessBadgeStyles: Record<string, { label: string; bg: string; border: string; text: string }> = {
@@ -69,6 +72,10 @@ const SALES_ORDER: Array<keyof FlatSalesBreakdown> = [
 
 export default function TowersInventoryPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
+  const userRoles = (user?.roles ?? []).map((r) => r.name);
+  const canDelete = canManageInventory(userRoles);
+
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [summary, setSummary] = useState<PropertyInventorySummary | null>(null);
@@ -80,6 +87,8 @@ export default function TowersInventoryPage() {
   const [editingTower, setEditingTower] = useState<Tower | null>(null);
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [expandedDocsTower, setExpandedDocsTower] = useState<string | null>(null);
+  const [confirmDeleteTowerId, setConfirmDeleteTowerId] = useState<string | null>(null);
+  const [deletingTower, setDeletingTower] = useState(false);
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -202,6 +211,22 @@ export default function TowersInventoryPage() {
     } catch (err) {
       console.error('Failed to update tower', err);
       throw err;
+    }
+  };
+
+  const handleDeleteTower = async () => {
+    if (!confirmDeleteTowerId) return;
+    try {
+      setDeletingTower(true);
+      await towersService.deleteTower(confirmDeleteTowerId);
+      setConfirmDeleteTowerId(null);
+      await refreshSummary();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Failed to delete tower. Make sure it has no booked/sold units.';
+      setError(msg);
+      setConfirmDeleteTowerId(null);
+    } finally {
+      setDeletingTower(false);
     }
   };
 
@@ -337,6 +362,16 @@ export default function TowersInventoryPage() {
             <FileText className="h-3.5 w-3.5" />
             {expandedDocsTower === tower.id ? 'Hide Docs' : 'Docs'}
           </button>
+          {canDelete && (
+            <button
+              onClick={() => setConfirmDeleteTowerId(tower.id)}
+              className="inline-flex items-center gap-2 rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:border-red-400 hover:bg-red-50"
+              title="Delete this tower"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          )}
         </div>
 
         {/* Tower Documents - expanded inline */}
@@ -497,6 +532,42 @@ export default function TowersInventoryPage() {
           propertyName={((properties || [])).find((p) => p.id === selectedPropertyId)?.name}
           onImported={() => refreshSummary()}
         />
+      )}
+
+      {/* Delete tower confirmation dialog */}
+      {confirmDeleteTowerId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <Trash2 className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">Delete Tower?</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-2">
+              This will permanently delete the tower and all its unit records.
+            </p>
+            <p className="text-sm font-medium text-red-700 bg-red-50 rounded-lg px-3 py-2 mb-6">
+              ⚠ This cannot be undone. Towers with booked or sold units cannot be deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteTowerId(null)}
+                disabled={deletingTower}
+                className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTower}
+                disabled={deletingTower}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingTower ? 'Deleting…' : 'Yes, Delete Tower'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
