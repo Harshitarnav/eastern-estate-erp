@@ -71,6 +71,23 @@ export class FlatResponseDto {
     if (extras) {
       Object.assign(dto, extras);
     }
+
+    // If the flat has no own area values, fall back to the tower's per-unit defaults.
+    // This makes the tower defaults the effective value everywhere across the ERP
+    // without permanently overwriting the flat's DB record.
+    const tower = (flat as any).tower;
+    if (tower) {
+      if (!dto.superBuiltUpArea && tower.defaultSuperBuiltUpArea) {
+        dto.superBuiltUpArea = tower.defaultSuperBuiltUpArea;
+      }
+      if (!dto.builtUpArea && tower.defaultBuiltUpArea) {
+        dto.builtUpArea = tower.defaultBuiltUpArea;
+      }
+      if (!dto.carpetArea && tower.defaultCarpetArea) {
+        dto.carpetArea = tower.defaultCarpetArea;
+      }
+    }
+
     return dto;
   }
 

@@ -505,14 +505,22 @@ export class FlatsService {
       fundsRealizedAccumulator += finances.fundsRealized;
       fundsOutstandingAccumulator += finances.fundsOutstanding;
 
+      // Effective area: flat's own value if set, else tower's per-unit default
+      const effectiveSuperBuiltUpArea =
+        this.toNumber(flat.superBuiltUpArea) || this.toNumber(tower.defaultSuperBuiltUpArea) || 0;
+      const effectiveBuiltUpArea =
+        this.toNumber(flat.builtUpArea) || this.toNumber(tower.defaultBuiltUpArea) || 0;
+      const effectiveCarpetArea =
+        this.toNumber(flat.carpetArea) || this.toNumber(tower.defaultCarpetArea) || 0;
+
       return {
         id: flat.id,
         flatNumber: flat.flatNumber,
         floor: flat.floor ?? 0,
         type: flat.type,
-        carpetArea: this.toNumber(flat.carpetArea),
-        superBuiltUpArea: this.toNumber(flat.superBuiltUpArea),
-        builtUpArea: this.toNumber(flat.builtUpArea),
+        carpetArea: effectiveCarpetArea,
+        superBuiltUpArea: effectiveSuperBuiltUpArea,
+        builtUpArea: effectiveBuiltUpArea,
         facing: flat.facing,
         basePrice: this.toNumber(flat.basePrice),
         pricePerSqft: flat.pricePerSqft ? this.toNumber(flat.pricePerSqft) : undefined,

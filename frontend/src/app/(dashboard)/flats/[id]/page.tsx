@@ -761,22 +761,23 @@ export default function FlatDetailPage() {
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
               <header className="border-b border-gray-100 pb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Area & Pricing</h2>
-                {flat.tower && (flat.tower.defaultSuperBuiltUpArea || flat.tower.defaultBuiltUpArea || flat.tower.defaultCarpetArea) && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    Tower defaults — Super: {flat.tower.defaultSuperBuiltUpArea ? `${formatIndianNumber(flat.tower.defaultSuperBuiltUpArea)} sq.ft` : '—'} ·
-                    Built-up: {flat.tower.defaultBuiltUpArea ? `${formatIndianNumber(flat.tower.defaultBuiltUpArea)} sq.ft` : '—'} ·
-                    Carpet: {flat.tower.defaultCarpetArea ? `${formatIndianNumber(flat.tower.defaultCarpetArea)} sq.ft` : '—'}
-                  </p>
-                )}
               </header>
               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                {/* superBuiltUpArea / builtUpArea / carpetArea are already resolved to tower
+                    defaults by the backend when the flat has no own value. We show the
+                    amber "tower default" badge only when the value matches the tower default
+                    exactly AND the tower has a default set — indicating no per-flat override. */}
                 <DetailItem
                   label="Super built-up"
                   value={
                     flat.superBuiltUpArea
-                      ? `${formatIndianNumber(flat.superBuiltUpArea)} sq.ft`
-                      : flat.tower?.defaultSuperBuiltUpArea
-                      ? <span>{formatIndianNumber(flat.tower.defaultSuperBuiltUpArea)} sq.ft <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span></span>
+                      ? <span>
+                          {formatIndianNumber(flat.superBuiltUpArea)} sq.ft
+                          {flat.tower?.defaultSuperBuiltUpArea &&
+                           flat.superBuiltUpArea === flat.tower.defaultSuperBuiltUpArea && (
+                            <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span>
+                          )}
+                        </span>
                       : '-'
                   }
                 />
@@ -784,9 +785,13 @@ export default function FlatDetailPage() {
                   label="Built-up"
                   value={
                     flat.builtUpArea
-                      ? `${formatIndianNumber(flat.builtUpArea)} sq.ft`
-                      : flat.tower?.defaultBuiltUpArea
-                      ? <span>{formatIndianNumber(flat.tower.defaultBuiltUpArea)} sq.ft <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span></span>
+                      ? <span>
+                          {formatIndianNumber(flat.builtUpArea)} sq.ft
+                          {flat.tower?.defaultBuiltUpArea &&
+                           flat.builtUpArea === flat.tower.defaultBuiltUpArea && (
+                            <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span>
+                          )}
+                        </span>
                       : '-'
                   }
                 />
@@ -794,9 +799,13 @@ export default function FlatDetailPage() {
                   label="Carpet area"
                   value={
                     flat.carpetArea
-                      ? `${formatIndianNumber(flat.carpetArea)} sq.ft`
-                      : flat.tower?.defaultCarpetArea
-                      ? <span>{formatIndianNumber(flat.tower.defaultCarpetArea)} sq.ft <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span></span>
+                      ? <span>
+                          {formatIndianNumber(flat.carpetArea)} sq.ft
+                          {flat.tower?.defaultCarpetArea &&
+                           flat.carpetArea === flat.tower.defaultCarpetArea && (
+                            <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span>
+                          )}
+                        </span>
                       : '-'
                   }
                 />
@@ -804,15 +813,6 @@ export default function FlatDetailPage() {
                 <DetailItem label="Base price" value={`₹${formatIndianNumber(flat.basePrice)}`} />
                 <DetailItem label="Final price" value={`₹${formatIndianNumber(flat.finalPrice)}`} />
               </dl>
-              {flat.tower && (flat.superBuiltUpArea || flat.builtUpArea || flat.carpetArea) &&
-               (flat.tower.defaultSuperBuiltUpArea || flat.tower.defaultBuiltUpArea || flat.tower.defaultCarpetArea) && (
-                <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-500">
-                  <span className="font-medium text-gray-700">Tower defaults (for reference): </span>
-                  {flat.tower.defaultSuperBuiltUpArea ? `Super ${formatIndianNumber(flat.tower.defaultSuperBuiltUpArea)} · ` : ''}
-                  {flat.tower.defaultBuiltUpArea ? `Built-up ${formatIndianNumber(flat.tower.defaultBuiltUpArea)} · ` : ''}
-                  {flat.tower.defaultCarpetArea ? `Carpet ${formatIndianNumber(flat.tower.defaultCarpetArea)} sq.ft` : ''}
-                </div>
-              )}
             </section>
 
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
