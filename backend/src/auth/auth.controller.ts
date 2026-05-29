@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, Res, Req } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus, Res, Req, Param, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -47,6 +47,27 @@ export class AuthController {
   @Get('me')
   async getProfile(@Request() req: any) {
     return this.authService.getAuthenticatedProfile(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('sessions')
+  async getActiveSessions(@Request() req: any) {
+    const roles: string[] = (req.user.roles ?? []).map((r: any) => r.name ?? r);
+    if (!roles.includes('super_admin') && !roles.includes('admin')) {
+      throw new ForbiddenException('Only admins can view active sessions');
+    }
+    return this.authService.getActiveSessions();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('sessions/:userId/force-logout')
+  @HttpCode(HttpStatus.OK)
+  async forceLogout(@Request() req: any, @Param('userId') userId: string) {
+    const roles: string[] = (req.user.roles ?? []).map((r: any) => r.name ?? r);
+    if (!roles.includes('super_admin') && !roles.includes('admin')) {
+      throw new ForbiddenException('Only admins can force-logout users');
+    }
+    return this.authService.forceLogoutUser(userId);
   }
 
   // Google OAuth Login

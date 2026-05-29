@@ -12,6 +12,7 @@ import { PropertyAccessService } from './services/property-access.service';
 import { PropertyAccessController } from './controllers/property-access.controller';
 import { Property } from '../properties/entities/property.entity';
 import { Booking } from '../bookings/entities/booking.entity';
+import { RefreshToken } from '../../auth/entities/refresh-token.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
       PropertyRoleTemplate,
       Property,
       Booking,
+      RefreshToken,
     ]),
     NotificationsModule, // Import for PropertyAccessController
   ],

@@ -30,6 +30,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
+    // Reject tokens issued before tokenInvalidatedAt (force-logout / password change)
+    if (user.tokenInvalidatedAt && payload.iat) {
+      const issuedAt = new Date(payload.iat * 1000);
+      if (issuedAt < user.tokenInvalidatedAt) {
+        throw new UnauthorizedException('Session invalidated. Please log in again.');
+      }
+    }
+
     return {
       id: user.id,
       email: user.email,

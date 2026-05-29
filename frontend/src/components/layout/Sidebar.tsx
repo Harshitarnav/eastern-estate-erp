@@ -8,7 +8,7 @@ import {
   Calendar, CalendarDays, DollarSign, Calculator, Hammer, Package,
   ShoppingCart, Briefcase, MessageSquare, BarChart3,
   Settings, ChevronDown, Target, Database, Table as TableIcon,
-  FileText, AlertTriangle, BookOpen, Shield, KeyRound, UserCog,
+  FileText, AlertTriangle, BookOpen, Shield, KeyRound, UserCog, Wifi,
   LifeBuoy, Palette
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -201,6 +201,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       id: 'user-management', label: 'User Management', icon: UserCog, adminOnly: true,
       children: [
         { id: 'users-list',       label: 'Users',               icon: Users,    href: '/settings/users' },
+        { id: 'active-sessions',  label: 'Active Sessions',      icon: Wifi,     href: '/settings/sessions' },
         { id: 'roles',            label: 'Roles & Permissions',  icon: Shield,   href: '/roles' },
         { id: 'property-access',  label: 'Project Access',       icon: KeyRound, href: '/property-access' },
       ]

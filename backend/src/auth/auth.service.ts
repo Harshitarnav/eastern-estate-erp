@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../modules/users/entities/user.entity';
@@ -170,6 +170,34 @@ export class AuthService {
       await this.refreshTokenRepository.delete({ user: { id: userId } });
     }
     return { message: 'Logged out successfully' };
+  }
+
+  async getActiveSessions() {
+    const tokens = await this.refreshTokenRepository.find({
+      where: { expiresAt: MoreThan(new Date()) },
+      relations: ['user'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return tokens.map((t) => ({
+      sessionId: t.id,
+      userId: t.user?.id,
+      email: t.user?.email,
+      firstName: t.user?.firstName,
+      lastName: t.user?.lastName,
+      ipAddress: t.ipAddress,
+      userAgent: t.userAgent,
+      loginAt: t.createdAt,
+      expiresAt: t.expiresAt,
+    }));
+  }
+
+  async forceLogoutUser(targetUserId: string) {
+    await this.refreshTokenRepository.delete({ user: { id: targetUserId } });
+    await this.usersRepository.update(targetUserId, {
+      tokenInvalidatedAt: new Date(),
+    });
+    return { message: 'User has been logged out from all sessions' };
   }
 
   async googleLogin(user: any, ipAddress?: string, userAgent?: string) {

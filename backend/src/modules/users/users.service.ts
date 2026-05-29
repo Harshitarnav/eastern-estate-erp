@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { RefreshToken } from '../../auth/entities/refresh-token.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -17,6 +18,8 @@ export class UsersService {
     private rolesRepository: Repository<Role>,
     @InjectRepository(Permission)
     private permissionsRepository: Repository<Permission>,
+    @InjectRepository(RefreshToken)
+    private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
   async create(createUserDto: CreateUserDto, createdById?: string) {
@@ -146,6 +149,8 @@ export class UsersService {
 
     if (updateUserDto.password) {
       user.password = await bcrypt.hash(updateUserDto.password, 12);
+      user.tokenInvalidatedAt = new Date();
+      await this.refreshTokenRepository.delete({ user: { id: user.id } });
       delete updateUserDto.password;
     }
 

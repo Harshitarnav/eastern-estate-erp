@@ -65,6 +65,9 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   lockedUntil: Date;
 
+  @Column({ name: 'token_invalidated_at', type: 'timestamp', nullable: true })
+  tokenInvalidatedAt: Date | null;
+
   // Email domain fields for access control
   @Column({ name: 'email_domain', nullable: true })
   emailDomain: string;

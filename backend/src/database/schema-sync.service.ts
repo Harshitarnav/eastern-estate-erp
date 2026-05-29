@@ -44,6 +44,7 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
       await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
       await runIsolated('bookings_collections', (qr) => this.ensureBookingsCollectionsSchema(qr));
+      await runIsolated('users_columns', (qr) => this.ensureUsersSchema(qr));
       await runIsolated('system_roles', (qr) => this.ensureSystemRoles(qr));
       // Cleanup must run AFTER marketing (which migrates campaigns → marketing_campaigns)
       await runIsolated('cleanup_legacy', (qr) => this.dropLegacyTables(qr));
@@ -68,6 +69,12 @@ export class SchemaSyncService implements OnModuleInit {
    *  - `payment_installments` → replaced by `payment_schedules` (see migration 018)
    *  - `payment_installments_archive` → snapshot created by some envs pre-migration-018
    */
+  private async ensureUsersSchema(queryRunner: QueryRunner) {
+    await queryRunner.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS token_invalidated_at TIMESTAMP;
+    `);
+  }
+
   private async dropLegacyTables(queryRunner: QueryRunner) {
     const legacy = [
       'campaigns',

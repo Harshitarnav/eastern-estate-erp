@@ -96,4 +96,27 @@ class AuthService {
   }
 }
 
+export interface ActiveSession {
+  sessionId: string;
+  userId: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  ipAddress: string;
+  userAgent: string;
+  loginAt: string;
+  expiresAt: string;
+}
+
+class SessionsService {
+  async getActiveSessions(): Promise<ActiveSession[]> {
+    return apiService.get<ActiveSession[]>('/auth/sessions');
+  }
+
+  async forceLogout(userId: string): Promise<{ message: string }> {
+    return apiService.post<{ message: string }>(`/auth/sessions/${userId}/force-logout`, {});
+  }
+}
+
 export const authService = new AuthService();
+export const sessionsService = new SessionsService();
