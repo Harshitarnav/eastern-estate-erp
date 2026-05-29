@@ -558,6 +558,9 @@ export class FlatsService {
       fundsRealized: fundsRealizedAccumulator,
       fundsOutstanding: fundsOutstandingAccumulator,
       generatedAt: new Date().toISOString(),
+      towerDefaultSuperBuiltUpArea: tower.defaultSuperBuiltUpArea ?? null,
+      towerDefaultBuiltUpArea: tower.defaultBuiltUpArea ?? null,
+      towerDefaultCarpetArea: tower.defaultCarpetArea ?? null,
     };
   }
 

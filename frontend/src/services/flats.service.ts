@@ -177,6 +177,10 @@ export interface FlatInventorySummary {
   fundsTarget: number;
   fundsRealized: number;
   fundsOutstanding: number;
+  /** Tower-level area defaults — fallback when a flat has no own area set */
+  towerDefaultSuperBuiltUpArea?: number | null;
+  towerDefaultBuiltUpArea?: number | null;
+  towerDefaultCarpetArea?: number | null;
 }
 
 class FlatsService extends BaseCachedService {

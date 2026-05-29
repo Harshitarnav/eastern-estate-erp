@@ -381,7 +381,14 @@ function FlatsInventoryContent() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {((filteredUnits || [])).map((unit) => (
-                      <UnitRow key={unit.id} unit={unit} onOpen={() => router.push(`/flats/${unit.id}`)} />
+                      <UnitRow
+                        key={unit.id}
+                        unit={unit}
+                        towerDefaultSuperBuiltUpArea={summary.towerDefaultSuperBuiltUpArea}
+                        towerDefaultBuiltUpArea={summary.towerDefaultBuiltUpArea}
+                        towerDefaultCarpetArea={summary.towerDefaultCarpetArea}
+                        onOpen={() => router.push(`/flats/${unit.id}`)}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -547,7 +554,19 @@ function formatSalesLabelKey(key: keyof FlatSalesBreakdown): string {
   }
 }
 
-function UnitRow({ unit, onOpen }: { unit: FlatInventoryUnit; onOpen: () => void }) {
+function UnitRow({
+  unit,
+  towerDefaultSuperBuiltUpArea,
+  towerDefaultBuiltUpArea,
+  towerDefaultCarpetArea,
+  onOpen,
+}: {
+  unit: FlatInventoryUnit;
+  towerDefaultSuperBuiltUpArea?: number | null;
+  towerDefaultBuiltUpArea?: number | null;
+  towerDefaultCarpetArea?: number | null;
+  onOpen: () => void;
+}) {
   const badge = COMPLETENESS_BADGE[unit.completenessStatus] ?? COMPLETENESS_BADGE.IN_PROGRESS;
   const issuesLabel = unit.issuesCount > 0 ? `${unit.issuesCount} warning${unit.issuesCount > 1 ? 's' : ''}` : 'All good';
   const issuesIcon = unit.issuesCount > 0 ? (
@@ -556,13 +575,30 @@ function UnitRow({ unit, onOpen }: { unit: FlatInventoryUnit; onOpen: () => void
     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
   );
 
+  const effectiveCarpet = unit.carpetArea || towerDefaultCarpetArea;
+  const effectiveSuper = unit.superBuiltUpArea || towerDefaultSuperBuiltUpArea;
+  const carpetIsDefault = !unit.carpetArea && !!towerDefaultCarpetArea;
+  const superIsDefault = !unit.superBuiltUpArea && !!towerDefaultSuperBuiltUpArea;
+
   return (
     <tr className="hover:bg-gray-50/70">
       <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{unit.flatNumber}</td>
       <td className="px-4 py-3 text-gray-700">{unit.floor ?? '-'}</td>
       <td className="px-4 py-3 text-gray-700">{unit.type}</td>
       <td className="px-4 py-3 text-gray-700">
-        {formatIndianNumber(unit.carpetArea)} / {formatIndianNumber(unit.superBuiltUpArea)} sq.ft
+        <div className="flex flex-col gap-0.5">
+          <span>
+            {effectiveCarpet ? formatIndianNumber(effectiveCarpet) : '—'}
+            {carpetIsDefault && <span className="ml-1 text-xs text-amber-600 font-medium">(D)</span>}
+            {' / '}
+            {effectiveSuper ? formatIndianNumber(effectiveSuper) : '—'}
+            {superIsDefault && <span className="ml-1 text-xs text-amber-600 font-medium">(D)</span>}
+            {' sq.ft'}
+          </span>
+          {(carpetIsDefault || superIsDefault) && (
+            <span className="text-xs text-amber-600">↑ tower default</span>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 text-gray-700">{unit.facing ?? '-'}</td>
       <td className="px-4 py-3 text-gray-700">₹{formatIndianNumber(unit.basePrice)}</td>

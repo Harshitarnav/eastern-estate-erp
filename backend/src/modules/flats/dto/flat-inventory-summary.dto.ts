@@ -64,6 +64,10 @@ export class FlatInventorySummaryDto {
   fundsRealized: number;
   fundsOutstanding: number;
   generatedAt: string;
+  /** Tower-level per-unit area defaults — shown as fallback when a flat has no own area set */
+  towerDefaultSuperBuiltUpArea?: number | null;
+  towerDefaultBuiltUpArea?: number | null;
+  towerDefaultCarpetArea?: number | null;
 }
 
 export { emptySalesBreakdown };
