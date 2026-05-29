@@ -129,13 +129,21 @@ export default function ActiveSessionsPage() {
                         {s.firstName?.[0]}{s.lastName?.[0]}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-gray-900">
                             {s.firstName} {s.lastName}
                           </span>
                           {isCurrentUser && (
                             <Badge className="bg-blue-100 text-blue-700 text-xs">You</Badge>
                           )}
+                          {(s.roles ?? []).map((role) => (
+                            <span
+                              key={role}
+                              className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+                            >
+                              {role}
+                            </span>
+                          ))}
                         </div>
                         <span className="text-sm text-gray-500">{s.email}</span>
                       </div>

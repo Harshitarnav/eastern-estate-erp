@@ -102,6 +102,8 @@ export interface ActiveSession {
   email: string;
   firstName: string;
   lastName: string;
+  isActive: boolean;
+  roles: string[];
   ipAddress: string;
   userAgent: string;
   loginAt: string;

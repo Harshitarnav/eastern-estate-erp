@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../modules/users/entities/user.entity';
@@ -173,18 +173,36 @@ export class AuthService {
   }
 
   async getActiveSessions() {
-    const tokens = await this.refreshTokenRepository.find({
-      where: { expiresAt: MoreThan(new Date()) },
-      relations: ['user'],
-      order: { createdAt: 'DESC' },
-    });
+    const rows = await this.refreshTokenRepository
+      .createQueryBuilder('rt')
+      .innerJoin('rt.user', 'u')
+      .leftJoin('u.roles', 'r')
+      .select([
+        'rt.id',
+        'rt.ipAddress',
+        'rt.userAgent',
+        'rt.createdAt',
+        'rt.expiresAt',
+        'u.id',
+        'u.email',
+        'u.firstName',
+        'u.lastName',
+        'u.isActive',
+        'r.name',
+        'r.displayName',
+      ])
+      .where('rt.expiresAt > :now', { now: new Date() })
+      .orderBy('rt.createdAt', 'DESC')
+      .getMany();
 
-    return tokens.map((t) => ({
+    return rows.map((t) => ({
       sessionId: t.id,
-      userId: t.user?.id,
-      email: t.user?.email,
-      firstName: t.user?.firstName,
-      lastName: t.user?.lastName,
+      userId: (t as any).user?.id,
+      email: (t as any).user?.email,
+      firstName: (t as any).user?.firstName,
+      lastName: (t as any).user?.lastName,
+      isActive: (t as any).user?.isActive,
+      roles: ((t as any).user?.roles ?? []).map((r: any) => r.displayName ?? r.name),
       ipAddress: t.ipAddress,
       userAgent: t.userAgent,
       loginAt: t.createdAt,
