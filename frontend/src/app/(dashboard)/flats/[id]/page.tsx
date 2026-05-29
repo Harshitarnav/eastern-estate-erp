@@ -770,11 +770,11 @@ export default function FlatDetailPage() {
                 <DetailItem
                   label="Super built-up"
                   value={
-                    flat.superBuiltUpArea
+                    Number(flat.superBuiltUpArea)
                       ? <span>
                           {formatIndianNumber(flat.superBuiltUpArea)} sq.ft
                           {flat.tower?.defaultSuperBuiltUpArea &&
-                           flat.superBuiltUpArea === flat.tower.defaultSuperBuiltUpArea && (
+                           Number(flat.superBuiltUpArea) === Number(flat.tower.defaultSuperBuiltUpArea) && (
                             <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span>
                           )}
                         </span>
@@ -784,11 +784,11 @@ export default function FlatDetailPage() {
                 <DetailItem
                   label="Built-up"
                   value={
-                    flat.builtUpArea
+                    Number(flat.builtUpArea)
                       ? <span>
                           {formatIndianNumber(flat.builtUpArea)} sq.ft
                           {flat.tower?.defaultBuiltUpArea &&
-                           flat.builtUpArea === flat.tower.defaultBuiltUpArea && (
+                           Number(flat.builtUpArea) === Number(flat.tower.defaultBuiltUpArea) && (
                             <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span>
                           )}
                         </span>
@@ -798,11 +798,11 @@ export default function FlatDetailPage() {
                 <DetailItem
                   label="Carpet area"
                   value={
-                    flat.carpetArea
+                    Number(flat.carpetArea)
                       ? <span>
                           {formatIndianNumber(flat.carpetArea)} sq.ft
                           {flat.tower?.defaultCarpetArea &&
-                           flat.carpetArea === flat.tower.defaultCarpetArea && (
+                           Number(flat.carpetArea) === Number(flat.tower.defaultCarpetArea) && (
                             <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">tower default</span>
                           )}
                         </span>
