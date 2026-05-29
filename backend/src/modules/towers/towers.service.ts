@@ -92,7 +92,7 @@ export class TowersService {
       throw new BadRequestException('towerNumber is required');
     }
 
-    const towerCode = (createTowerDto.towerCode ?? towerNumber).trim();
+    const towerCode = (createTowerDto.towerCode?.trim() || towerNumber);
 
     // Check for duplicate tower number within the same property (exclude soft-deleted)
     const existingTowerNumber = await this.towerRepository.findOne({

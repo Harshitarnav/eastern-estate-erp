@@ -71,16 +71,17 @@ export class TowersSchemaSyncService implements OnModuleInit {
         await queryRunner.query(query);
       }
 
-      // Ensure basic identifiers are populated
+      // Ensure basic identifiers are populated; also patch any blank codes
+      // that may exist from old data or frontend sending towerCode: ''
       await queryRunner.query(`
         UPDATE towers
-        SET tower_number = COALESCE(tower_number, name, 'T1')
+        SET tower_number = COALESCE(NULLIF(tower_number, ''), name, 'T1')
         WHERE tower_number IS NULL OR tower_number = '';
       `);
 
       await queryRunner.query(`
         UPDATE towers
-        SET tower_code = COALESCE(tower_code, tower_number, name, 'T1')
+        SET tower_code = COALESCE(NULLIF(tower_code, ''), tower_number, name, 'T1')
         WHERE tower_code IS NULL OR tower_code = '';
       `);
 
