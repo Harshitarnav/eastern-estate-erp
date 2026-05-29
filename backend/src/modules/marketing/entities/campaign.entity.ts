@@ -1,5 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 @Entity('marketing_campaigns')
 export class Campaign {
   @PrimaryGeneratedColumn('uuid')
@@ -17,7 +23,7 @@ export class Campaign {
   @Column()
   status: string;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   budget: number;
 
   @Column({ type: 'date', nullable: true })

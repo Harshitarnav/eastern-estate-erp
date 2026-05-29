@@ -133,52 +133,52 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Flat.prototype, "poojaRoom", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "superBuiltUpArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "builtUpArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "carpetArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 10, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "balconyArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     (0, typeorm_1.Index)(),
     __metadata("design:type", Number)
 ], Flat.prototype, "basePrice", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "pricePerSqft", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "registrationCharges", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "maintenanceCharges", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "parkingCharges", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "totalPrice", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "discountAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "finalPrice", void 0);
 __decorate([
@@ -324,7 +324,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Flat.prototype, "soldDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Flat.prototype, "tokenAmount", void 0);
 __decorate([

@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Budget = exports.BudgetStatus = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const user_entity_1 = require("../../users/entities/user.entity");
 const account_entity_1 = require("./account.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
@@ -62,11 +66,11 @@ __decorate([
     __metadata("design:type", String)
 ], Budget.prototype, "department", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { name: 'budgeted_amount', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', name: 'budgeted_amount', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Budget.prototype, "budgetedAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { name: 'actual_amount', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', name: 'actual_amount', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Budget.prototype, "actualAmount", void 0);
 __decorate([

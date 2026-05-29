@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MaterialExit = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const material_entity_1 = require("./material.entity");
 const employee_entity_1 = require("../../employees/entities/employee.entity");
 let MaterialExit = class MaterialExit {
@@ -49,7 +53,7 @@ __decorate([
     __metadata("design:type", String)
 ], MaterialExit.prototype, "constructionProjectId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 3 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 3, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], MaterialExit.prototype, "quantity", void 0);
 __decorate([
@@ -87,7 +91,7 @@ __decorate([
     __metadata("design:type", Date)
 ], MaterialExit.prototype, "returnDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'return_quantity', type: 'decimal', precision: 15, scale: 3, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'return_quantity', type: 'decimal', precision: 15, scale: 3, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], MaterialExit.prototype, "returnQuantity", void 0);
 __decorate([

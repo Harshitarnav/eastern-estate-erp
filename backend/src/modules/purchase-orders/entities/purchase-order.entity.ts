@@ -11,6 +11,12 @@ import { Vendor } from '../../vendors/entities/vendor.entity';
 import { Property } from '../../properties/entities/property.entity';
 import { User } from '../../users/entities/user.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum PurchaseOrderStatus {
   DRAFT = 'DRAFT',
   PENDING_APPROVAL = 'PENDING_APPROVAL',
@@ -63,25 +69,25 @@ export class PurchaseOrder {
   @Column({ name: 'actual_delivery_date', type: 'date', nullable: true })
   actualDeliveryDate: Date | null;
 
-  @Column({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   subtotal: number;
 
-  @Column({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   taxAmount: number;
 
-  @Column({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   discountAmount: number;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   totalAmount: number;
 
   @Column({ name: 'payment_terms', type: 'varchar', length: 255, nullable: true })
   paymentTerms: string | null;
 
-  @Column({ name: 'advance_paid', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'advance_paid', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   advancePaid: number;
 
-  @Column({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   balanceAmount: number;
 
   @Column({ name: 'approved_by', type: 'uuid', nullable: true })

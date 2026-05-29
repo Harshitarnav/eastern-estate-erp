@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConstructionProgressLog = exports.ShiftType = exports.ProgressType = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const property_entity_1 = require("../../properties/entities/property.entity");
 const tower_entity_1 = require("../../towers/entities/tower.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
@@ -79,7 +83,7 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'progress_percentage', type: 'decimal', precision: 5, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'progress_percentage', type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], ConstructionProgressLog.prototype, "progressPercentage", void 0);
 __decorate([
@@ -91,7 +95,7 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionProgressLog.prototype, "weatherCondition", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'temperature', type: 'decimal', precision: 5, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'temperature', type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], ConstructionProgressLog.prototype, "temperature", void 0);
 __decorate([

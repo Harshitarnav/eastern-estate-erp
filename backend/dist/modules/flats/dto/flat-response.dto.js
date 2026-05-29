@@ -8,6 +8,18 @@ class FlatResponseDto {
         if (extras) {
             Object.assign(dto, extras);
         }
+        const tower = flat.tower;
+        if (tower) {
+            if (!Number(dto.superBuiltUpArea) && tower.defaultSuperBuiltUpArea) {
+                dto.superBuiltUpArea = tower.defaultSuperBuiltUpArea;
+            }
+            if (!Number(dto.builtUpArea) && tower.defaultBuiltUpArea) {
+                dto.builtUpArea = tower.defaultBuiltUpArea;
+            }
+            if (!Number(dto.carpetArea) && tower.defaultCarpetArea) {
+                dto.carpetArea = tower.defaultCarpetArea;
+            }
+        }
         return dto;
     }
     static fromEntities(flats, extras) {

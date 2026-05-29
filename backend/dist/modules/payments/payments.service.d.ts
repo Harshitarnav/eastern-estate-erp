@@ -38,8 +38,8 @@ export declare class PaymentsService {
         total: number;
     }>;
     private applyPaymentFilters;
-    findOne(id: string): Promise<Payment>;
-    findByPaymentCode(paymentCode: string): Promise<Payment>;
+    findOne(id: string, accessiblePropertyIds?: string[] | null): Promise<Payment>;
+    findByPaymentCode(paymentCode: string, accessiblePropertyIds?: string[] | null): Promise<Payment>;
     update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<Payment>;
     markRefunded(id: string, userId?: string | null): Promise<Payment>;
     verify(id: string, userId: string): Promise<Payment>;

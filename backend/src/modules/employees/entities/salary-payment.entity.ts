@@ -11,6 +11,13 @@ import {
 import { Employee } from './employee.entity';
 import { Property } from '../../properties/entities/property.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
+
 export enum PaymentStatus {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
@@ -51,69 +58,69 @@ export class SalaryPayment {
   @Column({ type: 'date' })
   paymentMonth: Date; // First day of the month for which salary is paid
 
-  @Column('decimal', { precision: 6, scale: 2 })
+  @Column({ type: 'decimal', precision: 6, scale: 2, transformer: decimalTransformer })
   workingDays: number;
 
-  @Column('decimal', { precision: 6, scale: 2 })
+  @Column({ type: 'decimal', precision: 6, scale: 2, transformer: decimalTransformer })
   presentDays: number;
 
-  @Column('decimal', { precision: 6, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 6, scale: 2, default: 0, transformer: decimalTransformer })
   absentDays: number;
 
-  @Column('decimal', { precision: 6, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 6, scale: 2, default: 0, transformer: decimalTransformer })
   paidLeaveDays: number;
 
-  @Column('decimal', { precision: 6, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 6, scale: 2, default: 0, transformer: decimalTransformer })
   unpaidLeaveDays: number;
 
-  @Column('decimal', { precision: 8, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 8, scale: 2, default: 0, transformer: decimalTransformer })
   overtimeHours: number;
 
   // Salary Components
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   basicSalary: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   houseRentAllowance: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   transportAllowance: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   medicalAllowance: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   overtimePayment: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   otherAllowances: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   grossSalary: number;
 
   // Deductions
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   pfDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   esiDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   taxDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   advanceDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   loanDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   otherDeductions: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   totalDeductions: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   netSalary: number;
 
   // Payment Details

@@ -8,6 +8,12 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Flat } from '../../flats/entities/flat.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
@@ -84,13 +90,13 @@ export class FlatPaymentPlan {
   @JoinColumn({ name: 'payment_plan_template_id' })
   paymentPlanTemplate: PaymentPlanTemplate;
 
-  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   totalAmount: number;
 
-  @Column({ name: 'paid_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'paid_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   paidAmount: number;
 
-  @Column({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   balanceAmount: number;
 
   @Column({ type: 'jsonb' })

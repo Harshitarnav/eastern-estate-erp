@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JournalEntry = exports.JournalEntryStatus = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const user_entity_1 = require("../../users/entities/user.entity");
 const journal_entry_line_entity_1 = require("./journal-entry-line.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
@@ -49,11 +53,11 @@ __decorate([
     __metadata("design:type", String)
 ], JournalEntry.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], JournalEntry.prototype, "totalDebit", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], JournalEntry.prototype, "totalCredit", void 0);
 __decorate([

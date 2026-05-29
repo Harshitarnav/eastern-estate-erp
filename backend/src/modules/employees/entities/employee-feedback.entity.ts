@@ -10,6 +10,13 @@ import {
 } from 'typeorm';
 import { Employee } from './employee.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
+
 export enum FeedbackType {
   PEER_TO_PEER = 'PEER_TO_PEER',
   MANAGER_TO_EMPLOYEE = 'MANAGER_TO_EMPLOYEE',
@@ -99,28 +106,28 @@ export class EmployeeFeedback {
   generalComments: string;
 
   // Ratings (1-5 scale) - Optional
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   technicalSkillsRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   communicationRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   teamworkRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   leadershipRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   problemSolvingRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   reliabilityRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   professionalismRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   overallRating: number;
 
   // Acknowledgment

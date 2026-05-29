@@ -136,42 +136,42 @@ export class Flat {
   poojaRoom: boolean;
 
   // Area Details
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: decimalTransformer })
   superBuiltUpArea: number; // in sq.ft
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: decimalTransformer })
   builtUpArea: number; // in sq.ft
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, transformer: decimalTransformer })
   carpetArea: number; // in sq.ft
 
-  @Column('decimal', { precision: 10, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer })
   balconyArea: number; // in sq.ft
 
   // Pricing
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   @Index()
   basePrice: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   pricePerSqft: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   registrationCharges: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   maintenanceCharges: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   parkingCharges: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   totalPrice: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   discountAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   finalPrice: number;
 
   // Status and Availability
@@ -295,7 +295,7 @@ export class Flat {
   @Column({ type: 'date', nullable: true })
   soldDate: Date;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   tokenAmount: number;
 
   @Column({ type: 'text', nullable: true })

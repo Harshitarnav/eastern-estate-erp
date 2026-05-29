@@ -181,7 +181,7 @@ export class PaymentsService {
     }
   }
 
-  async findOne(id: string): Promise<Payment> {
+  async findOne(id: string, accessiblePropertyIds?: string[] | null): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { id },
       relations: ['booking', 'customer'],
@@ -191,16 +191,36 @@ export class PaymentsService {
       throw new NotFoundException(`Payment with ID ${id} not found`);
     }
 
+    // Enforce property-scoped access when the caller supplies an allowlist
+    if (
+      accessiblePropertyIds &&
+      accessiblePropertyIds.length > 0 &&
+      payment.booking?.propertyId &&
+      !accessiblePropertyIds.includes(payment.booking.propertyId)
+    ) {
+      throw new NotFoundException(`Payment with ID ${id} not found`);
+    }
+
     return payment;
   }
 
-  async findByPaymentCode(paymentCode: string): Promise<Payment> {
+  async findByPaymentCode(paymentCode: string, accessiblePropertyIds?: string[] | null): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { paymentCode },
       relations: ['booking', 'customer'],
     });
 
     if (!payment) {
+      throw new NotFoundException(`Payment with code ${paymentCode} not found`);
+    }
+
+    // Enforce property-scoped access when the caller supplies an allowlist
+    if (
+      accessiblePropertyIds &&
+      accessiblePropertyIds.length > 0 &&
+      payment.booking?.propertyId &&
+      !accessiblePropertyIds.includes(payment.booking.propertyId)
+    ) {
       throw new NotFoundException(`Payment with code ${paymentCode} not found`);
     }
 

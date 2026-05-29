@@ -123,7 +123,7 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
             });
         }
     }
-    async findOne(id) {
+    async findOne(id, accessiblePropertyIds) {
         const payment = await this.paymentRepository.findOne({
             where: { id },
             relations: ['booking', 'customer'],
@@ -131,14 +131,26 @@ let PaymentsService = PaymentsService_1 = class PaymentsService {
         if (!payment) {
             throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
         }
+        if (accessiblePropertyIds &&
+            accessiblePropertyIds.length > 0 &&
+            payment.booking?.propertyId &&
+            !accessiblePropertyIds.includes(payment.booking.propertyId)) {
+            throw new common_1.NotFoundException(`Payment with ID ${id} not found`);
+        }
         return payment;
     }
-    async findByPaymentCode(paymentCode) {
+    async findByPaymentCode(paymentCode, accessiblePropertyIds) {
         const payment = await this.paymentRepository.findOne({
             where: { paymentCode },
             relations: ['booking', 'customer'],
         });
         if (!payment) {
+            throw new common_1.NotFoundException(`Payment with code ${paymentCode} not found`);
+        }
+        if (accessiblePropertyIds &&
+            accessiblePropertyIds.length > 0 &&
+            payment.booking?.propertyId &&
+            !accessiblePropertyIds.includes(payment.booking.propertyId)) {
             throw new common_1.NotFoundException(`Payment with code ${paymentCode} not found`);
         }
         return payment;

@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Bonus = exports.BonusStatus = exports.BonusType = void 0;
 const typeorm_1 = require("typeorm");
 const employee_entity_1 = require("./employee.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var BonusType;
 (function (BonusType) {
     BonusType["PERFORMANCE"] = "PERFORMANCE";
@@ -64,7 +68,7 @@ __decorate([
     __metadata("design:type", String)
 ], Bonus.prototype, "bonusDescription", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "bonusAmount", void 0);
 __decorate([
@@ -76,19 +80,19 @@ __decorate([
     __metadata("design:type", Date)
 ], Bonus.prototype, "paymentDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "performanceRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "targetAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "achievedAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "achievementPercentage", void 0);
 __decorate([
@@ -140,11 +144,11 @@ __decorate([
     __metadata("design:type", String)
 ], Bonus.prototype, "paymentRemarks", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "taxDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Bonus.prototype, "netBonusAmount", void 0);
 __decorate([

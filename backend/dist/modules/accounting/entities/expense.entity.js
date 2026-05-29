@@ -16,6 +16,10 @@ const employee_entity_1 = require("../../employees/entities/employee.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
 const account_entity_1 = require("./account.entity");
 const journal_entry_entity_1 = require("./journal-entry.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var ExpenseStatus;
 (function (ExpenseStatus) {
     ExpenseStatus["PENDING"] = "PENDING";
@@ -48,7 +52,7 @@ __decorate([
     __metadata("design:type", String)
 ], Expense.prototype, "expenseSubCategory", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Expense.prototype, "amount", void 0);
 __decorate([

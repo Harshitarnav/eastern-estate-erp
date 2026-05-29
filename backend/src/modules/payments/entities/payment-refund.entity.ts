@@ -10,6 +10,12 @@ import {
 import { Payment } from './payment.entity';
 import { User } from '../../users/entities/user.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum RefundStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
@@ -29,7 +35,7 @@ export class PaymentRefund {
   @JoinColumn({ name: 'payment_id' })
   payment: Payment;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   refundAmount: number;
 
   @Column({ type: 'text' })

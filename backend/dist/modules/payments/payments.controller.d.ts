@@ -35,8 +35,8 @@ export declare class PaymentsController {
     }>;
     findByBooking(bookingId: string, req: any): Promise<import("./entities/payment.entity").Payment[]>;
     findByCustomer(customerId: string, req: any): Promise<import("./entities/payment.entity").Payment[]>;
-    findByCode(paymentCode: string): Promise<import("./entities/payment.entity").Payment>;
-    findOne(id: string): Promise<import("./entities/payment.entity").Payment>;
+    findByCode(paymentCode: string, req: any): Promise<import("./entities/payment.entity").Payment>;
+    findOne(id: string, req: any): Promise<import("./entities/payment.entity").Payment>;
     update(id: string, updatePaymentDto: UpdatePaymentDto): Promise<import("./entities/payment.entity").Payment>;
     verify(id: string, req: any): Promise<import("./entities/payment.entity").Payment>;
     cancel(id: string): Promise<import("./entities/payment.entity").Payment>;

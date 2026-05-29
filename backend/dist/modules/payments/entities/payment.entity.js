@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Payment = exports.PaymentStatus = exports.PaymentMethod = exports.PaymentType = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const booking_entity_1 = require("../../bookings/entities/booking.entity");
 const customer_entity_1 = require("../../customers/entities/customer.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
@@ -77,7 +81,7 @@ __decorate([
     __metadata("design:type", String)
 ], Payment.prototype, "paymentMethod", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Payment.prototype, "amount", void 0);
 __decorate([

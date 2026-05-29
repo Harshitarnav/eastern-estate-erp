@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PurchaseOrderItem = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const purchase_order_entity_1 = require("./purchase-order.entity");
 const material_entity_1 = require("../../materials/entities/material.entity");
 let PurchaseOrderItem = class PurchaseOrderItem {
@@ -39,43 +43,43 @@ __decorate([
     __metadata("design:type", material_entity_1.Material)
 ], PurchaseOrderItem.prototype, "material", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'quantity', type: 'decimal', precision: 15, scale: 3 }),
+    (0, typeorm_1.Column)({ name: 'quantity', type: 'decimal', precision: 15, scale: 3, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "quantity", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "unitPrice", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "subtotal", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'tax_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'tax_percentage', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "taxPercentage", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "taxAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'discount_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'discount_percentage', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "discountPercentage", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "discountAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "totalAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'quantity_received', type: 'decimal', precision: 15, scale: 3, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'quantity_received', type: 'decimal', precision: 15, scale: 3, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "quantityReceived", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'quantity_pending', type: 'decimal', precision: 15, scale: 3, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'quantity_pending', type: 'decimal', precision: 15, scale: 3, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrderItem.prototype, "quantityPending", void 0);
 __decorate([

@@ -10,6 +10,13 @@ import {
 } from 'typeorm';
 import { Employee } from './employee.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
+
 export enum BonusType {
   PERFORMANCE = 'PERFORMANCE',
   FESTIVAL = 'FESTIVAL',
@@ -65,7 +72,7 @@ export class Bonus {
   @Column({ type: 'text', nullable: true })
   bonusDescription: string;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   bonusAmount: number;
 
   @Column({ type: 'date' })
@@ -75,16 +82,16 @@ export class Bonus {
   paymentDate: Date;
 
   // Performance Metrics (for performance bonuses)
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer })
   performanceRating: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   targetAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   achievedAmount: number;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer })
   achievementPercentage: number;
 
   // Status & Approval
@@ -127,10 +134,10 @@ export class Bonus {
   paymentRemarks: string;
 
   // Tax Handling
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   taxDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   netBonusAmount: number;
 
   // Additional Information

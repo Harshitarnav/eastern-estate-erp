@@ -10,6 +10,13 @@ import {
 } from 'typeorm';
 import { Employee } from './employee.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
+
 export enum EmployeeLeaveKind {
   PAID = 'PAID',
   UNPAID = 'UNPAID',
@@ -38,7 +45,7 @@ export class EmployeeLeaveDay {
   leaveDate: Date;
 
   /** 1 = full day, 0.5 = half day */
-  @Column({ name: 'day_fraction', type: 'decimal', precision: 3, scale: 2, default: 1 })
+  @Column({ name: 'day_fraction', type: 'decimal', precision: 3, scale: 2, default: 1, transformer: decimalTransformer })
   dayFraction: number;
 
   @Column({ name: 'leave_kind', type: 'varchar', length: 20 })

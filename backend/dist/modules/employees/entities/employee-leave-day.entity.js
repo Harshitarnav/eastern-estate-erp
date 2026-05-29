@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmployeeLeaveDay = exports.EmployeeLeaveKind = void 0;
 const typeorm_1 = require("typeorm");
 const employee_entity_1 = require("./employee.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var EmployeeLeaveKind;
 (function (EmployeeLeaveKind) {
     EmployeeLeaveKind["PAID"] = "PAID";
@@ -39,7 +43,7 @@ __decorate([
     __metadata("design:type", Date)
 ], EmployeeLeaveDay.prototype, "leaveDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'day_fraction', type: 'decimal', precision: 3, scale: 2, default: 1 }),
+    (0, typeorm_1.Column)({ name: 'day_fraction', type: 'decimal', precision: 3, scale: 2, default: 1, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeLeaveDay.prototype, "dayFraction", void 0);
 __decorate([

@@ -10,6 +10,13 @@ import {
 } from 'typeorm';
 import { Employee } from './employee.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
+
 export enum ReviewType {
   MONTHLY = 'MONTHLY',
   QUARTERLY = 'QUARTERLY',
@@ -85,37 +92,37 @@ export class EmployeeReview {
   reviewerDesignation: string;
 
   // Performance Ratings (1-5 scale)
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   technicalSkillsRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   communicationRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   teamworkRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   leadershipRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   problemSolvingRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   initiativeRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   punctualityRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   qualityOfWorkRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   productivityRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   attendanceRating: number;
 
-  @Column('decimal', { precision: 3, scale: 2 })
+  @Column({ type: 'decimal', precision: 3, scale: 2, transformer: decimalTransformer })
   overallRating: number;
 
   // Review Content
@@ -144,13 +151,13 @@ export class EmployeeReview {
   employeeComments: string;
 
   // Goals & KPIs
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   targetAchievement: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   actualAchievement: number;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer })
   kpiAchievementPercentage: number;
 
   // Recommendations
@@ -160,13 +167,13 @@ export class EmployeeReview {
   @Column({ type: 'boolean', default: false })
   recommendedForIncrement: boolean;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer })
   recommendedIncrementPercentage: number;
 
   @Column({ type: 'boolean', default: false })
   recommendedForBonus: boolean;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   recommendedBonusAmount: number;
 
   @Column({ type: 'boolean', default: false })

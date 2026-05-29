@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RABill = exports.RABillStatus = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const construction_project_entity_1 = require("./construction-project.entity");
 const vendor_entity_1 = require("../../vendors/entities/vendor.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
@@ -79,31 +83,31 @@ __decorate([
     __metadata("design:type", String)
 ], RABill.prototype, "workDescription", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'gross_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'gross_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "grossAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'previous_bills_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'previous_bills_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "previousBillsAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'net_this_bill', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'net_this_bill', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "netThisBill", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'retention_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'retention_percentage', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "retentionPercentage", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'retention_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'retention_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "retentionAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'advance_deduction', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'advance_deduction', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "advanceDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'other_deductions', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'other_deductions', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "otherDeductions", void 0);
 __decorate([
@@ -111,7 +115,7 @@ __decorate([
     __metadata("design:type", String)
 ], RABill.prototype, "otherDeductionsDescription", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'net_payable', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'net_payable', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], RABill.prototype, "netPayable", void 0);
 __decorate([

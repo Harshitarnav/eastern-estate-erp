@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Booking = exports.PaymentStatus = exports.BookingStatus = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const customer_entity_1 = require("../../customers/entities/customer.entity");
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
@@ -85,19 +89,19 @@ __decorate([
     __metadata("design:type", Date)
 ], Booking.prototype, "bookingDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "totalAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'booking_amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'booking_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "tokenAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "paidAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "balanceAmount", void 0);
 __decorate([
@@ -157,7 +161,7 @@ __decorate([
     __metadata("design:type", Date)
 ], Booking.prototype, "registrationDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "discountAmount", void 0);
 __decorate([
@@ -165,27 +169,27 @@ __decorate([
     __metadata("design:type", String)
 ], Booking.prototype, "discountReason", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "stampDuty", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "registrationCharges", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "gstAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "maintenanceDeposit", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "parkingCharges", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "otherCharges", void 0);
 __decorate([
@@ -197,7 +201,7 @@ __decorate([
     __metadata("design:type", String)
 ], Booking.prototype, "bankName", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "loanAmount", void 0);
 __decorate([
@@ -253,7 +257,7 @@ __decorate([
     __metadata("design:type", String)
 ], Booking.prototype, "cancellationReason", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Booking.prototype, "refundAmount", void 0);
 __decorate([

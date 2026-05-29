@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConstructionProject = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const property_entity_1 = require("../../properties/entities/property.entity");
 const employee_entity_1 = require("../../employees/entities/employee.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
@@ -56,15 +60,15 @@ __decorate([
     __metadata("design:type", String)
 ], ConstructionProject.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'overall_progress', type: 'decimal', precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'overall_progress', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], ConstructionProject.prototype, "overallProgress", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'budget_allocated', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'budget_allocated', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], ConstructionProject.prototype, "budgetAllocated", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'budget_spent', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'budget_spent', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], ConstructionProject.prototype, "budgetSpent", void 0);
 __decorate([

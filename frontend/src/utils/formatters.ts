@@ -1,8 +1,8 @@
-export const formatCurrency = (amount: number) => {
+export const formatCurrency = (amount: number | string | null | undefined) => {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-  }).format(amount);
+  }).format(Number(amount) || 0);
 };
 
 export const formatDate = (date: string | Date) => {

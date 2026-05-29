@@ -13,6 +13,10 @@ exports.Lead = exports.PropertyPreference = exports.CustomerRequirementType = ex
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var LeadStatus;
 (function (LeadStatus) {
     LeadStatus["NEW"] = "NEW";
@@ -194,11 +198,11 @@ __decorate([
     __metadata("design:type", String)
 ], Lead.prototype, "propertyPreference", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Lead.prototype, "budgetMin", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Lead.prototype, "budgetMax", void 0);
 __decorate([
@@ -292,7 +296,7 @@ __decorate([
     __metadata("design:type", String)
 ], Lead.prototype, "currentOccupation", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Lead.prototype, "annualIncome", void 0);
 __decorate([

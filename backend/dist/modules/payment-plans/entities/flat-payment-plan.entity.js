@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlatPaymentPlan = exports.FlatPaymentPlanStatus = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const flat_entity_1 = require("../../flats/entities/flat.entity");
 const booking_entity_1 = require("../../bookings/entities/booking.entity");
 const customer_entity_1 = require("../../customers/entities/customer.entity");
@@ -66,15 +70,15 @@ __decorate([
     __metadata("design:type", payment_plan_template_entity_1.PaymentPlanTemplate)
 ], FlatPaymentPlan.prototype, "paymentPlanTemplate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], FlatPaymentPlan.prototype, "totalAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'paid_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'paid_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], FlatPaymentPlan.prototype, "paidAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], FlatPaymentPlan.prototype, "balanceAmount", void 0);
 __decorate([

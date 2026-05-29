@@ -8,6 +8,12 @@ import {
   JoinColumn,
   Index,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Customer } from '../../customers/entities/customer.entity';
 import { Flat } from '../../flats/entities/flat.entity';
 import { Property } from '../../properties/entities/property.entity';
@@ -86,20 +92,20 @@ export class Booking {
   bookingDate: Date;
 
   // Financial Details
-  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   totalAmount: number;
 
-  @Column({ name: 'booking_amount', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'booking_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   tokenAmount: number;
 
   // Note: agreement_amount column doesn't exist in DB, commenting out for now
   // @Column({ name: 'agreement_amount', type: 'decimal', precision: 15, scale: 2, nullable: true })
   // agreementAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   paidAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   balanceAmount: number;
 
   // Note: payment_status column doesn't exist in DB, commenting out for now
@@ -164,28 +170,28 @@ export class Booking {
   registrationDate: Date;
 
   // Discounts & Charges
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   discountAmount: number;
 
   @Column({ length: 200, nullable: true })
   discountReason: string;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   stampDuty: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   registrationCharges: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   gstAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   maintenanceDeposit: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   parkingCharges: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   otherCharges: number;
 
   // Loan Details
@@ -195,7 +201,7 @@ export class Booking {
   @Column({ length: 100, nullable: true })
   bankName: string;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   loanAmount: number;
 
   @Column({ length: 100, nullable: true })
@@ -240,7 +246,7 @@ export class Booking {
   @Column({ type: 'text', nullable: true })
   cancellationReason: string;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   refundAmount: number;
 
   @Column({ type: 'date', nullable: true })

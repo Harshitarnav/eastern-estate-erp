@@ -16,6 +16,12 @@ import {
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum ScheduleStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
@@ -60,7 +66,7 @@ export class PaymentSchedule {
   @Column({ type: 'date' })
   dueDate: Date;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   amount: number;
 
   @Column({ type: 'text', nullable: true })
@@ -78,7 +84,7 @@ export class PaymentSchedule {
   @Index()
   status: ScheduleStatus;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   paidAmount: number;
 
   @Column({ type: 'date', nullable: true })
@@ -94,7 +100,7 @@ export class PaymentSchedule {
   @Column('int', { default: 0 })
   overdueDays: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   penaltyAmount: number;
 
   // Waiver/Adjustment

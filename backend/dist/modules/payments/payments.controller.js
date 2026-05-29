@@ -91,11 +91,11 @@ let PaymentsController = class PaymentsController {
             accessiblePropertyIds: req?.accessiblePropertyIds,
         });
     }
-    findByCode(paymentCode) {
-        return this.paymentsService.findByPaymentCode(paymentCode);
+    findByCode(paymentCode, req) {
+        return this.paymentsService.findByPaymentCode(paymentCode, req?.accessiblePropertyIds);
     }
-    findOne(id) {
-        return this.paymentsService.findOne(id);
+    findOne(id, req) {
+        return this.paymentsService.findOne(id, req?.accessiblePropertyIds);
     }
     update(id, updatePaymentDto) {
         return this.paymentsService.update(id, updatePaymentDto);
@@ -169,15 +169,17 @@ __decorate([
 __decorate([
     (0, common_1.Get)('code/:paymentCode'),
     __param(0, (0, common_1.Param)('paymentCode')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "findByCode", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "findOne", null);
 __decorate([

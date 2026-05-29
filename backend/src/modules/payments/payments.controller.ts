@@ -116,13 +116,13 @@ export class PaymentsController {
   }
 
   @Get('code/:paymentCode')
-  findByCode(@Param('paymentCode') paymentCode: string) {
-    return this.paymentsService.findByPaymentCode(paymentCode);
+  findByCode(@Param('paymentCode') paymentCode: string, @Request() req: any) {
+    return this.paymentsService.findByPaymentCode(paymentCode, req?.accessiblePropertyIds);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentsService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.paymentsService.findOne(id, req?.accessiblePropertyIds);
   }
 
   @Patch(':id')

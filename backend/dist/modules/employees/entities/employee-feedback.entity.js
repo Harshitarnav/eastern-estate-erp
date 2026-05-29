@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmployeeFeedback = exports.FeedbackStatus = exports.FeedbackType = void 0;
 const typeorm_1 = require("typeorm");
 const employee_entity_1 = require("./employee.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var FeedbackType;
 (function (FeedbackType) {
     FeedbackType["PEER_TO_PEER"] = "PEER_TO_PEER";
@@ -105,35 +109,35 @@ __decorate([
     __metadata("design:type", String)
 ], EmployeeFeedback.prototype, "generalComments", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "technicalSkillsRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "communicationRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "teamworkRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "leadershipRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "problemSolvingRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "reliabilityRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "professionalismRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeFeedback.prototype, "overallRating", void 0);
 __decorate([

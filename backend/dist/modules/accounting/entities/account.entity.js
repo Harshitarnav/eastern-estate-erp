@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Account = exports.AccountType = void 0;
 const typeorm_1 = require("typeorm");
 const property_entity_1 = require("../../properties/entities/property.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var AccountType;
 (function (AccountType) {
     AccountType["ASSET"] = "ASSET";
@@ -65,11 +69,11 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Account.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { name: 'opening_balance', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', name: 'opening_balance', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Account.prototype, "openingBalance", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { name: 'current_balance', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', name: 'current_balance', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Account.prototype, "currentBalance", void 0);
 __decorate([

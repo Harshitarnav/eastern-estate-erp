@@ -9,6 +9,12 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum MaterialCategory {
   CEMENT = 'CEMENT',
   STEEL = 'STEEL',
@@ -59,19 +65,19 @@ export class Material {
   })
   unitOfMeasurement: UnitOfMeasurement;
 
-  @Column({ name: 'current_stock', type: 'decimal', precision: 15, scale: 3, default: 0 })
+  @Column({ name: 'current_stock', type: 'decimal', precision: 15, scale: 3, default: 0, transformer: decimalTransformer })
   currentStock: number;
 
-  @Column({ name: 'minimum_stock_level', type: 'decimal', precision: 15, scale: 3, default: 0 })
+  @Column({ name: 'minimum_stock_level', type: 'decimal', precision: 15, scale: 3, default: 0, transformer: decimalTransformer })
   minimumStockLevel: number;
 
-  @Column({ name: 'maximum_stock_level', type: 'decimal', precision: 15, scale: 3, default: 0 })
+  @Column({ name: 'maximum_stock_level', type: 'decimal', precision: 15, scale: 3, default: 0, transformer: decimalTransformer })
   maximumStockLevel: number;
 
-  @Column({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   unitPrice: number;
 
-  @Column({ name: 'gst_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'gst_percentage', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   gstPercentage: number;
 
   @Column({ type: 'text', nullable: true })

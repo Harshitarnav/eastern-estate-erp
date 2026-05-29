@@ -6,6 +6,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { JournalEntry } from './journal-entry.entity';
 import { Account } from './account.entity';
 
@@ -28,10 +34,10 @@ export class JournalEntryLine {
   @JoinColumn({ name: 'account_id' })
   account: Account;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   debitAmount: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   creditAmount: number;
 
   @Column({ type: 'text', nullable: true })

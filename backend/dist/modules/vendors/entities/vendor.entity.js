@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Vendor = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 let Vendor = class Vendor {
     get availableCredit() {
         return Number(this.creditLimit) - Number(this.outstandingAmount);
@@ -90,7 +94,7 @@ __decorate([
     __metadata("design:type", Array)
 ], Vendor.prototype, "materialsSupplied", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Vendor.prototype, "rating", void 0);
 __decorate([
@@ -98,11 +102,11 @@ __decorate([
     __metadata("design:type", String)
 ], Vendor.prototype, "paymentTerms", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Vendor.prototype, "creditLimit", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'outstanding_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'outstanding_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Vendor.prototype, "outstandingAmount", void 0);
 __decorate([

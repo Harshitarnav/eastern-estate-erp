@@ -16,6 +16,13 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
+
 export enum TargetPeriod {
   MONTHLY = 'MONTHLY',
   QUARTERLY = 'QUARTERLY',
@@ -79,14 +86,14 @@ export class SalesTarget {
   @Column('int', { default: 0 })
   targetBookings: number; // Number of bookings
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   targetRevenue: number; // Revenue target in INR
 
   // Self Target (Set by sales person themselves)
   @Column('int', { default: 0 })
   selfTargetBookings: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   selfTargetRevenue: number;
 
   @Column({ type: 'text', nullable: true })
@@ -105,39 +112,39 @@ export class SalesTarget {
   @Column('int', { default: 0 })
   achievedBookings: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   achievedRevenue: number;
 
   // Achievement Percentages (Calculated)
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   leadsAchievementPct: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   siteVisitsAchievementPct: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   conversionsAchievementPct: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   bookingsAchievementPct: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   revenueAchievementPct: number;
 
-  @Column('decimal', { precision: 5, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   overallAchievementPct: number;
 
   // Incentive Calculation
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   baseIncentive: number; // Base incentive amount
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   earnedIncentive: number; // Calculated based on achievement
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   bonusIncentive: number; // Bonus for exceeding target
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   totalIncentive: number; // Total incentive earned
 
   @Column({ type: 'boolean', default: false })

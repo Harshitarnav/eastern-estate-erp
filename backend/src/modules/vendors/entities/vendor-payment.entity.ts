@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Vendor } from './vendor.entity';
 // import { PurchaseOrder } from '../../purchase-orders/entities/purchase-order.entity'; // Removed - not needed
 import { User } from '../../users/entities/user.entity';
@@ -42,7 +48,7 @@ export class VendorPayment {
   @Column({ name: 'payment_date', type: 'date' })
   paymentDate: Date;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   amount: number;
 
   @Column({

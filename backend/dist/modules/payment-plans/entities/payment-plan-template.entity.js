@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentPlanTemplate = exports.PaymentPlanType = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var PaymentPlanType;
 (function (PaymentPlanType) {
     PaymentPlanType["CONSTRUCTION_LINKED"] = "CONSTRUCTION_LINKED";
@@ -45,7 +49,7 @@ __decorate([
     __metadata("design:type", Array)
 ], PaymentPlanTemplate.prototype, "milestones", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_percentage', type: 'decimal', precision: 5, scale: 2, default: 100 }),
+    (0, typeorm_1.Column)({ name: 'total_percentage', type: 'decimal', precision: 5, scale: 2, default: 100, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PaymentPlanTemplate.prototype, "totalPercentage", void 0);
 __decorate([

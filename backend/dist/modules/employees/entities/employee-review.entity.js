@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmployeeReview = exports.ReviewStatus = exports.ReviewType = void 0;
 const typeorm_1 = require("typeorm");
 const employee_entity_1 = require("./employee.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var ReviewType;
 (function (ReviewType) {
     ReviewType["MONTHLY"] = "MONTHLY";
@@ -88,47 +92,47 @@ __decorate([
     __metadata("design:type", String)
 ], EmployeeReview.prototype, "reviewerDesignation", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "technicalSkillsRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "communicationRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "teamworkRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "leadershipRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "problemSolvingRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "initiativeRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "punctualityRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "qualityOfWorkRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "productivityRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "attendanceRating", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 3, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 3, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "overallRating", void 0);
 __decorate([
@@ -164,15 +168,15 @@ __decorate([
     __metadata("design:type", String)
 ], EmployeeReview.prototype, "employeeComments", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "targetAchievement", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "actualAchievement", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "kpiAchievementPercentage", void 0);
 __decorate([
@@ -184,7 +188,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], EmployeeReview.prototype, "recommendedForIncrement", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "recommendedIncrementPercentage", void 0);
 __decorate([
@@ -192,7 +196,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], EmployeeReview.prototype, "recommendedForBonus", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], EmployeeReview.prototype, "recommendedBonusAmount", void 0);
 __decorate([

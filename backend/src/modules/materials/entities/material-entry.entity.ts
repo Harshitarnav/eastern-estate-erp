@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Material } from './material.entity';
 import { Vendor } from '../../vendors/entities/vendor.entity';
 // import { PurchaseOrder } from '../../purchase-orders/entities/purchase-order.entity'; // Removed - not needed
@@ -37,13 +43,13 @@ export class MaterialEntry {
   })
   entryType: EntryType;
 
-  @Column({ type: 'decimal', precision: 15, scale: 3 })
+  @Column({ type: 'decimal', precision: 15, scale: 3, transformer: decimalTransformer })
   quantity: number;
 
-  @Column({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   unitPrice: number;
 
-  @Column({ name: 'total_value', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'total_value', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   totalValue: number;
 
   @Column({ name: 'vendor_id', type: 'uuid', nullable: true })

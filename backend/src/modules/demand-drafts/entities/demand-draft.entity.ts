@@ -7,6 +7,12 @@ import {
   Index,
 } from 'typeorm';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum DemandDraftStatus {
   DRAFT = 'DRAFT', // Generated content, editable
   READY = 'READY', // Finalized and exported
@@ -58,7 +64,7 @@ export class DemandDraft {
   @Column({ name: 'milestone_id', type: 'varchar', length: 200, nullable: true })
   milestoneId: string | null;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   amount: number;
 
   @Column({ type: 'varchar', length: 20, default: DemandDraftStatus.DRAFT })

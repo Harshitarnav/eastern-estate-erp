@@ -8,6 +8,12 @@ import {
  JoinColumn,
  OneToMany,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
 import { User } from '../../users/entities/user.entity';
@@ -69,7 +75,7 @@ export class Payment {
   paymentMethod: string;
 
 
-  @Column({ name: 'amount', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   amount: number;
 
   @Column({ name: 'payment_date', type: 'date' })

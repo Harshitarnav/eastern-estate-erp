@@ -9,6 +9,12 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 @Entity('vendors')
 export class Vendor {
   @PrimaryGeneratedColumn('uuid')
@@ -62,16 +68,16 @@ export class Vendor {
   @Column({ name: 'materials_supplied', type: 'jsonb', default: '[]' })
   materialsSupplied: string[];
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0, transformer: decimalTransformer })
   rating: number;
 
   @Column({ name: 'payment_terms', length: 255, nullable: true })
   paymentTerms: string;
 
-  @Column({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'credit_limit', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   creditLimit: number;
 
-  @Column({ name: 'outstanding_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'outstanding_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   outstandingAmount: number;
 
   @Column({ name: 'is_active', default: true })

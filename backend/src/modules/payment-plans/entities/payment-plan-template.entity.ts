@@ -10,6 +10,12 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum PaymentPlanType {
   CONSTRUCTION_LINKED = 'CONSTRUCTION_LINKED',
   TIME_LINKED = 'TIME_LINKED',
@@ -53,7 +59,7 @@ export class PaymentPlanTemplate {
   @Column({ type: 'jsonb' })
   milestones: PaymentMilestone[];
 
-  @Column({ name: 'total_percentage', type: 'decimal', precision: 5, scale: 2, default: 100 })
+  @Column({ name: 'total_percentage', type: 'decimal', precision: 5, scale: 2, default: 100, transformer: decimalTransformer })
   totalPercentage: number;
 
   @Column({ name: 'is_active', default: true })

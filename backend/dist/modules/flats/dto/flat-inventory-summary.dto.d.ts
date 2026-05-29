@@ -51,5 +51,8 @@ export declare class FlatInventorySummaryDto {
     fundsRealized: number;
     fundsOutstanding: number;
     generatedAt: string;
+    towerDefaultSuperBuiltUpArea?: number | null;
+    towerDefaultBuiltUpArea?: number | null;
+    towerDefaultCarpetArea?: number | null;
 }
 export { emptySalesBreakdown };

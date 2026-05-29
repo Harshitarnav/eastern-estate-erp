@@ -370,14 +370,17 @@ let FlatsService = class FlatsService {
             fundsTargetAccumulator += finances.fundsTarget;
             fundsRealizedAccumulator += finances.fundsRealized;
             fundsOutstandingAccumulator += finances.fundsOutstanding;
+            const effectiveSuperBuiltUpArea = this.toNumber(flat.superBuiltUpArea) || this.toNumber(tower.defaultSuperBuiltUpArea) || 0;
+            const effectiveBuiltUpArea = this.toNumber(flat.builtUpArea) || this.toNumber(tower.defaultBuiltUpArea) || 0;
+            const effectiveCarpetArea = this.toNumber(flat.carpetArea) || this.toNumber(tower.defaultCarpetArea) || 0;
             return {
                 id: flat.id,
                 flatNumber: flat.flatNumber,
                 floor: flat.floor ?? 0,
                 type: flat.type,
-                carpetArea: this.toNumber(flat.carpetArea),
-                superBuiltUpArea: this.toNumber(flat.superBuiltUpArea),
-                builtUpArea: this.toNumber(flat.builtUpArea),
+                carpetArea: effectiveCarpetArea,
+                superBuiltUpArea: effectiveSuperBuiltUpArea,
+                builtUpArea: effectiveBuiltUpArea,
                 facing: flat.facing,
                 basePrice: this.toNumber(flat.basePrice),
                 pricePerSqft: flat.pricePerSqft ? this.toNumber(flat.pricePerSqft) : undefined,
@@ -420,6 +423,9 @@ let FlatsService = class FlatsService {
             fundsRealized: fundsRealizedAccumulator,
             fundsOutstanding: fundsOutstandingAccumulator,
             generatedAt: new Date().toISOString(),
+            towerDefaultSuperBuiltUpArea: tower.defaultSuperBuiltUpArea ?? null,
+            towerDefaultBuiltUpArea: tower.defaultBuiltUpArea ?? null,
+            towerDefaultCarpetArea: tower.defaultCarpetArea ?? null,
         };
     }
     async update(id, updateFlatDto) {

@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Material } from './material.entity';
 import { Employee } from '../../employees/entities/employee.entity';
 
@@ -25,7 +31,7 @@ export class MaterialExit {
   @Column({ name: 'construction_project_id', type: 'uuid', nullable: true })
   constructionProjectId: string;
 
-  @Column({ type: 'decimal', precision: 15, scale: 3 })
+  @Column({ type: 'decimal', precision: 15, scale: 3, transformer: decimalTransformer })
   quantity: number;
 
   @Column({ type: 'text' })
@@ -54,7 +60,7 @@ export class MaterialExit {
   @Column({ name: 'return_date', type: 'timestamp', nullable: true })
   returnDate: Date;
 
-  @Column({ name: 'return_quantity', type: 'decimal', precision: 15, scale: 3, nullable: true })
+  @Column({ name: 'return_quantity', type: 'decimal', precision: 15, scale: 3, nullable: true, transformer: decimalTransformer })
   returnQuantity: number;
 
   @Column({ type: 'text', nullable: true })

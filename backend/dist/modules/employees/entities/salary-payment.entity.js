@@ -13,6 +13,10 @@ exports.SalaryPayment = exports.PaymentMode = exports.PaymentStatus = void 0;
 const typeorm_1 = require("typeorm");
 const employee_entity_1 = require("./employee.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var PaymentStatus;
 (function (PaymentStatus) {
     PaymentStatus["PENDING"] = "PENDING";
@@ -49,87 +53,87 @@ __decorate([
     __metadata("design:type", Date)
 ], SalaryPayment.prototype, "paymentMonth", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 6, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "workingDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 6, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "presentDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 6, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "absentDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 6, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "paidLeaveDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 6, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 6, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "unpaidLeaveDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 8, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 8, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "overtimeHours", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "basicSalary", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "houseRentAllowance", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "transportAllowance", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "medicalAllowance", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "overtimePayment", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "otherAllowances", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "grossSalary", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "pfDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "esiDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "taxDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "advanceDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "loanDeduction", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "otherDeductions", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "totalDeductions", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalaryPayment.prototype, "netSalary", void 0);
 __decorate([

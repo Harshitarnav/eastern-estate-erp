@@ -152,14 +152,14 @@ export class Tower {
    * Total built-up area of the tower (in sq.ft)
    * @example 75000
    */
-  @Column({ name: 'built_up_area', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ name: 'built_up_area', type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer })
   builtUpArea: number;
 
   /**
    * Total carpet area of the tower (in sq.ft)
    * @example 60000
    */
-  @Column({ name: 'carpet_area', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ name: 'carpet_area', type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer })
   carpetArea: number;
 
   /**
@@ -205,7 +205,7 @@ export class Tower {
    * Floor-to-ceiling height (in feet)
    * @example 10.5
    */
-  @Column({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true })
+  @Column({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true, transformer: decimalTransformer })
   ceilingHeight: number;
 
   /**

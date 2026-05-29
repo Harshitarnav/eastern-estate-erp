@@ -13,6 +13,10 @@ exports.PaymentRefund = exports.RefundStatus = void 0;
 const typeorm_1 = require("typeorm");
 const payment_entity_1 = require("./payment.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var RefundStatus;
 (function (RefundStatus) {
     RefundStatus["PENDING"] = "PENDING";
@@ -37,7 +41,7 @@ __decorate([
     __metadata("design:type", payment_entity_1.Payment)
 ], PaymentRefund.prototype, "payment", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PaymentRefund.prototype, "refundAmount", void 0);
 __decorate([

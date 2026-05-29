@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentSchedule = exports.ScheduleStatus = void 0;
 const typeorm_1 = require("typeorm");
 const booking_entity_1 = require("../../bookings/entities/booking.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var ScheduleStatus;
 (function (ScheduleStatus) {
     ScheduleStatus["PENDING"] = "PENDING";
@@ -54,7 +58,7 @@ __decorate([
     __metadata("design:type", Date)
 ], PaymentSchedule.prototype, "dueDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PaymentSchedule.prototype, "amount", void 0);
 __decorate([
@@ -75,7 +79,7 @@ __decorate([
     __metadata("design:type", String)
 ], PaymentSchedule.prototype, "status", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PaymentSchedule.prototype, "paidAmount", void 0);
 __decorate([
@@ -95,7 +99,7 @@ __decorate([
     __metadata("design:type", Number)
 ], PaymentSchedule.prototype, "overdueDays", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PaymentSchedule.prototype, "penaltyAmount", void 0);
 __decorate([

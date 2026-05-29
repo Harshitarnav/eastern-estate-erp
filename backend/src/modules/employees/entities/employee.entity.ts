@@ -142,37 +142,37 @@ export class Employee {
   reportingManagerName: string;
 
   // Salary & Compensation
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   basicSalary: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   houseRentAllowance: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   transportAllowance: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   medicalAllowance: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   otherAllowances: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   grossSalary: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   pfDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   esiDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   taxDeduction: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   otherDeductions: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   netSalary: number;
 
   // Bank Details
@@ -218,16 +218,16 @@ export class Employee {
   emergencyContactRelation: string;
 
   // Leave Management
-  @Column('decimal', { precision: 7, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 7, scale: 2, default: 0, transformer: decimalTransformer })
   casualLeaveBalance: number;
 
-  @Column('decimal', { precision: 7, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 7, scale: 2, default: 0, transformer: decimalTransformer })
   sickLeaveBalance: number;
 
-  @Column('decimal', { precision: 7, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 7, scale: 2, default: 0, transformer: decimalTransformer })
   earnedLeaveBalance: number;
 
-  @Column('decimal', { precision: 7, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 7, scale: 2, default: 0, transformer: decimalTransformer })
   leaveTaken: number;
 
   // Attendance
@@ -250,7 +250,7 @@ export class Employee {
   @Column({ type: 'text', nullable: true })
   experience: string;
 
-  @Column('decimal', { precision: 3, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true, transformer: decimalTransformer })
   performanceRating: number;
 
   @Column({ type: 'timestamp', nullable: true })

@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Property } from '../../properties/entities/property.entity';
 
 export enum TeamType {
@@ -70,7 +76,7 @@ export class ConstructionTeam {
   @Column({ name: 'contract_end_date', type: 'date', nullable: true })
   contractEndDate: Date | null;
 
-  @Column({ name: 'daily_rate', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({ name: 'daily_rate', type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer })
   dailyRate: number | null;
 
   @Column({ name: 'is_active', type: 'boolean', default: true })

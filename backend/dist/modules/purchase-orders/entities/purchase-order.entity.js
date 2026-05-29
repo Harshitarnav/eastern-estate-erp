@@ -14,6 +14,10 @@ const typeorm_1 = require("typeorm");
 const vendor_entity_1 = require("../../vendors/entities/vendor.entity");
 const property_entity_1 = require("../../properties/entities/property.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var PurchaseOrderStatus;
 (function (PurchaseOrderStatus) {
     PurchaseOrderStatus["DRAFT"] = "DRAFT";
@@ -79,19 +83,19 @@ __decorate([
     __metadata("design:type", Date)
 ], PurchaseOrder.prototype, "actualDeliveryDate", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'subtotal', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrder.prototype, "subtotal", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrder.prototype, "taxAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'discount_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrder.prototype, "discountAmount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'total_amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrder.prototype, "totalAmount", void 0);
 __decorate([
@@ -99,11 +103,11 @@ __decorate([
     __metadata("design:type", String)
 ], PurchaseOrder.prototype, "paymentTerms", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'advance_paid', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'advance_paid', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrder.prototype, "advancePaid", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ name: 'balance_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], PurchaseOrder.prototype, "balanceAmount", void 0);
 __decorate([

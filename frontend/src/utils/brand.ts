@@ -14,8 +14,8 @@ export const brandHeroOverlay = 'radial-gradient(circle at top right, #F2C94C 0%
 
 export const brandShadow = '0px 20px 45px -22px rgba(168, 33, 27, 0.45)';
 
-export const formatIndianNumber = (value: number) =>
-  new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(value);
+export const formatIndianNumber = (value: number | string | null | undefined) =>
+  new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Number(value) || 0);
 
 export const formatToCrore = (value?: number) => {
   if (!value || Number.isNaN(value)) return '-';

@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Property } from '../../properties/entities/property.entity';
 import { Employee } from '../../employees/entities/employee.entity';
 import { User } from '../../users/entities/user.entity';
@@ -44,13 +50,13 @@ export class ConstructionProject {
   })
   status: string;
 
-  @Column({ name: 'overall_progress', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'overall_progress', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   overallProgress: number;
 
-  @Column({ name: 'budget_allocated', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'budget_allocated', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   budgetAllocated: number;
 
-  @Column({ name: 'budget_spent', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'budget_spent', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   budgetSpent: number;
 
   @Column({ name: 'project_manager_id', type: 'uuid', nullable: true })

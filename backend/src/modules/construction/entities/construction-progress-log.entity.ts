@@ -6,6 +6,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { Property } from '../../properties/entities/property.entity';
 import { Tower } from '../../towers/entities/tower.entity';
 import { User } from '../../users/entities/user.entity';
@@ -63,7 +69,7 @@ export class ConstructionProgressLog {
   @Column({ name: 'description', type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ name: 'progress_percentage', type: 'decimal', precision: 5, scale: 2, nullable: true })
+  @Column({ name: 'progress_percentage', type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer })
   progressPercentage: number | null;
 
   @Column({ name: 'photos', type: 'jsonb', default: '[]' })
@@ -72,7 +78,7 @@ export class ConstructionProgressLog {
   @Column({ name: 'weather_condition', type: 'varchar', length: 100, nullable: true })
   weatherCondition: string | null;
 
-  @Column({ name: 'temperature', type: 'decimal', precision: 5, scale: 2, nullable: true })
+  @Column({ name: 'temperature', type: 'decimal', precision: 5, scale: 2, nullable: true, transformer: decimalTransformer })
   temperature: number | null;
 
   @Column({ name: 'logged_by', type: 'uuid', nullable: true })

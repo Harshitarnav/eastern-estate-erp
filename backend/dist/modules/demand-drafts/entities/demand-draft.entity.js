@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DemandDraft = exports.DemandDraftTone = exports.DemandDraftStatus = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var DemandDraftStatus;
 (function (DemandDraftStatus) {
     DemandDraftStatus["DRAFT"] = "DRAFT";
@@ -53,7 +57,7 @@ __decorate([
     __metadata("design:type", String)
 ], DemandDraft.prototype, "milestoneId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], DemandDraft.prototype, "amount", void 0);
 __decorate([

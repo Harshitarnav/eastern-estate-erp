@@ -10,6 +10,12 @@ import {
 } from 'typeorm';
 import { Property } from '../../properties/entities/property.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum AccountType {
   ASSET = 'ASSET',
   LIABILITY = 'LIABILITY',
@@ -53,10 +59,10 @@ export class Account {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column('decimal', { name: 'opening_balance', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', name: 'opening_balance', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   openingBalance: number;
 
-  @Column('decimal', { name: 'current_balance', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', name: 'current_balance', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   currentBalance: number;
 
   @Column({ type: 'text', nullable: true })

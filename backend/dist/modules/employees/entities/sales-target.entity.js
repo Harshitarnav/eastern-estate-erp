@@ -12,6 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SalesTarget = exports.TargetStatus = exports.TargetPeriod = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 var TargetPeriod;
 (function (TargetPeriod) {
     TargetPeriod["MONTHLY"] = "MONTHLY";
@@ -76,7 +80,7 @@ __decorate([
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "targetBookings", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "targetRevenue", void 0);
 __decorate([
@@ -84,7 +88,7 @@ __decorate([
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "selfTargetBookings", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "selfTargetRevenue", void 0);
 __decorate([
@@ -108,47 +112,47 @@ __decorate([
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "achievedBookings", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "achievedRevenue", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "leadsAchievementPct", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "siteVisitsAchievementPct", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "conversionsAchievementPct", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "bookingsAchievementPct", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "revenueAchievementPct", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 5, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "overallAchievementPct", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "baseIncentive", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "earnedIncentive", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "bonusIncentive", void 0);
 __decorate([
-    (0, typeorm_1.Column)('decimal', { precision: 15, scale: 2, default: 0 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], SalesTarget.prototype, "totalIncentive", void 0);
 __decorate([

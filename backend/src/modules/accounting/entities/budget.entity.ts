@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { User } from '../../users/entities/user.entity';
 import { Account } from './account.entity';
 import { Property } from '../../properties/entities/property.entity';
@@ -48,10 +54,10 @@ export class Budget {
   @Column({ length: 100, nullable: true })
   department: string;
 
-  @Column('decimal', { name: 'budgeted_amount', precision: 15, scale: 2 })
+  @Column({ type: 'decimal', name: 'budgeted_amount', precision: 15, scale: 2, transformer: decimalTransformer })
   budgetedAmount: number;
 
-  @Column('decimal', { name: 'actual_amount', precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', name: 'actual_amount', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   actualAmount: number;
 
 //   @Column('decimal', { precision: 15, scale: 2, generatedType: 'STORED', asExpression: '(actual_amount - budgeted_amount)' })

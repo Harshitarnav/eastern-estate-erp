@@ -91,11 +91,11 @@ __decorate([
     __metadata("design:type", String)
 ], Tower.prototype, "reraNumber", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'built_up_area', type: 'decimal', precision: 10, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'built_up_area', type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Tower.prototype, "builtUpArea", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'carpet_area', type: 'decimal', precision: 10, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'carpet_area', type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Tower.prototype, "carpetArea", void 0);
 __decorate([
@@ -136,7 +136,7 @@ __decorate([
     __metadata("design:type", String)
 ], Tower.prototype, "flatNumberPrefix", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true }),
+    (0, typeorm_1.Column)({ name: 'ceiling_height', type: 'decimal', precision: 4, scale: 2, nullable: true, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], Tower.prototype, "ceilingHeight", void 0);
 __decorate([

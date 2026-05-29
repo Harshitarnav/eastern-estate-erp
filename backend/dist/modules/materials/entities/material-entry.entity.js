@@ -11,6 +11,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MaterialEntry = exports.EntryType = void 0;
 const typeorm_1 = require("typeorm");
+const decimalTransformer = {
+    to: (value) => (value ?? null),
+    from: (value) => value === null || value === undefined ? null : Number(value),
+};
 const material_entity_1 = require("./material.entity");
 const vendor_entity_1 = require("../../vendors/entities/vendor.entity");
 const user_entity_1 = require("../../users/entities/user.entity");
@@ -51,15 +55,15 @@ __decorate([
     __metadata("design:type", String)
 ], MaterialEntry.prototype, "entryType", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 3 }),
+    (0, typeorm_1.Column)({ type: 'decimal', precision: 15, scale: 3, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], MaterialEntry.prototype, "quantity", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'unit_price', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], MaterialEntry.prototype, "unitPrice", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'total_value', type: 'decimal', precision: 15, scale: 2 }),
+    (0, typeorm_1.Column)({ name: 'total_value', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer }),
     __metadata("design:type", Number)
 ], MaterialEntry.prototype, "totalValue", void 0);
 __decorate([

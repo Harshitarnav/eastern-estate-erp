@@ -8,6 +8,12 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { User } from '../../users/entities/user.entity';
 import { JournalEntryLine } from './journal-entry-line.entity';
 import { Property } from '../../properties/entities/property.entity';
@@ -39,10 +45,10 @@ export class JournalEntry {
   @Column({ type: 'text' })
   description: string;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   totalDebit: number;
 
-  @Column('decimal', { precision: 15, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   totalCredit: number;
 
   @Column({

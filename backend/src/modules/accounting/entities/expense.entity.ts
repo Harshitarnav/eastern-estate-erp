@@ -13,6 +13,12 @@ import { Property } from '../../properties/entities/property.entity';
 import { Account } from './account.entity';
 import { JournalEntry } from './journal-entry.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum ExpenseStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
@@ -38,7 +44,7 @@ export class Expense {
   @Column({ name: 'expense_sub_category', length: 100, nullable: true })
   expenseSubCategory: string;
 
-  @Column('decimal', { precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   amount: number;
 
   @Column({ name: 'expense_date', type: 'date' })

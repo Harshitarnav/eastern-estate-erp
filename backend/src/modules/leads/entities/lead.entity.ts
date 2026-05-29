@@ -11,6 +11,12 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Property } from '../../properties/entities/property.entity';
 
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
+
 export enum LeadStatus {
   NEW = 'NEW',
   CONTACTED = 'CONTACTED',
@@ -202,10 +208,10 @@ export class Lead {
   @Index()
   propertyPreference: PropertyPreference;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   budgetMin: number;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   budgetMax: number;
 
   @Column({ name: 'preferred_location', length: 100, nullable: true })
@@ -285,7 +291,7 @@ export class Lead {
   @Column({ length: 100, nullable: true })
   currentOccupation: string;
 
-  @Column('decimal', { precision: 15, scale: 2, nullable: true })
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true, transformer: decimalTransformer })
   annualIncome: number;
 
   // Campaign & Marketing

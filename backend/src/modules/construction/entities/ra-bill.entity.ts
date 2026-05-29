@@ -7,6 +7,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+
+const decimalTransformer = {
+  to: (value?: number | null) => (value ?? null),
+  from: (value: string | null) =>
+    value === null || value === undefined ? null : Number(value),
+};
 import { ConstructionProject } from './construction-project.entity';
 import { Vendor } from '../../vendors/entities/vendor.entity';
 import { Property } from '../../properties/entities/property.entity';
@@ -63,36 +69,36 @@ export class RABill {
   workDescription: string;
 
   // Cumulative gross value of work certified in this and all previous bills
-  @Column({ name: 'gross_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'gross_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   grossAmount: number;
 
   // Total of all previous RA bills for this contract
-  @Column({ name: 'previous_bills_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'previous_bills_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   previousBillsAmount: number;
 
   // Payable this bill = grossAmount - previousBillsAmount
-  @Column({ name: 'net_this_bill', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'net_this_bill', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   netThisBill: number;
 
   // Retention (security deposit held back) e.g. 5 or 10 percent
-  @Column({ name: 'retention_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  @Column({ name: 'retention_percentage', type: 'decimal', precision: 5, scale: 2, default: 0, transformer: decimalTransformer })
   retentionPercentage: number;
 
-  @Column({ name: 'retention_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'retention_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   retentionAmount: number;
 
   // Deduction for advances given to contractor
-  @Column({ name: 'advance_deduction', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'advance_deduction', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   advanceDeduction: number;
 
-  @Column({ name: 'other_deductions', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'other_deductions', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   otherDeductions: number;
 
   @Column({ name: 'other_deductions_description', type: 'varchar', length: 500, nullable: true })
   otherDeductionsDescription: string | null;
 
   // Final amount payable to contractor
-  @Column({ name: 'net_payable', type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'net_payable', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   netPayable: number;
 
   @Column({
