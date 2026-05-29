@@ -242,6 +242,31 @@ export class FlatsSchemaSyncService implements OnModuleInit {
         END $$;
       `);
 
+      // Replace full unique constraint with partial so soft-deleted flats
+      // don't block re-creation with the same code.
+      await queryRunner.query(`
+        DO $$
+        BEGIN
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'flats_property_id_flat_code_key'
+              AND conrelid = 'flats'::regclass
+          ) THEN
+            ALTER TABLE flats DROP CONSTRAINT flats_property_id_flat_code_key;
+          END IF;
+
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes
+            WHERE schemaname = current_schema()
+              AND indexname = 'uq_flats_property_code_active'
+          ) THEN
+            CREATE UNIQUE INDEX uq_flats_property_code_active
+              ON flats (property_id, flat_code)
+              WHERE is_active = true;
+          END IF;
+        END $$;
+      `);
+
       // Relax legacy NOT NULLs only if columns exist
       await queryRunner.query(`
         DO $$

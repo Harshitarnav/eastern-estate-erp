@@ -97,6 +97,52 @@ export class TowersSchemaSyncService implements OnModuleInit {
         END $$;
       `);
 
+      // Replace full unique constraint with a partial one so soft-deleted towers
+      // don't block re-creation with the same code/number.
+      await queryRunner.query(`
+        DO $$
+        BEGIN
+          -- Drop the old full unique constraint if it exists
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'towers_property_id_tower_code_key'
+              AND conrelid = 'towers'::regclass
+          ) THEN
+            ALTER TABLE towers DROP CONSTRAINT towers_property_id_tower_code_key;
+          END IF;
+
+          -- Create partial unique index covering only active towers
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes
+            WHERE schemaname = current_schema()
+              AND indexname = 'uq_towers_property_code_active'
+          ) THEN
+            CREATE UNIQUE INDEX uq_towers_property_code_active
+              ON towers (property_id, tower_code)
+              WHERE is_active = true;
+          END IF;
+
+          -- Same for tower_number
+          IF EXISTS (
+            SELECT 1 FROM pg_constraint
+            WHERE conname = 'towers_property_id_tower_number_key'
+              AND conrelid = 'towers'::regclass
+          ) THEN
+            ALTER TABLE towers DROP CONSTRAINT towers_property_id_tower_number_key;
+          END IF;
+
+          IF NOT EXISTS (
+            SELECT 1 FROM pg_indexes
+            WHERE schemaname = current_schema()
+              AND indexname = 'uq_towers_property_number_active'
+          ) THEN
+            CREATE UNIQUE INDEX uq_towers_property_number_active
+              ON towers (property_id, tower_number)
+              WHERE is_active = true;
+          END IF;
+        END $$;
+      `);
+
       const jsonColumns = ['amenities', 'images', 'floor_plans'];
       for (const column of jsonColumns) {
         const columnInfo = await queryRunner.query(
