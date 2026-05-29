@@ -7,6 +7,11 @@ import {
   Index,
 } from 'typeorm';
 
+const decimalTransformer = {
+  to: (value: number) => value,
+  from: (value: string) => (value === null || value === undefined ? null : parseFloat(value)),
+};
+
 export enum EmploymentType {
   FULL_TIME = 'FULL_TIME',
   PART_TIME = 'PART_TIME',
