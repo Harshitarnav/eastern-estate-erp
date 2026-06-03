@@ -6,11 +6,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, FindOptionsWhere, In } from 'typeorm';
+import { Repository, Like, Between, FindOptionsWhere, In, EntityManager } from 'typeorm';
 import { Tower } from './entities/tower.entity';
 import { Property } from '../properties/entities/property.entity';
 import { Flat, FlatStatus } from '../flats/entities/flat.entity';
-import { buildDefaultFlatPayloads, parseFloorsDescriptor } from './utils/flat-generation.util';
+import { buildDefaultFlatPayloads, parseFloorsDescriptor, parseUnitsPerFloor, extractUnitPosition } from './utils/flat-generation.util';
+import type { UnitMixEntry } from './interfaces/unit-mix.interface';
 import {
   CreateTowerDto,
   UpdateTowerDto,
@@ -125,6 +126,9 @@ export class TowersService {
 
     // Validate business rules
     this.validateTowerData(createTowerDto);
+    if (createTowerDto.unitMix?.length) {
+      this.validateUnitMix(createTowerDto.unitMix);
+    }
 
     // Create tower entity
     const tower = this.towerRepository.create({
@@ -237,9 +241,24 @@ export class TowersService {
     // Execute query
     const [towers, total] = await queryBuilder.getManyAndCount();
 
+    // Single bulk flat-count query instead of one per tower (H-3 fix)
+    const flatCountMap = new Map<string, number>();
+    if (towers.length > 0) {
+      const counts = await this.flatRepository
+        .createQueryBuilder('flat')
+        .select('flat.towerId', 'towerId')
+        .addSelect('COUNT(*)', 'count')
+        .where('flat.towerId IN (:...ids)', { ids: towers.map((t) => t.id) })
+        .groupBy('flat.towerId')
+        .getRawMany<{ towerId: string; count: string }>();
+      for (const row of counts) {
+        flatCountMap.set(row.towerId, parseInt(row.count, 10));
+      }
+    }
+
     // Format response
     const data = await Promise.all(
-      towers.map((tower) => this.formatTowerResponse(tower))
+      towers.map((tower) => this.formatTowerResponse(tower, flatCountMap.get(tower.id) ?? 0))
     );
 
     return {
@@ -319,7 +338,8 @@ export class TowersService {
       updateTowerDto.towerNumber = normalizedNumber;
     }
 
-    if (updateTowerDto.towerCode) {
+    // L-7: only run the uniqueness check when the code is actually changing
+    if (updateTowerDto.towerCode && updateTowerDto.towerCode.trim() !== tower.towerCode) {
       const normalizedCode = updateTowerDto.towerCode.trim();
       const conflictCode = await this.towerRepository.findOne({
         where: {
@@ -368,8 +388,19 @@ export class TowersService {
       updatePayload.completionDate = parsedCompletionDate ?? undefined;
     }
 
-    if (!updatePayload.towerCode && updatePayload.towerNumber) {
+    // M-4: only auto-sync towerCode when it was previously equal to towerNumber (i.e. no distinct code set)
+    if (!updatePayload.towerCode && updatePayload.towerNumber && tower.towerCode === tower.towerNumber) {
       updatePayload.towerCode = updatePayload.towerNumber;
+    }
+
+    // H-2: coerce empty unitMix array to null — "clear mix" preserves flat specs, nothing to apply
+    if (Array.isArray(updatePayload.unitMix) && (updatePayload.unitMix as any[]).length === 0) {
+      (updatePayload as any).unitMix = null;
+    }
+
+    // Validate unit mix BEFORE writing to DB (B-1 fix)
+    if (updateTowerDto.unitMix?.length) {
+      this.validateUnitMix(updateTowerDto.unitMix);
     }
 
     // Update tower
@@ -380,14 +411,25 @@ export class TowersService {
       updateTowerDto.unitsPerFloor !== undefined ||
       updateTowerDto.towerNumber !== undefined;
 
-    const updatedTower = await this.towerRepository.save(tower);
-    updatedTower.property = tower.property;
+    // Count existing flats before the save so we know which post-save path to take
+    const existingFlats = await this.flatRepository.count({ where: { towerId: tower.id } });
+    const applyMixAfterSave = updateTowerDto.unitMix !== undefined && existingFlats > 0;
 
-    // If explicitly requested or the tower has no flats yet and structure changed, regenerate flats
-    const existingFlats = await this.flatRepository.count({ where: { towerId: updatedTower.id } });
+    // Wrap tower save + flat-apply in a single transaction (B-2 fix):
+    // if applyUnitMixToExistingFlats fails, the tower row is also rolled back.
+    let updatedTower!: Tower;
+    await this.towerRepository.manager.transaction(async (txManager) => {
+      updatedTower = await txManager.save(Tower, tower);
+      updatedTower.property = tower.property;
+      if (applyMixAfterSave) {
+        await this.applyUnitMixToExistingFlats(updatedTower, txManager);
+      }
+    });
+
+    // Regenerate / sync runs outside the transaction — it has its own safety guards
     if (regenerateFlats || (existingFlats === 0 && structureChanged)) {
       await this.regenerateFlatsForTower(updatedTower);
-    } else {
+    } else if (!applyMixAfterSave) {
       await this.syncFlatsForUpdatedTower(updatedTower, tower.property);
     }
 
@@ -699,17 +741,19 @@ export class TowersService {
    * Convert tower entity to response DTO with computed fields
    * Uses defensive programming to handle missing columns gracefully
    */
-  private async formatTowerResponse(tower: Tower): Promise<TowerResponseDto> {
-    // Calculate flat count using direct SQL query
-    let flatsCount = 0;
-    try {
-      const flatsCountResult = await this.towerRepository.query(
-        'SELECT COUNT(*) as count FROM flats WHERE tower_id = $1',
-        [tower.id]
-      );
-      flatsCount = parseInt(flatsCountResult[0]?.count || '0', 10);
-    } catch (error) {
-      this.logger.warn(`Could not fetch flat count for tower ${tower.id}: ${error.message}`);
+  private async formatTowerResponse(tower: Tower, precomputedFlatsCount?: number): Promise<TowerResponseDto> {
+    let flatsCount = precomputedFlatsCount ?? 0;
+    if (precomputedFlatsCount === undefined) {
+      // Single-tower lookup paths (findOne, create, update) — one query is fine here
+      try {
+        const result = await this.towerRepository.query(
+          'SELECT COUNT(*) as count FROM flats WHERE tower_id = $1',
+          [tower.id],
+        );
+        flatsCount = parseInt(result[0]?.count || '0', 10);
+      } catch (error) {
+        this.logger.warn(`Could not fetch flat count for tower ${tower.id}: ${error.message}`);
+      }
     }
 
     return {
@@ -759,6 +803,7 @@ export class TowersService {
           : null,
       dataCompletenessStatus: tower.dataCompletenessStatus ?? DataCompletenessStatus.NOT_STARTED,
       issuesCount: tower.issuesCount ?? 0,
+      unitMix: tower.unitMix ?? null,
       createdAt: tower.createdAt,
       updatedAt: tower.updatedAt,
     };
@@ -781,11 +826,13 @@ export class TowersService {
       propertyId: tower.propertyId,
       towerId: tower.id,
       towerNumber: tower.towerNumber,
+      flatNumberPrefix: tower.flatNumberPrefix,
       totalUnits,
       totalFloors,
       unitsPerFloorText: tower.unitsPerFloor,
       expectedPossessionDate,
       startDisplayOrder: 1,
+      unitMix: tower.unitMix,
     });
 
     if (payloads.length === 0) {
@@ -813,26 +860,31 @@ export class TowersService {
 
   /**
    * Regenerate flats for a tower using the latest structure details.
-   * Blocks regeneration if any flats are booked/blocked/on-hold/sold to avoid data loss.
+   * Blocks regeneration if any flats are booked/blocked/on-hold/sold OR have booking records.
    */
   private async regenerateFlatsForTower(tower: Tower): Promise<void> {
-    const lockedStatuses = [
-      FlatStatus.BOOKED,
-      FlatStatus.SOLD,
-      FlatStatus.BLOCKED,
-      FlatStatus.ON_HOLD,
-    ];
+    const lockedStatuses = [FlatStatus.BOOKED, FlatStatus.SOLD, FlatStatus.BLOCKED, FlatStatus.ON_HOLD];
 
     const lockedFlats = await this.flatRepository.count({
-      where: {
-        towerId: tower.id,
-        status: In(lockedStatuses),
-      },
+      where: { towerId: tower.id, status: In(lockedStatuses) },
     });
 
     if (lockedFlats > 0) {
       throw new ConflictException(
-        `Cannot regenerate flats for tower ${tower.towerNumber || tower.name}. There are ${lockedFlats} units that are booked, blocked, on hold, or sold.`,
+        `Cannot regenerate: ${lockedFlats} unit(s) in this tower are booked, blocked, on hold, or sold.`,
+      );
+    }
+
+    // Also check for any booking records — flat status may not reflect cancelled bookings
+    const bookingsOnTower = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .innerJoin(Flat, 'flat', 'flat.id = booking.flatId')
+      .where('flat.towerId = :towerId', { towerId: tower.id })
+      .getCount();
+
+    if (bookingsOnTower > 0) {
+      throw new ConflictException(
+        `Cannot regenerate: ${bookingsOnTower} booking record(s) reference flats in this tower. Use "Fill missing flats" to add only the missing ones safely.`,
       );
     }
 
@@ -1053,11 +1105,140 @@ export class TowersService {
     return stages;
   }
 
+  async fillMissingFlats(id: string): Promise<{ created: number; alreadyExisted: number }> {
+    const tower = await this.towerRepository.findOne({ where: { id }, relations: ['property'] });
+    if (!tower) throw new NotFoundException(`Tower ${id} not found`);
+
+    const property = tower.property ??
+      await this.propertyRepository.findOne({ where: { id: tower.propertyId } });
+    if (!property) throw new NotFoundException(`Property not found for tower ${id}`);
+
+    const expectedPayloads = buildDefaultFlatPayloads({
+      propertyId: tower.propertyId,
+      towerId: tower.id,
+      towerNumber: tower.towerNumber,
+      flatNumberPrefix: tower.flatNumberPrefix,
+      totalUnits: tower.totalUnits,
+      totalFloors: tower.totalFloors,
+      unitsPerFloorText: tower.unitsPerFloor,
+      unitMix: tower.unitMix,
+      startDisplayOrder: 1,
+    });
+
+    const existingFlats = await this.flatRepository.find({
+      where: { towerId: id },
+      select: ['flatNumber'],
+    });
+    const existingNumbers = new Set(existingFlats.map(f => f.flatNumber));
+
+    const missing = expectedPayloads.filter(p => !existingNumbers.has(p.flatNumber as string));
+    if (missing.length > 0) {
+      const newFlats = this.flatRepository.create(missing);
+      await this.flatRepository.save(newFlats);
+      this.logger.log(`Filled ${missing.length} missing flat(s) for tower ${tower.towerNumber}`);
+    }
+
+    // Apply unit mix to ALL flats (new + existing) so specs are consistent (B-4 fix)
+    if (tower.unitMix?.length) {
+      await this.applyUnitMixToExistingFlats(tower);
+    }
+
+    return { created: missing.length, alreadyExisted: existingFlats.length };
+  }
+
+  private validateUnitMix(unitMix: UnitMixEntry[]): void {
+    const allPositions = unitMix.flatMap((e) => e.unitPositions);
+
+    const invalid = allPositions.filter((p) => !Number.isInteger(p) || p < 1);
+    if (invalid.length > 0) {
+      throw new BadRequestException(`Unit mix contains invalid position value(s): ${[...new Set(invalid)].join(', ')}. Positions must be integers ≥ 1.`);
+    }
+
+    const uniquePositions = new Set(allPositions);
+    if (uniquePositions.size !== allPositions.length) {
+      throw new BadRequestException('Unit mix has duplicate unit positions across groups.');
+    }
+  }
+
+  private async applyUnitMixToExistingFlats(tower: Tower, outerManager?: EntityManager): Promise<{ applied: number; skipped: number }> {
+    if (!tower.unitMix?.length) {
+      return { applied: 0, skipped: 0 };
+    }
+
+    const lockedStatuses = [FlatStatus.BOOKED, FlatStatus.SOLD, FlatStatus.BLOCKED, FlatStatus.ON_HOLD];
+
+    const flats = await this.flatRepository.find({
+      where: { towerId: tower.id, isActive: true },
+      select: ['id', 'flatNumber', 'status'],
+    });
+
+    let applied = 0;
+    let skipped = 0;
+
+    // Group updatable flat IDs by mix entry — avoids N individual UPDATEs (B-2 fix)
+    const entryPatches: Array<{ ids: string[]; patch: Record<string, any> }> = [];
+
+    for (const entry of tower.unitMix) {
+      const patch: Record<string, any> = { type: entry.type };
+      if (entry.bedrooms !== undefined) patch.bedrooms = entry.bedrooms;
+      if (entry.bathrooms !== undefined) patch.bathrooms = entry.bathrooms;
+      if (entry.balconies !== undefined) patch.balconies = entry.balconies;
+      if (entry.superBuiltUpArea !== undefined) patch.superBuiltUpArea = entry.superBuiltUpArea;
+      if (entry.builtUpArea !== undefined) patch.builtUpArea = entry.builtUpArea;
+      if (entry.carpetArea !== undefined) patch.carpetArea = entry.carpetArea;
+      if (entry.basePrice !== undefined) {
+        patch.basePrice = entry.basePrice;
+        patch.totalPrice = entry.basePrice;
+        patch.finalPrice = entry.basePrice;
+      }
+
+      const ids = flats
+        .filter((f) => {
+          if (lockedStatuses.includes(f.status)) return false;
+          const pos = extractUnitPosition(f.flatNumber);
+          return pos > 0 && entry.unitPositions.includes(pos);
+        })
+        .map((f) => f.id);
+
+      if (ids.length > 0) entryPatches.push({ ids, patch });
+    }
+
+    // Count skipped: locked flats + flats with no matching entry
+    const updatableIds = new Set(entryPatches.flatMap((ep) => ep.ids));
+    for (const flat of flats) {
+      if (updatableIds.has(flat.id)) {
+        applied++;
+      } else {
+        skipped++;
+      }
+    }
+
+    if (entryPatches.length === 0) {
+      return { applied: 0, skipped };
+    }
+
+    // When an outer transaction is provided, use it directly; otherwise create our own.
+    if (outerManager) {
+      for (const { ids, patch } of entryPatches) {
+        await outerManager.update(Flat, ids, patch);
+      }
+    } else {
+      await this.flatRepository.manager.transaction(async (manager) => {
+        for (const { ids, patch } of entryPatches) {
+          await manager.update(Flat, ids, patch);
+        }
+      });
+    }
+
+    this.logger.log(`Unit mix applied to tower ${tower.towerNumber}: ${applied} updated, ${skipped} skipped`);
+    return { applied, skipped };
+  }
+
   /**
    * Validate tower business rules
-   * 
+   *
    * Ensures data consistency and realistic values.
-   * 
+   *
    * @param data - Tower data to validate
    * @throws BadRequestException if validation fails
    */

@@ -14,9 +14,31 @@ import {
   MaxLength,
   MinLength,
   IsObject,
+  ValidateNested,
+  ArrayMinSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { FlatType } from '../../flats/entities/flat.entity';
+
+export class UnitMixEntryDto {
+  @IsArray()
+  @ArrayMinSize(1, { message: 'Each unit mix group must have at least one unit position' })
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  unitPositions: number[];
+
+  @IsEnum(FlatType)
+  type: string;
+
+  @IsInt() @Min(0) @IsOptional() bedrooms?: number;
+  @IsInt() @Min(0) @IsOptional() bathrooms?: number;
+  @IsInt() @Min(0) @IsOptional() balconies?: number;
+  @IsNumber() @Min(0) @IsOptional() @Type(() => Number) superBuiltUpArea?: number;
+  @IsNumber() @Min(0) @IsOptional() @Type(() => Number) builtUpArea?: number;
+  @IsNumber() @Min(0) @IsOptional() @Type(() => Number) carpetArea?: number;
+  @IsNumber() @Min(0) @IsOptional() @Type(() => Number) basePrice?: number;
+}
 
 /**
  * DTO for creating a new tower
@@ -391,6 +413,16 @@ export class CreateTowerDto {
   @IsObject()
   @IsOptional()
   floorPlans?: Record<string, string>;
+
+  @ApiPropertyOptional({
+    description: 'Unit mix defining flat type and specs by unit position per floor',
+    type: [UnitMixEntryDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UnitMixEntryDto)
+  @IsOptional()
+  unitMix?: UnitMixEntryDto[];
 
   /**
    * Property/Project ID

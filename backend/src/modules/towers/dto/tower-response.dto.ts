@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
+import type { UnitMixEntry } from '../interfaces/unit-mix.interface';
 
 /**
  * Tower Response DTO
@@ -257,6 +258,11 @@ export class TowerResponseDto {
     example: 3,
   })
   issuesCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Unit mix configuration (flat type and specs by unit position per floor)',
+  })
+  unitMix?: UnitMixEntry[] | null;
 }
 
 /**

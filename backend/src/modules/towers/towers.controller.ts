@@ -312,25 +312,20 @@ export class TowersController {
     return this.towersService.update(id, updateTowerDto);
   }
 
-  /**
-   * Delete tower (soft delete)
-   * 
-   * DELETE /api/towers/:id
-   * 
-   * Soft deletes a tower by setting isActive to false.
-   * Preserves historical data and maintains referential integrity.
-   * 
-   * @param id - Tower UUID
-   * @returns Success message
-   * 
-   * @example
-   * DELETE /api/towers/550e8400-e29b-41d4-a716-446655440000
-   * 
-   * Response: 200 OK
-   * {
-   *   "message": "Tower Diamond Tower A has been deactivated..."
-   * }
-   */
+  @Post(':id/fill-missing-flats')
+  @HttpCode(HttpStatus.OK)
+  @Roles(...INVENTORY_WRITE_ROLES)
+  @ApiOperation({
+    summary: 'Fill missing flats',
+    description: 'Creates any flat records that are expected (based on totalUnits/totalFloors) but not yet in the database. Does NOT delete existing flats. If the tower has a saved unitMix, the mix specs are also re-applied to ALL non-locked flats (new and existing) to ensure consistency.',
+  })
+  @ApiParam({ name: 'id', type: String })
+  async fillMissingFlats(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<{ created: number; alreadyExisted: number }> {
+    return this.towersService.fillMissingFlats(id);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   @Roles(...INVENTORY_WRITE_ROLES)

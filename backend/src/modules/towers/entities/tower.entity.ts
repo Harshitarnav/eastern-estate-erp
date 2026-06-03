@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { Property } from '../../properties/entities/property.entity';
 import { DataCompletenessStatus } from '../../../common/enums/data-completeness-status.enum';
+import type { UnitMixEntry } from '../interfaces/unit-mix.interface';
 
 const decimalTransformer = {
   to: (value?: number | null) => (value ?? null),
@@ -303,6 +304,9 @@ export class Tower {
    */
   @Column({ name: 'floor_plans', type: 'jsonb', nullable: true })
   floorPlans: Record<string, string>;
+
+  @Column({ name: 'unit_mix', type: 'jsonb', nullable: true })
+  unitMix: UnitMixEntry[] | null;
 
   /**
    * Property relationship

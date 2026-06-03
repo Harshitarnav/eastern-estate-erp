@@ -46,6 +46,7 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('bookings_collections', (qr) => this.ensureBookingsCollectionsSchema(qr));
       await runIsolated('users_columns', (qr) => this.ensureUsersSchema(qr));
       await runIsolated('system_roles', (qr) => this.ensureSystemRoles(qr));
+      await runIsolated('towers_unit_mix', (qr) => this.ensureTowerUnitMix(qr));
       // Cleanup must run AFTER marketing (which migrates campaigns → marketing_campaigns)
       await runIsolated('cleanup_legacy', (qr) => this.dropLegacyTables(qr));
       // FK constraints last – they power the Database Relationships viewer.
@@ -1081,5 +1082,12 @@ export class SchemaSyncService implements OnModuleInit {
     }
 
     this.logger.log('System roles ensured (crm, head_accountant, hr, sales_team)');
+  }
+
+  private async ensureTowerUnitMix(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`
+      ALTER TABLE towers ADD COLUMN IF NOT EXISTS unit_mix jsonb;
+    `);
+    this.logger.log('towers.unit_mix column ensured');
   }
 }

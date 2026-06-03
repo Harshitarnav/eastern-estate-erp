@@ -1,15 +1,33 @@
 import type { Flat } from '../../flats/entities/flat.entity';
 import { FlatStatus, FlatType } from '../../flats/entities/flat.entity';
+import type { UnitMixEntry } from '../interfaces/unit-mix.interface';
+
+export type { UnitMixEntry };
+
+// Returns the 1-based unit position from a generated flat number.
+// Handles both hyphen format ("E-0401" → 1) and no-hyphen prefix format ("A0401" → 1).
+// Unit index is always the last 2 digits of the trailing numeric block.
+// Returns 0 when no numeric suffix can be found.
+export function extractUnitPosition(flatNumber: string): number {
+  // Prefer the block after the last hyphen (standard format)
+  const hyphenMatch = flatNumber.match(/-(\d+)$/);
+  const digits = hyphenMatch ? hyphenMatch[1] : flatNumber.match(/(\d+)$/)?.[1];
+  if (!digits) return 0;
+  const pos = parseInt(digits.slice(-2), 10);
+  return Number.isFinite(pos) && pos > 0 ? pos : 0;
+}
 
 export interface FlatGenerationInput {
   propertyId: string;
   towerId: string;
   towerNumber?: string | null;
+  flatNumberPrefix?: string | null;
   totalUnits: number;
   totalFloors: number;
   unitsPerFloorText?: string | null;
   expectedPossessionDate?: Date | null;
   startDisplayOrder?: number;
+  unitMix?: UnitMixEntry[] | null;
 }
 
 const DEFAULT_BEDROOMS = 2;
@@ -47,10 +65,14 @@ export function generateFlatNumber(
   towerNumber: string | null | undefined,
   floor: number,
   unitIndex: number,
+  flatNumberPrefix?: string | null,
 ): string {
-  const towerPrefix = (towerNumber ?? 'T').replace(/\s+/g, '').toUpperCase();
   const floorPart = floor.toString().padStart(2, '0');
   const unitPart = unitIndex.toString().padStart(2, '0');
+  if (flatNumberPrefix) {
+    return `${flatNumberPrefix}${floorPart}${unitPart}`;
+  }
+  const towerPrefix = (towerNumber ?? 'T').replace(/\s+/g, '').toUpperCase();
   return `${towerPrefix}-${floorPart}${unitPart}`;
 }
 
@@ -59,11 +81,13 @@ export function buildDefaultFlatPayloads(input: FlatGenerationInput): Partial<Fl
     propertyId,
     towerId,
     towerNumber,
+    flatNumberPrefix,
     totalUnits,
     totalFloors,
     unitsPerFloorText,
     expectedPossessionDate,
     startDisplayOrder = 1,
+    unitMix,
   } = input;
 
   const normalizedTotalUnits = Math.max(totalUnits, 1);
@@ -81,7 +105,8 @@ export function buildDefaultFlatPayloads(input: FlatGenerationInput): Partial<Fl
     for (let unitIndex = 1; unitIndex <= inferredUnitsPerFloor && createdUnits < normalizedTotalUnits; unitIndex++) {
       createdUnits += 1;
 
-      const flatNumber = generateFlatNumber(towerNumber, floor, unitIndex);
+      const flatNumber = generateFlatNumber(towerNumber, floor, unitIndex, flatNumberPrefix);
+      const mix = unitMix?.find((e) => e.unitPositions.includes(unitIndex));
 
       flats.push({
         propertyId,
@@ -90,26 +115,26 @@ export function buildDefaultFlatPayloads(input: FlatGenerationInput): Partial<Fl
         flatNumber,
         name: `Unit ${flatNumber}`,
         description: null,
-        type: FlatType.TWO_BHK,
+        type: (mix?.type as FlatType) ?? FlatType.TWO_BHK,
         floor,
-        bedrooms: DEFAULT_BEDROOMS,
-        bathrooms: DEFAULT_BATHROOMS,
-        balconies: 1,
+        bedrooms: mix?.bedrooms ?? DEFAULT_BEDROOMS,
+        bathrooms: mix?.bathrooms ?? DEFAULT_BATHROOMS,
+        balconies: mix?.balconies ?? 1,
         servantRoom: false,
         studyRoom: false,
         poojaRoom: false,
-        superBuiltUpArea: 0,
-        builtUpArea: 0,
-        carpetArea: 0,
+        superBuiltUpArea: mix?.superBuiltUpArea ?? 0,
+        builtUpArea: mix?.builtUpArea ?? 0,
+        carpetArea: mix?.carpetArea ?? 0,
         balconyArea: null,
-        basePrice: 0,
+        basePrice: mix?.basePrice ?? 0,
         pricePerSqft: null,
         registrationCharges: null,
         maintenanceCharges: null,
         parkingCharges: null,
-        totalPrice: 0,
+        totalPrice: mix?.basePrice ?? 0,
         discountAmount: null,
-        finalPrice: 0,
+        finalPrice: mix?.basePrice ?? 0,
         status: FlatStatus.UNDER_CONSTRUCTION,
         isAvailable: true,
         availableFrom: expectedPossessionDate ?? null,

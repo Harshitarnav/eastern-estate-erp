@@ -5,6 +5,19 @@ import type {
   TowerInventorySummary,
 } from './properties.service';
 
+// Keep in sync with backend: src/modules/towers/interfaces/unit-mix.interface.ts
+export interface UnitMixEntry {
+  unitPositions: number[];
+  type: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  balconies?: number;
+  superBuiltUpArea?: number;
+  builtUpArea?: number;
+  carpetArea?: number;
+  basePrice?: number;
+}
+
 export interface Tower {
   id: string;
   name: string;
@@ -54,6 +67,7 @@ export interface Tower {
   dataCompletenessStatus?: DataCompletenessStatus;
   issuesCount?: number;
   regenerateFlats?: boolean;
+  unitMix?: UnitMixEntry[] | null;
 }
 
 export interface TowerFilters {
@@ -170,6 +184,11 @@ export const towersService = {
   // Delete tower
   async deleteTower(id: string): Promise<{ message: string }> {
     const response = await api.delete(`/towers/${id}`);
+    return response;
+  },
+
+  async fillMissingFlats(id: string): Promise<{ created: number; alreadyExisted: number }> {
+    const response = await api.post(`/towers/${id}/fill-missing-flats`);
     return response;
   },
 
