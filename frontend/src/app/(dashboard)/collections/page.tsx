@@ -57,6 +57,7 @@ import {
   CollectionTier,
   CollectorSummary,
   collectionsService,
+  ddStatusMeta,
   TIER_COLORS,
   TIER_LABELS,
 } from '@/services/collections.service';
@@ -1105,7 +1106,9 @@ function Row({
           )}
         </td>
         <td className="py-3 px-4 align-top text-xs text-gray-600">
-          <div>{row.status}</div>
+          <Badge variant="outline" className={ddStatusMeta(row.status).className}>
+            {ddStatusMeta(row.status).label}
+          </Badge>
           {row.reminderCount > 0 && (
             <div className="text-[10px] text-gray-400 mt-0.5">{row.reminderCount} reminders sent</div>
           )}
@@ -1383,6 +1386,7 @@ function CollectionsSettingsDialog({
     setSaving(true);
     try {
       await settingsService.updateCompanySettings({
+        defaultTaxPercentage: Number(settings.defaultTaxPercentage ?? 0),
         overdueReminderIntervalDays: Number(settings.overdueReminderIntervalDays ?? 7),
         cancellationWarningThresholdDays: Number(
           settings.cancellationWarningThresholdDays ?? 30,
@@ -1417,6 +1421,21 @@ function CollectionsSettingsDialog({
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-2">
+            <Field
+              label="Default tax / GST (%)"
+              hint="Pre-fills the tax % on each demand draft. CRM can override per draft."
+            >
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                step={0.01}
+                value={settings.defaultTaxPercentage ?? 0}
+                onChange={(e) =>
+                  patch({ defaultTaxPercentage: Number(e.target.value) })
+                }
+              />
+            </Field>
             <Field
               label="Reminder interval (days)"
               hint="Gap between consecutive automated reminders."

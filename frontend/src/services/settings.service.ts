@@ -27,6 +27,8 @@ export interface CompanySettings {
   smtpUser?: string;
   smtpPass?: string;
   smtpFrom?: string;
+  // Default tax/GST % pre-filled on demand drafts
+  defaultTaxPercentage?: number;
   // Collections / overdue reminders
   overdueReminderIntervalDays?: number;
   cancellationWarningThresholdDays?: number;

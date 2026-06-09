@@ -8,26 +8,33 @@ import { Flat } from '../../flats/entities/flat.entity';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
 import { Payment } from '../../payments/entities/payment.entity';
+import { DemandDraft, DemandDraftStatus } from '../../demand-drafts/entities/demand-draft.entity';
 
 export interface LedgerRow {
   date: string | null;
   description: string;
   type: 'DEMAND' | 'PAYMENT';
-  /** Amount demanded (debit side) */
+  /** Total debit (demand side) */
   debit: number;
-  /** Amount paid (credit side) */
+  /** Total credit (payment side) */
   credit: number;
   /** Running balance after this row */
   balance: number;
-  /** Milestone sequence if this is a demand row */
+  // ── Category breakdown ─────────────────────────────────────────────────
+  primaryDebit?: number;
+  miscDebit?: number;
+  taxDebit?: number;
+  primaryCredit?: number;
+  miscCredit?: number;
+  taxCredit?: number;
+  /** True when tax on this demand was deferred to registry. */
+  taxDeferred?: boolean;
+  taxDeferredAmount?: number;
+  // ── References ─────────────────────────────────────────────────────────
   milestoneSequence?: number;
-  /** Demand draft ID if exists */
   demandDraftId?: string | null;
-  /** Payment ID if this is a payment row */
   paymentId?: string | null;
-  /** Payment code / receipt number for reference */
   reference?: string;
-  /** Row status (milestone status or payment status) */
   status?: string;
 }
 
@@ -49,6 +56,14 @@ export interface LedgerResponse {
     balance: number;
     overdueCount: number;
     pendingMilestones: number;
+    // ── Category summaries ──────────────────────────────────────────────
+    primaryDemanded: number;
+    miscDemanded: number;
+    taxDemanded: number;
+    primaryPaid: number;
+    miscPaid: number;
+    taxPaid: number;
+    totalTaxDeferred: number;
   };
 }
 
@@ -65,10 +80,12 @@ export class FlatPaymentPlanService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
+    @InjectRepository(DemandDraft)
+    private readonly demandDraftRepository: Repository<DemandDraft>,
     private readonly templateService: PaymentPlanTemplateService,
   ) {}
 
-  /** Ensure tax / net / adjust / remarks exist on every milestone row (JSONB). */
+  /** Ensure misc / tax / net / adjust / remarks exist on every milestone row (JSONB). */
   private normalizeMilestone(
     m: Partial<FlatPaymentMilestone> & {
       sequence: number;
@@ -77,6 +94,10 @@ export class FlatPaymentPlanService {
     },
   ): FlatPaymentMilestone {
     const amount = Number(m.amount) || 0;
+    const miscAmount =
+      m.miscAmount != null && Number.isFinite(Number(m.miscAmount))
+        ? Number(m.miscAmount)
+        : 0;
     const taxAmount =
       m.taxAmount != null && Number.isFinite(Number(m.taxAmount))
         ? Number(m.taxAmount)
@@ -88,7 +109,7 @@ export class FlatPaymentPlanService {
     const netAmount =
       m.netAmount != null && Number.isFinite(Number(m.netAmount))
         ? Number(m.netAmount)
-        : amount + taxAmount - adjustAmount;
+        : amount + miscAmount + taxAmount - adjustAmount;
 
     return {
       sequence: m.sequence,
@@ -97,6 +118,7 @@ export class FlatPaymentPlanService {
       phasePercentage: m.phasePercentage ?? null,
       amount,
       dueDate: m.dueDate ?? null,
+      miscAmount,
       taxAmount,
       netAmount,
       adjustAmount,
@@ -513,6 +535,68 @@ export class FlatPaymentPlanService {
   }
 
   /**
+   * Rescale construction milestones to the flat's Primary price
+   * (base − discount, excluding misc & tax).
+   *
+   * Used to repair a plan that was created from a full-price total (so its
+   * milestone amounts wrongly include misc/tax). Each milestone's amount is
+   * rescaled proportionally to the new primary total, preserving the existing
+   * split ratios, statuses, and DD/schedule links. Misc/tax stay as-is (they
+   * are added per demand draft, not in the plan).
+   */
+  async recomputeFromFlatPrimary(
+    planId: string,
+    userId: string | null | undefined,
+  ): Promise<FlatPaymentPlan> {
+    const plan = await this.findOne(planId);
+    const flat = await this.flatRepository.findOne({ where: { id: plan.flatId } });
+    if (!flat) {
+      throw new NotFoundException(`Flat ${plan.flatId} not found for this plan`);
+    }
+
+    const base = Number(flat.basePrice) || 0;
+    const discount = Number(flat.discountAmount) || 0;
+    const primary = Math.max(0, base - discount);
+    if (primary <= 0) {
+      throw new BadRequestException(
+        'Flat has no Primary/base price to recompute from. Set the flat base price first.',
+      );
+    }
+
+    const milestones = plan.milestones ?? [];
+    const oldTotal = milestones.reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    if (oldTotal <= 0) {
+      throw new BadRequestException(
+        'Plan milestones have no amounts to rescale. Recreate the plan instead.',
+      );
+    }
+
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    const scale = primary / oldTotal;
+
+    let running = 0;
+    const rescaled = milestones.map((m, idx) => {
+      const amount =
+        idx === milestones.length - 1
+          ? round2(primary - running) // last milestone absorbs rounding remainder
+          : round2((Number(m.amount) || 0) * scale);
+      running = round2(running + amount);
+      const misc = Number(m.miscAmount) || 0;
+      const tax = Number(m.taxAmount) || 0;
+      const adjust = Number(m.adjustAmount) || 0;
+      return { ...m, amount, netAmount: amount + misc + tax - adjust };
+    });
+
+    plan.milestones = rescaled;
+    plan.totalAmount = primary;
+    // paidAmount can include misc/tax already collected, so primary − paid may
+    // go negative; clamp so the balance never reads as a negative outstanding.
+    plan.balanceAmount = Math.max(0, primary - (Number(plan.paidAmount) || 0));
+    plan.updatedBy = this.normalizeUserId(userId);
+    return await this.flatPaymentPlanRepository.save(plan);
+  }
+
+  /**
    * Cancel flat payment plan
    */
   async cancel(id: string, userId: string | null | undefined): Promise<FlatPaymentPlan> {
@@ -585,7 +669,10 @@ export class FlatPaymentPlanService {
     for (const ev of events) {
       if (ev.type === 'DEMAND') {
         const m = ev.milestone;
-        const debit = Number(m.amount) || 0;
+        const primaryDebit = Number(m.amount) || 0;
+        const miscDebit    = Number(m.miscAmount) || 0;
+        const taxDebit     = Number(m.taxAmount) || 0;
+        const debit        = primaryDebit + miscDebit + taxDebit;
         runningBalance += debit;
         rows.push({
           date: m.dueDate ?? null,
@@ -594,23 +681,40 @@ export class FlatPaymentPlanService {
           debit,
           credit: 0,
           balance: runningBalance,
+          primaryDebit,
+          miscDebit,
+          taxDebit,
+          primaryCredit: 0,
+          miscCredit: 0,
+          taxCredit: 0,
           milestoneSequence: m.sequence,
           demandDraftId: m.demandDraftId ?? null,
           status: m.status,
         });
       } else {
         const p = ev.payment;
-        const credit = Number(p.amount) || 0;
+        const primaryCredit = Number(p.primaryAmount) || 0;
+        const miscCredit    = Number(p.miscAmount) || 0;
+        const taxCredit     = Number(p.taxAmount) || 0;
+        const credit        = Number(p.amount) || 0;
+        // taxDeferred: payment.paymentType registry or amount < dd.taxAmount signals deferral;
+        // simplest reliable signal is that taxCredit < demand's taxDebit for this milestone
         runningBalance -= credit;
         rows.push({
           date: p.paymentDate
             ? new Date(p.paymentDate).toISOString().split('T')[0]
             : null,
-          description: `Payment received - ${p.paymentMethod?.replace(/_/g, ' ') ?? ''}`,
+          description: `Payment received${p.paymentType === 'REGISTRY' ? ' (Registry)' : ''} — ${p.paymentMethod?.replace(/_/g, ' ') ?? ''}`,
           type: 'PAYMENT',
           debit: 0,
           credit,
           balance: runningBalance,
+          primaryDebit: 0,
+          miscDebit: 0,
+          taxDebit: 0,
+          primaryCredit,
+          miscCredit,
+          taxCredit,
           paymentId: p.id,
           reference: p.paymentCode,
           status: p.status,
@@ -619,13 +723,28 @@ export class FlatPaymentPlanService {
     }
 
     // 6. Summary
-    const totalDemanded = rows
-      .filter(r => r.type === 'DEMAND')
-      .reduce((s, r) => s + r.debit, 0);
-    const totalPaid = rows
-      .filter(r => r.type === 'PAYMENT')
-      .reduce((s, r) => s + r.credit, 0);
-    const overdueCount = plan.milestones.filter(m => m.status === 'OVERDUE').length;
+    const demandRows   = rows.filter(r => r.type === 'DEMAND');
+    const paymentRows  = rows.filter(r => r.type === 'PAYMENT');
+    const totalDemanded    = demandRows.reduce((s, r) => s + r.debit, 0);
+    const totalPaid        = paymentRows.reduce((s, r) => s + r.credit, 0);
+    const primaryDemanded  = demandRows.reduce((s, r) => s + (r.primaryDebit ?? 0), 0);
+    const miscDemanded     = demandRows.reduce((s, r) => s + (r.miscDebit ?? 0), 0);
+    const taxDemanded      = demandRows.reduce((s, r) => s + (r.taxDebit ?? 0), 0);
+    const primaryPaid      = paymentRows.reduce((s, r) => s + (r.primaryCredit ?? 0), 0);
+    const miscPaid         = paymentRows.reduce((s, r) => s + (r.miscCredit ?? 0), 0);
+    const taxPaid          = paymentRows.reduce((s, r) => s + (r.taxCredit ?? 0), 0);
+    // Deferred tax is tax that was *intentionally* pushed to registry, i.e. the
+    // tax_deferred_amount on root PRIMARY_PAID DDs — NOT merely tax that is
+    // overdue/unpaid (which is an arrear, surfaced via taxDemanded − taxPaid).
+    const deferredRows = await this.demandDraftRepository
+      .createQueryBuilder('dd')
+      .select('COALESCE(SUM(dd.tax_deferred_amount), 0)', 'total')
+      .where('dd.booking_id = :bookingId', { bookingId })
+      .andWhere('dd.status = :status', { status: DemandDraftStatus.PRIMARY_PAID })
+      .andWhere('dd.parent_demand_draft_id IS NULL')
+      .getRawOne();
+    const totalTaxDeferred = Number(deferredRows?.total) || 0;
+    const overdueCount     = plan.milestones.filter(m => m.status === 'OVERDUE').length;
     const pendingMilestones = plan.milestones.filter(m => m.status === 'PENDING').length;
 
     return {
@@ -666,6 +785,13 @@ export class FlatPaymentPlanService {
         balance: totalDemanded - totalPaid,
         overdueCount,
         pendingMilestones,
+        primaryDemanded,
+        miscDemanded,
+        taxDemanded,
+        primaryPaid,
+        miscPaid,
+        taxPaid,
+        totalTaxDeferred,
       },
     };
   }

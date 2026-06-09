@@ -230,7 +230,7 @@ export default function DashboardPage() {
       {/* ── Row 1: Financial KPIs ── */}
       <div>
         <SectionTitle>💰 Financial Overview</SectionTitle>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <KpiCard
             label="Total Agreement Value"
             value={fmtCr(d.totalAgreementValue)}
@@ -261,6 +261,14 @@ export default function DashboardPage() {
             icon={CalendarDays}
             color={brandGold}
             onClick={() => router.push('/reports/collection')}
+          />
+          <KpiCard
+            label="Tax Deferred (Registry)"
+            value={fmtCr((d as any).totalTaxDeferred ?? 0)}
+            sub="Expected at registration"
+            icon={IndianRupee}
+            color="#6b7280"
+            onClick={() => router.push('/reports/outstanding')}
           />
         </div>
       </div>

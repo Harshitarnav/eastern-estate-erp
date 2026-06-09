@@ -32,6 +32,8 @@ export interface Flat {
   totalPrice: number;
   discountAmount?: number;
   finalPrice: number;
+  miscBreakdown?: Array<{ label: string; amount: number }>;
+  taxBreakdown?: Array<{ label: string; amount: number }>;
   status: 'AVAILABLE' | 'ON_HOLD' | 'BLOCKED' | 'BOOKED' | 'SOLD' | 'UNDER_CONSTRUCTION' | 'CANCELLED';
   isAvailable: boolean;
   availableFrom?: string;

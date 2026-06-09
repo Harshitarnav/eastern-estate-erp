@@ -58,6 +58,13 @@ export class DemandDraftsController {
     return await this.demandDraftsService.findOne(id);
   }
 
+  /** Flat's misc line-items + which are already allocated to other DDs. */
+  @Get(':id/available-misc')
+  @Roles(...DD_DEFAULT_ROLES)
+  async availableMisc(@Param('id') id: string) {
+    return await this.demandDraftsService.getAvailableMisc(id);
+  }
+
   /**
    * Create user-generated demand draft
    * Sales team can create drafts, admin receives notification

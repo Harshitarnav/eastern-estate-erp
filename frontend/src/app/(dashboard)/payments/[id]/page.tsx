@@ -244,6 +244,13 @@ export default function ViewPaymentPage() {
           netAmount,
         },
 
+        // category split (Primary / Misc / Tax with tagged line-items)
+        categorySplit: {
+          primaryAmount: Number((payment as any).primaryAmount) || 0,
+          miscBreakdown: (payment as any).miscBreakdown ?? [],
+          taxBreakdown: (payment as any).taxBreakdown ?? [],
+        },
+
         // ledger
         ledger: bookingTotal
           ? {

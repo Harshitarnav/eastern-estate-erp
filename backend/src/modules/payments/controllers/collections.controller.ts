@@ -136,6 +136,9 @@ export class CollectionsController {
     @Body()
     body: {
       amount?: number;
+      primaryAmount?: number;
+      miscAmount?: number;
+      taxAmount?: number;
       paymentMethod?: string;
       paymentDate?: string;
       transactionReference?: string;
@@ -150,10 +153,39 @@ export class CollectionsController {
       throw new BadRequestException('This DD is already marked paid');
     }
 
-    const amount =
-      Number.isFinite(Number(body.amount)) && Number(body.amount) > 0
-        ? Number(body.amount)
-        : Number(dd.amount) || 0;
+    // Resolve the category split. If the caller passed an explicit split,
+    // trust it (payments.create validates that the parts sum to amount).
+    // Otherwise waterfall the amount across the DD's own Primary → Misc → Tax.
+    const ddPrimary = Number(dd.primaryAmount) || 0;
+    const ddMisc = Number(dd.miscAmount) || 0;
+    const ddTax = Number(dd.taxAmount) || 0;
+
+    const explicitSplit =
+      body.primaryAmount != null || body.miscAmount != null || body.taxAmount != null;
+
+    let amount: number;
+    let primaryAmount: number;
+    let miscAmount: number;
+    let taxAmount: number;
+
+    if (explicitSplit) {
+      primaryAmount = Number(body.primaryAmount) || 0;
+      miscAmount = Number(body.miscAmount) || 0;
+      taxAmount = Number(body.taxAmount) || 0;
+      amount = primaryAmount + miscAmount + taxAmount;
+    } else {
+      amount =
+        Number.isFinite(Number(body.amount)) && Number(body.amount) > 0
+          ? Number(body.amount)
+          : Number(dd.amount) || 0;
+      let remaining = amount;
+      primaryAmount = Math.min(remaining, ddPrimary); remaining -= primaryAmount;
+      miscAmount = Math.min(remaining, ddMisc); remaining -= miscAmount;
+      taxAmount = Math.min(remaining, ddTax); remaining -= taxAmount;
+      // Any leftover (overpayment beyond the DD split) lands on Primary.
+      primaryAmount += Math.max(0, remaining);
+    }
+
     if (amount <= 0) {
       throw new BadRequestException(
         'Cannot record a zero-amount payment. Pass an explicit amount.',
@@ -179,6 +211,9 @@ export class CollectionsController {
         paymentType: 'INSTALLMENT',
         paymentMethod: body.paymentMethod || 'OTHER',
         amount,
+        primaryAmount,
+        miscAmount,
+        taxAmount,
         paymentDate,
         transactionReference: body.transactionReference,
         chequeNumber: body.chequeNumber,

@@ -9,6 +9,7 @@ import { PaymentCompletionService } from './services/payment-completion.service'
 import { OverdueScannerService } from './services/overdue-scanner.service';
 import { LegacyImportService } from './services/legacy-import.service';
 import { CollectionsService } from './services/collections.service';
+import { BookingFinancialSummaryService } from './services/booking-financial-summary.service';
 import { PaymentsController } from './payments.controller';
 import { RefundsController } from './refunds.controller';
 import { LegacyImportController } from './controllers/legacy-import.controller';
@@ -62,6 +63,7 @@ import { User } from '../users/entities/user.entity';
     OverdueScannerService,
     LegacyImportService,
     CollectionsService,
+    BookingFinancialSummaryService,
   ],
   exports: [
     PaymentsService,
@@ -70,6 +72,7 @@ import { User } from '../users/entities/user.entity';
     OverdueScannerService,
     LegacyImportService,
     CollectionsService,
+    BookingFinancialSummaryService,
   ],
 })
 export class PaymentsModule {}

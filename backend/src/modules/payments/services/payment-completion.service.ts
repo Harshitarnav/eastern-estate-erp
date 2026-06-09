@@ -11,6 +11,7 @@ import {
   DemandDraft,
   DemandDraftStatus,
 } from '../../demand-drafts/entities/demand-draft.entity';
+import { PaymentType } from '../entities/payment.entity';
 
 /**
  * Payment Completion Workflow Service
@@ -269,6 +270,8 @@ export class PaymentCompletionService {
       DemandDraftStatus.READY,
       DemandDraftStatus.SENT,
       DemandDraftStatus.FAILED,
+      // PRIMARY_PAID DDs can be fully closed by a later registry payment
+      DemandDraftStatus.PRIMARY_PAID,
     ];
 
     // Layer 1: DDs linked directly to the schedule we just settled.
@@ -293,9 +296,7 @@ export class PaymentCompletionService {
       });
     }
 
-    // Layer 3: if the payment is booking-scoped and amount-matched, use
-    // that as a last resort so legacy-imported DDs (no schedule / plan
-    // linkage) still close on the first matching payment.
+    // Layer 3: booking-scoped amount-match fallback for legacy DDs.
     if (!matches.length && payment.bookingId) {
       const amt = Number(payment.amount) || 0;
       if (amt > 0) {
@@ -303,10 +304,7 @@ export class PaymentCompletionService {
           .createQueryBuilder('dd')
           .where('dd.booking_id = :bookingId', { bookingId: payment.bookingId })
           .andWhere('dd.status IN (:...openStatuses)', { openStatuses })
-          // Round on both sides to avoid decimal-scale mismatches.
-          .andWhere('ROUND(dd.amount::numeric, 0) = ROUND(:amt::numeric, 0)', {
-            amt,
-          })
+          .andWhere('ROUND(dd.amount::numeric, 0) = ROUND(:amt::numeric, 0)', { amt })
           .orderBy('dd.created_at', 'ASC')
           .limit(1)
           .getMany();
@@ -315,8 +313,7 @@ export class PaymentCompletionService {
 
     if (!matches.length) return;
 
-    // Expand each matched DD to include every descendant reminder /
-    // warning chained to it so the whole thread closes together.
+    // Expand to full thread (root + all reminder/warning children).
     const rootIds = new Set<string>();
     for (const dd of matches) {
       rootIds.add(dd.parentDemandDraftId ?? dd.id);
@@ -331,19 +328,103 @@ export class PaymentCompletionService {
       .getMany();
 
     const now = new Date();
+    const paymentTaxPaid    = Number(payment.taxAmount) || 0;
+    const paymentPrimaryPaid = Number(payment.primaryAmount) || 0;
+    const isRegistryPayment  = payment.paymentType === PaymentType.REGISTRY;
+
+    const EPS = 0.01;
     for (const dd of thread) {
-      dd.status = DemandDraftStatus.PAID;
-      dd.paidAt = now;
-      dd.paidPaymentId = payment.id;
-      // Stop the scanner from escalating or sending further reminders.
-      dd.nextReminderDueAt = null;
+      // Demanded per category includes any arrears carried forward on the DD.
+      const ddTaxDemanded     = (Number(dd.taxAmount) || 0)     + (Number(dd.arrearsTax) || 0);
+      const ddPrimaryDemanded = (Number(dd.primaryAmount) || 0) + (Number(dd.arrearsPrimary) || 0);
+      const ddMiscDemanded    = (Number(dd.miscAmount) || 0)    + (Number(dd.arrearsMisc) || 0);
+
+      let newStatus: DemandDraftStatus;
+      let taxDeferredAmount = 0;
+
+      const paymentMiscPaid = Number(payment.miscAmount) || 0;
+      const grossPaid       = Number(payment.amount) || 0;
+      const nonTaxDemanded  = ddPrimaryDemanded + ddMiscDemanded;
+      const ddTotalDemanded = nonTaxDemanded + ddTaxDemanded;
+      const nonTaxPaid      = paymentPrimaryPaid + paymentMiscPaid;
+
+      // A DD is only fully PAID when EVERY category is settled. Checking the
+      // categories (not just the gross amount) is what prevents a tax=0 DD —
+      // i.e. every legacy DD after the v019 backfill — from being closed as
+      // PAID by any partial payment (the old `paymentTaxPaid >= 0` trap).
+      const nonTaxSettled = nonTaxPaid >= nonTaxDemanded - EPS;
+      const taxSettled    = paymentTaxPaid >= ddTaxDemanded - EPS;
+
+      // An "unsplit" payment carries no category intent (the whole amount sits
+      // in primary because the recorder never allocated misc/tax). For those we
+      // judge purely on the gross amount so a full lump payment isn't mistaken
+      // for a deliberate tax deferral.
+      const isUnsplit =
+        paymentTaxPaid <= EPS &&
+        paymentMiscPaid <= EPS &&
+        Math.abs(paymentPrimaryPaid - grossPaid) <= EPS;
+
+      if (isRegistryPayment) {
+        // A registry payment settles tax that was deferred at PRIMARY_PAID time.
+        // It only fully closes the DD when it actually covers the deferred tax;
+        // an under-payment leaves the DD where it was (M1).
+        const deferred = (Number(dd.taxDeferredAmount) || 0) || ddTaxDemanded;
+        if (paymentTaxPaid >= deferred - EPS && nonTaxSettled) {
+          newStatus = DemandDraftStatus.PAID;
+        } else if (dd.status === DemandDraftStatus.PRIMARY_PAID) {
+          newStatus = DemandDraftStatus.PRIMARY_PAID;
+        } else {
+          newStatus = DemandDraftStatus.PARTIALLY_PAID;
+        }
+      } else if (nonTaxSettled && taxSettled) {
+        // Every category covered → fully closed.
+        newStatus = DemandDraftStatus.PAID;
+      } else if (isUnsplit) {
+        // No category intent expressed — close only if the gross covers the
+        // full demand, otherwise it's a genuine partial.
+        newStatus =
+          grossPaid >= ddTotalDemanded - EPS
+            ? DemandDraftStatus.PAID
+            : DemandDraftStatus.PARTIALLY_PAID;
+      } else if (nonTaxSettled && paymentTaxPaid <= EPS && ddTaxDemanded > EPS) {
+        // Primary + misc fully paid, tax deliberately left at zero on a split
+        // payment → tax deferred to registry. Not chased by the overdue scanner.
+        newStatus = DemandDraftStatus.PRIMARY_PAID;
+        taxDeferredAmount = ddTaxDemanded;
+      } else {
+        // Anything else is a genuine partial — keep the DD live so collections
+        // and the overdue scanner keep chasing the remaining balance (H2).
+        newStatus = DemandDraftStatus.PARTIALLY_PAID;
+      }
+
+      dd.status = newStatus;
+      // Closure (PAID or deliberate tax-deferral) stops the scanner and stamps
+      // the paid date. A PARTIALLY_PAID DD is NOT closed: leave paidAt/
+      // nextReminderDueAt untouched so it is still picked up for follow-up.
+      const isClosure =
+        newStatus === DemandDraftStatus.PAID ||
+        newStatus === DemandDraftStatus.PRIMARY_PAID;
+      if (isClosure) {
+        dd.paidAt            = now;
+        dd.paidPaymentId     = payment.id;
+        dd.nextReminderDueAt = null;
+      }
+      if (taxDeferredAmount > 0) {
+        dd.taxDeferredAmount = taxDeferredAmount;
+        dd.taxDeferredAt     = now;
+      }
       dd.metadata = {
         ...(dd.metadata || {}),
         closedBy: {
-          paymentId: payment.id,
-          paymentCode: payment.paymentCode,
-          amount: Number(payment.amount) || 0,
-          at: now.toISOString(),
+          paymentId:    payment.id,
+          paymentCode:  payment.paymentCode,
+          amount:       Number(payment.amount) || 0,
+          primaryAmount: Number(payment.primaryAmount) || 0,
+          miscAmount:    Number(payment.miscAmount) || 0,
+          taxAmount:     Number(payment.taxAmount) || 0,
+          closureStatus: newStatus,
+          taxDeferred:   taxDeferredAmount,
+          at:            now.toISOString(),
         },
       };
     }

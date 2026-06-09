@@ -85,4 +85,14 @@ export class FlatPaymentPlanController {
   async cancel(@Param('id') id: string, @Req() req: any) {
     return await this.flatPaymentPlanService.cancel(id, req.user.id);
   }
+
+  /**
+   * Rescale the plan's construction milestones to the flat's Primary price
+   * (base − discount, excluding misc & tax). Use when a plan was created from
+   * a full-price total and the milestone amounts are too high.
+   */
+  @Put(':id/recompute-from-flat')
+  async recomputeFromFlat(@Param('id') id: string, @Req() req: any) {
+    return await this.flatPaymentPlanService.recomputeFromFlatPrimary(id, req.user.id);
+  }
 }

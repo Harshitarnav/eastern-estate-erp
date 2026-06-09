@@ -30,14 +30,35 @@ export interface DemandDraftHtmlData {
   constructionPhase?: string;
   phasePercentage?: number;
 
-  /* Amounts - all pre-formatted strings, e.g. "12,50,000" (no ₹ prefix) */
+  /* Current demand — category breakdown (pre-formatted strings, no ₹ prefix) */
+  primaryAmount?: string;
+  miscAmount?: string;
+  taxAmount?: string;
+  /**
+   * Optional tagged line-items. When provided, each is rendered as its own row
+   * (e.g. "Amenities", "Parking", "GST") instead of the single aggregate Misc /
+   * Tax line — so the customer sees exactly what each charge is.
+   */
+  miscItems?: Array<{ label: string; amount: number }>;
+  taxItems?: Array<{ label: string; amount: number }>;
+  /** Grand total of current demand (primary + misc + tax + arrears). Legacy fallback if categories absent. */
   amount: string;
   dueDate: string;
+
+  /* Arrears carried forward from prior DDs */
+  arrearsPrimary?: string;
+  arrearsMisc?: string;
+  arrearsTax?: string;
+
+  /* Running total of all tax ever deferred to registry for this booking */
+  taxDeferredTotal?: string;
+
+  /* Account summary */
   totalAmount?: string;
   paidAmount?: string;
   balanceAfterPayment?: string;
 
-  /* Bank details - use placeholder if not yet filled */
+  /* Bank details */
   bankName?: string;
   accountName?: string;
   accountNumber?: string;
@@ -415,6 +436,78 @@ export function buildDemandDraftHtml(d: DemandDraftHtmlData): string {
     ? `<br/><span style="font-size:11.5px;color:#666;">${esc(d.milestoneDescription)}</span>`
     : '';
 
+  /* Render a category as either itemised tagged rows or a single aggregate row. */
+  const fmtNum = (n: number) =>
+    (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-IN');
+  const categoryLine = (label: string, amountStr: string) => `<tr>
+        <td style="padding-left:20px;color:#555">${esc(label)}</td>
+        <td>${esc(d.dueDate)}</td>
+        <td class="r">\u20b9 ${esc(amountStr)}</td>
+      </tr>`;
+  const itemRows = (items?: Array<{ label: string; amount: number }>) =>
+    (items ?? [])
+      .filter((i) => (Number(i?.amount) || 0) > 0)
+      .map((i) => categoryLine(i.label || 'Misc', fmtNum(i.amount)))
+      .join('');
+
+  const miscRows = d.miscItems?.length
+    ? itemRows(d.miscItems)
+    : d.miscAmount
+      ? categoryLine('Parking / Amenities / Misc', d.miscAmount)
+      : '';
+  const taxRows = d.taxItems?.length
+    ? itemRows(d.taxItems)
+    : d.taxAmount
+      ? categoryLine('GST / Tax', d.taxAmount)
+      : '';
+
+  /* Demand table rows \u2014 category breakdown if available, else single row */
+  const hasCategoryBreakdown =
+    d.primaryAmount || d.miscAmount || d.taxAmount || d.miscItems?.length || d.taxItems?.length;
+  const categoryRows = hasCategoryBreakdown
+    ? `
+      ${d.primaryAmount ? categoryLine('Construction / Principal', d.primaryAmount) : ''}
+      ${miscRows}
+      ${taxRows}`
+    : `<tr>
+        <td colspan="2">&nbsp;</td>
+        <td class="r">\u20b9 ${esc(d.amount)}</td>
+      </tr>`;
+
+  /* Arrears rows \u2014 only when any arrear > 0 */
+  const hasArrears = d.arrearsPrimary || d.arrearsMisc || d.arrearsTax;
+  const arrearsRows = hasArrears
+    ? `<tr>
+        <td colspan="3" style="background:#fff8f0;padding:6px 14px;font-size:11px;color:#b45309;font-weight:600;text-transform:uppercase;letter-spacing:0.3px">
+          Outstanding from previous demands
+        </td>
+      </tr>
+      ${d.arrearsPrimary ? `<tr style="background:#fff8f0">
+        <td style="padding-left:20px;color:#92400e">Construction Arrear</td>
+        <td>\u2013</td>
+        <td class="r" style="color:#b45309">\u20b9 ${esc(d.arrearsPrimary)}</td>
+      </tr>` : ''}
+      ${d.arrearsMisc ? `<tr style="background:#fff8f0">
+        <td style="padding-left:20px;color:#92400e">Misc Arrear</td>
+        <td>\u2013</td>
+        <td class="r" style="color:#b45309">\u20b9 ${esc(d.arrearsMisc)}</td>
+      </tr>` : ''}
+      ${d.arrearsTax ? `<tr style="background:#fff8f0">
+        <td style="padding-left:20px;color:#92400e">Tax Arrear (deferred)</td>
+        <td>\u2013</td>
+        <td class="r" style="color:#b45309">\u20b9 ${esc(d.arrearsTax)}</td>
+      </tr>` : ''}`
+    : '';
+
+  /* Tax deferred notice */
+  const taxDeferredNotice = d.taxDeferredTotal
+    ? `<div class="note-box">
+        <strong>Note on Tax Deferral:</strong> A cumulative GST/Tax amount of
+        <strong>\u20b9 ${esc(d.taxDeferredTotal)}</strong> has been deferred to registry time
+        as agreed. This will be collected at the time of property registration.
+      </div>`
+    : '';
+
   /* Summary grid - only if we have financial totals */
   const summaryHtml = (d.totalAmount || d.paidAmount || d.balanceAfterPayment)
     ? `<div class="sg">
@@ -501,25 +594,28 @@ export function buildDemandDraftHtml(d: DemandDraftHtmlData): string {
     </colgroup>
     <thead>
       <tr>
-        <th>#</th>
-        <th>Milestone / Description</th>
+        <th>Description</th>
         <th>Due Date</th>
         <th style="text-align:right">Amount (\u20b9)</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>${esc(String(d.milestoneSeq))}</td>
-        <td><strong>${esc(d.milestoneName)}</strong>${descLine}</td>
-        <td>${esc(d.dueDate)}</td>
-        <td class="r">\u20b9 ${esc(d.amount)}</td>
+        <td colspan="3" style="background:#f9fafb;font-weight:600;padding:8px 14px;font-size:12px">
+          ${esc(String(d.milestoneSeq))}. <strong>${esc(d.milestoneName)}</strong>${descLine}
+        </td>
       </tr>
+      ${categoryRows}
+      ${arrearsRows}
       <tr class="tr-total">
-        <td colspan="3" style="text-align:right">Total Amount Payable</td>
+        <td colspan="2" style="text-align:right">Total Amount Payable</td>
         <td class="r">\u20b9 ${esc(d.amount)}</td>
       </tr>
     </tbody>
   </table>
+
+  <!-- ── TAX DEFERRAL NOTICE ────────────────────────────── -->
+  ${taxDeferredNotice}
 
   <!-- ── PAYMENT SUMMARY ────────────────────────────────── -->
   ${summaryHtml}

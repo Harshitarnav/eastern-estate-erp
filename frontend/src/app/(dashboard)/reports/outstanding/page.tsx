@@ -220,23 +220,41 @@ export default function OutstandingReportPage() {
 
       {/* Summary cards */}
       {report && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-          {[
-            { label: 'Total Units', value: report.summary.totalUnits.toString(), icon: <Users className="h-4 w-4" />, color: 'text-gray-700' },
-            { label: 'Agreement Value', value: fmtINR(report.summary.totalAgreementValue), icon: <IndianRupee className="h-4 w-4" />, color: 'text-gray-700' },
-            { label: 'Total Demanded', value: fmtINR(report.summary.totalDemanded), icon: <TrendingDown className="h-4 w-4" />, color: 'text-amber-700' },
-            { label: 'Total Paid', value: fmtINR(report.summary.totalPaid), icon: <IndianRupee className="h-4 w-4" />, color: 'text-green-700' },
-            { label: 'Outstanding', value: fmtINR(report.summary.totalOutstanding), icon: <AlertTriangle className="h-4 w-4" />, color: 'text-red-700' },
-            { label: 'Units w/ Overdue', value: report.summary.unitsWithOverdue.toString(), icon: <AlertTriangle className="h-4 w-4" />, color: report.summary.unitsWithOverdue > 0 ? 'text-red-700' : 'text-gray-500' },
-          ].map(c => (
-            <Card key={c.label}>
-              <CardContent className="p-3">
-                <p className="text-xs text-gray-400 uppercase tracking-wide">{c.label}</p>
-                <p className={`text-base font-bold mt-0.5 ${c.color}`}>{c.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+            {[
+              { label: 'Total Units', value: report.summary.totalUnits.toString(), icon: <Users className="h-4 w-4" />, color: 'text-gray-700' },
+              { label: 'Agreement Value', value: fmtINR(report.summary.totalAgreementValue), icon: <IndianRupee className="h-4 w-4" />, color: 'text-gray-700' },
+              { label: 'Total Demanded', value: fmtINR(report.summary.totalDemanded), icon: <TrendingDown className="h-4 w-4" />, color: 'text-amber-700' },
+              { label: 'Total Paid', value: fmtINR(report.summary.totalPaid), icon: <IndianRupee className="h-4 w-4" />, color: 'text-green-700' },
+              { label: 'Outstanding', value: fmtINR(report.summary.totalOutstanding), icon: <AlertTriangle className="h-4 w-4" />, color: 'text-red-700' },
+              { label: 'Units w/ Overdue', value: report.summary.unitsWithOverdue.toString(), icon: <AlertTriangle className="h-4 w-4" />, color: report.summary.unitsWithOverdue > 0 ? 'text-red-700' : 'text-gray-500' },
+            ].map(c => (
+              <Card key={c.label}>
+                <CardContent className="p-3">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">{c.label}</p>
+                  <p className={`text-base font-bold mt-0.5 ${c.color}`}>{c.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Category outstanding breakdown */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+            {[
+              { label: 'Primary Outstanding', value: fmtINR(report.summary.totalPrimaryOutstanding ?? 0), color: 'text-red-700' },
+              { label: 'Misc Outstanding', value: fmtINR(report.summary.totalMiscOutstanding ?? 0), color: 'text-amber-700' },
+              { label: 'Tax Outstanding', value: fmtINR(report.summary.totalTaxOutstanding ?? 0), color: 'text-gray-700' },
+              { label: 'Tax Deferred (Registry)', value: fmtINR(report.summary.totalTaxDeferred ?? 0), color: 'text-gray-500' },
+            ].map(c => (
+              <Card key={c.label} className="border-dashed">
+                <CardContent className="p-3">
+                  <p className="text-xs text-gray-400 uppercase tracking-wide">{c.label}</p>
+                  <p className={`text-base font-bold mt-0.5 ${c.color}`}>{c.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Table */}
@@ -261,6 +279,7 @@ export default function OutstandingReportPage() {
                   <TableHead className="text-right text-amber-700">Demanded</TableHead>
                   <TableHead className="text-right text-green-700">Paid</TableHead>
                   <TableHead className="text-right text-red-700 font-semibold">Outstanding</TableHead>
+                  <TableHead className="text-right text-gray-600">Tax Deferred</TableHead>
                   <TableHead className="text-center">Overdue</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="w-20">Action</TableHead>
@@ -287,9 +306,21 @@ export default function OutstandingReportPage() {
                     <TableCell className="text-right text-sm text-amber-700">{fmtINR(row.totalDemanded)}</TableCell>
                     <TableCell className="text-right text-sm text-green-700">{fmtINR(row.totalPaid)}</TableCell>
                     <TableCell className="text-right font-bold">
-                      <span className={row.outstanding > 0 ? 'text-red-700' : 'text-green-700'}>
+                      <div className={row.outstanding > 0 ? 'text-red-700' : 'text-green-700'}>
                         {fmtINR(row.outstanding)}
-                      </span>
+                      </div>
+                      {(row.primaryOutstanding > 0 || row.taxOutstanding > 0) && (
+                        <div className="text-xs text-gray-400 mt-0.5 space-y-0.5">
+                          {row.primaryOutstanding > 0 && <div>P: {fmtINR(row.primaryOutstanding)}</div>}
+                          {row.miscOutstanding > 0 && <div>M: {fmtINR(row.miscOutstanding)}</div>}
+                          {row.taxOutstanding > 0 && <div>T: {fmtINR(row.taxOutstanding)}</div>}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {row.taxDeferred > 0 ? (
+                        <span className="text-gray-700 font-medium">{fmtINR(row.taxDeferred)}</span>
+                      ) : <span className="text-gray-300 text-xs">-</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       {row.overdueMilestones > 0 ? (

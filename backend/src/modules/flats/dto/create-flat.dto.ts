@@ -10,9 +10,20 @@ import {
   IsDateString,
   Min,
   MaxLength,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { FlatStatus, FlatType, FacingDirection } from '../entities/flat.entity';
+
+export class FlatLineItemDto {
+  @IsString()
+  label: string;
+
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amount: number;
+}
 
 export class CreateFlatDto {
   @IsUUID()
@@ -153,6 +164,19 @@ export class CreateFlatDto {
   @IsNotEmpty()
   @Min(0)
   finalPrice: number;
+
+  // Tagged Misc / Tax breakdown of the inventory price.
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FlatLineItemDto)
+  miscBreakdown?: FlatLineItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => FlatLineItemDto)
+  taxBreakdown?: FlatLineItemDto[];
 
   @IsEnum(FlatStatus)
   @IsOptional()

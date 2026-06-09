@@ -5,6 +5,7 @@ import {
   formatFlatNumberFromTower,
   towerAreaDefaults,
 } from '@/lib/flat-number-format';
+import CategoryLineItemEditor, { LineItem } from './CategoryLineItemEditor';
 
 interface FlatFormProps {
   initialData?: any;
@@ -33,6 +34,25 @@ export default function FlatForm({
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>(
     initialData?.propertyId || ''
   );
+
+  // ── Price category breakdown (Misc / Tax tagged line-items) ──────────────
+  // Seed from the new breakdown fields when present, else migrate legacy
+  // parking/maintenance/registration charge columns into tagged items.
+  const numOr0 = (v: any) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const [miscItems, setMiscItems] = useState<LineItem[]>(() => {
+    if (initialData?.miscBreakdown?.length) return initialData.miscBreakdown;
+    const seed: LineItem[] = [];
+    if (numOr0(initialData?.parkingCharges) > 0)     seed.push({ label: 'Parking', amount: numOr0(initialData.parkingCharges) });
+    if (numOr0(initialData?.maintenanceCharges) > 0) seed.push({ label: 'Maintenance', amount: numOr0(initialData.maintenanceCharges) });
+    return seed;
+  });
+  const [taxItems, setTaxItems] = useState<LineItem[]>(() => {
+    if (initialData?.taxBreakdown?.length) return initialData.taxBreakdown;
+    const seed: LineItem[] = [];
+    if (numOr0(initialData?.registrationCharges) > 0) seed.push({ label: 'Registration charges', amount: numOr0(initialData.registrationCharges) });
+    return seed;
+  });
+
   const [formSnapshot, setFormSnapshot] = useState<Record<string, any>>({});
   const [towerPrefill, setTowerPrefill] = useState<Record<string, any>>({});
   const [formVersion, setFormVersion] = useState(0);
@@ -139,16 +159,37 @@ export default function FlatForm({
       balconyArea: num(values.balconyArea),
       basePrice: num(values.basePrice) ?? 0,
       pricePerSqft: num(values.pricePerSqft),
-      registrationCharges: num(values.registrationCharges),
-      maintenanceCharges: num(values.maintenanceCharges),
-      parkingCharges: num(values.parkingCharges),
-      totalPrice: num(values.totalPrice) ?? 0,
-      discountAmount: num(values.discountAmount),
-      finalPrice: num(values.finalPrice) ?? 0,
       tokenAmount: num(values.tokenAmount),
       displayOrder: num(values.displayOrder) ?? 1,
       amenities: list(values.amenities),
     };
+
+    // ── Derive pricing from the Primary / Misc / Tax breakdown ──────────────
+    const primary  = num(values.basePrice) ?? 0;
+    const cleanMisc = miscItems.filter((i) => numOr0(i.amount) > 0);
+    const cleanTax  = taxItems.filter((i) => numOr0(i.amount) > 0);
+    const miscSum  = cleanMisc.reduce((s, i) => s + numOr0(i.amount), 0);
+    const taxSum   = cleanTax.reduce((s, i) => s + numOr0(i.amount), 0);
+    const discount = num(values.discountAmount) ?? 0;
+    const totalPrice = primary + miscSum + taxSum;
+    const finalPrice = Math.max(0, totalPrice - discount);
+
+    payload.miscBreakdown = cleanMisc;
+    payload.taxBreakdown  = cleanTax;
+    payload.totalPrice    = totalPrice;
+    payload.discountAmount = discount || undefined;
+    payload.finalPrice    = finalPrice;
+    // Keep legacy charge columns populated from the breakdown sums so existing
+    // reports / PDFs that read them still show a sensible figure.
+    payload.parkingCharges      = miscSum || undefined;
+    payload.registrationCharges = taxSum || undefined;
+
+    // Block save if a line-item has an amount but no label.
+    const blank = [...cleanMisc, ...cleanTax].some((i) => numOr0(i.amount) > 0 && !i.label.trim());
+    if (blank) {
+      alert('Every Misc / Tax line-item with an amount needs a label describing what it is.');
+      return;
+    }
 
     await onSubmit(payload);
   };
@@ -334,17 +375,18 @@ export default function FlatForm({
       ],
     },
     {
-      title: 'Pricing',
-      description: 'Enter pricing details',
+      title: 'Pricing — Primary',
+      description: 'Base construction cost. Miscellaneous & Tax are itemised in the breakdown panel above.',
       fields: [
         {
           name: 'basePrice',
-          label: 'Base Price',
+          label: 'Primary / Base Construction Cost',
           type: 'currency',
           placeholder: '2500000',
           required: true,
           prefix: '₹',
           validation: { min: 0 },
+          helperText: 'The construction / principal cost of the unit.',
         },
         {
           name: 'pricePerSqft',
@@ -355,56 +397,13 @@ export default function FlatForm({
           validation: { min: 0 },
         },
         {
-          name: 'registrationCharges',
-          label: 'Registration Charges',
-          type: 'currency',
-          placeholder: '50000',
-          prefix: '₹',
-          validation: { min: 0 },
-        },
-        {
-          name: 'maintenanceCharges',
-          label: 'Maintenance Charges (monthly)',
-          type: 'currency',
-          placeholder: '2000',
-          prefix: '₹',
-          validation: { min: 0 },
-        },
-        {
-          name: 'parkingCharges',
-          label: 'Parking Charges',
-          type: 'currency',
-          placeholder: '100000',
-          prefix: '₹',
-          validation: { min: 0 },
-        },
-        {
-          name: 'totalPrice',
-          label: 'Total Price',
-          type: 'currency',
-          placeholder: '2800000',
-          required: true,
-          prefix: '₹',
-          validation: { min: 0 },
-          helperText: 'Base + Registration + Other charges',
-        },
-        {
           name: 'discountAmount',
           label: 'Discount Amount',
           type: 'currency',
           placeholder: '50000',
           prefix: '₹',
           validation: { min: 0 },
-        },
-        {
-          name: 'finalPrice',
-          label: 'Final Price',
-          type: 'currency',
-          placeholder: '2750000',
-          required: true,
-          prefix: '₹',
-          validation: { min: 0 },
-          helperText: 'Total - Discount',
+          helperText: 'Applied to the grand total (Primary + Misc + Tax).',
         },
       ],
     },
@@ -712,25 +711,91 @@ export default function FlatForm({
     },
   ];
 
+  // Live category totals for the breakdown summary.
+  const livePrimary  = numOr0(formSnapshot.basePrice ?? initialData?.basePrice);
+  const liveMisc     = miscItems.reduce((s, i) => s + numOr0(i.amount), 0);
+  const liveTax      = taxItems.reduce((s, i) => s + numOr0(i.amount), 0);
+  const liveDiscount = numOr0(formSnapshot.discountAmount ?? initialData?.discountAmount);
+  const liveTotal    = livePrimary + liveMisc + liveTax;
+  const liveFinal    = Math.max(0, liveTotal - liveDiscount);
+  const fmt = (n: number) => n.toLocaleString('en-IN');
+
   return (
-    <Form
-      key={`flat-form-${initialData?.id ?? 'new'}-${formVersion}`}
-      title={initialData ? 'Edit Flat/Unit' : 'Add New Flat/Unit'}
-      description={initialData ? 'Update flat details' : 'Add a new flat/unit to the tower'}
-      sections={sections}
-      initialValues={mergedInitialValues}
-      onSubmit={handleSubmit}
-      onCancel={onCancel}
-      submitLabel={initialData ? 'Update Flat' : 'Create Flat'}
-      cancelLabel="Cancel"
-      loading={loading}
-      columns={2}
-      onValuesChange={(values) => {
-        setFormSnapshot(values);
-        if (values.propertyId !== selectedPropertyId) {
-          setSelectedPropertyId(values.propertyId);
-        }
-      }}
-    />
+    <div className="w-full max-w-5xl mx-auto space-y-6">
+      {/* ── Pricing: Miscellaneous & Tax breakdown ─────────────────────────── */}
+      <div className="bg-white rounded-lg shadow-sm">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Pricing — Category Breakdown</h3>
+          <p className="mt-1 text-sm text-gray-600">
+            The base/construction cost is the <strong>Primary</strong> price (entered in the Pricing
+            section below). Itemise everything else as <strong>Miscellaneous</strong> or{' '}
+            <strong>Tax</strong> with a tag of what it truly is.
+          </p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <CategoryLineItemEditor
+            title="Miscellaneous"
+            hint="Parking, lift, amenities, maintenance deposit, PLC, club membership…"
+            items={miscItems}
+            onChange={setMiscItems}
+            suggestions={['Parking', 'Maintenance', 'Club membership', 'Floor-rise PLC', 'Amenities']}
+          />
+          <CategoryLineItemEditor
+            title="Tax & Statutory"
+            hint="GST, stamp duty, registration charges…"
+            items={taxItems}
+            onChange={setTaxItems}
+            suggestions={['GST', 'Stamp duty', 'Registration charges']}
+          />
+
+          {/* Live summary */}
+          <div className="rounded-lg border border-gray-200 divide-y divide-gray-100 text-sm">
+            <div className="flex justify-between px-4 py-2">
+              <span className="text-gray-600">Primary (base)</span>
+              <span className="font-medium text-gray-900">₹{fmt(livePrimary)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2">
+              <span className="text-gray-600">Miscellaneous</span>
+              <span className="font-medium text-gray-900">₹{fmt(liveMisc)}</span>
+            </div>
+            <div className="flex justify-between px-4 py-2">
+              <span className="text-gray-600">Tax</span>
+              <span className="font-medium text-gray-900">₹{fmt(liveTax)}</span>
+            </div>
+            {liveDiscount > 0 && (
+              <div className="flex justify-between px-4 py-2">
+                <span className="text-gray-600">Less: Discount</span>
+                <span className="font-medium text-gray-900">−₹{fmt(liveDiscount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between px-4 py-2.5 bg-gray-50 rounded-b-lg">
+              <span className="font-semibold text-gray-900">Final Price</span>
+              <span className="font-bold text-[var(--eastern-red)]">₹{fmt(liveFinal)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Form
+        key={`flat-form-${initialData?.id ?? 'new'}-${formVersion}`}
+        title={initialData ? 'Edit Flat/Unit' : 'Add New Flat/Unit'}
+        description={initialData ? 'Update flat details' : 'Add a new flat/unit to the tower'}
+        sections={sections}
+        initialValues={mergedInitialValues}
+        onSubmit={handleSubmit}
+        onCancel={onCancel}
+        submitLabel={initialData ? 'Update Flat' : 'Create Flat'}
+        cancelLabel="Cancel"
+        loading={loading}
+        columns={2}
+        onValuesChange={(values) => {
+          setFormSnapshot(values);
+          if (values.propertyId !== selectedPropertyId) {
+            setSelectedPropertyId(values.propertyId);
+          }
+        }}
+      />
+    </div>
   );
 }

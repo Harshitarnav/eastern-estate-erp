@@ -14,6 +14,7 @@ import { Flat } from '../flats/entities/flat.entity';
 import { Booking } from '../bookings/entities/booking.entity';
 import { Customer } from '../customers/entities/customer.entity';
 import { Payment } from '../payments/entities/payment.entity';
+import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Payment } from '../payments/entities/payment.entity';
       Booking,
       Customer,
       Payment,
+      DemandDraft,
     ]),
   ],
   controllers: [

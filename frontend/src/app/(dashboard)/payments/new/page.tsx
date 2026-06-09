@@ -52,6 +52,15 @@ function buildApiPayload(data: any) {
     receiptNumber:        data.receiptNumber    || undefined,
     notes:                data.notes            || data.internalNotes || undefined,
     remarks:              data.remarks          || undefined,
+    // Payment category split (Primary / Misc / Tax) + tagged line-items.
+    // Without these the entire split is dropped and every payment lands as
+    // 100% primary regardless of what the user allocated.
+    primaryAmount:        data.primaryAmount    != null ? Number(data.primaryAmount) : undefined,
+    miscAmount:           data.miscAmount       != null ? Number(data.miscAmount)    : undefined,
+    taxAmount:            data.taxAmount        != null ? Number(data.taxAmount)     : undefined,
+    miscBreakdown:        Array.isArray(data.miscBreakdown) ? data.miscBreakdown : undefined,
+    taxBreakdown:         Array.isArray(data.taxBreakdown)  ? data.taxBreakdown  : undefined,
+    taxDeferralDisposition: data.taxDeferralDisposition || undefined,
   };
 }
 

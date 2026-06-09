@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ConstructionFlatProgress } from '../entities/construction-flat-progress.entity';
 import {
   ConstructionPhase,
@@ -35,9 +35,28 @@ export interface GeneratedDemandDraftSummary {
   dueDate?: Date;
 }
 
+/** A milestone that matched the trigger but did NOT produce a new DD. */
+export interface SkippedMilestoneSummary {
+  sequence: number;
+  name: string;
+  reason: string;
+  existingDemandDraftId?: string;
+}
+
+/** A milestone whose DD generation threw — surfaced so the UI can warn. */
+export interface MilestoneErrorSummary {
+  sequence: number;
+  name: string;
+  message: string;
+}
+
 export interface ConstructionWorkflowResult {
   milestonesTriggered: number;
   generatedDemandDrafts: GeneratedDemandDraftSummary[];
+  /** Milestones already raised earlier (deduped) — informational. */
+  skipped: SkippedMilestoneSummary[];
+  /** Milestones that failed to raise a DD — the real "Fires but nothing happened" cause. */
+  errors: MilestoneErrorSummary[];
 }
 
 /**
@@ -91,6 +110,8 @@ export class ConstructionWorkflowService {
     const emptyResult: ConstructionWorkflowResult = {
       milestonesTriggered: 0,
       generatedDemandDrafts: [],
+      skipped: [],
+      errors: [],
     };
 
     try {
@@ -230,6 +251,8 @@ export class ConstructionWorkflowService {
     this.logger.log(`Checking milestones for payment plan ${paymentPlan.id}`);
 
     const generatedDemandDrafts: GeneratedDemandDraftSummary[] = [];
+    const skipped: SkippedMilestoneSummary[] = [];
+    const errors: MilestoneErrorSummary[] = [];
     let milestonesTriggered = 0;
 
     for (const milestone of paymentPlan.milestones ?? []) {
@@ -248,26 +271,36 @@ export class ConstructionWorkflowService {
           `${currentPhase} at ${phaseProgress}% (required: ${milestone.phasePercentage}%)`,
       );
 
-      // Isolate each milestone's delegation so one failure (e.g. a stale
-      // payment_schedules column, a bad updated_by cast) doesn't prevent
-      // the others from firing AND doesn't drop the list of DDs that did
-      // succeed. The DD row for this milestone may still have been saved
-      // on disk before the failure – the 2-hourly cron sweep will report
-      // and reconcile it on the next pass.
+      // Isolate each milestone's delegation so one failure doesn't prevent
+      // the others from firing. We capture the OUTCOME (created / already-exists
+      // / error) so the log UI can tell the user exactly what happened instead
+      // of silently showing "already raised earlier" for every empty result.
       try {
-        const summary = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
-        if (summary) {
-          generatedDemandDrafts.push(summary);
+        const result = await this.delegateDemandDraft(paymentPlan, milestone, currentPhase);
+        if (result.kind === 'created') {
+          generatedDemandDrafts.push(result.summary);
           milestonesTriggered += 1;
+        } else {
+          skipped.push({
+            sequence: milestone.sequence,
+            name: milestone.name,
+            reason: 'A demand draft already exists for this milestone',
+            existingDemandDraftId: result.id,
+          });
         }
       } catch (err: any) {
         this.logger.error(
           `Failed to delegate DD for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}: ${err?.message}`,
         );
+        errors.push({
+          sequence: milestone.sequence,
+          name: milestone.name,
+          message: err?.message ?? 'Demand draft generation failed',
+        });
       }
     }
 
-    return { milestonesTriggered, generatedDemandDrafts };
+    return { milestonesTriggered, generatedDemandDrafts, skipped, errors };
   }
 
   /**
@@ -282,34 +315,46 @@ export class ConstructionWorkflowService {
     paymentPlan: FlatPaymentPlan,
     milestone: any,
     currentPhase: string,
-  ): Promise<GeneratedDemandDraftSummary | null> {
-    const existing = await this.demandDraftRepository.findOne({
+  ): Promise<
+    | { kind: 'created'; summary: GeneratedDemandDraftSummary }
+    | { kind: 'exists'; id: string }
+  > {
+    // Only an OPEN/closed DD blocks a re-fire. A previously CANCELLED or
+    // FAILED draft should not permanently stop the milestone from raising a
+    // fresh one — otherwise a single failed attempt jams the milestone.
+    const blocking = await this.demandDraftRepository.findOne({
       where: {
         flatId: paymentPlan.flatId,
         milestoneId: String(milestone.sequence),
+        status: In([
+          DemandDraftStatus.DRAFT,
+          DemandDraftStatus.READY,
+          DemandDraftStatus.SENT,
+          DemandDraftStatus.PRIMARY_PAID,
+          DemandDraftStatus.PARTIALLY_PAID,
+          DemandDraftStatus.PAID,
+        ]),
       },
     });
-    if (existing) {
+    if (blocking) {
       this.logger.log(
         `Demand draft already exists for milestone ${milestone.sequence} on flat ${paymentPlan.flatId}`,
       );
       // If the plan's milestone row never got flipped to TRIGGERED (e.g.
       // a prior run crashed mid-way in updateMilestone), self-heal now.
-      // This keeps the Payment Plan panel in the log UI accurate instead
-      // of permanently showing PENDING even though a DD exists.
       const planMilestone = paymentPlan.milestones?.find(
         (m) => m.sequence === milestone.sequence,
       );
       if (planMilestone && planMilestone.status === 'PENDING') {
         try {
-          await this.healMilestoneStatus(paymentPlan, milestone.sequence, existing.id);
+          await this.healMilestoneStatus(paymentPlan, milestone.sequence, blocking.id);
         } catch (err: any) {
           this.logger.warn(
             `Could not heal milestone ${milestone.sequence} status: ${err?.message}`,
           );
         }
       }
-      return null;
+      return { kind: 'exists', id: blocking.id };
     }
 
     const constructionProgress = await this.progressRepository.findOne({
@@ -334,16 +379,19 @@ export class ConstructionWorkflowService {
     const refNumber = `DD-${bookingRef}-${String(milestone.sequence).padStart(2, '0')}`;
 
     return {
-      id: saved.id,
-      title: saved.title,
-      amount: Number(saved.amount) || 0,
-      refNumber,
-      milestoneName: milestone.name,
-      flatNumber: flat?.flatNumber || undefined,
-      towerName: flat?.tower?.name || undefined,
-      propertyName: flat?.property?.name || undefined,
-      customerName: paymentPlan.customer?.fullName || undefined,
-      dueDate: saved.dueDate,
+      kind: 'created',
+      summary: {
+        id: saved.id,
+        title: saved.title,
+        amount: Number(saved.amount) || 0,
+        refNumber,
+        milestoneName: milestone.name,
+        flatNumber: flat?.flatNumber || undefined,
+        towerName: flat?.tower?.name || undefined,
+        propertyName: flat?.property?.name || undefined,
+        customerName: paymentPlan.customer?.fullName || undefined,
+        dueDate: saved.dueDate,
+      },
     };
   }
 

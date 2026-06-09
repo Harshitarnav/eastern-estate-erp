@@ -319,6 +319,8 @@ export default function FlatLogPage() {
       });
 
       const generated: any[] = res?.workflow?.generatedDemandDrafts ?? [];
+      const skipped: any[] = res?.workflow?.skipped ?? [];
+      const errors: any[] = res?.workflow?.errors ?? [];
       if (generated.length > 0) {
         // Happy path: backend raised one or more DDs. Toast each so the user
         // can jump straight to the DD detail page.
@@ -339,19 +341,36 @@ export default function FlatLogPage() {
             },
           });
         });
-      } else if (liveMatches.length > 0) {
-        // User's pre-save preview said N DDs should fire, but the backend
-        // returned zero. That's the "already raised" branch: the DD row
-        // exists from a previous log or cron sweep, and the workflow
-        // recognised it and skipped creating a duplicate.
+      } else if (errors.length > 0) {
+        // A milestone matched the trigger but DD generation failed — surface
+        // the real reason instead of pretending it was "already raised".
+        errors.forEach((e) => {
+          toast.error(
+            `Couldn't raise demand draft${e.name ? ` for ${e.name}` : ''}`,
+            { description: e.message, duration: 12000 },
+          );
+        });
+      } else if (skipped.length > 0) {
+        // Genuinely already raised — link straight to the existing DD.
+        const first = skipped[0];
         toast.message(
-          `${liveMatches.length === 1 ? 'This milestone was' : 'These milestones were'} already raised earlier`,
+          `${skipped.length === 1 ? 'This milestone was' : 'These milestones were'} already raised earlier`,
           {
-            description: liveMatches
-              .map((m) => `#${m.sequence} ${m.name}`)
-              .join(', '),
+            description: skipped.map((s) => `#${s.sequence} ${s.name}`).join(', '),
+            action: first?.existingDemandDraftId
+              ? {
+                  label: 'View',
+                  onClick: () => router.push(`/demand-drafts/${first.existingDemandDraftId}`),
+                }
+              : undefined,
           },
         );
+      } else if (liveMatches.length > 0) {
+        // Preview expected a DD but the backend neither raised, skipped, nor
+        // errored — usually the plan/phase state changed between load & save.
+        toast.message('No demand draft was raised', {
+          description: 'The milestone state changed since this page loaded. Refresh to see the latest.',
+        });
       } else if (!plan) {
         toast.message('No active payment plan linked to this flat', {
           description: 'Logs saved. DDs won\u2019t auto-generate until a plan is set up.',

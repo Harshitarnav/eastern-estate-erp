@@ -76,6 +76,8 @@ export default function EditFlatPage() {
         totalPrice: flat.totalPrice || flat.basePrice,
         discountAmount: flat.discountAmount || 0,
         finalPrice: flat.finalPrice,
+        miscBreakdown: flat.miscBreakdown || [],
+        taxBreakdown: flat.taxBreakdown || [],
         status: flat.status,
         isAvailable: flat.isAvailable !== false,
         availableFrom: flat.availableFrom || '',

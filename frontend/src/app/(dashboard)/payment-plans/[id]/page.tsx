@@ -42,6 +42,7 @@ import {
   Plus,
   Trash2,
   FilePlus,
+  Calculator,
 } from 'lucide-react';
 import { paymentPlansService, FlatPaymentPlan, FlatPaymentMilestone } from '@/services/payment-plans.service';
 import { demandDraftsService } from '@/services/demand-drafts.service';
@@ -147,6 +148,28 @@ export default function PaymentPlanDetailPage() {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const recomputeFromFlat = async () => {
+    if (!plan) return;
+    if (
+      !confirm(
+        'Rescale this plan’s construction milestones to the flat’s Primary price ' +
+          '(base − discount, excluding miscellaneous & tax)? Misc and tax are added per ' +
+          'demand draft, so they are not affected. This updates future milestone amounts.',
+      )
+    )
+      return;
+    try {
+      setSaving(true);
+      await paymentPlansService.recomputeFromFlat(planId);
+      toast.success('Milestones recomputed from the flat’s primary price');
+      await loadPlan();
+    } catch (error: any) {
+      toast.error(error?.userMessage || error?.response?.data?.message || 'Failed to recompute milestones');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -533,10 +556,16 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
             {plan.status}
           </Badge>
           {!editMode ? (
-            <Button variant="outline" onClick={enterEditMode}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Edit Plan
-            </Button>
+            <>
+              <Button variant="outline" onClick={recomputeFromFlat} disabled={saving}>
+                <Calculator className="mr-2 h-4 w-4" />
+                Recompute from flat
+              </Button>
+              <Button variant="outline" onClick={enterEditMode}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Plan
+              </Button>
+            </>
           ) : (
             <>
               <Button variant="outline" onClick={cancelEdit} disabled={saving}>

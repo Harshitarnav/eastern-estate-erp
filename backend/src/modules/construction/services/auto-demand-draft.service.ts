@@ -118,6 +118,63 @@ export class AutoDemandDraftService {
   }
 
   /**
+   * Compute the per-milestone category split (tax + amenities/misc) that
+   * pre-fills a demand draft from the flat's price breakdown.
+   *
+   *  - Tax (e.g. GST) follows construction: the flat-level tax breakdown is
+   *    apportioned across milestones in proportion to each milestone's share
+   *    of the primary (construction) cost — so every installment carries its
+   *    GST.
+   *  - Misc / amenities (parking, club, PLC, …) are demanded once, on the
+   *    FINAL milestone, and remain fully editable on the review screen.
+   *
+   * Everything is rounded to paise and returned as both totals and tagged
+   * line-items so the DD, its HTML, and the ledger all agree.
+   */
+  private computeMilestoneCategorySplit(params: {
+    flat: Flat;
+    flatPaymentPlan: FlatPaymentPlan;
+    milestoneSequence: number;
+    primaryAmount: number;
+  }): {
+    taxAmount: number;
+    taxBreakdown: Array<{ label: string; amount: number }>;
+    miscAmount: number;
+    miscBreakdown: Array<{ label: string; amount: number }>;
+  } {
+    const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+    const { flat, flatPaymentPlan, milestoneSequence, primaryAmount } = params;
+    const milestones = flatPaymentPlan.milestones ?? [];
+    const primaryTotal =
+      milestones.reduce((s, m) => s + (Number(m.amount) || 0), 0) || primaryAmount || 1;
+    const maxSeq = milestones.reduce(
+      (mx, m) => Math.max(mx, Number(m.sequence) || 0),
+      0,
+    );
+    const isLast = milestoneSequence === maxSeq;
+    const fraction = primaryTotal > 0 ? primaryAmount / primaryTotal : 0;
+
+    const flatTax = (flat.taxBreakdown ?? []) as Array<{ label: string; amount: number }>;
+    const taxBreakdown = flatTax
+      .map((t) => ({
+        label: t.label || 'Tax',
+        amount: round2((Number(t.amount) || 0) * fraction),
+      }))
+      .filter((t) => t.amount > 0);
+    const taxAmount = round2(taxBreakdown.reduce((s, t) => s + t.amount, 0));
+
+    const flatMisc = (flat.miscBreakdown ?? []) as Array<{ label: string; amount: number }>;
+    const miscBreakdown = isLast
+      ? flatMisc
+          .map((m) => ({ label: m.label || 'Misc', amount: round2(Number(m.amount) || 0) }))
+          .filter((m) => m.amount > 0)
+      : [];
+    const miscAmount = round2(miscBreakdown.reduce((s, m) => s + m.amount, 0));
+
+    return { taxAmount, taxBreakdown, miscAmount, miscBreakdown };
+  }
+
+  /**
    * Generate demand draft for a milestone match
    */
   async generateDemandDraft(
@@ -151,13 +208,26 @@ export class AutoDemandDraftService {
       throw new NotFoundException('Milestone not found');
     }
 
+    // Pre-fill the payment-head split: primary = construction (milestone amount),
+    // tax apportioned proportionally per milestone, amenities/misc on the final
+    // milestone. All of this is editable on the DD review screen.
+    const split = this.computeMilestoneCategorySplit({
+      flat,
+      flatPaymentPlan,
+      milestoneSequence,
+      primaryAmount: amount,
+    });
+    const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+    const grandTotal = round2(amount + split.taxAmount + split.miscAmount);
+    const fmt = (n: number) => Number(n).toLocaleString('en-IN');
+
     // Calculate due date (default: 30 days from now)
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
 
     const dueDateStr = dueDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
     const todayStr   = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
-    const amountFmt  = Number(amount).toLocaleString('en-IN');
+    const amountFmt  = Number(grandTotal).toLocaleString('en-IN');
     const bookingRef = booking?.bookingNumber ?? flatPaymentPlan.bookingId.substring(0, 8).toUpperCase();
     const refNumber  = `DD-${bookingRef}-${String(milestoneSequence).padStart(2, '0')}`;
 
@@ -212,6 +282,12 @@ export class AutoDemandDraftService {
       milestoneDescription: milestone.description || undefined,
       constructionPhase: milestone.constructionPhase || undefined,
       phasePercentage: milestone.phasePercentage ?? undefined,
+      // Category breakdown (Primary always; Tax per-milestone; Misc on the last)
+      primaryAmount: fmt(amount),
+      miscAmount: split.miscAmount > 0 ? fmt(split.miscAmount) : undefined,
+      taxAmount: split.taxAmount > 0 ? fmt(split.taxAmount) : undefined,
+      miscItems: split.miscBreakdown,
+      taxItems: split.taxBreakdown,
       amount: amountFmt,
       dueDate: dueDateStr,
       totalAmount: String(flatPaymentPlan.totalAmount),
@@ -291,7 +367,22 @@ export class AutoDemandDraftService {
       bookingId: flatPaymentPlan.bookingId,
       milestoneId: String(milestoneSequence),  // Use sequence number for consistent dedup with ConstructionWorkflowService
       title: draftTitle,
-      amount,
+      // Grand total payable = primary (construction) + apportioned tax + (on the
+      // final milestone) amenities/misc. All amounts are pre-filled but remain
+      // editable on the DD review screen.
+      amount: grandTotal,
+      primaryAmount: amount,
+      miscAmount: split.miscAmount,
+      taxAmount: split.taxAmount,
+      miscBreakdown: split.miscBreakdown,
+      taxBreakdown: split.taxBreakdown,
+      // Arrears + deferred-tax are explicitly 0: these columns are NOT NULL and
+      // the decimal transformer would otherwise insert an explicit NULL
+      // (undefined → null), tripping the not-null constraint.
+      arrearsPrimary: 0,
+      arrearsMisc: 0,
+      arrearsTax: 0,
+      taxDeferredAmount: 0,
       status: autoSend.shouldAutoSend ? DemandDraftStatus.SENT : DemandDraftStatus.DRAFT,
       content: htmlContent,
       dueDate,
@@ -382,6 +473,11 @@ export class AutoDemandDraftService {
         paymentScheduleId: savedScheduleId,
         demandDraftId: savedDemandDraft.id,
         constructionCheckpointId: constructionProgress?.id ?? null,
+        // Mirror the DD's category split onto the milestone so the ledger and
+        // outstanding report (which read milestone fields) match the demand.
+        miscAmount: split.miscAmount,
+        taxAmount: split.taxAmount,
+        netAmount: round2(amount + split.miscAmount + split.taxAmount - (Number(milestone.adjustAmount) || 0)),
       },
       systemUserId ?? null,
     );

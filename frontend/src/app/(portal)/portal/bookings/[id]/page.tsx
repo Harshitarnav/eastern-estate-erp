@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiService } from '@/services/api';
+import BookingFinancialSummaryPanel from '@/components/BookingFinancialSummaryPanel';
 import {
   ArrowLeft, Building2, CreditCard, CheckCircle2, Clock,
   AlertCircle, FileText, Calendar, HardHat, Camera,
@@ -128,6 +129,11 @@ export default function BookingDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 3-category financial summary */}
+      {booking.id && (
+        <BookingFinancialSummaryPanel bookingId={booking.id} />
+      )}
 
       {/* Payment plan progress */}
       {paymentPlan && milestones.length > 0 && (

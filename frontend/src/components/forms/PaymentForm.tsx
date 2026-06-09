@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Form, FormField } from './Form';
 import { bookingsService } from '@/services/bookings.service';
 import { customersService } from '@/services/customers.service';
+import { toast } from 'sonner';
+import CategoryLineItemEditor, { LineItem } from './CategoryLineItemEditor';
 
 interface PaymentFormProps {
   onSubmit: (data: any) => void;
@@ -24,6 +26,14 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [paymentMode, setPaymentMode] = useState('');
+
+  // Tagged line-items for the Misc / Tax buckets.
+  const [miscItems, setMiscItems] = useState<LineItem[]>(initialData?.miscBreakdown ?? []);
+  const [taxItems, setTaxItems]   = useState<LineItem[]>(initialData?.taxBreakdown ?? []);
+  // When true, tax is deferred to registry → tax bucket is locked to ₹0.
+  const [deferTax, setDeferTax] = useState<boolean>(
+    initialData?.taxDeferralDisposition === 'DEFER_TO_REGISTRY',
+  );
 
   useEffect(() => {
     fetchData();
@@ -96,6 +106,7 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
         { value: 'AGREEMENT', label: 'Agreement' },
         { value: 'INSTALLMENT', label: 'Installment' },
         { value: 'FINAL', label: 'Final Payment' },
+        { value: 'REGISTRY', label: 'Registry (Tax Settlement)' },
         { value: 'ADVANCE', label: 'Advance' },
         { value: 'REFUND', label: 'Refund' },
         { value: 'OTHER', label: 'Other' },
@@ -183,6 +194,23 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       compute: (v) =>
         round2(numeric(v.amount) + numeric(v.gstAmount) - numeric(v.tdsAmount)),
       helperText: 'Auto = Payment Amount + GST − TDS.',
+    },
+    // ── Category split ────────────────────────────────────────────────────
+    // Primary is a plain number; Misc & Tax are tagged line-item editors
+    // rendered below the form (see the Amount tab block in the JSX).
+    {
+      name: '_categoryHeading',
+      label: '— Payment Category Split (Primary + Misc + Tax must equal Amount) —',
+      type: 'heading',
+      required: false,
+    } as any,
+    {
+      name: 'primaryAmount',
+      label: 'Primary / Construction (₹)',
+      type: 'number',
+      required: false,
+      placeholder: 'e.g., 500000',
+      helperText: 'Base / construction cost portion of this payment.',
     },
   ];
 
@@ -438,10 +466,78 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
         </nav>
       </div>
 
+      {/* Misc / Tax tagged line-item editors — shown on the Amount tab */}
+      {activeTab === 'amount' && (
+        <div className="space-y-3">
+          <CategoryLineItemEditor
+            title="Miscellaneous"
+            hint="Parking, lift, amenities, maintenance deposit, PLC, club membership…"
+            items={miscItems}
+            onChange={setMiscItems}
+            suggestions={['Covered parking', 'Club membership', 'Maintenance deposit', 'Floor-rise PLC']}
+          />
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <label className="flex items-center gap-2 text-sm text-gray-700 mb-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={deferTax}
+                onChange={(e) => { setDeferTax(e.target.checked); if (e.target.checked) setTaxItems([]); }}
+                className="h-4 w-4 accent-[var(--eastern-red)]"
+              />
+              Defer tax to registry (customer pays GST/stamp duty at registration)
+            </label>
+            <CategoryLineItemEditor
+              title="Tax"
+              hint="GST, stamp duty, registration charges…"
+              items={taxItems}
+              onChange={setTaxItems}
+              disabled={deferTax}
+              disabledNote="Tax deferred to registry — this payment records ₹0 tax. The outstanding tax stays tracked and will be collected as a Registry payment."
+              suggestions={['GST on construction', 'Stamp duty', 'Registration charges']}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Form */}
       <Form
         fields={currentFields}
-        onSubmit={onSubmit}
+        onSubmit={(data) => {
+          const primary = numeric(data.primaryAmount);
+          const misc    = miscItems.reduce((s, i) => s + numeric(i.amount), 0);
+          const tax     = deferTax ? 0 : taxItems.reduce((s, i) => s + numeric(i.amount), 0);
+          const total   = numeric(data.amount);
+          const catSum  = primary + misc + tax;
+
+          // Require a complete split (we now always have the editors visible).
+          if (Math.abs(catSum - total) > 0.01) {
+            toast.error(
+              `Category split must equal the total amount. ` +
+              `Primary ₹${primary.toLocaleString('en-IN')} + Misc ₹${misc.toLocaleString('en-IN')} + Tax ₹${tax.toLocaleString('en-IN')} ` +
+              `= ₹${catSum.toLocaleString('en-IN')}, but Amount = ₹${total.toLocaleString('en-IN')}.`,
+              { duration: 6000 }
+            );
+            return; // block submission
+          }
+
+          // Reject blank labels on filled line-items.
+          const blankLabel = [...miscItems, ...(deferTax ? [] : taxItems)]
+            .some((i) => numeric(i.amount) > 0 && !i.label.trim());
+          if (blankLabel) {
+            toast.error('Every line-item with an amount needs a label describing what it is.');
+            return;
+          }
+
+          onSubmit({
+            ...data,
+            primaryAmount: primary,
+            miscAmount: misc,
+            taxAmount: tax,
+            miscBreakdown: miscItems.filter((i) => numeric(i.amount) > 0),
+            taxBreakdown: deferTax ? [] : taxItems.filter((i) => numeric(i.amount) > 0),
+            taxDeferralDisposition: deferTax ? 'DEFER_TO_REGISTRY' : (data.taxDeferralDisposition || ''),
+          });
+        }}
         submitLabel={initialData ? 'Update Payment' : 'Record Payment'}
         onCancel={onCancel}
       />

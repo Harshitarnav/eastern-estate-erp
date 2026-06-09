@@ -14,6 +14,14 @@ const decimalTransformer = {
   from: (value: string | null) =>
     value === null || value === undefined ? null : Number(value),
 };
+
+// For NOT NULL category columns: coerce nullish → 0 so an insert that omits
+// the field never trips the not-null constraint.
+const zeroDecimalTransformer = {
+  to: (value?: number | null) => (value ?? 0),
+  from: (value: string | null) =>
+    value === null || value === undefined ? 0 : Number(value),
+};
 import { Booking } from '../../bookings/entities/booking.entity';
 import { Customer } from '../../customers/entities/customer.entity';
 import { User } from '../../users/entities/user.entity';
@@ -24,6 +32,7 @@ export enum PaymentType {
   SALARY = 'SALARY',
   VENDOR = 'VENDOR',
   EXPENSE = 'EXPENSE',
+  REGISTRY = 'REGISTRY',
   OTHER = 'OTHER',
 }
 
@@ -42,6 +51,16 @@ export enum PaymentStatus {
   FAILED = 'FAILED',
   CANCELLED = 'CANCELLED',
   REFUNDED = 'REFUNDED',
+}
+
+/**
+ * A single tagged line-item inside the Misc or Tax bucket, describing what
+ * a portion of that category truly is (e.g. "Covered parking" / "GST on
+ * construction"). The sum of a bucket's line-items equals its category total.
+ */
+export interface CategoryLineItem {
+  label: string;
+  amount: number;
 }
 
 @Entity('payments')
@@ -77,6 +96,24 @@ export class Payment {
 
   @Column({ name: 'amount', type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   amount: number;
+
+  // ── Category split: primary + misc + tax must sum to amount ─────────────
+  @Column({ name: 'primary_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  primaryAmount: number;
+
+  @Column({ name: 'misc_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  miscAmount: number;
+
+  @Column({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  taxAmount: number;
+
+  // Tagged line-items that itemise the misc / tax buckets. Each sums to the
+  // corresponding category total above.
+  @Column({ name: 'misc_breakdown', type: 'jsonb', default: () => "'[]'" })
+  miscBreakdown: CategoryLineItem[];
+
+  @Column({ name: 'tax_breakdown', type: 'jsonb', default: () => "'[]'" })
+  taxBreakdown: CategoryLineItem[];
 
   @Column({ name: 'payment_date', type: 'date' })
   paymentDate: Date;

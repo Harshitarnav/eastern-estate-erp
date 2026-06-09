@@ -174,6 +174,16 @@ export class Flat {
   @Column({ type: 'decimal', precision: 15, scale: 2, transformer: decimalTransformer })
   finalPrice: number;
 
+  // ── Price category breakdown ────────────────────────────────────────────
+  // base_price is the Primary (construction) cost. Misc and Tax are itemised
+  // with tags ({ label, amount }[]) so the inventory price carries the same
+  // Primary / Misc / Tax distinction as payments and demand drafts.
+  @Column({ name: 'misc_breakdown', type: 'jsonb', default: () => "'[]'" })
+  miscBreakdown: Array<{ label: string; amount: number }>;
+
+  @Column({ name: 'tax_breakdown', type: 'jsonb', default: () => "'[]'" })
+  taxBreakdown: Array<{ label: string; amount: number }>;
+
   // Status and Availability
   @Column({
     type: 'enum',

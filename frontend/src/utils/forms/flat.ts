@@ -38,6 +38,8 @@ export const mapFlatFormToPayload = (data: any): Partial<Flat> => {
     totalPrice: data.totalPrice,
     discountAmount: data.discountAmount || 0,
     finalPrice: data.finalPrice,
+    miscBreakdown: Array.isArray(data.miscBreakdown) ? data.miscBreakdown : [],
+    taxBreakdown: Array.isArray(data.taxBreakdown) ? data.taxBreakdown : [],
     status: data.status || 'AVAILABLE',
     isAvailable: data.isAvailable !== false,
     availableFrom: data.availableFrom || undefined,

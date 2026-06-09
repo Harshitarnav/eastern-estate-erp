@@ -79,6 +79,15 @@ export interface LedgerRow {
   debit: number;
   credit: number;
   balance: number;
+  // Category breakdown
+  primaryDebit?: number;
+  miscDebit?: number;
+  taxDebit?: number;
+  primaryCredit?: number;
+  miscCredit?: number;
+  taxCredit?: number;
+  taxDeferred?: boolean;
+  taxDeferredAmount?: number;
   milestoneSequence?: number;
   demandDraftId?: string | null;
   paymentId?: string | null;
@@ -104,6 +113,13 @@ export interface LedgerResponse {
     balance: number;
     overdueCount: number;
     pendingMilestones: number;
+    primaryDemanded: number;
+    miscDemanded: number;
+    taxDemanded: number;
+    primaryPaid: number;
+    miscPaid: number;
+    taxPaid: number;
+    totalTaxDeferred: number;
   };
 }
 
@@ -182,6 +198,11 @@ class PaymentPlansService {
 
   async cancelFlatPaymentPlan(id: string): Promise<FlatPaymentPlan> {
     return await apiService.put(`/flat-payment-plans/${id}/cancel`, {});
+  }
+
+  /** Rescale milestones to the flat's Primary price (base − discount, ex misc/tax). */
+  async recomputeFromFlat(id: string): Promise<FlatPaymentPlan> {
+    return await apiService.put(`/flat-payment-plans/${id}/recompute-from-flat`, {});
   }
 
   /** Unit-wise ledger - demands + payments + running balance */

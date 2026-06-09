@@ -74,6 +74,12 @@ export class CompanySettings {
   @Column({ name: 'smtp_from', nullable: true })
   smtpFrom: string;
 
+  // Default GST / tax percentage applied to the Primary amount when a CRM
+  // generates a demand draft. Pre-fills the DD review screen; the CRM can
+  // override it per draft (rates change over time).
+  @Column({ name: 'default_tax_percentage', type: 'decimal', precision: 5, scale: 2, default: 0 })
+  defaultTaxPercentage: number;
+
   // ── Collections / overdue-reminder settings ─────────────────────────────
   // Days between automated reminders (default 7).
   @Column({ name: 'overdue_reminder_interval_days', type: 'int', default: 7 })

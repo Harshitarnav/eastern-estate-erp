@@ -59,6 +59,15 @@ export interface ReceiptTaxBreakup {
   netAmount: number;
 }
 
+/** Primary / Misc / Tax split of this payment, with tagged line-items. */
+export interface ReceiptCategorySplit {
+  primaryAmount?: number;
+  miscBreakdown?: Array<{ label: string; amount: number }>;
+  taxBreakdown?: Array<{ label: string; amount: number }>;
+  /** Tax deferred to registry on this payment (informational note). */
+  taxDeferred?: number;
+}
+
 export interface ReceiptData {
   receiptNumber: string;
   receiptDate?: string;
@@ -93,6 +102,7 @@ export interface ReceiptData {
   flatArea?: string;
   description: string;
   tax: ReceiptTaxBreakup;
+  categorySplit?: ReceiptCategorySplit;
   ledger?: ReceiptLedgerSummary;
   company: ReceiptCompanyInfo;
 }
@@ -374,11 +384,31 @@ export function generateReceiptPdf(data: ReceiptData): void {
 
   // ══ 6. Tax / Amount table ═════════════════════════════════════════════════
   const tax = data.tax;
-  const tableRows: [string, string][] = [
-    [data.description || 'Payment received against booking', fmt(tax.grossAmount ?? tax.netAmount)],
-  ];
+  const split = data.categorySplit;
+  const hasSplit =
+    !!split &&
+    ((split.primaryAmount ?? 0) > 0 ||
+      (split.miscBreakdown?.length ?? 0) > 0 ||
+      (split.taxBreakdown?.length ?? 0) > 0);
 
-  if (tax.gstAmount && tax.gstAmount > 0) {
+  const tableRows: [string, string][] = [];
+
+  if (hasSplit && split) {
+    // Itemise the receipt by Primary / Misc / Tax and tagged line-items.
+    if ((split.primaryAmount ?? 0) > 0) {
+      tableRows.push(['Primary \u2014 Construction / Base Cost', fmt(split.primaryAmount!)]);
+    }
+    for (const it of split.miscBreakdown ?? []) {
+      if ((it.amount ?? 0) > 0) tableRows.push([`Misc \u2014 ${it.label || 'Miscellaneous'}`, fmt(it.amount)]);
+    }
+    for (const it of split.taxBreakdown ?? []) {
+      if ((it.amount ?? 0) > 0) tableRows.push([`Tax \u2014 ${it.label || 'Tax'}`, fmt(it.amount)]);
+    }
+  } else {
+    tableRows.push([data.description || 'Payment received against booking', fmt(tax.grossAmount ?? tax.netAmount)]);
+  }
+
+  if (!hasSplit && tax.gstAmount && tax.gstAmount > 0) {
     if (tax.splitCgstSgst) {
       const half = tax.gstAmount / 2;
       const pct  = (tax.gstPercentage ?? 0) / 2;
@@ -392,7 +422,7 @@ export function generateReceiptPdf(data: ReceiptData): void {
     }
   }
 
-  if (tax.tdsAmount && tax.tdsAmount > 0) {
+  if (!hasSplit && tax.tdsAmount && tax.tdsAmount > 0) {
     tableRows.push([
       `Less: TDS${tax.tdsPercentage ? ` @ ${tax.tdsPercentage}%` : ''}`,
       `(\u2212${fmt(tax.tdsAmount)})`,

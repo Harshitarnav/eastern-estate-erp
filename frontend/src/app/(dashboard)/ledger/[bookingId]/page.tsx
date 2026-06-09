@@ -330,20 +330,63 @@ export default function LedgerPage() {
       <SharePanel ledger={ledger} onExport={handleExportPdf} exporting={exporting} />
 
       {/* ── Flags ── */}
-      {(summary.overdueCount > 0 || summary.pendingMilestones > 0) && (
-        <div className="flex gap-3 mb-4 flex-wrap">
-          {summary.overdueCount > 0 && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4" />
-              {summary.overdueCount} overdue milestone{summary.overdueCount > 1 ? 's' : ''}
-            </div>
-          )}
-          {summary.pendingMilestones > 0 && (
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm text-blue-700">
-              <Clock className="h-4 w-4" />
-              {summary.pendingMilestones} upcoming milestone{summary.pendingMilestones > 1 ? 's' : ''} (not yet due)
-            </div>
-          )}
+      <div className="flex gap-3 mb-4 flex-wrap">
+        {summary.overdueCount > 0 && (
+          <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-700">
+            <AlertTriangle className="h-4 w-4" />
+            {summary.overdueCount} overdue milestone{summary.overdueCount > 1 ? 's' : ''}
+          </div>
+        )}
+        {summary.pendingMilestones > 0 && (
+          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm text-blue-700">
+            <Clock className="h-4 w-4" />
+            {summary.pendingMilestones} upcoming milestone{summary.pendingMilestones > 1 ? 's' : ''} (not yet due)
+          </div>
+        )}
+        {(summary as any).totalTaxDeferred > 0 && (
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600">
+            <IndianRupee className="h-4 w-4" />
+            {fmtINR((summary as any).totalTaxDeferred)} tax deferred to registry
+          </div>
+        )}
+      </div>
+
+      {/* ── Category breakdown bar ── */}
+      {((summary as any).primaryDemanded > 0 || (summary as any).taxDemanded > 0) && (
+        <div className="rounded-xl border border-gray-200 bg-white overflow-hidden mb-4">
+          <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Category Breakdown</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-gray-400 border-b border-gray-100">
+                  <th className="px-4 py-2 text-left font-medium">Category</th>
+                  <th className="px-4 py-2 text-right font-medium text-amber-600">Demanded</th>
+                  <th className="px-4 py-2 text-right font-medium text-green-600">Paid</th>
+                  <th className="px-4 py-2 text-right font-medium text-red-600">Arrear</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {[
+                  { label: 'Primary (Construction)', d: (summary as any).primaryDemanded, p: (summary as any).primaryPaid },
+                  { label: 'Miscellaneous', d: (summary as any).miscDemanded, p: (summary as any).miscPaid },
+                  { label: 'Tax / GST', d: (summary as any).taxDemanded, p: (summary as any).taxPaid },
+                ].map(({ label, d = 0, p = 0 }) => (
+                  <tr key={label}>
+                    <td className="px-4 py-2 text-gray-700">{label}</td>
+                    <td className="px-4 py-2 text-right text-amber-700">{fmtINR(d)}</td>
+                    <td className="px-4 py-2 text-right text-green-700">{fmtINR(p)}</td>
+                    <td className="px-4 py-2 text-right">
+                      {(d - p) > 0 ? (
+                        <span className="font-semibold text-red-600">{fmtINR(d - p)}</span>
+                      ) : <span className="text-gray-300">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -397,7 +440,27 @@ export default function LedgerPage() {
                           <div>
                             <p className={`text-sm font-medium ${isDemand ? 'text-amber-800' : 'text-green-800'}`}>
                               {row.description}
+                              {(row as any).taxDeferred && (
+                                <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 border border-gray-200 px-1.5 py-0.5 text-xs text-gray-600">
+                                  Tax Deferred
+                                </span>
+                              )}
                             </p>
+                            {/* Category sub-breakdown */}
+                            {isDemand && ((row as any).primaryDebit > 0 || (row as any).taxDebit > 0) && (
+                              <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-400">
+                                {(row as any).primaryDebit > 0 && <span>Primary: {fmtINR((row as any).primaryDebit)}</span>}
+                                {(row as any).miscDebit > 0 && <span>Misc: {fmtINR((row as any).miscDebit)}</span>}
+                                {(row as any).taxDebit > 0 && <span>Tax: {fmtINR((row as any).taxDebit)}</span>}
+                              </div>
+                            )}
+                            {!isDemand && ((row as any).primaryCredit > 0 || (row as any).taxCredit > 0) && (
+                              <div className="mt-1 flex flex-wrap gap-2 text-xs text-gray-400">
+                                {(row as any).primaryCredit > 0 && <span>Primary: {fmtINR((row as any).primaryCredit)}</span>}
+                                {(row as any).miscCredit > 0 && <span>Misc: {fmtINR((row as any).miscCredit)}</span>}
+                                {(row as any).taxCredit > 0 && <span>Tax: {fmtINR((row as any).taxCredit)}</span>}
+                              </div>
+                            )}
                             {row.reference && (
                               <p className="text-xs text-gray-400">Ref: {row.reference}</p>
                             )}
@@ -478,7 +541,8 @@ export default function LedgerPage() {
 
       {/* ── Footer note ── */}
       <p className="text-xs text-gray-400 text-center mt-4">
-        Amber rows = Demand notices issued &nbsp;|&nbsp; Green rows = Payments received
+        Amber rows = Demand notices issued &nbsp;|&nbsp; Green rows = Payments received &nbsp;|&nbsp;
+        <span className="text-gray-500 font-medium">Tax Deferred</span> = Tax deferred to registry time
       </p>
     </div>
   );

@@ -25,6 +25,13 @@ export interface Payment {
   tdsAmount?: number;
   gstAmount?: number;
   netAmount?: number;
+  // Category split
+  primaryAmount?: number;
+  miscAmount?: number;
+  taxAmount?: number;
+  miscBreakdown?: Array<{ label: string; amount: number }>;
+  taxBreakdown?: Array<{ label: string; amount: number }>;
+  taxDeferralDisposition?: string;
   receiptGenerated?: boolean;
   isVerified?: boolean;
   notes?: string;
@@ -116,6 +123,11 @@ class PaymentsService {
 
   async verifyPayment(id: string, verifiedBy: string): Promise<Payment> {
     const response = await api.post(`${this.baseUrl}/${id}/verify`, { verifiedBy });
+    return response;
+  }
+
+  async getFinancialSummary(bookingId: string): Promise<any> {
+    const response = await api.get(`${this.baseUrl}/financial-summary/booking/${bookingId}`);
     return response;
   }
 }

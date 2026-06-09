@@ -199,7 +199,12 @@ export class FlatProgressSimpleController {
     }
 
     // Trigger automated workflow: update flat, check milestones, generate demand drafts
-    let workflow = { milestonesTriggered: 0, generatedDemandDrafts: [] as any[] };
+    let workflow: any = {
+      milestonesTriggered: 0,
+      generatedDemandDrafts: [] as any[],
+      skipped: [] as any[],
+      errors: [] as any[],
+    };
     try {
       workflow = await this.workflowService.processConstructionUpdate(
         dto.flatId,
@@ -207,9 +212,13 @@ export class FlatProgressSimpleController {
         dto.phaseProgress || 0,
         dto.overallProgress || 0,
       );
-    } catch (error) {
-      // Log but don't fail the request - progress was saved successfully
+    } catch (error: any) {
+      // Surface the failure to the client instead of masking it as "nothing
+      // fired" — the log UI shows this so the user knows the DD didn't raise.
       console.error('Error in automated workflow:', error);
+      workflow.errors = [
+        { sequence: 0, name: 'Workflow', message: error?.message ?? 'Automated workflow failed' },
+      ];
     }
 
     return {

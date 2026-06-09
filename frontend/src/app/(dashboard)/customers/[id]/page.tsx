@@ -27,6 +27,7 @@ import { DetailSkeleton } from '@/components/Skeletons';
 import DocumentsPanel from '@/components/documents/DocumentsPanel';
 import { DocumentEntityType } from '@/services/documents.service';
 import { CustomerCollectionsPanel } from '@/components/collections/CustomerCollectionsPanel';
+import BookingFinancialSummaryPanel from '@/components/BookingFinancialSummaryPanel';
 import { AutoSendOverrideCard } from '@/components/collections/AutoSendOverrideCard';
 import { apiService } from '@/services/api';
 import { toast } from 'sonner';
@@ -458,21 +459,26 @@ export default function CustomerViewPage() {
                   View all →
                 </button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {recentBookings.map((b: any) => (
-                  <button key={b.id} onClick={() => router.push(`/bookings/${b.id}`)}
-                    className="w-full text-left flex items-center justify-between p-3 rounded-xl border hover:bg-gray-50 transition"
+                  <div key={b.id} className="rounded-xl border overflow-hidden"
                     style={{ borderColor: `${brandPalette.neutral}40` }}>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-800">{b.bookingNumber}</p>
-                      <p className="text-xs text-gray-500">{b.flat?.flatNumber} · {b.property?.name}</p>
+                    <button onClick={() => router.push(`/bookings/${b.id}`)}
+                      className="w-full text-left flex items-center justify-between p-3 hover:bg-gray-50 transition">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{b.bookingNumber}</p>
+                        <p className="text-xs text-gray-500">{b.flat?.flatNumber} · {b.property?.name}</p>
+                      </div>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                        b.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>{b.status?.replace(/_/g, ' ')}</span>
+                    </button>
+                    <div className="px-3 pb-3">
+                      <BookingFinancialSummaryPanel bookingId={b.id} compact />
                     </div>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      b.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
-                      b.status === 'COMPLETED' ? 'bg-gray-100 text-gray-600' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>{b.status?.replace(/_/g, ' ')}</span>
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>

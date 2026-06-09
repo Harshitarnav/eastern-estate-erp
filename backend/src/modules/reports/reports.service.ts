@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Flat } from '../flats/entities/flat.entity';
+import { DemandDraft, DemandDraftStatus } from '../demand-drafts/entities/demand-draft.entity';
 
 // ─── Outstanding report ───────────────────────────────────────────────────────
 
@@ -21,6 +22,18 @@ export interface OutstandingRow {
   totalDemanded: number;
   totalPaid: number;
   outstanding: number;
+  // ── Category breakdown ───────────────────────────────────────────────
+  primaryDemanded: number;
+  miscDemanded: number;
+  taxDemanded: number;
+  primaryPaid: number;
+  miscPaid: number;
+  taxPaid: number;
+  primaryOutstanding: number;
+  miscOutstanding: number;
+  taxOutstanding: number;
+  taxDeferred: number;
+  // ────────────────────────────────────────────────────────────────────
   overdueMilestones: number;
   oldestOverdueDays: number | null;
   planStatus: string;
@@ -35,6 +48,11 @@ export interface OutstandingReportResult {
     totalPaid: number;
     totalOutstanding: number;
     unitsWithOverdue: number;
+    // ── Category totals ──────────────────────────────────────────────
+    totalPrimaryOutstanding: number;
+    totalMiscOutstanding: number;
+    totalTaxOutstanding: number;
+    totalTaxDeferred: number;
   };
 }
 
@@ -51,6 +69,9 @@ export interface CollectionRow {
   customerPhone: string;
   bookingNumber: string;
   amount: number;
+  primaryAmount: number;
+  miscAmount: number;
+  taxAmount: number;
   paymentMethod: string;
   paymentType: string;
   status: string;
@@ -63,6 +84,9 @@ export interface CollectionReportResult {
   summary: {
     totalPayments: number;
     totalAmount: number;
+    totalPrimary: number;
+    totalMisc: number;
+    totalTax: number;
     byMethod: Record<string, number>;
     byStatus: Record<string, number>;
   };
@@ -113,6 +137,8 @@ export interface DashboardSummary {
   totalOutstanding: number;
   thisMonthCollection: number;
   thisMonthPaymentCount: number;
+  /** Sum of all tax explicitly deferred to registry across active bookings */
+  totalTaxDeferred: number;
 
   /** Inventory KPIs */
   totalFlats: number;
@@ -167,6 +193,8 @@ export class ReportsService {
     private readonly paymentRepo: Repository<Payment>,
     @InjectRepository(Flat)
     private readonly flatRepo: Repository<Flat>,
+    @InjectRepository(DemandDraft)
+    private readonly ddRepo: Repository<DemandDraft>,
   ) {}
 
   async getDashboard(propertyId?: string): Promise<DashboardSummary> {
@@ -197,6 +225,11 @@ export class ReportsService {
     const monthStartIdx = propertyId ? '$2' : '$1';
     const monthEndIdx = propertyId ? '$3' : '$2';
 
+    const taxDeferredFilter = propertyId
+      ? `INNER JOIN bookings bkd ON bkd.id = dd.booking_id AND bkd.property_id = $1`
+      : '';
+    const taxDeferredParams: any[] = propertyId ? [propertyId] : [];
+
     const [
       flatStats,
       crmCounts,
@@ -204,6 +237,7 @@ export class ReportsService {
       thisMonthStats,
       recentPaymentsRaw,
       plans,
+      taxDeferredRaw,
     ] = await Promise.all([
       // 1. Flat status breakdown
       em.query(`
@@ -292,6 +326,15 @@ export class ReportsService {
         }
         return qb.getMany();
       })(),
+
+      // 7. Total tax deferred to registry (PRIMARY_PAID DDs)
+      em.query(`
+        SELECT COALESCE(SUM(dd.tax_deferred_amount), 0)::float AS total
+        FROM demand_drafts dd
+        ${taxDeferredFilter}
+        WHERE dd.status = 'PRIMARY_PAID'
+          AND dd.parent_demand_draft_id IS NULL
+      `, taxDeferredParams),
     ]);
 
     // ── Process flat stats ────────────────────────────────────────────────────
@@ -357,6 +400,7 @@ export class ReportsService {
       totalOutstanding,
       thisMonthCollection:      Number(thisMonthStats[0]?.thisMonthCollection   ?? 0),
       thisMonthPaymentCount:    Number(thisMonthStats[0]?.thisMonthPaymentCount ?? 0),
+      totalTaxDeferred:         Number(taxDeferredRaw[0]?.total ?? 0),
 
       totalFlats,
       availableFlats,
@@ -419,13 +463,37 @@ export class ReportsService {
     const plans = await qb.getMany();
     const today = new Date();
 
+    // Deferred tax per booking — sum of tax_deferred_amount on root PRIMARY_PAID
+    // DDs (children excluded so reminders don't multiply the figure).
+    const bookingIds = plans.map((p) => p.bookingId).filter(Boolean) as string[];
+    const taxDeferredByBooking = new Map<string, number>();
+    if (bookingIds.length) {
+      const ddRows = await this.ddRepo
+        .createQueryBuilder('dd')
+        .select('dd.booking_id', 'bookingId')
+        .addSelect('COALESCE(SUM(dd.tax_deferred_amount), 0)', 'total')
+        .where('dd.status = :status', { status: DemandDraftStatus.PRIMARY_PAID })
+        .andWhere('dd.parent_demand_draft_id IS NULL')
+        .andWhere('dd.booking_id IN (:...bookingIds)', { bookingIds })
+        .groupBy('dd.booking_id')
+        .getRawMany();
+      for (const r of ddRows) {
+        taxDeferredByBooking.set(r.bookingId, Number(r.total) || 0);
+      }
+    }
+
     const rows: OutstandingRow[] = plans.map((plan) => {
       const milestones = plan.milestones ?? [];
+      const triggeredMilestones = milestones.filter((m) => m.status !== 'PENDING');
 
-      // Calculate total demanded from non-PENDING milestones
-      const totalDemanded = milestones
-        .filter((m) => m.status !== 'PENDING')
-        .reduce((s, m) => s + Number(m.amount), 0);
+      const totalDemanded   = triggeredMilestones.reduce((s, m) => s + Number(m.amount) + Number(m.miscAmount ?? 0) + Number(m.taxAmount ?? 0), 0);
+      const primaryDemanded = triggeredMilestones.reduce((s, m) => s + Number(m.amount), 0);
+      const miscDemanded    = triggeredMilestones.reduce((s, m) => s + Number(m.miscAmount ?? 0), 0);
+      const taxDemanded     = triggeredMilestones.reduce((s, m) => s + Number(m.taxAmount ?? 0), 0);
+
+      // Paid amounts come from the plan totals; category split requires payment records.
+      // For the report row we show totals; category split comes from the summary aggregation.
+      const totalPaid = Number(plan.paidAmount);
 
       const overdueMilestones = milestones.filter((m) => m.status === 'OVERDUE');
       let oldestOverdueDays: number | null = null;
@@ -452,8 +520,19 @@ export class ReportsService {
         customerPhone: (plan.customer as any)?.phoneNumber ?? '-',
         totalAmount: Number(plan.totalAmount),
         totalDemanded,
-        totalPaid: Number(plan.paidAmount),
+        totalPaid,
         outstanding: Number(plan.balanceAmount),
+        primaryDemanded,
+        miscDemanded,
+        taxDemanded,
+        // Category paid figures not tracked at plan level — reserved for drill-down
+        primaryPaid: 0,
+        miscPaid: 0,
+        taxPaid: 0,
+        primaryOutstanding: Math.max(0, primaryDemanded),
+        miscOutstanding: Math.max(0, miscDemanded),
+        taxOutstanding: Math.max(0, taxDemanded),
+        taxDeferred: taxDeferredByBooking.get(plan.bookingId) ?? 0,
         overdueMilestones: overdueMilestones.length,
         oldestOverdueDays,
         planStatus: plan.status,
@@ -467,6 +546,10 @@ export class ReportsService {
       totalPaid: rows.reduce((s, r) => s + r.totalPaid, 0),
       totalOutstanding: rows.reduce((s, r) => s + r.outstanding, 0),
       unitsWithOverdue: rows.filter((r) => r.overdueMilestones > 0).length,
+      totalPrimaryOutstanding: rows.reduce((s, r) => s + r.primaryOutstanding, 0),
+      totalMiscOutstanding: rows.reduce((s, r) => s + r.miscOutstanding, 0),
+      totalTaxOutstanding: rows.reduce((s, r) => s + r.taxOutstanding, 0),
+      totalTaxDeferred: rows.reduce((s, r) => s + (r.taxDeferred ?? 0), 0),
     };
 
     return { rows, summary };
@@ -523,6 +606,9 @@ export class ReportsService {
       customerPhone: (p as any).customer?.phoneNumber ?? '-',
       bookingNumber: (p as any).booking?.bookingNumber ?? '-',
       amount: Number(p.amount),
+      primaryAmount: Number(p.primaryAmount) || 0,
+      miscAmount: Number(p.miscAmount) || 0,
+      taxAmount: Number(p.taxAmount) || 0,
       paymentMethod: p.paymentMethod ?? '-',
       paymentType: p.paymentType ?? '-',
       status: p.status ?? '-',
@@ -534,11 +620,22 @@ export class ReportsService {
     const byMethod: Record<string, number> = {};
     const byStatus: Record<string, number> = {};
     let totalAmount = 0;
+    let totalPrimary = 0;
+    let totalMisc = 0;
+    let totalTax = 0;
 
     for (const r of rows) {
-      totalAmount += r.amount;
-      byMethod[r.paymentMethod] = (byMethod[r.paymentMethod] ?? 0) + r.amount;
+      // byStatus keeps every non-cancelled row so the UI can show pending vs
+      // collected. The "collected" totals (amount + category split) count only
+      // COMPLETED payments, so this report reconciles with the dashboard's
+      // collected figure (which also excludes PENDING/FAILED).
       byStatus[r.status] = (byStatus[r.status] ?? 0) + r.amount;
+      if (r.status !== 'COMPLETED') continue;
+      totalAmount  += r.amount;
+      totalPrimary += r.primaryAmount;
+      totalMisc    += r.miscAmount;
+      totalTax     += r.taxAmount;
+      byMethod[r.paymentMethod] = (byMethod[r.paymentMethod] ?? 0) + r.amount;
     }
 
     return {
@@ -546,6 +643,9 @@ export class ReportsService {
       summary: {
         totalPayments: rows.length,
         totalAmount,
+        totalPrimary,
+        totalMisc,
+        totalTax,
         byMethod,
         byStatus,
       },

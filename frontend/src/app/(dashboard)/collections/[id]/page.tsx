@@ -47,11 +47,13 @@ import {
   TIER_COLORS,
   TIER_LABELS,
   collectionsService,
+  ddStatusMeta,
 } from '@/services/collections.service';
 import {
   DemandDraft,
   demandDraftsService,
 } from '@/services/demand-drafts.service';
+import { settingsService } from '@/services/settings.service';
 import { PdfInvoiceDialog } from '@/components/demand-drafts/PdfInvoiceDialog';
 import { downloadDemandDraftLetterPdf } from '@/lib/generate-demand-draft-letter-pdf';
 import { HinglishLoader } from '@/components/HinglishLoader';
@@ -116,6 +118,16 @@ export default function CollectionDetailPage() {
   const [editedDueDate, setEditedDueDate] = useState('');
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // ── Charges (Primary / Tax% / Misc-attach) edit state ───────────────────
+  const [editedPrimary, setEditedPrimary] = useState('');
+  const [editedTaxPct, setEditedTaxPct] = useState('');
+  const [editedTax, setEditedTax] = useState('');
+  // Misc line-items pulled from the flat, with allocation flags.
+  const [miscOptions, setMiscOptions] = useState<
+    Array<{ label: string; amount: number; allocatedElsewhere: boolean; allocatedHere: boolean }>
+  >([]);
+  const [miscChecked, setMiscChecked] = useState<Record<string, boolean>>({});
+
   // Action dialogs
   const [pdfDialogOpen, setPdfDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -124,6 +136,10 @@ export default function CollectionDetailPage() {
   // log partial payments from here too.
   const [payDialogOpen, setPayDialogOpen] = useState(false);
   const [payAmount, setPayAmount] = useState('');
+  // Per-category amounts paid (prefilled from the DD's demanded split).
+  const [payPrimary, setPayPrimary] = useState('');
+  const [payMisc, setPayMisc] = useState('');
+  const [payTax, setPayTax] = useState('');
   const [payMethod, setPayMethod] = useState('NEFT');
   const [payDate, setPayDate] = useState(() => {
     const d = new Date();
@@ -150,6 +166,31 @@ export default function CollectionDetailPage() {
         setEditedDueDate(
           dd.dueDate ? dd.dueDate.toString().slice(0, 10) : '',
         );
+
+        // Seed the charges editor. Primary defaults to the DD's primaryAmount
+        // (or its amount for legacy drafts that predate the split).
+        const primary = Number(dd.primaryAmount) || Number(dd.amount) || 0;
+        setEditedPrimary(primary ? String(primary) : '');
+        const tax = Number(dd.taxAmount) || 0;
+        setEditedTax(tax ? String(tax) : '');
+        // Derive the % from the stored tax (or fall back to company default).
+        let pct = primary > 0 && tax > 0 ? +((tax / primary) * 100).toFixed(2) : 0;
+
+        // Fetch misc options + the company default tax % in parallel.
+        const [miscRes, settings] = await Promise.all([
+          demandDraftsService.getAvailableMisc(id).catch(() => ({ items: [] })),
+          settingsService.getCompanySettings().catch(() => null),
+        ]);
+        const opts = (miscRes as any)?.items ?? [];
+        setMiscOptions(opts);
+        const checked: Record<string, boolean> = {};
+        for (const o of opts) checked[o.label] = !!o.allocatedHere;
+        setMiscChecked(checked);
+
+        if (pct === 0 && tax === 0 && settings?.defaultTaxPercentage) {
+          pct = Number(settings.defaultTaxPercentage) || 0;
+        }
+        setEditedTaxPct(pct ? String(pct) : '');
       }
     } catch (err: any) {
       toast.error(
@@ -165,6 +206,19 @@ export default function CollectionDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Seed the per-category paid amounts from the DD's demanded split whenever
+  // the record-payment dialog opens.
+  useEffect(() => {
+    if (!payDialogOpen || !draft) return;
+    const primary = Number(draft.primaryAmount) || Number(draft.amount) || 0;
+    const misc = Number(draft.miscAmount) || 0;
+    const tax = Number(draft.taxAmount) || 0;
+    setPayPrimary(primary ? String(primary) : '');
+    setPayMisc(misc ? String(misc) : '');
+    setPayTax(tax ? String(tax) : '');
+    setPayAmount(String(primary + misc + tax));
+  }, [payDialogOpen, draft]);
 
   // When entering edit mode, seed the contenteditable region with the
   // current HTML. We render it via ref (not children) to avoid React
@@ -240,13 +294,30 @@ export default function CollectionDetailPage() {
     setBusy('save');
     try {
       const editedContent = contentRef.current?.innerHTML ?? draft.content ?? '';
-      const amountNum = parseFloat(editedAmount);
+
+      // Build the category split from the charges editor.
+      const primary = Number(editedPrimary) || 0;
+      const tax = Number(editedTax) || 0;
+      const miscItems = miscOptions
+        .filter((o) => miscChecked[o.label] && !o.allocatedElsewhere)
+        .map((o) => ({ label: o.label, amount: Number(o.amount) || 0 }));
+      const miscAmount = miscItems.reduce((s, i) => s + i.amount, 0);
+      const taxItems = tax > 0
+        ? [{ label: editedTaxPct ? `GST @ ${editedTaxPct}%` : 'Tax', amount: tax }]
+        : [];
+      const total = primary + miscAmount + tax;
+
       await demandDraftsService.updateDemandDraft(row.id, {
         title: editedTitle,
-        amount: Number.isFinite(amountNum) ? amountNum : draft.amount,
+        amount: total,
+        primaryAmount: primary,
+        miscAmount,
+        taxAmount: tax,
+        miscBreakdown: miscItems,
+        taxBreakdown: taxItems,
         dueDate: editedDueDate || null,
         content: editedContent,
-      });
+      } as any);
       toast.success('Draft saved');
       setEditing(false);
       await load();
@@ -319,14 +390,20 @@ export default function CollectionDetailPage() {
 
   const submitPayment = async () => {
     if (!row) return;
-    const amt = Number(payAmount);
+    const primary = Number(payPrimary) || 0;
+    const misc = Number(payMisc) || 0;
+    const tax = Number(payTax) || 0;
+    const amt = primary + misc + tax;
     if (!Number.isFinite(amt) || amt <= 0) {
-      toast.error('Enter a valid amount');
+      toast.error('Enter at least one category amount');
       return;
     }
     setBusy('recordPayment');
     try {
       const res = await collectionsService.recordPayment(row.id, {
+        primaryAmount: primary,
+        miscAmount: misc,
+        taxAmount: tax,
         amount: amt,
         paymentMethod: payMethod || undefined,
         paymentDate: payDate || undefined,
@@ -585,7 +662,7 @@ export default function CollectionDetailPage() {
                       : 'muted'
                 }
               />
-              <KV k="Status" v={row.status} />
+              <KV k="Status" v={ddStatusMeta(row.status).label} />
               <KV k="Tone" v={row.tone} />
               <KV k="Reminders Sent" v={String(row.reminderCount)} />
               <KV k="Last Reminder" v={formatDateTime(row.lastReminderAt)} />
@@ -765,15 +842,6 @@ export default function CollectionDetailPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="amount">Amount (₹)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    value={editedAmount}
-                    onChange={(e) => setEditedAmount(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
                   <Label htmlFor="dueDate">Due Date</Label>
                   <Input
                     id="dueDate"
@@ -782,6 +850,117 @@ export default function CollectionDetailPage() {
                     onChange={(e) => setEditedDueDate(e.target.value)}
                   />
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Charges card: Primary / Tax% / Misc-attach (edit mode only) */}
+          {editing && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Charges</CardTitle>
+                <CardDescription className="text-xs">
+                  Construction (Primary) is set by the payment plan. Add tax at the
+                  current rate and attach any miscellaneous charges to this draft.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="primary">Primary / Construction (₹)</Label>
+                    <Input
+                      id="primary"
+                      type="number"
+                      value={editedPrimary}
+                      onChange={(e) => setEditedPrimary(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="taxpct">Tax / GST (%)</Label>
+                    <Input
+                      id="taxpct"
+                      type="number"
+                      step="0.01"
+                      value={editedTaxPct}
+                      onChange={(e) => {
+                        const pct = e.target.value;
+                        setEditedTaxPct(pct);
+                        const p = Number(editedPrimary) || 0;
+                        const computed = +(p * (Number(pct) || 0) / 100).toFixed(2);
+                        setEditedTax(computed ? String(computed) : '');
+                      }}
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="taxamt">Tax amount (₹)</Label>
+                    <Input
+                      id="taxamt"
+                      type="number"
+                      value={editedTax}
+                      onChange={(e) => setEditedTax(e.target.value)}
+                      placeholder="auto from %"
+                    />
+                  </div>
+                </div>
+
+                {/* Misc attach checklist */}
+                <div className="space-y-1.5">
+                  <Label>Attach Miscellaneous charges (from the flat)</Label>
+                  {miscOptions.length === 0 ? (
+                    <p className="text-xs text-gray-400">
+                      No miscellaneous charges defined on this flat.
+                    </p>
+                  ) : (
+                    <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+                      {miscOptions.map((o) => {
+                        const lockedElsewhere = o.allocatedElsewhere;
+                        return (
+                          <label
+                            key={o.label}
+                            className={`flex items-center justify-between px-3 py-2 text-sm ${
+                              lockedElsewhere ? 'opacity-50' : 'cursor-pointer hover:bg-gray-50'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 accent-[var(--eastern-red)]"
+                                disabled={lockedElsewhere}
+                                checked={!!miscChecked[o.label]}
+                                onChange={(e) =>
+                                  setMiscChecked((prev) => ({ ...prev, [o.label]: e.target.checked }))
+                                }
+                              />
+                              {o.label}
+                              {lockedElsewhere && (
+                                <Badge variant="secondary" className="text-[10px]">on another DD</Badge>
+                              )}
+                            </span>
+                            <span className="font-medium">₹{Number(o.amount).toLocaleString('en-IN')}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Live total */}
+                {(() => {
+                  const p = Number(editedPrimary) || 0;
+                  const t = Number(editedTax) || 0;
+                  const m = miscOptions
+                    .filter((o) => miscChecked[o.label] && !o.allocatedElsewhere)
+                    .reduce((s, o) => s + (Number(o.amount) || 0), 0);
+                  return (
+                    <div className="rounded-lg bg-muted/40 border divide-y text-sm">
+                      <div className="flex justify-between px-3 py-1.5"><span className="text-muted-foreground">Primary</span><span>₹{p.toLocaleString('en-IN')}</span></div>
+                      <div className="flex justify-between px-3 py-1.5"><span className="text-muted-foreground">Miscellaneous</span><span>₹{m.toLocaleString('en-IN')}</span></div>
+                      <div className="flex justify-between px-3 py-1.5"><span className="text-muted-foreground">Tax</span><span>₹{t.toLocaleString('en-IN')}</span></div>
+                      <div className="flex justify-between px-3 py-2 bg-background font-semibold"><span>Total Demand</span><span className="text-primary">₹{(p + m + t).toLocaleString('en-IN')}</span></div>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           )}
@@ -953,20 +1132,54 @@ export default function CollectionDetailPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3 py-1">
-            <div>
-              <Label className="text-xs">Amount (INR)</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={payAmount}
-                onChange={(e) => setPayAmount(e.target.value)}
-                placeholder="Amount"
-              />
-              <p className="text-[11px] text-gray-500 mt-1">
-                Defaults to the DD amount. Edit for partial payments.
-              </p>
+            {/* Per-category amounts paid. Each row shows what was demanded,
+                an editable "paid now", and the resulting arrear. */}
+            <div className="rounded-lg border divide-y">
+              {([
+                { key: 'primary', label: 'Primary (Construction)', demanded: Number(draft?.primaryAmount) || Number(draft?.amount) || 0, val: payPrimary, set: setPayPrimary },
+                { key: 'misc', label: 'Miscellaneous', demanded: Number(draft?.miscAmount) || 0, val: payMisc, set: setPayMisc },
+                { key: 'tax', label: 'Tax / GST', demanded: Number(draft?.taxAmount) || 0, val: payTax, set: setPayTax },
+              ] as const).map((r) => {
+                const paid = Number(r.val) || 0;
+                const arrear = Math.max(0, r.demanded - paid);
+                return (
+                  <div key={r.key} className="px-3 py-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">{r.label}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        Demanded ₹{r.demanded.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={r.val}
+                        onChange={(e) => r.set(e.target.value)}
+                        placeholder="0"
+                        className="h-8"
+                      />
+                      {arrear > 0 && (
+                        <span className="text-[11px] text-destructive whitespace-nowrap">
+                          ₹{arrear.toLocaleString('en-IN')} arrear
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex justify-between px-3 py-2 bg-muted/40 text-sm font-semibold">
+                <span>Total paid now</span>
+                <span className="text-primary">
+                  ₹{((Number(payPrimary) || 0) + (Number(payMisc) || 0) + (Number(payTax) || 0)).toLocaleString('en-IN')}
+                </span>
+              </div>
             </div>
+            <p className="text-[11px] text-gray-500">
+              Leave Tax at 0 to defer it to registry — the draft moves to
+              &quot;Primary paid&quot; and the tax stays tracked as a registry-pending arrear.
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Payment Method</Label>

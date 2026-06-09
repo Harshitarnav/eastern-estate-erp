@@ -244,6 +244,9 @@ class CollectionsService {
     id: string,
     body: {
       amount?: number;
+      primaryAmount?: number;
+      miscAmount?: number;
+      taxAmount?: number;
       paymentMethod?: string;
       paymentDate?: string;
       transactionReference?: string;
@@ -303,3 +306,28 @@ export const TIER_COLORS: Record<CollectionTier, string> = {
   POST_WARNING: 'bg-red-200 text-red-950 border-red-400',
   AT_RISK: 'bg-red-600 text-white border-red-700',
 };
+
+// Friendly label + colour for a demand-draft status. Keeps the new
+// PRIMARY_PAID / PARTIALLY_PAID states from rendering as raw enum tokens.
+export function ddStatusMeta(status?: string): { label: string; className: string } {
+  switch (status) {
+    case 'PAID':
+      return { label: 'Paid', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+    case 'PRIMARY_PAID':
+      return { label: 'Primary Paid · Tax Deferred', className: 'bg-amber-100 text-amber-800 border-amber-200' };
+    case 'PARTIALLY_PAID':
+      return { label: 'Partially Paid', className: 'bg-blue-100 text-blue-700 border-blue-200' };
+    case 'SENT':
+      return { label: 'Sent', className: 'bg-sky-100 text-sky-700 border-sky-200' };
+    case 'READY':
+      return { label: 'Ready', className: 'bg-indigo-100 text-indigo-700 border-indigo-200' };
+    case 'DRAFT':
+      return { label: 'Draft', className: 'bg-gray-100 text-gray-600 border-gray-200' };
+    case 'FAILED':
+      return { label: 'Failed', className: 'bg-red-100 text-red-700 border-red-200' };
+    case 'CANCELLED':
+      return { label: 'Cancelled', className: 'bg-gray-100 text-gray-500 border-gray-200' };
+    default:
+      return { label: status ?? '-', className: 'bg-gray-100 text-gray-600 border-gray-200' };
+  }
+}

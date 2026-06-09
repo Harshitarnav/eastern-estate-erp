@@ -33,6 +33,7 @@ const CONSTRUCTION_PHASES: { value: string; label: string }[] = [
   { value: 'HANDOVER', label: 'Handover' },
 ];
 import { BrandHero, BrandSecondaryButton } from '@/components/layout/BrandHero';
+import BookingFinancialSummaryPanel from '@/components/BookingFinancialSummaryPanel';
 import { brandPalette, formatIndianNumber } from '@/utils/brand';
 import { formatCurrency } from '@/utils/formatters';
 import { DocumentEntityType, DocumentCategory, documentsService, ErpDocument } from '@/services/documents.service';
@@ -810,9 +811,41 @@ export default function FlatDetailPage() {
                   }
                 />
                 <DetailItem label="Balcony area" value={flat.balconyArea ? `${formatIndianNumber(flat.balconyArea)} sq.ft` : '-'} />
-                <DetailItem label="Base price" value={`₹${formatIndianNumber(flat.basePrice)}`} />
+                <DetailItem label="Primary (base)" value={`₹${formatIndianNumber(flat.basePrice)}`} />
                 <DetailItem label="Final price" value={`₹${formatIndianNumber(flat.finalPrice)}`} />
               </dl>
+
+              {/* Primary / Misc / Tax breakdown */}
+              {((flat.miscBreakdown?.length ?? 0) > 0 || (flat.taxBreakdown?.length ?? 0) > 0) && (
+                <div className="mt-4 grid sm:grid-cols-2 gap-4">
+                  {(flat.miscBreakdown?.length ?? 0) > 0 && (
+                    <div className="rounded-xl border border-gray-100 p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-1.5">Miscellaneous</p>
+                      <ul className="space-y-1">
+                        {flat.miscBreakdown!.map((it, i) => (
+                          <li key={i} className="flex justify-between text-sm text-gray-600">
+                            <span>{it.label}</span>
+                            <span className="font-medium">₹{formatIndianNumber(it.amount)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(flat.taxBreakdown?.length ?? 0) > 0 && (
+                    <div className="rounded-xl border border-gray-100 p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-1.5">Tax & Statutory</p>
+                      <ul className="space-y-1">
+                        {flat.taxBreakdown!.map((it, i) => (
+                          <li key={i} className="flex justify-between text-sm text-gray-600">
+                            <span>{it.label}</span>
+                            <span className="font-medium">₹{formatIndianNumber(it.amount)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">
@@ -843,6 +876,11 @@ export default function FlatDetailPage() {
                 realized={flat.fundsRealized}
                 outstanding={flat.fundsOutstanding}
               />
+              {flat.bookingId && (
+                <div className="mt-4">
+                  <BookingFinancialSummaryPanel bookingId={flat.bookingId} />
+                </div>
+              )}
             </section>
 
             <section className="rounded-3xl border border-gray-200 bg-white/80 p-6 shadow-sm">

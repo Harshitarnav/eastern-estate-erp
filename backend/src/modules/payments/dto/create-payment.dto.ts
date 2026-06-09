@@ -1,5 +1,14 @@
-import { IsString, IsNumber, IsOptional, IsDate, IsUUID, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, IsDate, IsUUID, Min, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
+
+export class CategoryLineItemDto {
+  @IsString()
+  label: string;
+
+  @IsNumber()
+  @Min(0)
+  amount: number;
+}
 
 export class CreatePaymentDto {
   @IsOptional()
@@ -43,6 +52,46 @@ export class CreatePaymentDto {
   @IsNumber()
   @Min(0.01)
   amount: number;
+
+  // ── Category split ──────────────────────────────────────────────────────────
+  // primary + misc + tax should sum to amount.
+  // All optional for backwards-compat; 0 means "not categorised yet".
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  primaryAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  miscAmount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  taxAmount?: number;
+
+  // How to handle tax shortfall when taxAmount < DD's taxAmount.
+  // DEFER_TO_REGISTRY  → PRIMARY_PAID status on the DD
+  // PARTIAL_PENDING    → PARTIALLY_PAID, escalation paused
+  // ESCALATE           → normal overdue cadence continues
+  @IsOptional()
+  @IsString()
+  taxDeferralDisposition?: string;
+
+  // Tagged line-items inside the misc / tax buckets. When provided, the
+  // service derives miscAmount / taxAmount from these sums.
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CategoryLineItemDto)
+  miscBreakdown?: CategoryLineItemDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CategoryLineItemDto)
+  taxBreakdown?: CategoryLineItemDto[];
 
   @Type(() => Date)
   @IsDate()

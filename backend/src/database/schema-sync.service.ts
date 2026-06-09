@@ -43,6 +43,7 @@ export class SchemaSyncService implements OnModuleInit {
       await runIsolated('company_settings', (qr) => this.ensureCompanySettingsSchema(qr));
       await runIsolated('customers', (qr) => this.ensureCustomersSchema(qr));
       await runIsolated('payments_columns', (qr) => this.ensurePaymentsSchema(qr));
+      await runIsolated('flats_columns', (qr) => this.ensureFlatsSchema(qr));
       await runIsolated('bookings_collections', (qr) => this.ensureBookingsCollectionsSchema(qr));
       await runIsolated('users_columns', (qr) => this.ensureUsersSchema(qr));
       await runIsolated('system_roles', (qr) => this.ensureSystemRoles(qr));
@@ -73,6 +74,18 @@ export class SchemaSyncService implements OnModuleInit {
   private async ensureUsersSchema(queryRunner: QueryRunner) {
     await queryRunner.query(`
       ALTER TABLE users ADD COLUMN IF NOT EXISTS token_invalidated_at TIMESTAMP;
+    `);
+  }
+
+  /**
+   * v021: tagged Misc / Tax price-breakdown on flats. Additive — the 8
+   * existing pricing columns are untouched; base_price is the Primary cost.
+   */
+  private async ensureFlatsSchema(queryRunner: QueryRunner) {
+    await queryRunner.query(`
+      ALTER TABLE flats
+        ADD COLUMN IF NOT EXISTS misc_breakdown JSONB NOT NULL DEFAULT '[]'::jsonb,
+        ADD COLUMN IF NOT EXISTS tax_breakdown  JSONB NOT NULL DEFAULT '[]'::jsonb;
     `);
   }
 
@@ -312,6 +325,7 @@ export class SchemaSyncService implements OnModuleInit {
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_pass VARCHAR(255)`,
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS smtp_from VARCHAR(255)`,
       // Collections / overdue-reminder controls (PR1)
+      `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS default_tax_percentage DECIMAL(5,2) NOT NULL DEFAULT 0`,
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS overdue_reminder_interval_days INT NOT NULL DEFAULT 7`,
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS cancellation_warning_threshold_days INT NOT NULL DEFAULT 30`,
       `ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS legacy_auto_remind_max_age_days INT NOT NULL DEFAULT 180`,
@@ -1027,12 +1041,127 @@ export class SchemaSyncService implements OnModuleInit {
         ADD COLUMN IF NOT EXISTS updated_by           UUID;
     `);
 
+    // Older databases created payment_schedules with extra NOT-NULL columns
+    // (e.g. total_amount) that the current PaymentSchedule entity does not set.
+    // Relax those legacy NOT-NULLs + give them a default so inserts from the
+    // demand-draft workflow don't trip a not-null violation.
+    await queryRunner.query(`
+      DO $$
+      DECLARE legacy_col text;
+      BEGIN
+        FOREACH legacy_col IN ARRAY ARRAY['total_amount']
+        LOOP
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'payment_schedules' AND column_name = legacy_col
+          ) THEN
+            EXECUTE format('ALTER TABLE payment_schedules ALTER COLUMN %I DROP NOT NULL', legacy_col);
+            EXECUTE format('ALTER TABLE payment_schedules ALTER COLUMN %I SET DEFAULT 0', legacy_col);
+          END IF;
+        END LOOP;
+      END $$;
+    `);
+
     // Helpful indexes for the collections workstation + overdue scanner.
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_payment_schedules_booking_id ON payment_schedules(booking_id);
       CREATE INDEX IF NOT EXISTS idx_payment_schedules_due_date   ON payment_schedules(due_date);
       CREATE INDEX IF NOT EXISTS idx_payment_schedules_status     ON payment_schedules(status);
       CREATE INDEX IF NOT EXISTS idx_payment_schedules_schedule_number ON payment_schedules(schedule_number);
+    `);
+
+    // ── v019: payment category split ────────────────────────────────────────
+    // Added as part of the Primary / Miscellaneous / Tax distinction.
+    // Safe to run on every boot — IF NOT EXISTS is idempotent.
+    await queryRunner.query(`
+      ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS primary_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS misc_amount    DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS tax_amount     DECIMAL(15,2) NOT NULL DEFAULT 0;
+    `);
+
+    // Back-fill existing rows: treat full amount as primary.
+    await queryRunner.query(`
+      UPDATE payments
+      SET primary_amount = amount
+      WHERE primary_amount = 0 AND misc_amount = 0 AND tax_amount = 0 AND amount > 0;
+    `);
+
+    await queryRunner.query(`
+      ALTER TABLE demand_drafts
+        ADD COLUMN IF NOT EXISTS primary_amount      DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS misc_amount         DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS tax_amount          DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS arrears_primary     DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS arrears_misc        DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS arrears_tax         DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS tax_deferred_amount DECIMAL(15,2) NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS tax_deferred_at     TIMESTAMP NULL;
+    `);
+
+    // Back-fill existing DDs: treat full amount as primary.
+    await queryRunner.query(`
+      UPDATE demand_drafts
+      SET primary_amount = amount
+      WHERE primary_amount = 0 AND misc_amount = 0 AND tax_amount = 0 AND amount > 0;
+    `);
+
+    // The DemandDraft entity declares `status` (and `tone`) as varchar, but
+    // some databases were created with Postgres ENUM types (e.g.
+    // demand_draft_status_enum) by an older entity/migration. New status values
+    // like PRIMARY_PAID / PARTIALLY_PAID then fail with "invalid input value
+    // for enum". Converting the column to varchar aligns the DB with the entity
+    // and removes the whole class of enum-value errors permanently. Detected
+    // dynamically so it works regardless of the enum type's name.
+    await queryRunner.query(`
+      DO $$
+      DECLARE
+        col record;
+      BEGIN
+        FOR col IN
+          SELECT a.attname AS column_name, t.typname AS enum_type
+          FROM pg_attribute a
+          JOIN pg_class c ON c.oid = a.attrelid
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+          JOIN pg_type t ON t.oid = a.atttypid
+          WHERE c.relname = 'demand_drafts'
+            AND a.attname IN ('status', 'tone')
+            AND t.typtype = 'e'
+            AND n.nspname = current_schema()
+        LOOP
+          EXECUTE format('ALTER TABLE demand_drafts ALTER COLUMN %I DROP DEFAULT', col.column_name);
+          EXECUTE format('ALTER TABLE demand_drafts ALTER COLUMN %I TYPE VARCHAR(40) USING %I::text', col.column_name, col.column_name);
+        END LOOP;
+
+        -- Restore sensible defaults now that the columns are plain varchar.
+        BEGIN
+          ALTER TABLE demand_drafts ALTER COLUMN status SET DEFAULT 'DRAFT';
+        EXCEPTION WHEN undefined_column THEN NULL; END;
+        BEGIN
+          ALTER TABLE demand_drafts ALTER COLUMN tone SET DEFAULT 'ON_TIME';
+        EXCEPTION WHEN undefined_column THEN NULL; END;
+      END $$;
+    `);
+
+    // Indexes for fast arrear queries.
+    await queryRunner.query(`
+      CREATE INDEX IF NOT EXISTS idx_demand_drafts_booking_status
+        ON demand_drafts (booking_id, status)
+        WHERE booking_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_payments_booking_id
+        ON payments (booking_id)
+        WHERE booking_id IS NOT NULL;
+    `);
+
+    // ── v020: tagged line-items for misc / tax categories ───────────────────
+    // Each is a JSON array of { label, amount } summing to the category total.
+    await queryRunner.query(`
+      ALTER TABLE payments
+        ADD COLUMN IF NOT EXISTS misc_breakdown JSONB NOT NULL DEFAULT '[]'::jsonb,
+        ADD COLUMN IF NOT EXISTS tax_breakdown  JSONB NOT NULL DEFAULT '[]'::jsonb;
+      ALTER TABLE demand_drafts
+        ADD COLUMN IF NOT EXISTS misc_breakdown JSONB NOT NULL DEFAULT '[]'::jsonb,
+        ADD COLUMN IF NOT EXISTS tax_breakdown  JSONB NOT NULL DEFAULT '[]'::jsonb;
     `);
 
     this.logger.log('Payments schema ensured - all columns up to date');

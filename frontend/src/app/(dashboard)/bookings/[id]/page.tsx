@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import BookingFinancialSummaryPanel from '@/components/BookingFinancialSummaryPanel';
 import {
   ArrowLeft,
   Edit,
@@ -386,6 +387,9 @@ export default function BookingViewPage() {
               </div>
             </div>
           </div>
+
+          {/* 3-Category Payment Summary */}
+          <BookingFinancialSummaryPanel bookingId={booking.id} />
 
           {/* Financial Details */}
           <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${brandPalette.neutral}60` }}>

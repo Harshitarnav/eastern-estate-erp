@@ -11,6 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
+import { BookingFinancialSummaryService } from './services/booking-financial-summary.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -19,7 +20,10 @@ import { PaymentStatus } from './entities/payment.entity';
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly financialSummaryService: BookingFinancialSummaryService,
+  ) {}
 
   @Post()
   create(@Body() createPaymentDto: CreatePaymentDto, @Request() req) {
@@ -97,6 +101,11 @@ export class PaymentsController {
     filters.accessiblePropertyIds = req?.accessiblePropertyIds;
 
     return this.paymentsService.getStatistics(filters);
+  }
+
+  @Get('financial-summary/booking/:bookingId')
+  getFinancialSummary(@Param('bookingId') bookingId: string) {
+    return this.financialSummaryService.getSummaryForBooking(bookingId);
   }
 
   @Get('booking/:bookingId')

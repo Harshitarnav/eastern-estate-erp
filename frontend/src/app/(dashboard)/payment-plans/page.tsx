@@ -136,6 +136,19 @@ function PaymentPlansContent() {
     }
   }, [selectedTower]);
 
+  // Auto-pull the construction price (Primary = base − discount, excluding
+  // misc & tax) from the chosen flat. Misc & tax are added per demand draft,
+  // so the plan schedules only the construction installments.
+  useEffect(() => {
+    if (!selectedFlat) return;
+    const flat = flats.find((f) => f.id === selectedFlat);
+    if (!flat) return;
+    const base = Number(flat.basePrice) || 0;
+    const discount = Number(flat.discountAmount) || 0;
+    const primary = Math.max(0, base - discount);
+    if (primary > 0) setTotalAmount(String(primary));
+  }, [selectedFlat, flats]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -524,15 +537,19 @@ function PaymentPlansContent() {
                     </Select>
                   </div>
 
-                  {/* Total Amount */}
+                  {/* Plan Total — Construction Price (auto-pulled from flat) */}
                   <div className="grid gap-2">
-                    <Label>Total Amount (₹) *</Label>
+                    <Label>Construction Price — Plan Total (₹) *</Label>
                     <Input
                       type="number"
                       value={totalAmount}
                       onChange={(e) => setTotalAmount(e.target.value)}
-                      placeholder="Enter total amount"
+                      placeholder="Auto-filled from the selected flat"
                     />
+                    <p className="text-xs text-gray-500">
+                      Auto-filled from the flat&apos;s base price minus discount (excludes
+                      miscellaneous &amp; tax). Misc &amp; tax are added per demand draft.
+                    </p>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">

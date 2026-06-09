@@ -324,6 +324,12 @@ export class AccountingIntegrationService {
     paymentMethod?: string;
     createdBy?: string;
     propertyId?: string | null;
+    /**
+     * Optional pre-built narration. When supplied (the payments flow does so
+     * with customer / unit / booking / category context) it is used verbatim
+     * as the JE header so the ledger clearly identifies which payment this is.
+     */
+    description?: string;
   }): Promise<JournalEntry | null> {
     let [bankAccount, revenueAccount] = await Promise.all([
       this.findCashOrBankAccount(payment.propertyId),
@@ -361,7 +367,9 @@ export class AccountingIntegrationService {
 
     return this.createAutoJE({
       date: payment.paymentDate instanceof Date ? payment.paymentDate : new Date(payment.paymentDate),
-      description: `Payment received - ${payment.paymentCode} via ${payment.paymentMethod || 'N/A'}`,
+      description:
+        payment.description ||
+        `Payment received - ${payment.paymentCode} via ${payment.paymentMethod || 'N/A'}`,
       referenceType: 'PAYMENT',
       referenceId: payment.id,
       debitAccountId: bankAccount.id,

@@ -142,10 +142,14 @@ export class OverdueScannerService {
     };
 
     // Fetch all DDs that could potentially need action today. We pull
-    // SENT (live customer-facing) only - DRAFT/READY/FAILED are human-
-    // managed and not the scanner's problem.
+    // SENT (live customer-facing) and PARTIALLY_PAID (a part-payment was
+    // recorded but a balance remains, so it must keep being chased).
+    // DRAFT/READY/FAILED are human-managed; PAID/PRIMARY_PAID are closed.
     const candidates = await this.ddRepo.find({
-      where: { status: DemandDraftStatus.SENT },
+      where: [
+        { status: DemandDraftStatus.SENT },
+        { status: DemandDraftStatus.PARTIALLY_PAID },
+      ],
       order: { dueDate: 'ASC' },
     });
 
@@ -453,6 +457,14 @@ export class OverdueScannerService {
       milestoneId: original.milestoneId,
       title: `[${tone}] ${original.title ?? ''}`.slice(0, 500),
       amount: original.amount,
+      // Mirror the parent's category split so the reminder shows the same
+      // Primary / Misc / Tax breakdown. (Arrears default to 0 via the entity
+      // transformer; reminders are not counted in arrear math — only roots are.)
+      primaryAmount: original.primaryAmount,
+      miscAmount: original.miscAmount,
+      taxAmount: original.taxAmount,
+      miscBreakdown: original.miscBreakdown ?? [],
+      taxBreakdown: original.taxBreakdown ?? [],
       status:
         opts.sendNow ?? true ? DemandDraftStatus.SENT : DemandDraftStatus.DRAFT,
       content: htmlContent,

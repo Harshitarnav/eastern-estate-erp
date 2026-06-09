@@ -31,9 +31,12 @@ export interface FlatPaymentMilestone {
   name: string;
   constructionPhase: 'FOUNDATION' | 'STRUCTURE' | 'MEP' | 'FINISHING' | 'HANDOVER' | null;
   phasePercentage: number | null;
-  /** Gross milestone amount (before tax / adjustments). */
+  /** Base construction / principal amount for this milestone. */
   amount: number;
   dueDate: string | null;
+  /** Parking, lift, amenities, maintenance deposit, PLC etc. for this milestone. */
+  miscAmount?: number | null;
+  /** GST / stamp duty / registration charges for this milestone. */
   taxAmount?: number | null;
   netAmount?: number | null;
   adjustAmount?: number | null;

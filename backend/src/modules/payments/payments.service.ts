@@ -47,6 +47,44 @@ export class PaymentsService {
       createPaymentDto.paymentCode = await this.generatePaymentCode();
     }
 
+    // Derive misc / tax totals from their tagged line-items when supplied,
+    // so the category total always matches the sum of its breakdown.
+    const sumItems = (items?: Array<{ amount: number }>) =>
+      (items ?? []).reduce((s, i) => s + (Number(i.amount) || 0), 0);
+
+    // Keep each category total and its tagged breakdown in lock-step:
+    //  - breakdown supplied  → the category total IS its sum (source of truth)
+    //  - amount-only supplied → synthesise a single line so the breakdown is
+    //    never left empty while the amount is non-zero (the H1 invariant).
+    if (createPaymentDto.miscBreakdown?.length) {
+      createPaymentDto.miscAmount = sumItems(createPaymentDto.miscBreakdown);
+    } else if ((Number(createPaymentDto.miscAmount) || 0) > 0) {
+      createPaymentDto.miscBreakdown = [
+        { label: 'Miscellaneous', amount: Number(createPaymentDto.miscAmount) },
+      ];
+    }
+    if (createPaymentDto.taxBreakdown?.length) {
+      createPaymentDto.taxAmount = sumItems(createPaymentDto.taxBreakdown);
+    } else if ((Number(createPaymentDto.taxAmount) || 0) > 0) {
+      createPaymentDto.taxBreakdown = [
+        { label: 'Tax', amount: Number(createPaymentDto.taxAmount) },
+      ];
+    }
+
+    // If no category split supplied at all, default entire amount to primary.
+    const p = Number(createPaymentDto.primaryAmount) || 0;
+    const m = Number(createPaymentDto.miscAmount)    || 0;
+    const t = Number(createPaymentDto.taxAmount)     || 0;
+    if (p === 0 && m === 0 && t === 0) {
+      createPaymentDto.primaryAmount = Number(createPaymentDto.amount);
+    } else if (Math.abs(p + m + t - Number(createPaymentDto.amount)) > 0.01) {
+      // Guard against silently storing a mismatched split.
+      throw new BadRequestException(
+        `Category split (primary ${p} + misc ${m} + tax ${t} = ${p + m + t}) ` +
+          `must equal the payment amount (${createPaymentDto.amount}).`,
+      );
+    }
+
     const payment = this.paymentRepository.create(createPaymentDto);
     return this.paymentRepository.save(payment);
   }
@@ -325,7 +363,12 @@ export class PaymentsService {
     journalEntryId: string | null;
     journalEntrySkipReason: string | null;
   }> {
-    const payment = await this.paymentRepository.findOne({ where: { id: paymentId } });
+    // Load with booking → flat/tower + customer so the JE narration can name
+    // the customer, unit and booking this payment belongs to.
+    const payment = await this.paymentRepository.findOne({
+      where: { id: paymentId },
+      relations: ['booking', 'booking.flat', 'booking.flat.tower', 'customer'],
+    });
     if (!payment) {
       this.logger.warn(`runPostCompletionHooks: payment ${paymentId} not found`);
       return { journalEntryId: null, journalEntrySkipReason: 'payment-not-found' };
@@ -349,6 +392,8 @@ export class PaymentsService {
         paymentDate: payment.paymentDate,
         paymentMethod: payment.paymentMethod,
         createdBy: userId ?? undefined,
+        propertyId: (payment.booking as any)?.propertyId ?? null,
+        description: this.buildPaymentJeNarration(payment),
       });
       if (entry?.id) {
         journalEntryId = entry.id;
@@ -372,6 +417,48 @@ export class PaymentsService {
     );
 
     return { journalEntryId, journalEntrySkipReason };
+  }
+
+  /**
+   * Build a human-readable journal-entry narration that makes it unambiguous
+   * which payment a ledger line is — customer, unit, booking and the
+   * Primary / Misc / Tax split — so the entry reads correctly in the customer
+   * statement and against the related flat.
+   */
+  private buildPaymentJeNarration(payment: Payment): string {
+    const booking: any = (payment as any).booking;
+    const flat: any = booking?.flat;
+    const customerName =
+      (payment as any).customer?.fullName || booking?.customerName || '';
+    const unit = flat?.flatNumber
+      ? `Unit ${flat.flatNumber}${flat.tower?.name ? `/${flat.tower.name}` : ''}`
+      : '';
+    const bookingRef = booking?.bookingNumber ? `Booking ${booking.bookingNumber}` : '';
+
+    const inr = (n: number) =>
+      `₹${(Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-IN')}`;
+    const primary = Number(payment.primaryAmount) || 0;
+    const misc = Number(payment.miscAmount) || 0;
+    const tax = Number(payment.taxAmount) || 0;
+    const splitParts: string[] = [];
+    if (primary > 0) splitParts.push(`Primary ${inr(primary)}`);
+    if (misc > 0) splitParts.push(`Misc ${inr(misc)}`);
+    if (tax > 0) splitParts.push(`Tax ${inr(tax)}`);
+    const split = splitParts.length ? ` (${splitParts.join(', ')})` : '';
+    const kind =
+      payment.paymentType === 'REGISTRY' ? 'Registry payment' : 'Payment';
+
+    return [
+      `${kind} received - ${payment.paymentCode}`,
+      customerName ? `| ${customerName}` : '',
+      unit ? `| ${unit}` : '',
+      bookingRef ? `| ${bookingRef}` : '',
+      payment.paymentMethod ? `| via ${payment.paymentMethod}` : '',
+      split,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
   }
 
   private async notifyCustomerOnPaymentVerified(payment: Payment): Promise<void> {

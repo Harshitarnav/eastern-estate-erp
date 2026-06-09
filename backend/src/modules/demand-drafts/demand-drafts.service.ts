@@ -1,11 +1,19 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { DemandDraft } from './entities/demand-draft.entity';
+import { DemandDraft, DemandDraftStatus } from './entities/demand-draft.entity';
 import { User } from '../users/entities/user.entity';
+import { Flat } from '../flats/entities/flat.entity';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationCategory, NotificationType } from '../notifications/entities/notification.entity';
 import { appendCollectionsActivityPayload } from '../../common/utils/collections-dd-activity.util';
+import { buildDemandDraftHtml } from '../../common/utils/demand-draft-html.builder';
+
+type TaggedItem = { label: string; amount: number };
+const fmtINR = (n: number) =>
+  (Math.round((Number(n) || 0) * 100) / 100).toLocaleString('en-IN');
+const sumTagged = (items?: TaggedItem[]) =>
+  (items ?? []).reduce((s, i) => s + (Number(i?.amount) || 0), 0);
 
 @Injectable()
 export class DemandDraftsService {
@@ -16,8 +24,51 @@ export class DemandDraftsService {
     private readonly demandDraftRepository: Repository<DemandDraft>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Flat)
+    private readonly flatRepository: Repository<Flat>,
     private readonly notificationsService: NotificationsService,
   ) {}
+
+  /**
+   * For the DD review screen: return the flat's misc line-items with a flag
+   * showing which are already attached to ANOTHER demand draft of the same
+   * booking (so the CRM only allocates each misc charge once). Items already
+   * on THIS draft are marked allocatedHere so they stay ticked.
+   */
+  async getAvailableMisc(ddId: string): Promise<{
+    items: Array<{ label: string; amount: number; allocatedElsewhere: boolean; allocatedHere: boolean }>;
+  }> {
+    const dd = await this.findOne(ddId);
+    if (!dd.flatId) return { items: [] };
+
+    const flat = await this.flatRepository.findOne({ where: { id: dd.flatId } });
+    const master = (flat?.miscBreakdown ?? []) as Array<{ label: string; amount: number }>;
+    if (!master.length) return { items: [] };
+
+    // Sibling DDs of the same booking (or flat) that already carry misc items.
+    const siblings = await this.demandDraftRepository.find({
+      where: dd.bookingId ? { bookingId: dd.bookingId } : { flatId: dd.flatId },
+    });
+
+    const elsewhere = new Set<string>();
+    const here = new Set<string>();
+    for (const s of siblings) {
+      const items = (s.miscBreakdown ?? []) as Array<{ label: string; amount: number }>;
+      for (const it of items) {
+        if (s.id === ddId) here.add(it.label);
+        else elsewhere.add(it.label);
+      }
+    }
+
+    return {
+      items: master.map((m) => ({
+        label: m.label,
+        amount: Number(m.amount) || 0,
+        allocatedElsewhere: elsewhere.has(m.label),
+        allocatedHere: here.has(m.label),
+      })),
+    };
+  }
 
   async findAll(
     query: any,
@@ -163,6 +214,46 @@ export class DemandDraftsService {
         draft[key] = updateDto[key];
       }
     }
+
+    // When the category split is edited on the review screen, keep the
+    // grand total (amount) consistent with primary + misc + tax. We only
+    // recompute if at least one category field was part of this update and
+    // the caller did not send an explicit amount.
+    const touchedCategory =
+      'primaryAmount' in updateDto ||
+      'miscAmount' in updateDto ||
+      'taxAmount' in updateDto ||
+      'miscBreakdown' in updateDto ||
+      'taxBreakdown' in updateDto;
+    if (touchedCategory) {
+      // Keep each category total in lock-step with its tagged breakdown so
+      // the H1 invariant (sum(breakdown) === category total) always holds.
+      if ((draft.miscBreakdown ?? []).length) {
+        draft.miscAmount = sumTagged(draft.miscBreakdown as TaggedItem[]);
+      }
+      if ((draft.taxBreakdown ?? []).length) {
+        draft.taxAmount = sumTagged(draft.taxBreakdown as TaggedItem[]);
+      }
+      // Recompute the grand total (incl. any arrears) unless the caller sent
+      // an explicit amount.
+      if (updateDto.amount === undefined) {
+        const p = Number(draft.primaryAmount) || 0;
+        const m = Number(draft.miscAmount) || 0;
+        const t = Number(draft.taxAmount) || 0;
+        const arr =
+          (Number(draft.arrearsPrimary) || 0) +
+          (Number(draft.arrearsMisc) || 0) +
+          (Number(draft.arrearsTax) || 0);
+        draft.amount = p + m + t + arr;
+      }
+      // The customer-facing HTML must reflect the edited split, otherwise the
+      // PDF/email still shows the original primary-only amount (H3). Skip if the
+      // caller sent its own content in this same update.
+      if (!('content' in updateDto)) {
+        this.rebuildContentFromTemplateData(draft);
+      }
+    }
+
     draft.updatedBy = userId;
 
     if (changed.length) {
@@ -178,6 +269,62 @@ export class DemandDraftsService {
     }
 
     return this.demandDraftRepository.save(draft);
+  }
+
+  /**
+   * Re-render the canonical demand-draft HTML from the draft's stored
+   * templateData plus its current category split, so an edit on the review
+   * screen is reflected in the PDF/email the customer receives.
+   *
+   * Skipped when a DB template was used (templateId set) — that content came
+   * from the template engine, not the canonical builder, and re-rendering it
+   * needs the template service, not this path. Best-effort: a render failure
+   * must never block the save.
+   */
+  private rebuildContentFromTemplateData(draft: DemandDraft): void {
+    if ((draft as any).templateId) return;
+    const td = (draft.templateData ?? {}) as Record<string, any>;
+    if (!td || !td.refNumber) return;
+    try {
+      const miscItems = (draft.miscBreakdown ?? []) as TaggedItem[];
+      const taxItems = (draft.taxBreakdown ?? []) as TaggedItem[];
+      const primary = Number(draft.primaryAmount) || 0;
+      const misc = Number(draft.miscAmount) || 0;
+      const tax = Number(draft.taxAmount) || 0;
+      draft.content = buildDemandDraftHtml({
+        refNumber: td.refNumber,
+        dateIssued: td.dateIssued ?? '',
+        customerName: td.customerName ?? '',
+        customerEmail: td.customerEmail || undefined,
+        customerPhone: td.customerPhone || undefined,
+        propertyName: td.propertyName ?? '',
+        towerName: td.towerName || undefined,
+        flatNumber: td.flatNumber ?? '',
+        bookingNumber: td.bookingNumber || undefined,
+        milestoneSeq: td.milestoneSeq ?? '',
+        milestoneName: td.milestoneName ?? '',
+        milestoneDescription: td.milestoneDescription || undefined,
+        constructionPhase: td.constructionPhase || undefined,
+        phasePercentage: td.phasePercentage ?? undefined,
+        primaryAmount: primary > 0 ? fmtINR(primary) : undefined,
+        miscAmount: misc > 0 ? fmtINR(misc) : undefined,
+        taxAmount: tax > 0 ? fmtINR(tax) : undefined,
+        miscItems: miscItems.filter((i) => (Number(i?.amount) || 0) > 0),
+        taxItems: taxItems.filter((i) => (Number(i?.amount) || 0) > 0),
+        amount: fmtINR(Number(draft.amount) || primary + misc + tax),
+        dueDate: td.dueDate ?? '',
+        totalAmount: td.totalAmount,
+        paidAmount: td.paidAmount,
+        balanceAfterPayment: td.balanceAfterPayment,
+        bankName: td.bankName,
+        accountName: td.accountName,
+        accountNumber: td.accountNumber,
+        ifscCode: td.ifscCode,
+        branch: td.branch,
+      });
+    } catch (e: any) {
+      this.logger.warn(`Could not rebuild DD content for ${draft.id}: ${e?.message}`);
+    }
   }
 
   async remove(id: string): Promise<void> {

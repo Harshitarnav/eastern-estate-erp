@@ -27,6 +27,8 @@ export class FlatResponseDto {
   totalPrice: number;
   discountAmount: number;
   finalPrice: number;
+  miscBreakdown: Array<{ label: string; amount: number }>;
+  taxBreakdown: Array<{ label: string; amount: number }>;
   status: string;
   isAvailable: boolean;
   availableFrom: string | Date;

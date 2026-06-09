@@ -212,7 +212,7 @@ export default function CollectionReportPage() {
 
       {/* Summary cards */}
       {report && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
           <Card><CardContent className="p-3">
             <p className="text-xs text-gray-400 uppercase">Total Payments</p>
             <p className="text-lg font-bold text-gray-800 mt-0.5">{report.summary.totalPayments}</p>
@@ -222,21 +222,23 @@ export default function CollectionReportPage() {
             <p className="text-lg font-bold text-green-700 mt-0.5">{fmtINR(report.summary.totalAmount)}</p>
           </CardContent></Card>
           <Card><CardContent className="p-3">
+            <p className="text-xs text-gray-400 uppercase">Primary Collected</p>
+            <p className="text-lg font-bold text-gray-700 mt-0.5">{fmtINR((report.summary as any).totalPrimary ?? 0)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-3">
+            <p className="text-xs text-gray-400 uppercase">Misc Collected</p>
+            <p className="text-lg font-bold text-amber-700 mt-0.5">{fmtINR((report.summary as any).totalMisc ?? 0)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-3">
+            <p className="text-xs text-gray-400 uppercase">Tax Collected</p>
+            <p className="text-lg font-bold text-gray-700 mt-0.5">{fmtINR((report.summary as any).totalTax ?? 0)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-3">
             <p className="text-xs text-gray-400 uppercase mb-1">By Method</p>
             <div className="flex flex-wrap gap-1">
               {Object.entries(report.summary.byMethod).map(([m, v]) => (
                 <span key={m} className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
                   {m.replace(/_/g, ' ')}: {fmtINR(v)}
-                </span>
-              ))}
-            </div>
-          </CardContent></Card>
-          <Card><CardContent className="p-3">
-            <p className="text-xs text-gray-400 uppercase mb-1">By Status</p>
-            <div className="flex flex-wrap gap-1">
-              {Object.entries(report.summary.byStatus).map(([s, v]) => (
-                <span key={s} className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">
-                  {s}: {fmtINR(v)}
                 </span>
               ))}
             </div>
@@ -264,6 +266,9 @@ export default function CollectionReportPage() {
                   <TableHead>Customer</TableHead>
                   <TableHead>Booking</TableHead>
                   <TableHead className="text-right text-green-700 font-semibold">Amount (₹)</TableHead>
+                  <TableHead className="text-right text-gray-500">Primary</TableHead>
+                  <TableHead className="text-right text-gray-500">Misc</TableHead>
+                  <TableHead className="text-right text-gray-500">Tax</TableHead>
                   <TableHead>Method</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Receipt</TableHead>
@@ -289,6 +294,15 @@ export default function CollectionReportPage() {
                     <TableCell className="text-xs text-gray-500">{row.bookingNumber}</TableCell>
                     <TableCell className="text-right font-bold text-green-700">
                       {fmtINR(row.amount)}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-gray-600">
+                      {(row as any).primaryAmount > 0 ? fmtINR((row as any).primaryAmount) : <span className="text-gray-300">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-gray-600">
+                      {(row as any).miscAmount > 0 ? fmtINR((row as any).miscAmount) : <span className="text-gray-300">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right text-sm text-gray-600">
+                      {(row as any).taxAmount > 0 ? fmtINR((row as any).taxAmount) : <span className="text-gray-300">—</span>}
                     </TableCell>
                     <TableCell>
                       <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700">

@@ -2,6 +2,11 @@ import { apiService } from './api';
 
 export type DemandDraftStatus = 'DRAFT' | 'READY' | 'SENT' | 'PAID' | 'CANCELLED' | 'FAILED';
 
+export interface DemandDraftLineItem {
+  label: string;
+  amount: number;
+}
+
 export interface DemandDraft {
   id: string;
   flatId?: string | null;
@@ -9,6 +14,15 @@ export interface DemandDraft {
   bookingId?: string | null;
   milestoneId?: string | null;
   amount: number;
+  // Category split
+  primaryAmount?: number;
+  miscAmount?: number;
+  taxAmount?: number;
+  miscBreakdown?: DemandDraftLineItem[];
+  taxBreakdown?: DemandDraftLineItem[];
+  arrearsPrimary?: number;
+  arrearsMisc?: number;
+  arrearsTax?: number;
   status: DemandDraftStatus;
   fileUrl?: string | null;
   content?: string | null;
@@ -25,6 +39,13 @@ export interface DemandDraft {
   updatedAt: string;
 }
 
+export interface AvailableMiscItem {
+  label: string;
+  amount: number;
+  allocatedElsewhere: boolean;
+  allocatedHere: boolean;
+}
+
 class DemandDraftsService {
   async getDemandDrafts(params?: { propertyId?: string; status?: string }): Promise<DemandDraft[]> {
     const qs = new URLSearchParams();
@@ -36,6 +57,12 @@ class DemandDraftsService {
 
   async getDemandDraft(id: string): Promise<DemandDraft> {
     return await apiService.get<DemandDraft>(`/demand-drafts/${id}`);
+  }
+
+  async getAvailableMisc(id: string): Promise<{ items: AvailableMiscItem[] }> {
+    return await apiService.get<{ items: AvailableMiscItem[] }>(
+      `/demand-drafts/${id}/available-misc`,
+    );
   }
 
   async list(params: {

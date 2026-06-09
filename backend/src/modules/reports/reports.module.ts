@@ -5,9 +5,10 @@ import { ReportsController } from './reports.controller';
 import { FlatPaymentPlan } from '../payment-plans/entities/flat-payment-plan.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { Flat } from '../flats/entities/flat.entity';
+import { DemandDraft } from '../demand-drafts/entities/demand-draft.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([FlatPaymentPlan, Payment, Flat])],
+  imports: [TypeOrmModule.forFeature([FlatPaymentPlan, Payment, Flat, DemandDraft])],
   controllers: [ReportsController],
   providers: [ReportsService],
   exports: [ReportsService],

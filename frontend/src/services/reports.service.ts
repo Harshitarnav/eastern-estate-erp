@@ -6,6 +6,7 @@ export interface DashboardSummary {
   totalOutstanding: number;
   thisMonthCollection: number;
   thisMonthPaymentCount: number;
+  totalTaxDeferred: number;
   totalFlats: number;
   availableFlats: number;
   bookedFlats: number;
@@ -53,6 +54,10 @@ export interface OutstandingRow {
   totalDemanded: number;
   totalPaid: number;
   outstanding: number;
+  primaryOutstanding: number;
+  miscOutstanding: number;
+  taxOutstanding: number;
+  taxDeferred: number;
   overdueMilestones: number;
   oldestOverdueDays: number | null;
   planStatus: string;
@@ -67,6 +72,10 @@ export interface OutstandingReport {
     totalPaid: number;
     totalOutstanding: number;
     unitsWithOverdue: number;
+    totalPrimaryOutstanding: number;
+    totalMiscOutstanding: number;
+    totalTaxOutstanding: number;
+    totalTaxDeferred: number;
   };
 }
 
@@ -81,6 +90,9 @@ export interface CollectionRow {
   customerPhone: string;
   bookingNumber: string;
   amount: number;
+  primaryAmount: number;
+  miscAmount: number;
+  taxAmount: number;
   paymentMethod: string;
   paymentType: string;
   status: string;
@@ -93,6 +105,9 @@ export interface CollectionReport {
   summary: {
     totalPayments: number;
     totalAmount: number;
+    totalPrimary: number;
+    totalMisc: number;
+    totalTax: number;
     byMethod: Record<string, number>;
     byStatus: Record<string, number>;
   };

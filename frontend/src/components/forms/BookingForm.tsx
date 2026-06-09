@@ -50,6 +50,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
   const [flats, setFlats] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedProperty, setSelectedProperty] = useState('');
+  const [selectedFlatId, setSelectedFlatId] = useState<string>(initialData?.flatId ?? '');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [isHomeLoan, setIsHomeLoan] = useState(false);
@@ -126,6 +127,32 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       cancelled = true;
     };
   }, [selectedCustomerId]);
+
+  // When a flat is picked, prefill the booking's financial fields from the
+  // flat's pricing breakdown. base_price → Primary, parking_charges → Misc
+  // sum, registration_charges → Tax sum. Only fills fields the user has not
+  // already entered, so it never clobbers manual edits.
+  useEffect(() => {
+    if (!selectedFlatId || initialData?.flatId) return; // don't auto-fill in edit mode
+    const flat = flats.find((f) => f.id === selectedFlatId);
+    if (!flat) return;
+    const n = (v: any) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : undefined);
+    setFormSnapshot((prev) => {
+      const next = { ...prev };
+      const fill = (k: string, v?: number) => {
+        if (v == null) return;
+        const cur = next[k];
+        if (cur === undefined || cur === '' || Number(cur) === 0) next[k] = v;
+      };
+      fill('totalAmount', n(flat.finalPrice ?? flat.totalPrice));
+      fill('agreementAmount', n(flat.finalPrice ?? flat.totalPrice));
+      fill('parkingCharges', n(flat.parkingCharges));
+      fill('registrationCharges', n(flat.registrationCharges));
+      fill('discountAmount', n(flat.discountAmount));
+      return next;
+    });
+    setFormVersion((v) => v + 1);
+  }, [selectedFlatId, flats, initialData?.flatId]);
 
   const fetchData = async (initial?: any) => {
     try {
@@ -259,6 +286,7 @@ export default function BookingForm({ onSubmit, initialData, onCancel }: Booking
       label: 'Flat/Unit',
       type: 'select',
       required: true,
+      onChange: (value) => setSelectedFlatId(String(value || '')),
       options: flats.map(f => {
         const price = Number(f.finalPrice || f.totalPrice || f.salePrice || 0);
         const typology = f.type || f.bhkType || f.flatType || '';

@@ -13,15 +13,28 @@ const decimalTransformer = {
     value === null || value === undefined ? null : Number(value),
 };
 
+// For NOT NULL category/arrears columns: coerce nullish → 0 on write so an
+// insert path that forgets to set the field never trips the not-null
+// constraint (the plain decimalTransformer would write an explicit NULL).
+const zeroDecimalTransformer = {
+  to: (value?: number | null) => (value ?? 0),
+  from: (value: string | null) =>
+    value === null || value === undefined ? 0 : Number(value),
+};
+
 export enum DemandDraftStatus {
-  DRAFT = 'DRAFT', // Generated content, editable
-  READY = 'READY', // Finalized and exported
-  SENT = 'SENT', // Delivered to customer
+  DRAFT = 'DRAFT',   // Generated content, editable
+  READY = 'READY',   // Finalised and exported
+  SENT  = 'SENT',    // Delivered to customer
   FAILED = 'FAILED', // Export or send failed
-  // Customer has paid the milestone this DD demanded. Set automatically
-  // when the linked payment is verified (PaymentCompletionService), so
-  // the row drops out of the Collections inbox and the overdue scanner
-  // stops escalating reminders.
+  // Primary (and misc) settled; tax explicitly deferred to registry date.
+  // Drops out of the active collections queue; appears in Registry Pending tab.
+  PRIMARY_PAID = 'PRIMARY_PAID',
+  // Genuine partial payment; balance remains in collections with escalation
+  // paused until the follow-up date.
+  PARTIALLY_PAID = 'PARTIALLY_PAID',
+  // Fully settled — all three categories paid. Set automatically when the
+  // linked payment covers the full amount (PaymentCompletionService).
   PAID = 'PAID',
 }
 
@@ -67,7 +80,41 @@ export class DemandDraft {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0, transformer: decimalTransformer })
   amount: number;
 
-  @Column({ type: 'varchar', length: 20, default: DemandDraftStatus.DRAFT })
+  // ── Category breakdown of what this DD demands ───────────────────────────
+  @Column({ name: 'primary_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  primaryAmount: number;
+
+  @Column({ name: 'misc_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  miscAmount: number;
+
+  @Column({ name: 'tax_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  taxAmount: number;
+
+  // Tagged line-items itemising the misc / tax buckets ({ label, amount }[]).
+  @Column({ name: 'misc_breakdown', type: 'jsonb', default: () => "'[]'" })
+  miscBreakdown: Array<{ label: string; amount: number }>;
+
+  @Column({ name: 'tax_breakdown', type: 'jsonb', default: () => "'[]'" })
+  taxBreakdown: Array<{ label: string; amount: number }>;
+
+  // ── Arrears carried forward from prior unsettled DDs (snapshot at generation time) ──
+  @Column({ name: 'arrears_primary', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  arrearsPrimary: number;
+
+  @Column({ name: 'arrears_misc', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  arrearsMisc: number;
+
+  @Column({ name: 'arrears_tax', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  arrearsTax: number;
+
+  // ── Tax deferred to registry (set when status = PRIMARY_PAID) ───────────
+  @Column({ name: 'tax_deferred_amount', type: 'decimal', precision: 15, scale: 2, default: 0, transformer: zeroDecimalTransformer })
+  taxDeferredAmount: number;
+
+  @Column({ name: 'tax_deferred_at', type: 'timestamp', nullable: true })
+  taxDeferredAt: Date | null;
+
+  @Column({ type: 'varchar', length: 40, default: DemandDraftStatus.DRAFT })
   status: DemandDraftStatus;
 
   @Column({ name: 'file_url', type: 'text', nullable: true })
