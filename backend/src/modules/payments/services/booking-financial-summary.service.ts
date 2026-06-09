@@ -83,10 +83,14 @@ export class BookingFinancialSummaryService {
     // reminder threads which share the same milestone money.
     const rootDds = dds.filter((dd) => !dd.parentDemandDraftId);
 
+    // Arrears are DERIVED (demanded − collected) below, not read from the
+    // arrears_* columns — every unpaid prior DD is already counted via its own
+    // primary/misc/tax amount, so adding arrears here would double-count.
+    // The arrears_* columns remain reserved (always 0) for a future snapshot model.
     const demanded = {
-      primary: rootDds.reduce((s, dd) => s + (Number(dd.primaryAmount) || 0) + (Number(dd.arrearsPrimary) || 0), 0),
-      misc:    rootDds.reduce((s, dd) => s + (Number(dd.miscAmount)    || 0) + (Number(dd.arrearsMisc)    || 0), 0),
-      tax:     rootDds.reduce((s, dd) => s + (Number(dd.taxAmount)     || 0) + (Number(dd.arrearsTax)     || 0), 0),
+      primary: rootDds.reduce((s, dd) => s + (Number(dd.primaryAmount) || 0), 0),
+      misc:    rootDds.reduce((s, dd) => s + (Number(dd.miscAmount)    || 0), 0),
+      tax:     rootDds.reduce((s, dd) => s + (Number(dd.taxAmount)     || 0), 0),
     };
 
     const collected = {
@@ -177,9 +181,9 @@ export class BookingFinancialSummaryService {
       const bPayments = payments.filter((p) => p.bookingId === bookingId);
 
       const demanded = {
-        primary: rootDds.reduce((s, dd) => s + (Number(dd.primaryAmount) || 0) + (Number(dd.arrearsPrimary) || 0), 0),
-        misc:    rootDds.reduce((s, dd) => s + (Number(dd.miscAmount)    || 0) + (Number(dd.arrearsMisc)    || 0), 0),
-        tax:     rootDds.reduce((s, dd) => s + (Number(dd.taxAmount)     || 0) + (Number(dd.arrearsTax)     || 0), 0),
+        primary: rootDds.reduce((s, dd) => s + (Number(dd.primaryAmount) || 0), 0),
+        misc:    rootDds.reduce((s, dd) => s + (Number(dd.miscAmount)    || 0), 0),
+        tax:     rootDds.reduce((s, dd) => s + (Number(dd.taxAmount)     || 0), 0),
       };
       const collected = {
         primary: bPayments.reduce((s, p) => s + (Number(p.primaryAmount) || 0), 0),

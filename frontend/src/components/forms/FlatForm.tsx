@@ -6,6 +6,7 @@ import {
   towerAreaDefaults,
 } from '@/lib/flat-number-format';
 import CategoryLineItemEditor, { LineItem } from './CategoryLineItemEditor';
+import { toast } from 'sonner';
 
 interface FlatFormProps {
   initialData?: any;
@@ -187,7 +188,7 @@ export default function FlatForm({
     // Block save if a line-item has an amount but no label.
     const blank = [...cleanMisc, ...cleanTax].some((i) => numOr0(i.amount) > 0 && !i.label.trim());
     if (blank) {
-      alert('Every Misc / Tax line-item with an amount needs a label describing what it is.');
+      toast.error('Every Misc / Tax line-item with an amount needs a label describing what it is.');
       return;
     }
 

@@ -22,7 +22,7 @@ import {
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'chips' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency';
+  type: 'text' | 'email' | 'password' | 'number' | 'tel' | 'date' | 'select' | 'chips' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'currency' | 'heading';
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -593,6 +593,18 @@ export default function Form({
 
   const renderFormField = (field: FormField) => {
     if (field.showIf && !field.showIf(formValues)) return null;
+
+    // A non-input section heading — spans the full row, no label wrapper / input.
+    if (field.type === 'heading') {
+      return (
+        <div key={field.name} className="col-span-full pt-2">
+          <h4 className="text-sm font-semibold text-gray-900">{field.label}</h4>
+          {field.helperText && (
+            <p className="mt-0.5 text-xs text-gray-500">{field.helperText}</p>
+          )}
+        </div>
+      );
+    }
 
     if (field.type === 'checkbox') {
       return (

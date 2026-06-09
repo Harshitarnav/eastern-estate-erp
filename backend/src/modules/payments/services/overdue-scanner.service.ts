@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Cron } from '@nestjs/schedule';
 import {
   DemandDraft,
@@ -145,10 +145,15 @@ export class OverdueScannerService {
     // SENT (live customer-facing) and PARTIALLY_PAID (a part-payment was
     // recorded but a balance remains, so it must keep being chased).
     // DRAFT/READY/FAILED are human-managed; PAID/PRIMARY_PAID are closed.
+    //
+    // Only ROOT DDs (parent_demand_draft_id IS NULL) drive escalation — the
+    // root holds the reminder ladder state (reminderCount/lastReminderAt),
+    // while reminder/warning children are sent artifacts (also SENT, but with
+    // reminderCount 0). Scanning children would send reminders-off-reminders.
     const candidates = await this.ddRepo.find({
       where: [
-        { status: DemandDraftStatus.SENT },
-        { status: DemandDraftStatus.PARTIALLY_PAID },
+        { status: DemandDraftStatus.SENT, parentDemandDraftId: IsNull() },
+        { status: DemandDraftStatus.PARTIALLY_PAID, parentDemandDraftId: IsNull() },
       ],
       order: { dueDate: 'ASC' },
     });

@@ -164,7 +164,7 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       placeholder: 'auto from %',
       dependsOn: ['amount', 'tdsPercentage'],
       compute: (v) => round2(numeric(v.amount) * numeric(v.tdsPercentage) / 100),
-      helperText: 'Auto-calculated from Payment Amount × TDS %. Override manually if needed.',
+      helperText: 'Informational calculator only (not saved). The amount actually recorded is the category split below.',
     },
     {
       name: 'gstPercentage',
@@ -182,28 +182,29 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       placeholder: 'auto from %',
       dependsOn: ['amount', 'gstPercentage'],
       compute: (v) => round2(numeric(v.amount) * numeric(v.gstPercentage) / 100),
-      helperText: 'Auto-calculated from Payment Amount × GST %. Override manually if needed.',
+      helperText: 'Informational calculator only (not saved). Record GST as a Tax line-item below.',
     },
     {
       name: 'netAmount',
-      label: 'Net Amount (₹) *',
+      label: 'Net Amount (₹)',
       type: 'number',
-      required: true,
+      required: false,
       placeholder: 'auto = amount + gst − tds',
       dependsOn: ['amount', 'gstAmount', 'tdsAmount'],
       compute: (v) =>
         round2(numeric(v.amount) + numeric(v.gstAmount) - numeric(v.tdsAmount)),
-      helperText: 'Auto = Payment Amount + GST − TDS.',
+      helperText: 'Informational only (not saved) — Payment Amount + GST − TDS.',
     },
-    // ── Category split ────────────────────────────────────────────────────
+    // ── Category split (this is what is actually saved) ──────────────────
     // Primary is a plain number; Misc & Tax are tagged line-item editors
     // rendered below the form (see the Amount tab block in the JSX).
     {
       name: '_categoryHeading',
-      label: '— Payment Category Split (Primary + Misc + Tax must equal Amount) —',
+      label: 'Payment Category Split — what is actually recorded',
       type: 'heading',
       required: false,
-    } as any,
+      helperText: 'Primary + Misc + Tax must equal the Payment Amount above.',
+    },
     {
       name: 'primaryAmount',
       label: 'Primary / Construction (₹)',

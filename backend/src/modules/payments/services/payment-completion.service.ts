@@ -334,10 +334,12 @@ export class PaymentCompletionService {
 
     const EPS = 0.01;
     for (const dd of thread) {
-      // Demanded per category includes any arrears carried forward on the DD.
-      const ddTaxDemanded     = (Number(dd.taxAmount) || 0)     + (Number(dd.arrearsTax) || 0);
-      const ddPrimaryDemanded = (Number(dd.primaryAmount) || 0) + (Number(dd.arrearsPrimary) || 0);
-      const ddMiscDemanded    = (Number(dd.miscAmount) || 0)    + (Number(dd.arrearsMisc) || 0);
+      // A DD settles against its OWN demand. Arrears (other unpaid DDs) settle
+      // via their own rows, so they are not folded in here — matching the
+      // dynamic-arrears model in BookingFinancialSummaryService.
+      const ddTaxDemanded     = Number(dd.taxAmount) || 0;
+      const ddPrimaryDemanded = Number(dd.primaryAmount) || 0;
+      const ddMiscDemanded    = Number(dd.miscAmount) || 0;
 
       let newStatus: DemandDraftStatus;
       let taxDeferredAmount = 0;
