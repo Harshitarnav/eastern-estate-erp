@@ -427,11 +427,45 @@ table.dt tr.tr-total .r { color: #A8211B; font-size: 14px; }
         ? `${titleParts} – ${milestone.name}`
         : milestone.name;
 
+      // Demand the milestone's full category split. `amount` (primary) is now
+      // construction-only, so misc & tax must be demanded as their own
+      // categories — otherwise the DD would under-bill. Any milestone
+      // adjustment (e.g. the booking token credited here) is waterfalled
+      // across primary → misc → tax since the DD has no adjust column.
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      let creditLeft = Number(milestone.adjustAmount) || 0;
+      const applyCredit = (v: number | null | undefined) => {
+        const c = Math.min(creditLeft, Number(v) || 0);
+        creditLeft = r2(creditLeft - c);
+        return r2((Number(v) || 0) - c);
+      };
+      const primary = applyCredit(milestone.amount);
+      const misc = applyCredit(milestone.miscAmount);
+      const tax = applyCredit(milestone.taxAmount);
+      const flatMisc = (plan.flat?.miscBreakdown ?? []) as Array<{ label: string; amount: number }>;
+      const flatTax = (plan.flat?.taxBreakdown ?? []) as Array<{ label: string; amount: number }>;
+      const flatTaxTotal = flatTax.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+      // Scale the flat's tax line-items down to this milestone's tax share.
+      const taxBreakdown =
+        tax > 0 && flatTaxTotal > 0
+          ? flatTax.map((i) => ({
+              label: i.label,
+              amount: r2(((Number(i.amount) || 0) * tax) / flatTaxTotal),
+            }))
+          : tax > 0
+          ? [{ label: 'Tax', amount: tax }]
+          : [];
+
       const draft = await demandDraftsService.create({
         flatId: plan.flatId,
         customerId: plan.customerId,
         bookingId: plan.bookingId,
-        amount: milestone.amount,
+        amount: r2(primary + misc + tax),
+        primaryAmount: primary,
+        miscAmount: misc,
+        taxAmount: tax,
+        miscBreakdown: misc > 0 ? flatMisc : [],
+        taxBreakdown,
         title: draftTitle,
         dueDate: milestone.dueDate ?? undefined,
         status: 'DRAFT',

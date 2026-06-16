@@ -26,6 +26,11 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('basic');
   const [paymentMode, setPaymentMode] = useState('');
+  // A token is a pure booking advance against the unit price, so it is
+  // recorded entirely as Primary — Misc & Tax don't apply (they're already
+  // defined on the flat and demanded via DDs). Track the type to hide them.
+  const [paymentType, setPaymentType] = useState<string>(initialData?.paymentType || '');
+  const isToken = paymentType === 'TOKEN';
 
   // Tagged line-items for the Misc / Tax buckets.
   const [miscItems, setMiscItems] = useState<LineItem[]>(initialData?.miscBreakdown ?? []);
@@ -101,6 +106,7 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       label: 'Payment Type *',
       type: 'select',
       required: true,
+      onChange: (v: string) => setPaymentType(v),  // ← Token hides Misc/Tax (primary-only)
       options: [
         { value: 'TOKEN', label: 'Token' },
         { value: 'AGREEMENT', label: 'Agreement' },
@@ -467,8 +473,17 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
         </nav>
       </div>
 
-      {/* Misc / Tax tagged line-item editors — shown on the Amount tab */}
-      {activeTab === 'amount' && (
+      {/* Token payments are primary-only — explain why Misc/Tax are hidden. */}
+      {activeTab === 'amount' && isToken && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+          A <strong>Token</strong> is a booking advance against the unit price, so the full
+          amount is recorded as <strong>Primary</strong>. Miscellaneous charges and taxes are
+          defined on the flat and collected later via demand drafts — they aren&apos;t entered here.
+        </div>
+      )}
+
+      {/* Misc / Tax tagged line-item editors — shown on the Amount tab (non-token) */}
+      {activeTab === 'amount' && !isToken && (
         <div className="space-y-3">
           <CategoryLineItemEditor
             title="Miscellaneous"
@@ -504,10 +519,11 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
       <Form
         fields={currentFields}
         onSubmit={(data) => {
-          const primary = numeric(data.primaryAmount);
-          const misc    = miscItems.reduce((s, i) => s + numeric(i.amount), 0);
-          const tax     = deferTax ? 0 : taxItems.reduce((s, i) => s + numeric(i.amount), 0);
           const total   = numeric(data.amount);
+          // Token = primary-only: the whole amount is Primary, no Misc/Tax.
+          const primary = isToken ? total : numeric(data.primaryAmount);
+          const misc    = isToken ? 0 : miscItems.reduce((s, i) => s + numeric(i.amount), 0);
+          const tax     = isToken ? 0 : (deferTax ? 0 : taxItems.reduce((s, i) => s + numeric(i.amount), 0));
           const catSum  = primary + misc + tax;
 
           // Require a complete split (we now always have the editors visible).
@@ -521,8 +537,8 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
             return; // block submission
           }
 
-          // Reject blank labels on filled line-items.
-          const blankLabel = [...miscItems, ...(deferTax ? [] : taxItems)]
+          // Reject blank labels on filled line-items (skip for token — no line-items).
+          const blankLabel = !isToken && [...miscItems, ...(deferTax ? [] : taxItems)]
             .some((i) => numeric(i.amount) > 0 && !i.label.trim());
           if (blankLabel) {
             toast.error('Every line-item with an amount needs a label describing what it is.');
@@ -534,8 +550,8 @@ export default function PaymentForm({ onSubmit, initialData, onCancel }: Payment
             primaryAmount: primary,
             miscAmount: misc,
             taxAmount: tax,
-            miscBreakdown: miscItems.filter((i) => numeric(i.amount) > 0),
-            taxBreakdown: deferTax ? [] : taxItems.filter((i) => numeric(i.amount) > 0),
+            miscBreakdown: isToken ? [] : miscItems.filter((i) => numeric(i.amount) > 0),
+            taxBreakdown: isToken || deferTax ? [] : taxItems.filter((i) => numeric(i.amount) > 0),
             taxDeferralDisposition: deferTax ? 'DEFER_TO_REGISTRY' : (data.taxDeferralDisposition || ''),
           });
         }}

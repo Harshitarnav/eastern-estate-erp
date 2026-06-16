@@ -263,6 +263,13 @@ export class BookingsService {
               bookingId: savedBooking.id,
               customerId: savedBooking.customerId,
               totalAmount: Number(savedBooking.totalAmount),
+              // Credit the token already collected at booking against the
+              // earliest milestone(s) so it isn't demanded again.
+              tokenAmount: Number(savedBooking.tokenAmount) || 0,
+              // Flat's misc & tax so the plan demands them once as their own
+              // categories instead of baking them into primary (no double count).
+              miscBreakdown: flat.miscBreakdown ?? [],
+              taxBreakdown: flat.taxBreakdown ?? [],
               mode: createBookingDto.paymentPlanPayload.mode,
               templateId: createBookingDto.paymentPlanPayload.templateId,
               milestones: createBookingDto.paymentPlanPayload.milestones,

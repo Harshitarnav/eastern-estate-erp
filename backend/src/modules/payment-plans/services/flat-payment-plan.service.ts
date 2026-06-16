@@ -218,6 +218,23 @@ export class FlatPaymentPlanService {
       bookingId: string;
       customerId: string;
       totalAmount: number;
+      /**
+       * Token already collected at booking. It was recorded as a separate
+       * COMPLETED payment, so we must NOT demand it again — instead we credit
+       * it against the earliest milestone(s) as an adjustment, which reduces
+       * both the plan net and the first demand draft.
+       */
+      tokenAmount?: number;
+      /**
+       * Flat's misc & tax line-items. `totalAmount` is the grand total
+       * (base + misc + tax), so the construction PRIMARY each milestone
+       * demands = totalAmount − misc − tax. Misc is demanded once on the
+       * final milestone and tax is apportioned across milestones, so the
+       * charges defined at flat-init are billed exactly once (no double
+       * count with the all-in total).
+       */
+      miscBreakdown?: Array<{ label: string; amount: number }>;
+      taxBreakdown?: Array<{ label: string; amount: number }>;
       mode: 'template' | 'template-edit' | 'custom';
       templateId?: string;
       milestones?: Array<{
@@ -302,12 +319,99 @@ export class FlatPaymentPlanService {
         .filter((m): m is FlatPaymentMilestone => m !== null);
     }
 
-    // Soft check: amounts should sum close to totalAmount (±1 INR tolerance)
+    // Soft check: incoming amounts should sum close to totalAmount (±1 INR).
+    // This validates the milestone percentages add up to ~100% BEFORE we
+    // re-base them onto the construction-only primary below.
     const sum = milestones.reduce((s, m) => s + Number(m.amount || 0), 0);
     if (Math.abs(sum - Number(input.totalAmount)) > 1) {
       throw new BadRequestException(
         `Milestone amounts (${sum.toFixed(2)}) don't match total amount (${Number(input.totalAmount).toFixed(2)})`,
       );
+    }
+
+    const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+
+    // ── Separate construction PRIMARY from misc & tax (category model) ────
+    // `totalAmount` is the all-in price (base + misc + tax), so the milestone
+    // `amount`s above currently bundle misc & tax into primary. Re-base them
+    // onto the construction-only total and demand misc / tax as their own
+    // categories instead — misc once on the final milestone, tax apportioned
+    // by construction share. This bills each flat-init charge exactly once
+    // (no double count with the all-in total).
+    const flatMisc = (input.miscBreakdown ?? []).filter((i) => (Number(i?.amount) || 0) > 0);
+    const flatTax = (input.taxBreakdown ?? []).filter((i) => (Number(i?.amount) || 0) > 0);
+    const miscTotal = round2(flatMisc.reduce((s, i) => s + (Number(i.amount) || 0), 0));
+    const taxTotal = round2(flatTax.reduce((s, i) => s + (Number(i.amount) || 0), 0));
+
+    if (miscTotal > 0 || taxTotal > 0) {
+      const grand = Number(input.totalAmount) || 0;
+      const primaryBasis = round2(grand - miscTotal - taxTotal);
+      if (primaryBasis <= 0) {
+        throw new BadRequestException(
+          'Misc + tax charges meet or exceed the total amount; no construction primary remains.',
+        );
+      }
+      const oldPrimaryTotal =
+        milestones.reduce((s, m) => s + (Number(m.amount) || 0), 0) || grand;
+      const maxSeq = milestones.reduce((mx, m) => Math.max(mx, Number(m.sequence) || 0), 0);
+      const lastIdx = milestones.length - 1;
+
+      let runningPrimary = 0;
+      let runningTax = 0;
+      milestones = milestones.map((m, idx) => {
+        const share = oldPrimaryTotal > 0 ? (Number(m.amount) || 0) / oldPrimaryTotal : 0;
+        // Last milestone absorbs the rounding remainder so totals stay exact.
+        const primary =
+          idx === lastIdx ? round2(primaryBasis - runningPrimary) : round2(primaryBasis * share);
+        runningPrimary = round2(runningPrimary + primary);
+
+        const tax =
+          taxTotal <= 0
+            ? 0
+            : idx === lastIdx
+            ? round2(taxTotal - runningTax)
+            : round2(taxTotal * share);
+        runningTax = round2(runningTax + tax);
+
+        const misc = Number(m.sequence) === maxSeq ? miscTotal : 0;
+        const adjust = Number(m.adjustAmount) || 0;
+        return {
+          ...m,
+          amount: primary,
+          miscAmount: misc,
+          taxAmount: tax,
+          netAmount: round2(primary + misc + tax - adjust),
+        };
+      });
+    }
+
+    // Credit the booking token against the earliest milestone(s) as an
+    // adjustment so the Payment Plan shows it deducted and the first demand
+    // draft demands the reduced net. The token money itself is tracked via
+    // its own COMPLETED payment, so this only changes what is *demanded*.
+    let tokenRemaining = round2(Math.max(0, Number(input.tokenAmount) || 0));
+    if (tokenRemaining > 0) {
+      const creditBySeq = new Map<number, number>();
+      const earliestFirst = [...milestones].sort(
+        (a, b) => (Number(a.sequence) || 0) - (Number(b.sequence) || 0),
+      );
+      for (const m of earliestFirst) {
+        if (tokenRemaining <= 0) break;
+        const gross =
+          (Number(m.amount) || 0) + (Number(m.miscAmount) || 0) + (Number(m.taxAmount) || 0);
+        const credit = round2(Math.min(tokenRemaining, gross));
+        if (credit <= 0) continue;
+        creditBySeq.set(m.sequence, credit);
+        tokenRemaining = round2(tokenRemaining - credit);
+      }
+      milestones = milestones.map((m) => {
+        const credit = creditBySeq.get(m.sequence) || 0;
+        if (credit <= 0) return m;
+        const gross =
+          (Number(m.amount) || 0) + (Number(m.miscAmount) || 0) + (Number(m.taxAmount) || 0);
+        const adjustAmount = round2((Number(m.adjustAmount) || 0) + credit);
+        return { ...m, adjustAmount, netAmount: round2(gross - adjustAmount) };
+      });
     }
 
     const plan = this.flatPaymentPlanRepository.create({

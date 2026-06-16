@@ -29,6 +29,7 @@ export interface FlatPaymentMilestone {
   phasePercentage: number | null;
   amount: number;
   dueDate: string | null;
+  miscAmount?: number | null;
   taxAmount?: number | null;
   netAmount?: number | null;
   adjustAmount?: number | null;

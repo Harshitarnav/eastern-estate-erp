@@ -218,7 +218,22 @@ export class AutoDemandDraftService {
       primaryAmount: amount,
     });
     const round2 = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
-    const grandTotal = round2(amount + split.taxAmount + split.miscAmount);
+    // Apply the milestone's adjustment (e.g. the booking token credited to
+    // this milestone) to what the DD actually demands. The DD has no adjust
+    // column, so waterfall the credit across primary → misc → tax and store
+    // the reduced category amounts. In the common case (token ≤ primary) only
+    // primary shrinks and the misc/tax breakdowns still match.
+    const adjust = round2(Number(milestone.adjustAmount) || 0);
+    let creditLeft = adjust;
+    const applyCredit = (v: number): number => {
+      const c = Math.min(creditLeft, Number(v) || 0);
+      creditLeft = round2(creditLeft - c);
+      return round2((Number(v) || 0) - c);
+    };
+    const demandPrimary = applyCredit(amount);
+    const demandMisc = applyCredit(split.miscAmount);
+    const demandTax = applyCredit(split.taxAmount);
+    const grandTotal = round2(demandPrimary + demandMisc + demandTax);
     const fmt = (n: number) => Number(n).toLocaleString('en-IN');
 
     // Calculate due date (default: 30 days from now)
@@ -371,9 +386,9 @@ export class AutoDemandDraftService {
       // final milestone) amenities/misc. All amounts are pre-filled but remain
       // editable on the DD review screen.
       amount: grandTotal,
-      primaryAmount: amount,
-      miscAmount: split.miscAmount,
-      taxAmount: split.taxAmount,
+      primaryAmount: demandPrimary,
+      miscAmount: demandMisc,
+      taxAmount: demandTax,
       miscBreakdown: split.miscBreakdown,
       taxBreakdown: split.taxBreakdown,
       // Arrears + deferred-tax are explicitly 0: these columns are NOT NULL and
